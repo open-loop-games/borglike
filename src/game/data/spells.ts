@@ -1,0 +1,458 @@
+/**
+ * Spell definitions for Borglike
+ *
+ * Spells are organized by school (arcane, divine, nature, shadow).
+ * Each spell has a level requirement, mana cost, and effect.
+ */
+
+import type { SpellSchool, SpellEffectType, SpellDamageType, StatusEffectType } from '../types'
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+/** Buff effect granted by a spell */
+export interface SpellBuff {
+  type: StatusEffectType | 'ac_bonus' | 'damage_bonus'
+  value: number
+  duration: number // in turns
+}
+
+/** Debuff effect inflicted by a spell */
+export interface SpellDebuff {
+  type: 'slow' | 'weaken' | 'blind'
+  value: number // percentage reduction or effect strength
+  duration: number // in turns
+}
+
+/** Spell template definition */
+export interface SpellTemplate {
+  id: string
+  name: string
+  school: SpellSchool
+  level: number // minimum level to learn
+  manaCost: number
+  cooldown: number // turns before can cast again (0 = no cooldown)
+  effectType: SpellEffectType
+  description: string
+
+  // Damage spells
+  baseDamage?: string // dice notation e.g. "2d6"
+  damageScaling?: number // bonus damage per level/3 (default 1)
+  damageType?: SpellDamageType
+
+  // AOE spells
+  maxTargets?: number // for aoe_damage
+
+  // Heal spells
+  baseHeal?: string // dice notation
+  healScaling?: number // bonus heal per level/2 (default 1)
+  curesPoison?: boolean
+
+  // Buff spells
+  buff?: SpellBuff
+
+  // Debuff spells
+  debuff?: SpellDebuff
+
+  // Lifedrain spells
+  drainPercent?: number // percentage of damage healed (default 50)
+
+  // Teleport spells
+  teleportRange?: number // 0 = random on level, N = within N tiles
+
+  // Special flags
+  doubleVsEvil?: boolean // 2x damage vs evil monsters
+}
+
+// ============================================================================
+// ARCANE SPELLS (INT-based)
+// ============================================================================
+
+const magic_missile: SpellTemplate = {
+  id: 'magic_missile',
+  name: 'Magic Missile',
+  school: 'arcane',
+  level: 1,
+  manaCost: 2,
+  cooldown: 0,
+  effectType: 'damage',
+  baseDamage: '1d6',
+  damageScaling: 1,
+  damageType: 'arcane',
+  description: 'A bolt of pure magical energy strikes your foe.',
+}
+
+const frost_bolt: SpellTemplate = {
+  id: 'frost_bolt',
+  name: 'Frost Bolt',
+  school: 'arcane',
+  level: 5,
+  manaCost: 4,
+  cooldown: 0,
+  effectType: 'damage',
+  baseDamage: '2d4',
+  damageScaling: 1,
+  damageType: 'cold',
+  debuff: { type: 'slow', value: 50, duration: 3 },
+  description: 'A bolt of freezing cold slows your enemy.',
+}
+
+const phase_door: SpellTemplate = {
+  id: 'phase_door',
+  name: 'Phase Door',
+  school: 'arcane',
+  level: 5,
+  manaCost: 4,
+  cooldown: 3,
+  effectType: 'teleport',
+  teleportRange: 8,
+  description: 'Blink a short distance away.',
+}
+
+const lightning_bolt: SpellTemplate = {
+  id: 'lightning_bolt',
+  name: 'Lightning Bolt',
+  school: 'arcane',
+  level: 10,
+  manaCost: 8,
+  cooldown: 0,
+  effectType: 'damage',
+  baseDamage: '3d6',
+  damageScaling: 2,
+  damageType: 'lightning',
+  description: 'A crackling bolt of lightning arcs to your target.',
+}
+
+const fireball: SpellTemplate = {
+  id: 'fireball',
+  name: 'Fireball',
+  school: 'arcane',
+  level: 15,
+  manaCost: 12,
+  cooldown: 2,
+  effectType: 'aoe_damage',
+  baseDamage: '2d8',
+  damageScaling: 2,
+  damageType: 'fire',
+  maxTargets: 3,
+  description: 'A ball of fire explodes among your enemies.',
+}
+
+const teleport: SpellTemplate = {
+  id: 'teleport',
+  name: 'Teleport',
+  school: 'arcane',
+  level: 20,
+  manaCost: 15,
+  cooldown: 5,
+  effectType: 'teleport',
+  teleportRange: 0, // anywhere on level
+  description: 'Teleport to a random location on the level.',
+}
+
+// ============================================================================
+// DIVINE SPELLS (WIS-based)
+// ============================================================================
+
+const minor_heal: SpellTemplate = {
+  id: 'minor_heal',
+  name: 'Minor Heal',
+  school: 'divine',
+  level: 1,
+  manaCost: 2,
+  cooldown: 0,
+  effectType: 'heal',
+  baseHeal: '1d6',
+  healScaling: 1,
+  description: 'A small blessing restores your wounds.',
+}
+
+const bless: SpellTemplate = {
+  id: 'bless',
+  name: 'Bless',
+  school: 'divine',
+  level: 5,
+  manaCost: 4,
+  cooldown: 20,
+  effectType: 'buff',
+  buff: { type: 'blessing', value: 5, duration: 20 },
+  description: 'Divine favor grants +5 to hit and AC.',
+}
+
+const cure_wounds: SpellTemplate = {
+  id: 'cure_wounds',
+  name: 'Cure Wounds',
+  school: 'divine',
+  level: 10,
+  manaCost: 8,
+  cooldown: 0,
+  effectType: 'heal',
+  baseHeal: '2d8',
+  healScaling: 2,
+  description: 'Lay on hands, healing significant damage.',
+}
+
+const smite_evil: SpellTemplate = {
+  id: 'smite_evil',
+  name: 'Smite Evil',
+  school: 'divine',
+  level: 10,
+  manaCost: 6,
+  cooldown: 0,
+  effectType: 'damage',
+  baseDamage: '2d6',
+  damageScaling: 2,
+  damageType: 'holy',
+  doubleVsEvil: true,
+  description: 'Holy wrath smites the wicked (2x vs evil).',
+}
+
+const sanctuary: SpellTemplate = {
+  id: 'sanctuary',
+  name: 'Sanctuary',
+  school: 'divine',
+  level: 20,
+  manaCost: 20,
+  cooldown: 50,
+  effectType: 'buff',
+  buff: { type: 'protection', value: 15, duration: 30 },
+  description: 'Divine protection grants +15 AC for a time.',
+}
+
+const holy_word: SpellTemplate = {
+  id: 'holy_word',
+  name: 'Holy Word',
+  school: 'divine',
+  level: 30,
+  manaCost: 35,
+  cooldown: 10,
+  effectType: 'aoe_damage',
+  baseDamage: '3d8',
+  damageScaling: 2,
+  damageType: 'holy',
+  maxTargets: 4,
+  doubleVsEvil: true,
+  description: 'A word of power smites all evil nearby.',
+}
+
+// ============================================================================
+// NATURE SPELLS (WIS-based)
+// ============================================================================
+
+const entangle: SpellTemplate = {
+  id: 'entangle',
+  name: 'Entangle',
+  school: 'nature',
+  level: 1,
+  manaCost: 3,
+  cooldown: 5,
+  effectType: 'debuff',
+  debuff: { type: 'slow', value: 50, duration: 8 },
+  description: 'Vines wrap around your foe, slowing them.',
+}
+
+const natures_balm: SpellTemplate = {
+  id: 'natures_balm',
+  name: "Nature's Balm",
+  school: 'nature',
+  level: 5,
+  manaCost: 5,
+  cooldown: 0,
+  effectType: 'heal',
+  baseHeal: '1d8',
+  healScaling: 1,
+  curesPoison: true,
+  description: 'Natural healing cures poison and restores HP.',
+}
+
+const thorn_strike: SpellTemplate = {
+  id: 'thorn_strike',
+  name: 'Thorn Strike',
+  school: 'nature',
+  level: 10,
+  manaCost: 6,
+  cooldown: 0,
+  effectType: 'damage',
+  baseDamage: '2d6',
+  damageScaling: 1,
+  damageType: 'nature',
+  description: 'A barrage of thorns pierces your enemy.',
+}
+
+const resist_elements: SpellTemplate = {
+  id: 'resist_elements',
+  name: 'Resist Elements',
+  school: 'nature',
+  level: 15,
+  manaCost: 10,
+  cooldown: 30,
+  effectType: 'buff',
+  // Custom handling - grants fire+cold resistance
+  description: 'Gain resistance to fire and cold for a time.',
+}
+
+const lightning_storm: SpellTemplate = {
+  id: 'lightning_storm',
+  name: 'Lightning Storm',
+  school: 'nature',
+  level: 25,
+  manaCost: 20,
+  cooldown: 5,
+  effectType: 'aoe_damage',
+  baseDamage: '3d8',
+  damageScaling: 2,
+  damageType: 'lightning',
+  maxTargets: 3,
+  description: 'Call down lightning on multiple foes.',
+}
+
+// ============================================================================
+// SHADOW SPELLS (INT-based)
+// ============================================================================
+
+const drain_life: SpellTemplate = {
+  id: 'drain_life',
+  name: 'Drain Life',
+  school: 'shadow',
+  level: 1,
+  manaCost: 3,
+  cooldown: 0,
+  effectType: 'lifedrain',
+  baseDamage: '1d6',
+  damageScaling: 1,
+  damageType: 'dark',
+  drainPercent: 50,
+  description: 'Steal life force from your enemy.',
+}
+
+const shadow_bolt: SpellTemplate = {
+  id: 'shadow_bolt',
+  name: 'Shadow Bolt',
+  school: 'shadow',
+  level: 5,
+  manaCost: 5,
+  cooldown: 0,
+  effectType: 'damage',
+  baseDamage: '2d6',
+  damageScaling: 1,
+  damageType: 'dark',
+  description: 'A bolt of darkness strikes your foe.',
+}
+
+const weaken: SpellTemplate = {
+  id: 'weaken',
+  name: 'Weaken',
+  school: 'shadow',
+  level: 10,
+  manaCost: 6,
+  cooldown: 8,
+  effectType: 'debuff',
+  debuff: { type: 'weaken', value: 25, duration: 10 },
+  description: 'Curse your foe to deal 25% less damage.',
+}
+
+const dark_pact: SpellTemplate = {
+  id: 'dark_pact',
+  name: 'Dark Pact',
+  school: 'shadow',
+  level: 15,
+  manaCost: 8,
+  cooldown: 20,
+  effectType: 'buff',
+  buff: { type: 'damage_bonus', value: 30, duration: 15 },
+  // Note: also costs 10 HP on cast - handled in resolution
+  description: 'Sacrifice 10 HP for +30% damage.',
+}
+
+const soul_rend: SpellTemplate = {
+  id: 'soul_rend',
+  name: 'Soul Rend',
+  school: 'shadow',
+  level: 25,
+  manaCost: 25,
+  cooldown: 8,
+  effectType: 'aoe_damage',
+  baseDamage: '4d6',
+  damageScaling: 2,
+  damageType: 'dark',
+  maxTargets: 2,
+  drainPercent: 25, // Heals 25% of total damage dealt
+  description: 'Tear the souls of nearby enemies, healing yourself.',
+}
+
+// ============================================================================
+// SPELL COLLECTION
+// ============================================================================
+
+/** All spells in the game, indexed by ID */
+export const SPELLS: Record<string, SpellTemplate> = {
+  // Arcane
+  magic_missile,
+  frost_bolt,
+  phase_door,
+  lightning_bolt,
+  fireball,
+  teleport,
+  // Divine
+  minor_heal,
+  bless,
+  cure_wounds,
+  smite_evil,
+  sanctuary,
+  holy_word,
+  // Nature
+  entangle,
+  natures_balm,
+  thorn_strike,
+  resist_elements,
+  lightning_storm,
+  // Shadow
+  drain_life,
+  shadow_bolt,
+  weaken,
+  dark_pact,
+  soul_rend,
+}
+
+/** All spells as an array */
+export const ALL_SPELLS: SpellTemplate[] = Object.values(SPELLS)
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Get a spell by ID
+ */
+export function getSpellById(id: string): SpellTemplate | undefined {
+  return SPELLS[id]
+}
+
+/**
+ * Get all spells in a school
+ */
+export function getSpellsBySchool(school: SpellSchool): SpellTemplate[] {
+  return ALL_SPELLS.filter((spell) => spell.school === school)
+}
+
+/**
+ * Get all spells of a given level or lower
+ */
+export function getSpellsByMaxLevel(maxLevel: number): SpellTemplate[] {
+  return ALL_SPELLS.filter((spell) => spell.level <= maxLevel)
+}
+
+/**
+ * Get the primary stat for a spell school
+ */
+export function getSchoolStat(school: SpellSchool): 'int' | 'wis' {
+  switch (school) {
+    case 'arcane':
+    case 'shadow':
+      return 'int'
+    case 'divine':
+    case 'nature':
+      return 'wis'
+  }
+}
