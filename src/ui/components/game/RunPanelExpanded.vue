@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { ActiveRun } from '@/stores/runs'
+import { ref, computed, onUnmounted } from 'vue'
+import type { ActiveRun, DisplayItem, EquipSlot } from '@/stores/runs'
 import { useRunsStore } from '@/stores/runs'
+import { useProgressionStore } from '@/stores/progression'
+import { useRunDuration } from '@/ui/composables/useRunDuration'
 import DungeonGrid from '../DungeonGrid.vue'
 import ProgressBar from '../common/ProgressBar.vue'
 import PanelFrame from '../common/PanelFrame.vue'
+import RunSummary from '../analytics/RunSummary.vue'
 
 const props = defineProps<{
   run: ActiveRun
@@ -14,16 +17,63 @@ const emit = defineEmits<{
   collapse: []
   restart: []
   dismiss: []
+  kill: []
 }>()
 
 const runs = useRunsStore()
+const progression = useProgressionStore()
 
-const runDuration = computed(() => {
-  const seconds = Math.floor((Date.now() - props.run.startTime) / 1000)
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
+// Get personal best for comparison in RunSummary (uses cached value from store)
+const personalBest = computed(() => {
+  if (!props.run.finalStats) return undefined
+  const best = progression.bestRunByDepth
+  if (!best || best.id === props.run.finalStats.id) return undefined
+  return best
 })
+
+// Reactive run duration that updates every second
+const runDuration = useRunDuration(() => props.run.startTime)
+
+// Equipment slots configuration
+const equipSlots = [
+  { id: 'weapon', label: 'wep' },
+  { id: 'armor', label: 'arm' },
+  { id: 'shield', label: 'shd' },
+  { id: 'helm', label: 'hlm' },
+  { id: 'gloves', label: 'glv' },
+  { id: 'boots', label: 'bot' },
+  { id: 'ring1', label: 'rg1' },
+  { id: 'ring2', label: 'rg2' },
+  { id: 'amulet', label: 'amu' },
+  { id: 'light', label: 'lit' },
+  { id: 'bow', label: 'bow' },
+]
+
+const EMPTY_CHAR = '─'
+
+function getSlotChar(slotId: string): string {
+  const item = props.run.equipment[slotId as EquipSlot]
+  return item?.char ?? EMPTY_CHAR
+}
+
+function getSlotColor(slotId: string): string {
+  const item = props.run.equipment[slotId as EquipSlot]
+  if (!item) return '#475569' // dim
+  return '#' + item.color.toString(16).padStart(6, '0')
+}
+
+function getSlotTooltip(slotId: string): string {
+  const item = props.run.equipment[slotId as EquipSlot]
+  if (!item) return `${slotId} (empty)`
+  return formatItemName(item)
+}
+
+function formatItemName(item: DisplayItem): string {
+  if (item.enchantment > 0) {
+    return `${item.name} +${item.enchantment}`
+  }
+  return item.name
+}
 
 function handleCollapse() {
   emit('collapse')
@@ -40,6 +90,45 @@ function handleRestart() {
 function handleDismiss() {
   emit('dismiss')
 }
+
+// Kill button hold state using requestAnimationFrame for smoother animation
+const KILL_HOLD_DURATION = 1000
+const killHoldProgress = ref(0)
+let killHoldStart: number | null = null
+let killHoldRafId: number | null = null
+
+function updateKillProgress() {
+  if (killHoldStart === null) return
+
+  const elapsed = Date.now() - killHoldStart
+  killHoldProgress.value = Math.min(100, (elapsed / KILL_HOLD_DURATION) * 100)
+
+  if (elapsed >= KILL_HOLD_DURATION) {
+    emit('kill')
+    cancelKillHold()
+  } else {
+    killHoldRafId = requestAnimationFrame(updateKillProgress)
+  }
+}
+
+function startKillHold() {
+  if (props.run.state === 'dead') return
+  killHoldStart = Date.now()
+  killHoldRafId = requestAnimationFrame(updateKillProgress)
+}
+
+function cancelKillHold() {
+  killHoldStart = null
+  killHoldProgress.value = 0
+  if (killHoldRafId !== null) {
+    cancelAnimationFrame(killHoldRafId)
+    killHoldRafId = null
+  }
+}
+
+onUnmounted(() => {
+  cancelKillHold()
+})
 </script>
 
 <template>
@@ -66,6 +155,26 @@ function handleDismiss() {
           <span class="turbo-icon">&#x25B6;&#x25B6;</span>
           Turbo
         </button>
+        <button
+          class="kill-btn"
+          :class="{ holding: killHoldProgress > 0, disabled: run.state === 'dead' }"
+          :disabled="run.state === 'dead'"
+          title="Hold to end run"
+          @mousedown="startKillHold"
+          @mouseup="cancelKillHold"
+          @mouseleave="cancelKillHold"
+          @touchstart.prevent="startKillHold"
+          @touchend="cancelKillHold"
+          @touchcancel="cancelKillHold"
+        >
+          <span class="kill-icon">&#x2717;</span>
+          Kill
+          <span
+            v-if="killHoldProgress > 0"
+            class="kill-progress"
+            :style="{ width: killHoldProgress + '%' }"
+          />
+        </button>
       </div>
     </header>
 
@@ -73,51 +182,57 @@ function handleDismiss() {
     <div class="expanded-content">
       <!-- Stats Panel -->
       <aside class="stats-panel">
-        <PanelFrame class="stat-section">
-          <h3>Vitals</h3>
-          <div class="stat-row">
+        <!-- Vitals: Compact HP/MP bars + level/XP/gold -->
+        <PanelFrame class="stat-section vitals">
+          <div class="resource-row">
             <span class="stat-label">HP</span>
-            <ProgressBar
-              :current="run.hp"
-              :max="run.maxHp"
-              variant="hp"
-              :show-text="true"
-              size="md"
-              class="hp-bar"
-            />
+            <ProgressBar :current="run.hp" :max="run.maxHp" variant="hp" :show-text="true" size="md" />
           </div>
-          <div class="stat-row">
-            <span class="stat-label">XP</span>
-            <span class="stat-value xp">{{ run.xp.toLocaleString() }}</span>
+          <div v-if="run.maxMp > 0" class="resource-row">
+            <span class="stat-label">MP</span>
+            <ProgressBar :current="run.mp" :max="run.maxMp" variant="mp" :show-text="true" size="md" />
           </div>
-        </PanelFrame>
-
-        <PanelFrame class="stat-section">
-          <h3>Progress</h3>
-          <div class="stat-row">
-            <span class="stat-label">Depth</span>
-            <span class="stat-value depth">{{ run.depth }}</span>
+          <div class="stats-row">
+            <span class="stat-item">Lvl <span class="val level">{{ run.level }}</span></span>
+            <span class="stat-item">XP <span class="val xp">{{ run.xp }}</span></span>
+            <span class="stat-item">Gold <span class="val gold">{{ run.gold }}</span></span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Turns</span>
-            <span class="stat-value">{{ run.turns.toLocaleString() }}</span>
+          <div class="stats-row">
+            <span class="stat-item">D:<span class="val depth">{{ run.depth }}</span></span>
+            <span class="stat-item">T:<span class="val">{{ run.turns.toLocaleString() }}</span></span>
+            <span class="stat-item">K:<span class="val kills">{{ run.kills }}</span></span>
           </div>
         </PanelFrame>
 
-        <PanelFrame class="stat-section">
-          <h3>Combat</h3>
-          <div class="stat-row">
-            <span class="stat-label">Kills</span>
-            <span class="stat-value kills">{{ run.kills }}</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Gold</span>
-            <span class="stat-value gold">{{ run.gold.toLocaleString() }}</span>
+        <!-- Equipment Grid: 6x2 -->
+        <PanelFrame class="stat-section equipment">
+          <h3>Equipped</h3>
+          <div class="equip-grid">
+            <div v-for="slot in equipSlots" :key="slot.id" class="equip-slot" :title="getSlotTooltip(slot.id)">
+              <span class="slot-char" :style="{ color: getSlotColor(slot.id) }">
+                {{ getSlotChar(slot.id) }}
+              </span>
+              <span class="slot-label">{{ slot.label }}</span>
+            </div>
           </div>
         </PanelFrame>
 
+        <!-- Inventory: Scrollable list -->
+        <PanelFrame class="stat-section inventory">
+          <h3>Pack ({{ run.inventory.length }})</h3>
+          <div class="inventory-list">
+            <div v-for="item in run.inventory" :key="item.id" class="inv-item">
+              <span class="item-char" :style="{ color: '#' + item.color.toString(16).padStart(6, '0') }">{{ item.char }}</span>
+              <span class="item-name" :class="{ artifact: item.isArtifact }">
+                {{ formatItemName(item) }}
+              </span>
+            </div>
+            <div v-if="run.inventory.length === 0" class="inv-empty">Empty</div>
+          </div>
+        </PanelFrame>
+
+        <!-- Status -->
         <PanelFrame class="stat-section">
-          <h3>Status</h3>
           <div class="status-badges">
             <span class="status-badge" :class="run.state">
               {{ run.state === 'dead' ? 'DEAD' : run.state === 'running' ? 'ACTIVE' : 'STARTING' }}
@@ -138,9 +253,17 @@ function handleDismiss() {
       </div>
     </div>
 
-    <!-- Death Overlay -->
+    <!-- Death Overlay with RunSummary -->
     <div v-if="run.state === 'dead'" class="death-overlay">
-      <div class="death-content">
+      <RunSummary
+        v-if="run.finalStats"
+        :run="run.finalStats"
+        :personal-best="personalBest"
+        @close="handleCollapse"
+        @restart="handleRestart"
+      />
+      <!-- Fallback if no finalStats (shouldn't happen normally) -->
+      <div v-else class="death-content">
         <span class="death-icon">&#x2620;</span>
         <span class="death-text">DEFEATED</span>
         <div class="death-stats">
@@ -253,6 +376,7 @@ function handleDismiss() {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .turbo-btn {
@@ -286,6 +410,52 @@ function handleDismiss() {
   font-size: 10px;
 }
 
+.kill-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.kill-btn:hover:not(.disabled) {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.kill-btn.holding {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.kill-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.kill-btn .kill-icon {
+  position: relative;
+  z-index: 1;
+}
+
+.kill-btn .kill-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: rgba(239, 68, 68, 0.3);
+  transition: width 0.05s linear;
+}
+
 /* Content */
 .expanded-content {
   display: flex;
@@ -295,18 +465,18 @@ function handleDismiss() {
 
 /* Stats Panel */
 .stats-panel {
-  width: 220px;
-  padding: 12px;
+  width: 200px;
+  padding: 8px;
   background: var(--panel);
   border-right: 1px solid var(--border);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .stat-section {
-  padding: 12px !important;
+  padding: 8px !important;
 }
 
 .stat-section h3 {
@@ -315,18 +485,7 @@ function handleDismiss() {
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 10px;
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.stat-row:not(:last-child) {
-  border-bottom: 1px solid var(--border);
+  margin: 0 0 8px;
 }
 
 .stat-label {
@@ -335,34 +494,108 @@ function handleDismiss() {
   color: var(--text-secondary);
 }
 
-.stat-value {
+/* Vitals compact layout */
+.vitals .resource-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.vitals .resource-row :deep(.progress-bar) {
+  flex: 1;
+}
+
+.vitals .stat-label {
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.stat-item .val {
   font-weight: bold;
   color: var(--text-primary);
 }
+.stat-item .val.depth { color: var(--purple); }
+.stat-item .val.kills { color: var(--red); }
+.stat-item .val.gold { color: var(--amber); }
+.stat-item .val.xp { color: var(--cyan); }
+.stat-item .val.level { color: var(--green); }
 
-.stat-value.depth {
-  color: var(--purple);
-  text-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
+/* Equipment grid */
+.equip-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
 }
 
-.stat-value.kills {
-  color: var(--red);
+.equip-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 2px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 3px;
 }
 
-.stat-value.gold {
+.slot-char {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.slot-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--text-dim);
+  text-transform: lowercase;
+}
+
+/* Inventory list */
+.inventory-list {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.inv-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.item-char {
+  width: 12px;
+  text-align: center;
+}
+
+.item-name {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-name.artifact {
   color: var(--amber);
   text-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
 }
 
-.stat-value.xp {
-  color: var(--cyan);
-}
-
-.hp-bar {
-  flex: 1;
-  max-width: 120px;
+.inv-empty, .inv-more {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
 }
 
 .status-badges {

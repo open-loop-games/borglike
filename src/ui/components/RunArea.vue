@@ -2,11 +2,10 @@
 import { ref, computed } from 'vue'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
-import { startRun } from '@/engine/instance-manager'
+import { startRun, killRun } from '@/engine/instance-manager'
 import RunPanel from './RunPanel.vue'
 import PanelFrame from './common/PanelFrame.vue'
 import EmptySlot from './game/EmptySlot.vue'
-import LockedSlot from './game/LockedSlot.vue'
 import RunPanelExpanded from './game/RunPanelExpanded.vue'
 import LoadoutEditor from './game/LoadoutEditor.vue'
 
@@ -20,29 +19,29 @@ const maxSlots = computed(() => progression.maxRunSlots)
 
 // All 4 slots, showing locked state for unavailable slots
 const allSlots = computed(() => {
+  const max = maxSlots.value
   const arr = []
   for (let i = 0; i < 4; i++) {
-    const isUnlocked = i < maxSlots.value
-    const run = isUnlocked ? runs.getRunBySlot(i) : null
+    const isUnlocked = i < max
     arr.push({
       index: i,
       isUnlocked,
-      run,
+      run: isUnlocked ? runs.getRunBySlot(i) : null,
     })
   }
   return arr
 })
 
-// Only show unlocked slots in grid (for layout purposes)
+// Only show unlocked slots in grid
 const visibleSlots = computed(() => {
-  return allSlots.value.filter((s) => s.isUnlocked || s.index < maxSlots.value + 1)
+  return allSlots.value.filter((s) => s.isUnlocked)
 })
 
 const gridClass = computed(() => {
   // When focused, don't use grid
   if (runs.focusedSlot !== null) return 'grid-focused'
 
-  const slotCount = Math.min(4, maxSlots.value + 1) // Show one locked slot as teaser
+  const slotCount = maxSlots.value
   switch (slotCount) {
     case 1:
       return 'grid-1'
@@ -57,9 +56,10 @@ const gridClass = computed(() => {
   }
 })
 
+// Derive from allSlots to avoid duplicate store lookup
 const focusedRun = computed(() => {
   if (runs.focusedSlot === null) return null
-  return runs.getRunBySlot(runs.focusedSlot)
+  return allSlots.value[runs.focusedSlot]?.run ?? null
 })
 
 function handleStartRun(
@@ -127,6 +127,19 @@ function handleDismissExpanded() {
     runs.clearFocus()
   }
 }
+
+function handleKill(slot: number) {
+  const run = runs.getRunBySlot(slot)
+  if (run && run.state !== 'dead') {
+    killRun(run.id)
+  }
+}
+
+function handleKillExpanded() {
+  if (runs.focusedSlot !== null) {
+    handleKill(runs.focusedSlot)
+  }
+}
 </script>
 
 <template>
@@ -138,6 +151,7 @@ function handleDismissExpanded() {
         @collapse="handleCollapse"
         @restart="handleRestart(runs.focusedSlot!)"
         @dismiss="handleDismissExpanded"
+        @kill="handleKillExpanded"
       />
     </template>
 
@@ -157,18 +171,16 @@ function handleDismissExpanded() {
             @expand="handleExpand(slot.index)"
             @restart="handleRestart(slot.index)"
             @dismiss="handleDismiss(slot.index)"
+            @kill="handleKill(slot.index)"
           />
 
           <!-- Empty Slot (unlocked, no run) -->
           <EmptySlot
-            v-else-if="slot.isUnlocked"
+            v-else
             :slot="slot.index"
             @start-run="handleStartRun"
             @open-loadout="handleOpenLoadout"
           />
-
-          <!-- Locked Slot -->
-          <LockedSlot v-else :slot="slot.index" />
         </PanelFrame>
       </template>
     </template>

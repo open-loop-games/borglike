@@ -1,21 +1,36 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppHeader from './ui/components/layout/AppHeader.vue'
 import AppFeed from './ui/components/layout/AppFeed.vue'
 import Sidebar from './ui/components/Sidebar.vue'
 import RunArea from './ui/components/RunArea.vue'
 import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
+import RunHistoryModal from './ui/components/history/RunHistoryModal.vue'
+import BestiaryModal from './ui/components/bestiary/BestiaryModal.vue'
 import { useKeyboard } from './ui/composables/useKeyboard'
-import { usePersistence } from './ui/composables/usePersistence'
+import { initPersistence } from './ui/composables/usePersistence'
+import { useGameTitle } from './ui/composables/useGameTitle'
 
-// Enable keyboard shortcuts
+// Loading state - block render until persistence loads
+const isLoaded = ref(false)
+
+// These composables must be called synchronously during setup (before any await)
+// They register lifecycle hooks that need the active component instance
 useKeyboard()
+useGameTitle()
 
-// Enable persistence (auto-save/load)
-usePersistence()
+// Initialize persistence on mount
+onMounted(async () => {
+  // CRITICAL: Await persistence before allowing app to render
+  // This prevents race conditions where components try to write before data loads
+  await initPersistence()
+  isLoaded.value = true
+})
 
 // Modal state
 const showSettings = ref(false)
+const showRunHistory = ref(false)
+const showBestiary = ref(false)
 
 function handleOpenSettings() {
   showSettings.value = true
@@ -25,6 +40,22 @@ function handleCloseSettings() {
   showSettings.value = false
 }
 
+function handleOpenRunHistory() {
+  showRunHistory.value = true
+}
+
+function handleCloseRunHistory() {
+  showRunHistory.value = false
+}
+
+function handleOpenBestiary() {
+  showBestiary.value = true
+}
+
+function handleCloseBestiary() {
+  showBestiary.value = false
+}
+
 function handleOpenHelp() {
   // Help modal could be implemented similarly
   console.log('Help requested')
@@ -32,8 +63,23 @@ function handleOpenHelp() {
 </script>
 
 <template>
-  <div class="app-layout">
-    <AppHeader class="header" @open-settings="handleOpenSettings" @open-help="handleOpenHelp" />
+  <!-- Loading screen while persistence initializes -->
+  <div v-if="!isLoaded" class="loading-screen">
+    <div class="loading-content">
+      <div class="loading-title">Borglike</div>
+      <div class="loading-text">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Main app (only renders after persistence is ready) -->
+  <div v-else class="app-layout">
+    <AppHeader
+      class="header"
+      @open-settings="handleOpenSettings"
+      @open-help="handleOpenHelp"
+      @open-run-history="handleOpenRunHistory"
+      @open-bestiary="handleOpenBestiary"
+    />
     <main class="game">
       <RunArea />
     </main>
@@ -50,10 +96,53 @@ function handleOpenHelp() {
         </div>
       </div>
     </Teleport>
+
+    <!-- Run History Modal -->
+    <Teleport to="body">
+      <div v-if="showRunHistory" class="modal-overlay" @click="handleCloseRunHistory">
+        <div class="modal-container modal-lg" @click.stop>
+          <RunHistoryModal @close="handleCloseRunHistory" />
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Bestiary Modal -->
+    <Teleport to="body">
+      <div v-if="showBestiary" class="modal-overlay" @click="handleCloseBestiary">
+        <div class="modal-container modal-lg" @click.stop>
+          <BestiaryModal @close="handleCloseBestiary" />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
+/* Loading screen */
+.loading-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--void);
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.loading-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
 .app-layout {
   display: grid;
   grid-template-rows: 48px 1fr 48px;
@@ -128,5 +217,9 @@ function handleOpenHelp() {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-container.modal-lg {
+  max-width: 800px;
 }
 </style>

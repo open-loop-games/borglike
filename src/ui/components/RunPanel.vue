@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { ref, onUnmounted, computed } from 'vue'
 import type { ActiveRun } from '@/stores/runs'
 import { useRunsStore } from '@/stores/runs'
+import { useProgressionStore } from '@/stores/progression'
+import { getBoosterById } from '@/game/data/boosters'
 import DungeonGrid from './DungeonGrid.vue'
 import ProgressBar from './common/ProgressBar.vue'
 
@@ -8,11 +11,75 @@ const props = defineProps<{
   run: ActiveRun
 }>()
 
+const progression = useProgressionStore()
+
+// Get active boosters from progression store
+const activeBoosters = computed(() => {
+  const ids = progression.getActiveBoosterIds()
+  return ids.map((id) => getBoosterById(id)).filter((b) => b !== undefined)
+})
+
+// Personality display
+const personalityDisplay = computed(() => {
+  const p = props.run.config.personality
+  switch (p) {
+    case 'aggressive':
+      return { label: 'AGG', color: 'var(--red)' }
+    case 'greedy':
+      return { label: 'GRD', color: 'var(--amber)' }
+    case 'speedrunner':
+      return { label: 'SPD', color: 'var(--cyan)' }
+    case 'cautious':
+    default:
+      return { label: 'CAU', color: 'var(--blue)' }
+  }
+})
+
 const emit = defineEmits<{
   expand: []
   restart: []
   dismiss: []
+  kill: []
 }>()
+
+// Kill button hold state using requestAnimationFrame for smoother animation
+const KILL_HOLD_DURATION = 1000 // 1 second hold required
+const killHoldProgress = ref(0)
+let killHoldStart: number | null = null
+let killHoldRafId: number | null = null
+
+function updateKillProgress() {
+  if (killHoldStart === null) return
+
+  const elapsed = Date.now() - killHoldStart
+  killHoldProgress.value = Math.min(100, (elapsed / KILL_HOLD_DURATION) * 100)
+
+  if (elapsed >= KILL_HOLD_DURATION) {
+    emit('kill')
+    cancelKillHold()
+  } else {
+    killHoldRafId = requestAnimationFrame(updateKillProgress)
+  }
+}
+
+function startKillHold() {
+  if (props.run.state === 'dead') return
+  killHoldStart = Date.now()
+  killHoldRafId = requestAnimationFrame(updateKillProgress)
+}
+
+function cancelKillHold() {
+  killHoldStart = null
+  killHoldProgress.value = 0
+  if (killHoldRafId !== null) {
+    cancelAnimationFrame(killHoldRafId)
+    killHoldRafId = null
+  }
+}
+
+onUnmounted(() => {
+  cancelKillHold()
+})
 
 const runs = useRunsStore()
 
@@ -39,6 +106,14 @@ function handleDismiss() {
       <div class="run-info">
         <span class="run-class">{{ run.config.class }}</span>
         <span class="run-race">{{ run.config.race }}</span>
+        <span class="run-personality" :style="{ color: personalityDisplay.color }">
+          {{ personalityDisplay.label }}
+        </span>
+      </div>
+      <div class="run-boosters" v-if="activeBoosters.length > 0">
+        <span v-for="b in activeBoosters" :key="b!.id" class="booster-badge" :title="b!.name">
+          {{ b!.icon }}
+        </span>
       </div>
       <div class="run-depth">
         <span class="depth-label">D:</span>
@@ -56,20 +131,52 @@ function handleDismiss() {
         <button class="control-btn expand" title="Expand to full view" @click="handleExpand">
           &#x26F6;
         </button>
+        <button
+          class="control-btn kill"
+          :class="{ holding: killHoldProgress > 0, disabled: run.state === 'dead' }"
+          :disabled="run.state === 'dead'"
+          title="Hold to kill run"
+          @mousedown="startKillHold"
+          @mouseup="cancelKillHold"
+          @mouseleave="cancelKillHold"
+          @touchstart.prevent="startKillHold"
+          @touchend="cancelKillHold"
+          @touchcancel="cancelKillHold"
+        >
+          <span class="kill-icon">&#x2717;</span>
+          <span
+            v-if="killHoldProgress > 0"
+            class="kill-progress"
+            :style="{ width: killHoldProgress + '%' }"
+          />
+        </button>
       </div>
     </header>
 
     <div class="run-stats-bar">
-      <div class="stat-group hp-group">
-        <span class="stat-label">HP</span>
-        <ProgressBar
-          :current="run.hp"
-          :max="run.maxHp"
-          variant="hp"
-          :show-text="true"
-          size="sm"
-          class="hp-bar"
-        />
+      <div class="stat-group bars-group">
+        <div class="bar-row">
+          <span class="stat-label">HP</span>
+          <ProgressBar
+            :current="run.hp"
+            :max="run.maxHp"
+            variant="hp"
+            :show-text="true"
+            size="md"
+            class="resource-bar"
+          />
+        </div>
+        <div v-if="run.maxMp > 0" class="bar-row">
+          <span class="stat-label">MP</span>
+          <ProgressBar
+            :current="run.mp"
+            :max="run.maxMp"
+            variant="mp"
+            :show-text="true"
+            size="md"
+            class="resource-bar"
+          />
+        </div>
       </div>
       <div class="stat-group">
         <span class="stat kills">
@@ -143,6 +250,29 @@ function handleDismiss() {
   text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
 }
 
+.run-personality {
+  font-size: 10px;
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  text-shadow: 0 0 6px currentColor;
+}
+
+.run-boosters {
+  display: flex;
+  gap: 4px;
+}
+
+.booster-badge {
+  font-size: 12px;
+  padding: 2px 4px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid var(--purple);
+  border-radius: 3px;
+  color: var(--purple);
+  cursor: default;
+}
+
 .run-depth {
   display: flex;
   align-items: center;
@@ -197,6 +327,40 @@ function handleDismiss() {
   color: var(--indigo);
 }
 
+.control-btn.kill {
+  position: relative;
+  overflow: hidden;
+}
+
+.control-btn.kill:hover:not(.disabled) {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.control-btn.kill.holding {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.control-btn.kill.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.kill-icon {
+  position: relative;
+  z-index: 1;
+}
+
+.kill-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: rgba(239, 68, 68, 0.3);
+  transition: width 0.05s linear;
+}
+
 .run-stats-bar {
   display: flex;
   justify-content: space-between;
@@ -214,18 +378,30 @@ function handleDismiss() {
   gap: 12px;
 }
 
-.hp-group {
+.bars-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   flex: 1;
-  max-width: 200px;
-  gap: 8px;
+  max-width: 220px;
+  gap: 4px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
 }
 
 .stat-label {
   color: var(--text-dim);
   font-size: 10px;
+  width: 20px;
+  flex-shrink: 0;
 }
 
-.hp-bar {
+.resource-bar {
   flex: 1;
 }
 

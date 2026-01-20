@@ -4,7 +4,7 @@ import { computed } from 'vue'
 const props = defineProps<{
   current: number
   max: number
-  variant?: 'hp' | 'xp' | 'upgrade' | 'essence'
+  variant?: 'hp' | 'mp' | 'xp' | 'upgrade' | 'essence'
   showText?: boolean
   size?: 'sm' | 'md' | 'lg'
 }>()
@@ -72,6 +72,11 @@ const variantClass = computed(() => {
 .hp-low .progress-fill {
   background: var(--red);
   box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+}
+
+.mp .progress-fill {
+  background: var(--indigo);
+  box-shadow: 0 0 4px rgba(99, 102, 241, 0.4);
 }
 
 .xp .progress-fill {

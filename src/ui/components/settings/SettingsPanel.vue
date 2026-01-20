@@ -29,6 +29,9 @@ const tabs = [
 const totalEssence = computed(() => progression.globalStats.totalEssence)
 const totalRuns = computed(() => progression.globalStats.totalRuns)
 
+// Check if auto-restart upgrade is purchased
+const hasAutoRestartUpgrade = computed(() => progression.getUpgradeLevel('auto_restart') > 0)
+
 function handleExportData() {
   const data = {
     settings: settingsStore.settings,
@@ -245,15 +248,21 @@ function cancelReset() {
             </label>
           </div>
 
-          <div class="setting-row">
+          <div class="setting-row" :class="{ locked: !hasAutoRestartUpgrade }">
             <div class="setting-info">
               <span class="setting-label">Auto-Restart</span>
-              <span class="setting-desc">Automatically start new run on death</span>
+              <span v-if="hasAutoRestartUpgrade" class="setting-desc"
+                >Automatically start new run on death</span
+              >
+              <span v-else class="setting-desc locked-desc"
+                >Requires Auto Restart upgrade</span
+              >
             </div>
             <label class="toggle">
               <input
                 type="checkbox"
                 :checked="settingsStore.settings.autoRestart"
+                :disabled="!hasAutoRestartUpgrade"
                 @change="
                   settingsStore.updateSetting(
                     'autoRestart',
@@ -562,6 +571,14 @@ function cancelReset() {
 .setting-desc {
   font-size: 11px;
   color: var(--text-dim);
+}
+
+.setting-row.locked {
+  opacity: 0.6;
+}
+
+.locked-desc {
+  color: var(--amber);
 }
 
 .setting-select {

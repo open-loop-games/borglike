@@ -1,30 +1,44 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
+import { useSettingsStore } from '@/stores/settings'
 
 const progression = useProgressionStore()
+const settings = useSettingsStore()
 
-// Animation state
+// Auto-restart state
+const hasAutoRestartUpgrade = computed(() => progression.getUpgradeLevel('auto_restart') > 0)
+
+function toggleAutoRestart() {
+  if (!hasAutoRestartUpgrade.value) return
+  settings.updateSetting('autoRestart', !settings.settings.autoRestart)
+}
+
+// Animation state - CSS transition handles the timing, we just toggle the class
 const isAnimating = ref(false)
-const previousEssence = ref(progression.currency.essence)
+let animationTimeout: ReturnType<typeof setTimeout> | null = null
 
-// Watch for essence changes and trigger animation
+// Watch for essence gains and trigger animation
 watch(
   () => progression.currency.essence,
   (newVal, oldVal) => {
     if (newVal > oldVal) {
+      // Clear any existing timeout to allow rapid gains
+      if (animationTimeout) clearTimeout(animationTimeout)
       isAnimating.value = true
-      setTimeout(() => {
+      animationTimeout = setTimeout(() => {
         isAnimating.value = false
+        animationTimeout = null
       }, 500)
     }
-    previousEssence.value = newVal
   }
 )
 
 const emit = defineEmits<{
   openSettings: []
   openHelp: []
+  openRunHistory: []
+  openBestiary: []
 }>()
 
 // Debug function to add essence
@@ -37,7 +51,7 @@ function debugAddEssence() {
   <header class="app-header">
     <div class="header-left">
       <h1 class="logo">Borglike</h1>
-      <span class="tagline">Idle Angband</span>
+      <span class="tagline">Idle Angband Inspired Incremental</span>
     </div>
 
     <div class="header-center">
@@ -54,10 +68,24 @@ function debugAddEssence() {
     </div>
 
     <div class="header-right">
-      <div class="artifact-display">
-        <span class="artifact-icon">!</span>
-        <span class="artifact-value">{{ progression.currency.artifacts }}</span>
-      </div>
+      <button
+        class="auto-run-toggle"
+        :class="{
+          active: settings.settings.autoRestart,
+          locked: !hasAutoRestartUpgrade
+        }"
+        :title="hasAutoRestartUpgrade ? (settings.settings.autoRestart ? 'Auto-Run: ON' : 'Auto-Run: OFF') : 'Requires Auto Restart upgrade'"
+        @click="toggleAutoRestart"
+      >
+        <span class="toggle-icon">&#x21BB;</span>
+        <span class="toggle-label">Auto</span>
+      </button>
+      <button class="header-btn" title="Run History" @click="emit('openRunHistory')">
+        <span>&#x2261;</span>
+      </button>
+      <button class="header-btn" title="Bestiary" @click="emit('openBestiary')">
+        <span>&#x1F4D6;</span>
+      </button>
       <button class="header-btn" title="Settings" @click="emit('openSettings')">
         <span>&#x2699;</span>
       </button>
@@ -174,28 +202,52 @@ function debugAddEssence() {
   gap: 12px;
 }
 
-.artifact-display {
+.auto-run-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 6px 12px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
   border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.artifact-icon {
-  font-size: 14px;
-  font-family: var(--font-mono);
-  color: var(--amber);
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+.auto-run-toggle:hover:not(.locked) {
+  background: var(--border);
+  color: var(--text-primary);
 }
 
-.artifact-value {
-  font-family: var(--font-mono);
+.auto-run-toggle.active {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.auto-run-toggle.active .toggle-icon {
+  animation: spin 2s linear infinite;
+}
+
+.auto-run-toggle.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toggle-icon {
   font-size: 14px;
-  font-weight: bold;
-  color: var(--amber);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .header-btn {

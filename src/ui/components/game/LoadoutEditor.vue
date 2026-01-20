@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
+import { getBoosterById } from '@/game/data/boosters'
 import PanelFrame from '../common/PanelFrame.vue'
 
-defineProps<{
+const props = defineProps<{
   slot: number
 }>()
 
@@ -16,14 +17,40 @@ const emit = defineEmits<{
 
 const progression = useProgressionStore()
 
-// Selected options
-const selectedRace = ref(progression.availableRaces[0] || 'Human')
-const selectedClass = ref(progression.availableClasses[0] || 'Warrior')
-const selectedPersonality = ref<'cautious' | 'aggressive' | 'greedy' | 'speedrunner'>('cautious')
+// Load saved config for this slot (with fallbacks)
+const savedConfig = progression.getSlotConfig(props.slot)
+
+// Selected options - initialized from saved config
+const selectedRace = ref(savedConfig.race)
+const selectedClass = ref(savedConfig.class)
+const selectedPersonality = ref<Personality>(savedConfig.personality)
+
+// Booster slots - initialized from saved config
+const boosterSlot0 = ref(savedConfig.boosters[0])
+const boosterSlot1 = ref(savedConfig.boosters[1])
+
+// Sync booster slots with store when changed
+watch(boosterSlot0, (val) => progression.setActiveBooster(0, val))
+watch(boosterSlot1, (val) => progression.setActiveBooster(1, val))
+
+// Initialize active loadout from saved config on mount
+onMounted(() => {
+  progression.setActiveBooster(0, savedConfig.boosters[0])
+  progression.setActiveBooster(1, savedConfig.boosters[1])
+})
 
 // Available options
 const availableRaces = computed(() => progression.availableRaces)
 const availableClasses = computed(() => progression.availableClasses)
+
+// Unlocked boosters for selection
+const unlockedBoosters = computed(() => progression.unlockedBoosters)
+
+// Get booster info for display
+function getBoosterInfo(id: string | null) {
+  if (!id) return null
+  return getBoosterById(id)
+}
 
 const personalities = [
   { id: 'cautious', name: 'Cautious', desc: 'Retreats early, uses items freely' },
@@ -58,6 +85,14 @@ const activeBonuses = computed(() => {
 })
 
 function handleStart() {
+  // Save the config for this slot before starting
+  progression.saveSlotConfig(props.slot, {
+    race: selectedRace.value,
+    class: selectedClass.value,
+    personality: selectedPersonality.value,
+    boosters: [boosterSlot0.value, boosterSlot1.value],
+  })
+
   emit('start', {
     race: selectedRace.value,
     class: selectedClass.value,
@@ -124,6 +159,47 @@ function handleCancel() {
             <span class="personality-name">{{ p.name }}</span>
             <span class="personality-desc">{{ p.desc }}</span>
           </button>
+        </div>
+      </PanelFrame>
+
+      <!-- Booster Selection -->
+      <PanelFrame v-if="unlockedBoosters.length > 0" class="selection-section booster-section">
+        <h3>Boosters <span class="booster-hint">(max 2)</span></h3>
+        <div class="booster-slots">
+          <div class="booster-slot">
+            <span class="slot-label">Slot 1</span>
+            <select v-model="boosterSlot0" class="booster-select">
+              <option :value="null">-- None --</option>
+              <option
+                v-for="b in unlockedBoosters"
+                :key="b.id"
+                :value="b.id"
+                :disabled="b.id === boosterSlot1"
+              >
+                {{ b.icon }} {{ b.name }}
+              </option>
+            </select>
+            <span v-if="getBoosterInfo(boosterSlot0)" class="booster-desc">
+              {{ getBoosterInfo(boosterSlot0)?.description }}
+            </span>
+          </div>
+          <div class="booster-slot">
+            <span class="slot-label">Slot 2</span>
+            <select v-model="boosterSlot1" class="booster-select">
+              <option :value="null">-- None --</option>
+              <option
+                v-for="b in unlockedBoosters"
+                :key="b.id"
+                :value="b.id"
+                :disabled="b.id === boosterSlot0"
+              >
+                {{ b.icon }} {{ b.name }}
+              </option>
+            </select>
+            <span v-if="getBoosterInfo(boosterSlot1)" class="booster-desc">
+              {{ getBoosterInfo(boosterSlot1)?.description }}
+            </span>
+          </div>
         </div>
       </PanelFrame>
 
@@ -377,5 +453,74 @@ function handleCancel() {
 
 .start-icon {
   font-size: 10px;
+}
+
+/* Booster Section */
+.booster-section h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.booster-hint {
+  font-size: 10px;
+  font-weight: normal;
+  color: var(--text-dim);
+}
+
+.booster-slots {
+  display: flex;
+  gap: 16px;
+}
+
+.booster-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slot-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.booster-select {
+  padding: 8px 12px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.booster-select:hover {
+  border-color: var(--purple);
+}
+
+.booster-select:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+}
+
+.booster-select option {
+  background: var(--panel);
+  color: var(--text-primary);
+}
+
+.booster-select option:disabled {
+  color: var(--text-dim);
+}
+
+.booster-desc {
+  font-size: 10px;
+  color: var(--purple);
+  font-style: italic;
 }
 </style>

@@ -10,32 +10,49 @@ const props = defineProps<{
   height?: number
 }>()
 
-// Determine cell type based on character
-function getCellType(char: string, _color: number): string {
-  // Player
-  if (char === '@') return 'cell-player'
+// Pre-compute cell type lookup table for O(1) lookups
+const CELL_TYPE_MAP: Record<string, string> = {
+  '@': 'cell-player',
+  '.': 'cell-floor',
+  ',': 'cell-floor',
+  '#': 'cell-wall',
+  '+': 'cell-door',
+  '>': 'cell-stairs',
+  '<': 'cell-stairs',
+  '≈': 'cell-fountain',
+  '~': 'cell-fountain',
+  _: 'cell-altar',
+  P: 'cell-merchant',
+  '^': 'cell-trap',
+  $: 'cell-gold',
+  '!': 'cell-item',
+  '?': 'cell-item',
+  '/': 'cell-item',
+  '|': 'cell-item',
+  '\\': 'cell-item',
+  '(': 'cell-item',
+  ')': 'cell-item',
+  '[': 'cell-item',
+  ']': 'cell-item',
+  '=': 'cell-item',
+  '*': 'cell-item',
+  ' ': 'cell-empty',
+}
 
-  // Dungeon features
-  if (char === '.' || char === ',') return 'cell-floor'
-  if (char === '#') return 'cell-wall'
-  if (char === '+') return 'cell-door'
-  if (char === '>' || char === '<') return 'cell-stairs'
-
-  // Items (common symbols)
-  if ('!?/|\\()[]=~"$*'.includes(char)) return 'cell-item'
-
-  // Monsters (letters and some symbols)
-  if (/[a-zA-Z]/.test(char)) return 'cell-monster'
-
-  // Unknown/empty
-  if (char === ' ') return 'cell-empty'
-
+// Determine cell type - fast lookup with monster fallback
+function getCellType(char: string): string {
+  const mapped = CELL_TYPE_MAP[char]
+  if (mapped) return mapped
+  // Monsters: letters except P (merchant)
+  if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'O') || (char >= 'Q' && char <= 'Z')) {
+    return 'cell-monster'
+  }
   return 'cell-unknown'
 }
 
 // Get visibility class based on color brightness
 function getVisibilityClass(color: number): string {
-  if (color === 0 || color === 0x000000) return 'cell-unseen'
+  if (color === 0) return 'cell-unseen'
 
   // Calculate brightness from RGB
   const r = (color >> 16) & 0xff
@@ -56,13 +73,37 @@ function colorToHex(color: number): string {
 const displayWidth = computed(() => props.width || 80)
 const displayHeight = computed(() => props.height || 24)
 
-const rows = computed(() => {
-  const result: GridCell[][] = []
-  for (let y = 0; y < displayHeight.value && y < props.grid.length; y++) {
+// Precomputed cell data with classes - computed once per grid update
+interface ProcessedCell {
+  char: string
+  colorHex: string
+  typeClass: string
+  visClass: string
+}
+
+const processedRows = computed(() => {
+  const result: ProcessedCell[][] = []
+  const width = displayWidth.value
+  const height = displayHeight.value
+
+  for (let y = 0; y < height && y < props.grid.length; y++) {
     const row = props.grid[y]
-    if (row) {
-      result.push(row.slice(0, displayWidth.value))
+    if (!row) continue
+
+    const processedRow: ProcessedCell[] = []
+    const rowLen = Math.min(row.length, width)
+
+    for (let x = 0; x < rowLen; x++) {
+      const cell = row[x]
+      if (!cell) continue
+      processedRow.push({
+        char: cell.char || ' ',
+        colorHex: colorToHex(cell.color),
+        typeClass: getCellType(cell.char),
+        visClass: getVisibilityClass(cell.color),
+      })
     }
+    result.push(processedRow)
   }
   return result
 })
@@ -76,18 +117,14 @@ const rows = computed(() => {
       '--rows': displayHeight,
     }"
   >
-    <div v-for="(row, y) in rows" :key="y" class="grid-row">
+    <div v-for="(row, y) in processedRows" :key="y" class="grid-row">
       <span
         v-for="(cell, x) in row"
-        :key="x"
+        :key="`${y}-${x}`"
         class="grid-cell"
-        :class="[
-          getCellType(cell.char, cell.color),
-          getVisibilityClass(cell.color),
-          { cursor: x === cursorX && y === cursorY },
-        ]"
-        :style="{ color: colorToHex(cell.color) }"
-        >{{ cell.char || ' ' }}</span
+        :class="[cell.typeClass, cell.visClass, { cursor: x === cursorX && y === cursorY }]"
+        :style="{ color: cell.colorHex }"
+        >{{ cell.char }}</span
       >
     </div>
   </div>
@@ -150,6 +187,31 @@ const rows = computed(() => {
 .cell-stairs {
   color: var(--cyan) !important;
   text-shadow: 0 0 6px rgba(6, 182, 212, 0.6);
+}
+
+.cell-fountain {
+  color: var(--cyan) !important;
+  text-shadow: 0 0 6px rgba(6, 182, 212, 0.5);
+}
+
+.cell-altar {
+  color: var(--amber) !important;
+  text-shadow: 0 0 4px rgba(245, 158, 11, 0.4);
+}
+
+.cell-merchant {
+  color: var(--amber) !important;
+  text-shadow: 0 0 5px rgba(245, 158, 11, 0.6);
+}
+
+.cell-trap {
+  color: #ef4444 !important;
+  text-shadow: 0 0 4px rgba(239, 68, 68, 0.6);
+}
+
+.cell-gold {
+  color: #fbbf24 !important;
+  text-shadow: 0 0 5px rgba(251, 191, 36, 0.7);
 }
 
 .cell-empty {
