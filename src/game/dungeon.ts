@@ -1,125 +1,24 @@
 /**
- * Dungeon generation and utilities using rot.js
+ * Dungeon generation and utilities
  *
- * Provides level generation, tile utilities, position utilities,
- * field of view computation, and pathfinding.
+ * This module re-exports the new modular dungeon generation system
+ * while maintaining backward compatibility with existing code.
+ *
+ * For level generation, uses the dungeon/ module which provides:
+ * - Multiple generator types (classic, cavern, labyrinth)
+ * - Depth-based scaling of parameters
+ * - Door placement
+ * - Vault system
+ * - Connectivity validation
  */
 
-import { Map as RotMap, FOV, Path } from 'rot-js'
+import { FOV, Path } from 'rot-js'
 import type { DungeonLevel, Point, Tile, TileType } from './types'
-import { MAX_DEPTH } from './types'
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-const DEFAULT_WIDTH = 80
-const DEFAULT_HEIGHT = 40
-
-// ============================================================================
-// LEVEL GENERATION
-// ============================================================================
-
-/**
- * Generate a dungeon level at the specified depth
- *
- * Uses rot.js Digger algorithm to create rooms connected by corridors.
- * Places stairs up (except depth 1) and stairs down (except max depth).
- *
- * @param depth - Dungeon depth (1-50)
- * @param width - Level width (default 80)
- * @param height - Level height (default 40)
- * @returns Generated dungeon level
- */
-export function generateLevel(
-  depth: number,
-  width: number = DEFAULT_WIDTH,
-  height: number = DEFAULT_HEIGHT
-): DungeonLevel {
-  // Initialize tiles as walls
-  const tiles: Tile[][] = []
-  for (let y = 0; y < height; y++) {
-    const row: Tile[] = []
-    tiles[y] = row
-    for (let x = 0; x < width; x++) {
-      row[x] = {
-        type: 'wall',
-        explored: false,
-        visible: false,
-      }
-    }
-  }
-
-  // Use rot.js Digger to carve out rooms and corridors
-  const digger = new RotMap.Digger(width, height, {
-    roomWidth: [3, 9],
-    roomHeight: [3, 5],
-    corridorLength: [3, 10],
-    dugPercentage: 0.3,
-  })
-
-  // Callback to set floor tiles
-  digger.create((x: number, y: number, value: number) => {
-    if (value === 0) {
-      // 0 = floor (passable)
-      const row = tiles[y]
-      if (row) {
-        const tile = row[x]
-        if (tile) tile.type = 'floor'
-      }
-    }
-    // 1 = wall (already set)
-  })
-
-  // Collect floor positions for stair placement
-  const floorPositions: Point[] = []
-  for (let y = 0; y < height; y++) {
-    const row = tiles[y]
-    if (!row) continue
-    for (let x = 0; x < width; x++) {
-      const tile = row[x]
-      if (tile && tile.type === 'floor') {
-        floorPositions.push({ x, y })
-      }
-    }
-  }
-
-  // Place stairs
-  let stairsUp: Point | null = null
-  let stairsDown: Point | null = null
-
-  if (floorPositions.length > 0) {
-    // Shuffle floor positions for random placement
-    shuffleArray(floorPositions)
-
-    // Place stairs up (except on depth 1)
-    if (depth > 1 && floorPositions.length > 0) {
-      const upPos = floorPositions.pop()!
-      stairsUp = upPos
-      const upRow = tiles[upPos.y]
-      const upTile = upRow?.[upPos.x]
-      if (upTile) upTile.type = 'stairs_up'
-    }
-
-    // Place stairs down (except on max depth)
-    if (depth < MAX_DEPTH && floorPositions.length > 0) {
-      const downPos = floorPositions.pop()!
-      stairsDown = downPos
-      const downRow = tiles[downPos.y]
-      const downTile = downRow?.[downPos.x]
-      if (downTile) downTile.type = 'stairs_down'
-    }
-  }
-
-  return {
-    depth,
-    width,
-    height,
-    tiles,
-    stairsUp,
-    stairsDown,
-  }
-}
+// Re-export generateLevel from new module
+export { generateLevel, generateLevelWithInfo } from './dungeon/index'
+export type { GeneratorType, DepthProfile, RoomData, VaultPlacement } from './dungeon/index'
+export { getDepthProfile, selectGenerator, VAULTS } from './dungeon/index'
 
 // ============================================================================
 // TILE UTILITIES
@@ -127,11 +26,6 @@ export function generateLevel(
 
 /**
  * Get a tile at the specified position
- *
- * @param level - The dungeon level
- * @param x - X coordinate
- * @param y - Y coordinate
- * @returns The tile or null if out of bounds
  */
 export function getTile(level: DungeonLevel, x: number, y: number): Tile | null {
   if (x < 0 || x >= level.width || y < 0 || y >= level.height) {
@@ -143,11 +37,6 @@ export function getTile(level: DungeonLevel, x: number, y: number): Tile | null 
 
 /**
  * Set the type of a tile at the specified position
- *
- * @param level - The dungeon level
- * @param x - X coordinate
- * @param y - Y coordinate
- * @param type - The new tile type
  */
 export function setTile(level: DungeonLevel, x: number, y: number, type: TileType): void {
   if (x < 0 || x >= level.width || y < 0 || y >= level.height) {
@@ -160,9 +49,6 @@ export function setTile(level: DungeonLevel, x: number, y: number, type: TileTyp
 
 /**
  * Check if a tile is walkable (can be moved onto)
- *
- * @param tile - The tile to check
- * @returns True if walkable (floor, open door, stairs)
  */
 export function isWalkable(tile: Tile): boolean {
   return (
@@ -175,9 +61,6 @@ export function isWalkable(tile: Tile): boolean {
 
 /**
  * Check if a tile blocks light/vision
- *
- * @param tile - The tile to check
- * @returns True if opaque (wall, closed door)
  */
 export function isOpaque(tile: Tile): boolean {
   return tile.type === 'wall' || tile.type === 'door_closed'
@@ -189,10 +72,6 @@ export function isOpaque(tile: Tile): boolean {
 
 /**
  * Find a random walkable position on the level
- *
- * @param level - The dungeon level
- * @returns A random walkable position
- * @throws Error if no walkable positions exist
  */
 export function findOpenPosition(level: DungeonLevel): Point {
   const positions = findOpenPositions(level, 1)
@@ -204,10 +83,6 @@ export function findOpenPosition(level: DungeonLevel): Point {
 
 /**
  * Find multiple random walkable positions on the level
- *
- * @param level - The dungeon level
- * @param count - Number of positions to find
- * @returns Array of walkable positions (may be fewer than requested)
  */
 export function findOpenPositions(level: DungeonLevel, count: number): Point[] {
   const walkable: Point[] = []
@@ -230,11 +105,6 @@ export function findOpenPositions(level: DungeonLevel, count: number): Point[] {
 
 /**
  * Get all 8 adjacent positions (including diagonals)
- *
- * Note: Does not check bounds or walkability
- *
- * @param pos - The center position
- * @returns Array of 8 adjacent positions
  */
 export function getAdjacentPositions(pos: Point): Point[] {
   return [
@@ -251,10 +121,6 @@ export function getAdjacentPositions(pos: Point): Point[] {
 
 /**
  * Calculate Euclidean distance between two points
- *
- * @param a - First point
- * @param b - Second point
- * @returns Euclidean distance
  */
 export function distance(a: Point, b: Point): number {
   const dx = b.x - a.x
@@ -264,10 +130,6 @@ export function distance(a: Point, b: Point): number {
 
 /**
  * Calculate Manhattan distance between two points
- *
- * @param a - First point
- * @param b - Second point
- * @returns Manhattan distance
  */
 export function manhattanDistance(a: Point, b: Point): number {
   return Math.abs(b.x - a.x) + Math.abs(b.y - a.y)
@@ -282,11 +144,6 @@ export function manhattanDistance(a: Point, b: Point): number {
  *
  * Uses rot.js PreciseShadowcasting algorithm.
  * Updates tile.visible and tile.explored flags.
- *
- * @param level - The dungeon level
- * @param origin - The origin point for FOV
- * @param radius - Vision radius
- * @returns Set of visible tile keys (e.g., "10,20")
  */
 export function computeFOV(level: DungeonLevel, origin: Point, radius: number): Set<string> {
   const visible = new Set<string>()
@@ -333,11 +190,6 @@ export function computeFOV(level: DungeonLevel, origin: Point, radius: number): 
 
 /**
  * Find a path between two points using A* algorithm
- *
- * @param level - The dungeon level
- * @param from - Starting position
- * @param to - Target position
- * @returns Array of points from start to end (empty if no path)
  */
 export function findPath(level: DungeonLevel, from: Point, to: Point): Point[] {
   const path: Point[] = []
@@ -364,6 +216,44 @@ export function findPath(level: DungeonLevel, from: Point, to: Point): Point[] {
   const astar = new Path.AStar(to.x, to.y, passableCallback, { topology: 8 })
 
   // Compute path
+  astar.compute(from.x, from.y, (x: number, y: number) => {
+    path.push({ x, y })
+  })
+
+  return path
+}
+
+/**
+ * Find a path that can pass through closed doors
+ * Used by bot AI since it can open doors by bumping into them
+ */
+export function findPathThroughDoors(level: DungeonLevel, from: Point, to: Point): Point[] {
+  const path: Point[] = []
+
+  const startTile = getTile(level, from.x, from.y)
+  const endTile = getTile(level, to.x, to.y)
+
+  if (!startTile || !endTile) {
+    return []
+  }
+
+  // Allow starting from walkable tiles, allow ending at doors or walkable
+  const startOk = isWalkable(startTile)
+  const endOk = isWalkable(endTile) || endTile.type === 'door_closed'
+
+  if (!startOk || !endOk) {
+    return []
+  }
+
+  // Passability callback that includes closed doors
+  const passableCallback = (x: number, y: number): boolean => {
+    const tile = getTile(level, x, y)
+    if (!tile) return false
+    return isWalkable(tile) || tile.type === 'door_closed'
+  }
+
+  const astar = new Path.AStar(to.x, to.y, passableCallback, { topology: 8 })
+
   astar.compute(from.x, from.y, (x: number, y: number) => {
     path.push({ x, y })
   })
