@@ -1,0 +1,381 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useProgressionStore } from '@/stores/progression'
+import PanelFrame from '../common/PanelFrame.vue'
+
+defineProps<{
+  slot: number
+}>()
+
+type Personality = 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
+
+const emit = defineEmits<{
+  start: [config: { race: string; class: string; personality: Personality }]
+  cancel: []
+}>()
+
+const progression = useProgressionStore()
+
+// Selected options
+const selectedRace = ref(progression.availableRaces[0] || 'Human')
+const selectedClass = ref(progression.availableClasses[0] || 'Warrior')
+const selectedPersonality = ref<'cautious' | 'aggressive' | 'greedy' | 'speedrunner'>('cautious')
+
+// Available options
+const availableRaces = computed(() => progression.availableRaces)
+const availableClasses = computed(() => progression.availableClasses)
+
+const personalities = [
+  { id: 'cautious', name: 'Cautious', desc: 'Retreats early, uses items freely' },
+  { id: 'aggressive', name: 'Aggressive', desc: 'Fights to low HP, hoards items' },
+  { id: 'greedy', name: 'Greedy', desc: 'Prioritizes gold/items over safety' },
+  { id: 'speedrunner', name: 'Speedrunner', desc: 'Beelines for stairs' },
+] as const
+
+// Bonuses from upgrades
+const activeBonuses = computed(() => {
+  const bonuses: { name: string; value: string }[] = []
+
+  const hpBonus = progression.getUpgradeEffectValue('starting_hp')
+  if (hpBonus > 0) bonuses.push({ name: 'Starting HP', value: `+${hpBonus}` })
+
+  const strBonus = progression.getUpgradeEffectValue('starting_str')
+  if (strBonus > 0) bonuses.push({ name: 'Strength', value: `+${strBonus}` })
+
+  const dexBonus = progression.getUpgradeEffectValue('starting_dex')
+  if (dexBonus > 0) bonuses.push({ name: 'Dexterity', value: `+${dexBonus}` })
+
+  const essenceBonus = progression.getUpgradeEffectValue('essence_boost')
+  if (essenceBonus > 0) bonuses.push({ name: 'Essence Gain', value: `+${essenceBonus}%` })
+
+  const goldBonus = progression.getUpgradeEffectValue('gold_boost')
+  if (goldBonus > 0) bonuses.push({ name: 'Gold Find', value: `+${goldBonus}%` })
+
+  const xpBonus = progression.getUpgradeEffectValue('xp_boost')
+  if (xpBonus > 0) bonuses.push({ name: 'XP Gain', value: `+${xpBonus}%` })
+
+  return bonuses
+})
+
+function handleStart() {
+  emit('start', {
+    race: selectedRace.value,
+    class: selectedClass.value,
+    personality: selectedPersonality.value,
+  })
+}
+
+function handleCancel() {
+  emit('cancel')
+}
+</script>
+
+<template>
+  <div class="loadout-editor">
+    <header class="editor-header">
+      <h2>Configure Run</h2>
+      <span class="slot-badge">Slot {{ slot + 1 }}</span>
+    </header>
+
+    <div class="editor-content">
+      <!-- Race Selection -->
+      <PanelFrame class="selection-section">
+        <h3>Race</h3>
+        <div class="option-grid">
+          <button
+            v-for="race in availableRaces"
+            :key="race"
+            class="option-btn"
+            :class="{ active: selectedRace === race }"
+            @click="selectedRace = race"
+          >
+            {{ race }}
+          </button>
+        </div>
+      </PanelFrame>
+
+      <!-- Class Selection -->
+      <PanelFrame class="selection-section">
+        <h3>Class</h3>
+        <div class="option-grid">
+          <button
+            v-for="cls in availableClasses"
+            :key="cls"
+            class="option-btn"
+            :class="{ active: selectedClass === cls }"
+            @click="selectedClass = cls"
+          >
+            {{ cls }}
+          </button>
+        </div>
+      </PanelFrame>
+
+      <!-- Personality Selection -->
+      <PanelFrame class="selection-section">
+        <h3>Bot Personality</h3>
+        <div class="personality-list">
+          <button
+            v-for="p in personalities"
+            :key="p.id"
+            class="personality-btn"
+            :class="{ active: selectedPersonality === p.id }"
+            @click="selectedPersonality = p.id"
+          >
+            <span class="personality-name">{{ p.name }}</span>
+            <span class="personality-desc">{{ p.desc }}</span>
+          </button>
+        </div>
+      </PanelFrame>
+
+      <!-- Active Bonuses -->
+      <PanelFrame v-if="activeBonuses.length > 0" class="bonuses-section">
+        <h3>Active Bonuses</h3>
+        <div class="bonus-list">
+          <div v-for="bonus in activeBonuses" :key="bonus.name" class="bonus-item">
+            <span class="bonus-name">{{ bonus.name }}</span>
+            <span class="bonus-value">{{ bonus.value }}</span>
+          </div>
+        </div>
+      </PanelFrame>
+    </div>
+
+    <footer class="editor-footer">
+      <button class="cancel-btn" @click="handleCancel">Cancel</button>
+      <button class="start-btn" @click="handleStart">
+        <span class="start-icon">&#x25B6;</span>
+        Start Run
+      </button>
+    </footer>
+  </div>
+</template>
+
+<style scoped>
+.loadout-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--panel);
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-header h2 {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.slot-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.editor-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.selection-section {
+  padding: 16px !important;
+}
+
+.selection-section h3 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 12px;
+}
+
+.option-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option-btn {
+  padding: 8px 16px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.option-btn:hover {
+  border-color: var(--indigo);
+  color: var(--text-primary);
+}
+
+.option-btn.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--indigo);
+  color: var(--indigo);
+  text-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+.personality-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.personality-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.personality-btn:hover {
+  border-color: var(--purple);
+}
+
+.personality-btn.active {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: var(--purple);
+}
+
+.personality-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.personality-btn.active .personality-name {
+  color: var(--purple);
+  text-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
+}
+
+.personality-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.bonuses-section {
+  padding: 16px !important;
+}
+
+.bonuses-section h3 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 12px;
+}
+
+.bonus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bonus-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.bonus-item:last-child {
+  border-bottom: none;
+}
+
+.bonus-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bonus-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+}
+
+.editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--elevated);
+  border-top: 1px solid var(--border);
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+.start-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: var(--indigo);
+  border: 1px solid var(--indigo);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.start-btn:hover {
+  background: #4f46e5;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+}
+
+.start-icon {
+  font-size: 10px;
+}
+</style>
