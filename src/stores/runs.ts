@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { RunConfig, AngbandEvent } from '../types'
+import type { RunStats } from '@/types/progression'
+import { useSettingsStore } from './settings'
 
 export interface ActiveRun {
   id: string
@@ -14,21 +16,46 @@ export interface ActiveRun {
   depth: number
   hp: number
   maxHp: number
+  mp: number
+  maxMp: number
   gold: number
   xp: number
   kills: number
   turns: number
 
+  // Character info
+  level: number
+
+  // Equipment & inventory
+  equipment: Partial<Record<EquipSlot, DisplayItem>>
+  inventory: DisplayItem[]
+
   // Grid state (80x24)
   grid: GridCell[][]
   cursorX: number
   cursorY: number
+
+  // Final run stats (set when run ends)
+  finalStats?: RunStats
 }
 
 export interface GridCell {
   char: string
   color: number
 }
+
+export interface DisplayItem {
+  id: string
+  name: string
+  char: string        // ASCII display char: ), [, !, ?, etc.
+  color: number       // Hex color based on tier/artifact
+  enchantment: number
+  isArtifact: boolean
+  tier: number
+}
+
+export type EquipSlot = 'weapon' | 'bow' | 'armor' | 'shield' | 'helm' |
+                        'gloves' | 'boots' | 'ring1' | 'ring2' | 'amulet' | 'light'
 
 function createEmptyGrid(): GridCell[][] {
   return Array.from({ length: 24 }, () =>
@@ -52,21 +79,27 @@ export const useRunsStore = defineStore('runs', () => {
 
   function createRun(slot: number, config: RunConfig): string {
     const id = `run-${Date.now()}-${slot}`
+    const settings = useSettingsStore()
 
     const run: ActiveRun = {
       id,
       slot,
       config,
       state: 'starting',
-      turbo: false,
+      turbo: settings.settings.turboByDefault,
       startTime: Date.now(),
       depth: 0,
       hp: 0,
       maxHp: 0,
+      mp: 0,
+      maxMp: 0,
       gold: 0,
       xp: 0,
       kills: 0,
       turns: 0,
+      level: 1,
+      equipment: {},
+      inventory: [],
       grid: createEmptyGrid(),
       cursorX: 0,
       cursorY: 0,
@@ -106,6 +139,10 @@ export const useRunsStore = defineStore('runs', () => {
       case 'hp':
         run.hp = event.current
         run.maxHp = event.max
+        break
+      case 'mp':
+        run.mp = event.current
+        run.maxMp = event.max
         break
       case 'gold':
         run.gold = event.total
@@ -173,6 +210,14 @@ export const useRunsStore = defineStore('runs', () => {
     }
   }
 
+  // Set final run stats (called when run ends)
+  function setRunStats(runId: string, stats: RunStats) {
+    const run = runs.value.get(runId)
+    if (run) {
+      run.finalStats = stats
+    }
+  }
+
   return {
     runs,
     activeSlots,
@@ -192,5 +237,6 @@ export const useRunsStore = defineStore('runs', () => {
     toggleFocus,
     clearFocus,
     toggleTurbo,
+    setRunStats,
   }
 })

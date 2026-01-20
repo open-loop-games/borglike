@@ -9,6 +9,7 @@
 export type AngbandEvent =
   | { type: 'depth'; level: number }
   | { type: 'hp'; current: number; max: number }
+  | { type: 'mp'; current: number; max: number }
   | { type: 'gold'; total: number }
   | { type: 'xp'; current: number }
   | { type: 'kill'; monsterId?: string; monsterName?: string }

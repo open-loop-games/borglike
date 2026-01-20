@@ -63,19 +63,17 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  // Update a single setting
+  // Update a single setting (watcher handles persistence)
   function updateSetting<K extends keyof GameSettings>(key: K, value: GameSettings[K]) {
     settings.value[key] = value
-    saveSettings()
   }
 
-  // Reset to defaults
+  // Reset to defaults (watcher handles persistence)
   function resetSettings() {
     settings.value = { ...DEFAULT_SETTINGS }
-    saveSettings()
   }
 
-  // Watch for changes and auto-save
+  // Watch for changes and auto-save (single source of truth for persistence)
   watch(settings, saveSettings, { deep: true })
 
   // Load on init

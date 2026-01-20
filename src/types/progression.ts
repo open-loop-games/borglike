@@ -12,6 +12,20 @@ export interface UnlockState {
   classes: Set<string>
   runSlots: number // 1-4
   upgrades: Set<string>
+  boosters: Set<string> // Unlocked booster IDs
+}
+
+/** Loadout for a run - selected boosters (max 2) */
+export interface RunLoadout {
+  boosters: [string | null, string | null] // Max 2 active boosters
+}
+
+/** Per-slot configuration - remembers last used settings */
+export interface SlotConfig {
+  race: string
+  class: string
+  personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
+  boosters: [string | null, string | null]
 }
 
 export interface Upgrade {
@@ -38,6 +52,20 @@ export interface UpgradeEffect {
   value: number
 }
 
+/** Equipment snapshot for run history display */
+export interface EquipmentSnapshot {
+  slot: string // EquipSlot name
+  name: string // Item or artifact name
+  enchantment: number // +1, +2, etc.
+  isArtifact: boolean
+}
+
+/** Bestiary entry tracking kills per monster */
+export interface BestiaryEntry {
+  kills: number
+  firstKillTime: number
+}
+
 export interface RunStats {
   id: string
   startTime: number
@@ -50,6 +78,11 @@ export interface RunStats {
   xpEarned: number
   deathCause?: string
   essenceEarned: number
+  // Extended fields for run history
+  equipment?: EquipmentSnapshot[]
+  inventory?: string[] // Item names at death
+  turns?: number // Total turns played
+  personality?: string // Bot personality used
 }
 
 export interface GlobalStats {
