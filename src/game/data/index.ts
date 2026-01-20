@@ -74,3 +74,98 @@ export {
   getLateGameArtifacts,
   type ArtifactTemplate,
 } from './artifacts'
+
+// Gold
+export {
+  GOLD_PILES,
+  selectGoldPile,
+  rollGoldValue,
+  getDefaultGoldDrop,
+  rollMonsterGold,
+  type GoldPileTemplate,
+  type MonsterGoldDrop,
+} from './gold'
+
+// Features (Fountains & Altars)
+export {
+  FOUNTAINS,
+  ALTARS,
+  getFountainById,
+  getAltarById,
+  getFountainsForDepth,
+  getAltarsForDepth,
+  selectFountain,
+  selectAltar,
+  type FountainTemplate,
+  type AltarTemplate,
+} from './features'
+
+// Merchants
+export {
+  MERCHANTS,
+  getMerchantsForDepth,
+  selectMerchant,
+  getMerchantById,
+  getDialogue,
+  type MerchantTemplate,
+  type MerchantDialogue,
+  type ShopType,
+} from './merchants'
+
+// Traps
+export {
+  TRAPS,
+  getTrapsForDepth,
+  selectTrap,
+  getTrapById,
+  type TrapTemplate,
+  type TrapEffect,
+} from './traps'
+
+// Upgrades
+export {
+  upgrades,
+  getUpgradeById,
+  calculateUpgradeCost,
+  calculateUpgradeEffect,
+  type UpgradeDefinition,
+} from './upgrades'
+
+// Boosters
+export {
+  boosters,
+  boostersByCategory,
+  getBoosterById,
+  canUnlockBooster,
+  getBoostersDependingOn,
+  type BoosterDefinition,
+  type BoosterCategory,
+  type BoosterEffect,
+} from './boosters'
+
+// Spells
+export {
+  SPELLS,
+  ALL_SPELLS,
+  getSpellById,
+  getSpellsBySchool,
+  getSpellsByMaxLevel,
+  getSchoolStat,
+  type SpellTemplate,
+  type SpellBuff,
+  type SpellDebuff,
+} from './spells'
+
+// Class Spell Lists
+export {
+  CLASS_SPELL_LISTS,
+  NON_CASTER_CLASSES,
+  getClassSpellList,
+  classCanCast,
+  getSpellsForLevel,
+  getSpellIdsForLevel,
+  getNewSpellsAtLevel,
+  getClassPrimarySchool,
+  type ClassSpellEntry,
+  type ClassSpellList,
+} from './class-spells'

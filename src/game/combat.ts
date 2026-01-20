@@ -5,7 +5,7 @@
  * Functions are pure where possible - actual state mutation happens in the game loop.
  */
 
-import type { Character, Monster } from './types'
+import type { Character, Monster, ResistanceType } from './types'
 
 // ============================================================================
 // TYPES
@@ -94,6 +94,46 @@ export function getDefenderStats(entity: Character | Monster): DefenderStats {
 }
 
 // ============================================================================
+// STATUS EFFECT BONUSES
+// ============================================================================
+
+/**
+ * Get hit bonus from status effects (heroism, blessing)
+ */
+export function getStatusHitBonus(character: Character): number {
+  let bonus = 0
+  for (const e of character.statusEffects) {
+    if (e.type === 'heroism' || e.type === 'blessing') bonus += e.value
+  }
+  return bonus
+}
+
+/**
+ * Get damage bonus from status effects (berserk)
+ */
+export function getStatusDamageBonus(character: Character): number {
+  const berserk = character.statusEffects.find((e) => e.type === 'berserk')
+  return berserk ? Math.floor(berserk.value * 0.5) : 0
+}
+
+/**
+ * Get AC bonus from status effects (blessing)
+ */
+export function getStatusACBonus(character: Character): number {
+  const blessing = character.statusEffects.find((e) => e.type === 'blessing')
+  return blessing?.value ?? 0
+}
+
+/**
+ * Get total resistance including temporary resistances
+ */
+export function getTotalResistance(character: Character, type: ResistanceType): number {
+  const base = character.resistances[type] ?? 0
+  const temp = character.tempResistances.find((r) => r.type === type)
+  return base + (temp?.value ?? 0)
+}
+
+// ============================================================================
 // COMBAT RESOLUTION
 // ============================================================================
 
@@ -104,17 +144,37 @@ export function getDefenderStats(entity: Character | Monster): DefenderStats {
  * Damage: (attackerDamage - defenderArmor/2) * variance (minimum 1)
  * Variance: damage * (0.8 + Math.random() * 0.4) for +/-20%
  * Critical: 5% chance for double damage
+ * Resistance: If defender has resistance to the damage type, damage is reduced
  *
  * @param attacker - The attacking entity
  * @param defender - The defending entity
+ * @param abilityType - Optional damage type for resistance calculation (e.g., 'POISON', 'FIRE')
  * @returns AttackResult with hit, damage, critical, and killed flags
  */
-export function attack(attacker: Character | Monster, defender: Character | Monster): AttackResult {
+export function attack(
+  attacker: Character | Monster,
+  defender: Character | Monster,
+  abilityType?: ResistanceType
+): AttackResult {
   const attackerStats = getAttackerStats(attacker)
   const defenderStats = getDefenderStats(defender)
 
+  // Apply status effect bonuses
+  let accuracyBonus = 0
+  let damageBonus = 0
+  let defenderACBonus = 0
+
+  if (isCharacter(attacker)) {
+    accuracyBonus = getStatusHitBonus(attacker)
+    damageBonus = getStatusDamageBonus(attacker)
+  }
+  if (isCharacter(defender)) {
+    defenderACBonus = getStatusACBonus(defender)
+  }
+
   // Calculate hit chance (clamped between 5% and 95%)
-  const baseHitChance = 50 + attackerStats.accuracy - defenderStats.evasion
+  const baseHitChance =
+    50 + attackerStats.accuracy + accuracyBonus - defenderStats.evasion - defenderACBonus
   const hitChance = Math.max(5, Math.min(95, baseHitChance))
 
   // Roll for hit
@@ -131,7 +191,8 @@ export function attack(attacker: Character | Monster, defender: Character | Mons
   }
 
   // Calculate base damage (minimum 1)
-  const baseDamage = Math.max(1, attackerStats.damage - defenderStats.armor / 2)
+  const effectiveArmor = defenderStats.armor + defenderACBonus
+  const baseDamage = Math.max(1, attackerStats.damage + damageBonus - effectiveArmor / 2)
 
   // Apply variance (+/- 20%)
   const variance = 0.8 + Math.random() * 0.4
@@ -145,8 +206,24 @@ export function attack(attacker: Character | Monster, defender: Character | Mons
     damage *= 2
   }
 
-  // Ensure minimum damage of 1 on a hit
-  damage = Math.max(1, damage)
+  // Apply resistance if defender is a character with resistances
+  if (abilityType && isCharacter(defender)) {
+    const resist = getTotalResistance(defender, abilityType)
+    // Positive resist = damage reduction (100 = immune), negative = vulnerability
+    damage = Math.floor(damage * (1 - resist / 100))
+    damage = Math.max(0, damage) // Can't heal from resistance
+  }
+
+  // Ensure minimum damage of 1 on a hit (unless fully immune)
+  if (abilityType && isCharacter(defender)) {
+    const resist = getTotalResistance(defender, abilityType)
+    if (resist < 100) {
+      damage = Math.max(1, damage)
+    }
+    // If immune (100+), damage can be 0
+  } else {
+    damage = Math.max(1, damage)
+  }
 
   // Check if defender would be killed
   const defenderHp = defender.hp

@@ -12,6 +12,11 @@ import type { MonsterTemplate } from './data/monsters'
 import type { ItemTemplate } from './data/items'
 import type { ArtifactTemplate } from './data/artifacts'
 import type { UpgradeBonuses } from './upgrade-effects'
+import type { BoosterBonuses } from './booster-effects'
+import type { FountainTemplate, AltarTemplate } from './data/features'
+import type { MerchantTemplate } from './data/merchants'
+import type { GoldPileTemplate } from './data/gold'
+import type { TrapTemplate } from './data/traps'
 
 // Re-export data types
 export type {
@@ -23,6 +28,12 @@ export type {
   ItemTemplate,
   ArtifactTemplate,
   UpgradeBonuses,
+  BoosterBonuses,
+  FountainTemplate,
+  AltarTemplate,
+  MerchantTemplate,
+  GoldPileTemplate,
+  TrapTemplate,
 }
 
 // ============================================================================
@@ -81,7 +92,16 @@ export function getDirectionFromDelta(dx: number, dy: number): Direction | null 
 // ============================================================================
 
 /** Tile types in the dungeon */
-export type TileType = 'wall' | 'floor' | 'door_closed' | 'door_open' | 'stairs_down' | 'stairs_up'
+export type TileType =
+  | 'wall'
+  | 'floor'
+  | 'door_closed'
+  | 'door_open'
+  | 'stairs_down'
+  | 'stairs_up'
+  | 'fountain'
+  | 'fountain_empty'
+  | 'altar'
 
 /** A single tile in the dungeon */
 export interface Tile {
@@ -98,6 +118,54 @@ export interface DungeonLevel {
   tiles: Tile[][]
   stairsUp: Point | null
   stairsDown: Point | null
+}
+
+// ============================================================================
+// RESISTANCES
+// ============================================================================
+
+/** Types of damage/effects that can be resisted */
+export type ResistanceType =
+  | 'POISON'
+  | 'FIRE'
+  | 'COLD'
+  | 'ACID'
+  | 'LIGHTNING'
+  | 'LIGHT'
+  | 'DARK'
+  | 'DRAIN'
+
+/**
+ * Resistance values for different damage types
+ * 0 = none, 50 = half damage, 100 = immune, -50/-100 = vulnerable
+ */
+export type Resistances = Partial<Record<ResistanceType, number>>
+
+// ============================================================================
+// STATUS EFFECTS
+// ============================================================================
+
+/** Types of temporary status effects */
+export type StatusEffectType = 'speed' | 'heroism' | 'berserk' | 'blessing' | 'protection'
+
+/** A temporary status effect on the character */
+export interface StatusEffect {
+  type: StatusEffectType
+  turnsRemaining: number
+  value: number
+}
+
+/** A temporary resistance granted by consumables */
+export interface TempResistance {
+  type: ResistanceType
+  turnsRemaining: number
+  value: number
+}
+
+/** Poison damage over time status */
+export interface PoisonStatus {
+  damagePerTurn: number
+  turnsRemaining: number
 }
 
 // ============================================================================
@@ -152,6 +220,12 @@ export interface Item {
   identified: boolean
   /** Is this an artifact? */
   artifact: ArtifactTemplate | null
+  /** Shop price (set when item is from merchant) */
+  shopPrice?: number
+  /** For gold items: the gold pile template */
+  goldTemplate?: GoldPileTemplate
+  /** For gold items: pre-rolled gold value */
+  goldValue?: number
 }
 
 /** Item on the ground with position information */
@@ -192,6 +266,14 @@ export interface Character {
   // Combat derived stats
   combat: CombatStats
 
+  // Resistances (from race + equipment)
+  resistances: Resistances
+
+  // Status effects
+  statusEffects: StatusEffect[]
+  tempResistances: TempResistance[]
+  poison: PoisonStatus | null
+
   // Inventory
   equipment: Equipment
   inventory: Item[]
@@ -203,6 +285,13 @@ export interface Character {
 
   // State
   isDead: boolean
+
+  // Upgrade bonuses (stored for recalculation on level up/equip)
+  upgradeBonuses?: UpgradeBonuses
+
+  // Spells
+  knownSpells: string[]
+  spellCooldowns: Record<string, number> // spellId -> turn when spell becomes available
 }
 
 // ============================================================================
@@ -239,6 +328,42 @@ export interface RunStats {
   deepestDepth: number
   startTime: number
   endTime: number | null
+  monsterKills: Record<string, number> // monster name → kill count
+}
+
+/** Active fountain state */
+export interface FountainState {
+  template: FountainTemplate
+  position: Point
+  usesRemaining: number
+}
+
+/** Active altar state */
+export interface AltarState {
+  template: AltarTemplate
+  position: Point
+}
+
+/** Active merchant state */
+export interface MerchantState {
+  template: MerchantTemplate
+  position: Point
+  /** Items for sale */
+  inventory: Item[]
+  /** Gold the merchant has for buying items */
+  gold: number
+}
+
+/** Active trap state */
+export interface TrapState {
+  template: TrapTemplate
+  position: Point
+  /** Has the trap been revealed to the player? */
+  revealed: boolean
+  /** Has the trap been triggered? */
+  triggered: boolean
+  /** Turn when trap will rearm (null = won't rearm or already ready) */
+  rearmTurn: number | null
 }
 
 /** Complete game state for a single run */
@@ -259,6 +384,12 @@ export interface GameState {
   monsters: Monster[]
   items: GroundItem[] // Items on the ground
 
+  // Features on current level (keyed by "x,y")
+  fountains: Map<string, FountainState>
+  altars: Map<string, AltarState>
+  merchants: MerchantState[]
+  traps: Map<string, TrapState>
+
   // Game state
   turn: number
   isRunning: boolean
@@ -273,6 +404,12 @@ export interface GameState {
 
   // Meta-progression bonuses (from upgrades)
   upgradeBonuses?: UpgradeBonuses
+
+  // Per-run booster bonuses
+  boosterBonuses?: BoosterBonuses
+
+  // Second Wind tracking (auto-heal once when critical)
+  usedSecondWind?: boolean
 }
 
 /** A message in the game log */
@@ -281,6 +418,26 @@ export interface GameMessage {
   text: string
   type: 'info' | 'combat' | 'item' | 'danger' | 'good'
 }
+
+// ============================================================================
+// SPELLS
+// ============================================================================
+
+/** Spell schools - determine which stat affects power */
+export type SpellSchool = 'arcane' | 'divine' | 'nature' | 'shadow'
+
+/** Types of spell effects */
+export type SpellEffectType =
+  | 'damage'
+  | 'aoe_damage'
+  | 'heal'
+  | 'buff'
+  | 'debuff'
+  | 'lifedrain'
+  | 'teleport'
+
+/** Damage types for spells */
+export type SpellDamageType = 'fire' | 'cold' | 'lightning' | 'holy' | 'dark' | 'nature' | 'arcane'
 
 // ============================================================================
 // ACTIONS
@@ -298,6 +455,14 @@ export type GameAction =
   | { type: 'descend' }
   | { type: 'ascend' }
   | { type: 'wait' }
+  // Feature interactions
+  | { type: 'use_fountain' }
+  | { type: 'use_altar' }
+  // Merchant interactions
+  | { type: 'shop_buy'; merchantIndex: number; itemIndex: number }
+  | { type: 'shop_sell'; merchantIndex: number; inventoryIndex: number }
+  // Spell casting
+  | { type: 'cast'; spellId: string; targetId?: string }
 
 /** Result of processing an action */
 export interface ActionResult {
@@ -360,6 +525,7 @@ export interface RunConfig {
   seed?: number // Optional seed for reproducibility
   botPersonality?: BotPersonality
   upgradeBonuses?: UpgradeBonuses // Meta-progression bonuses
+  boosterBonuses?: BoosterBonuses // Per-run booster bonuses
 }
 
 // ============================================================================

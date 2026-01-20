@@ -5,11 +5,14 @@
  * All functions are pure where possible and properly typed.
  */
 
-import type { Character, Stats, CombatStats, Item, EquipSlot } from './types'
+import type { Character, Stats, CombatStats, Item, EquipSlot, Resistances } from './types'
 import { getRaceById, getClassById, calculateHitdie } from './data/index'
 import { xpForLevel } from '../core/formulas'
 import type { UpgradeBonuses } from './upgrade-effects'
 import { DEFAULT_BONUSES } from './upgrade-effects'
+import type { BoosterBonuses } from './booster-effects'
+import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
+import { getSpellIdsForLevel, getNewSpellsAtLevel } from './data/class-spells'
 
 // ============================================================================
 // CONSTANTS
@@ -112,10 +115,12 @@ export function createCharacter(config: {
   classId: string
   name?: string
   upgradeBonuses?: UpgradeBonuses
+  boosterBonuses?: BoosterBonuses
 }): Character {
   const race = getRaceById(config.raceId)
   const gameClass = getClassById(config.classId)
   const bonuses = config.upgradeBonuses ?? DEFAULT_BONUSES
+  const boosterBonuses = config.boosterBonuses ?? DEFAULT_BOOSTER_BONUSES
 
   if (!race) {
     throw new Error(`Invalid race ID: ${config.raceId}`)
@@ -124,13 +129,13 @@ export function createCharacter(config: {
     throw new Error(`Invalid class ID: ${config.classId}`)
   }
 
-  // Calculate base stats: BASE_STAT + race modifiers + class modifiers
+  // Calculate base stats: BASE_STAT + race modifiers + class modifiers + booster bonuses
   const baseStats: Stats = {
-    str: BASE_STAT + race.stats.str + gameClass.stats.str,
-    int: BASE_STAT + race.stats.int + gameClass.stats.int,
-    wis: BASE_STAT + race.stats.wis + gameClass.stats.wis,
-    dex: BASE_STAT + race.stats.dex + gameClass.stats.dex,
-    con: BASE_STAT + race.stats.con + gameClass.stats.con,
+    str: BASE_STAT + race.stats.str + gameClass.stats.str + boosterBonuses.strBonus,
+    int: BASE_STAT + race.stats.int + gameClass.stats.int + boosterBonuses.intBonus,
+    wis: BASE_STAT + race.stats.wis + gameClass.stats.wis + boosterBonuses.wisBonus,
+    dex: BASE_STAT + race.stats.dex + gameClass.stats.dex + boosterBonuses.dexBonus,
+    con: BASE_STAT + race.stats.con + gameClass.stats.con + boosterBonuses.conBonus,
   }
 
   // Stats start the same as baseStats (will differ with equipment)
@@ -171,6 +176,14 @@ export function createCharacter(config: {
     speed: 100,
   }
 
+  // Calculate initial resistances from race
+  const resistances = calculateResistancesFromRace(race)
+
+  // Initialize empty status effects
+  const statusEffects: Character['statusEffects'] = []
+  const tempResistances: Character['tempResistances'] = []
+  const poison: Character['poison'] = null
+
   const character: Character = {
     // Identity
     id: generateId(),
@@ -196,6 +209,14 @@ export function createCharacter(config: {
     // Combat
     combat,
 
+    // Resistances
+    resistances,
+
+    // Status effects
+    statusEffects,
+    tempResistances,
+    poison,
+
     // Inventory
     equipment: {},
     inventory: [],
@@ -207,9 +228,57 @@ export function createCharacter(config: {
 
     // State
     isDead: false,
+
+    // Store upgrade bonuses for recalculation
+    upgradeBonuses: bonuses,
+
+    // Spells - initialize with starting spells for class
+    knownSpells: getSpellIdsForLevel(config.classId, 1),
+    spellCooldowns: {},
   }
 
   return character
+}
+
+/**
+ * Calculate resistances from a race's abilities
+ * Helper function for character creation (before Character object exists)
+ */
+function calculateResistancesFromRace(race: import('./data/races').Race): Resistances {
+  const resistances: Resistances = {}
+
+  for (const ability of race.abilities) {
+    switch (ability.id) {
+      case 'resist_poison':
+        resistances.POISON = 100 // Immune
+        break
+      case 'resist_light':
+        resistances.LIGHT = (resistances.LIGHT ?? 0) + 50
+        break
+      case 'resist_dark':
+        resistances.DARK = (resistances.DARK ?? 0) + 50
+        break
+      case 'hold_life':
+        resistances.DRAIN = 75 // High resistance
+        break
+      case 'elem_resist':
+        // Elemental affinity (Draconian)
+        resistances.FIRE = (resistances.FIRE ?? 0) + 50
+        resistances.COLD = (resistances.COLD ?? 0) + 50
+        resistances.ACID = (resistances.ACID ?? 0) + 50
+        break
+      case 'light_vuln':
+        // Vampire light vulnerability
+        resistances.LIGHT = -100
+        break
+      case 'construct':
+        // Golem immunity to poison (and other effects handled elsewhere)
+        resistances.POISON = 100
+        break
+    }
+  }
+
+  return resistances
 }
 
 // ============================================================================
@@ -247,6 +316,25 @@ export function calculateStats(character: Character): Stats {
 }
 
 /**
+ * Calculate resistances from race and equipment
+ *
+ * @param character - The character to calculate resistances for
+ * @returns Computed Resistances from race and equipment
+ */
+export function calculateResistances(character: Character): Resistances {
+  const race = getRaceById(character.raceId)
+  if (!race) return {}
+
+  // Start with racial resistances
+  const resistances = calculateResistancesFromRace(race)
+
+  // Equipment resistances could be parsed from item effects/artifacts here
+  // For now, we only have racial resistances implemented
+
+  return resistances
+}
+
+/**
  * Calculate derived combat stats from character stats and equipment
  *
  * @param character - The character to calculate combat stats for
@@ -256,6 +344,7 @@ export function calculateCombatStats(character: Character): CombatStats {
   const stats = calculateStats(character)
   const gameClass = getClassById(character.classId)
   const race = getRaceById(character.raceId)
+  const bonuses = character.upgradeBonuses ?? DEFAULT_BONUSES
 
   if (!gameClass || !race) {
     throw new Error('Invalid character race or class')
@@ -264,18 +353,20 @@ export function calculateCombatStats(character: Character): CombatStats {
   // Calculate hitdie
   const hitdie = calculateHitdie(race.hitdie, gameClass.hitdie)
 
-  // HP formula: (raceHitdie + classHitdie) * level * (1 + CON/20)
+  // HP formula: (raceHitdie + classHitdie) * level * (1 + CON/20) + vitality bonus
   const conMultiplier = 1 + stats.con / 20
-  const maxHp = Math.floor(hitdie * character.level * conMultiplier)
+  let maxHp = Math.floor(hitdie * character.level * conMultiplier)
+  maxHp += bonuses.maxHpBonus // Apply vitality upgrade
 
   // MP formula: (INT + WIS) * level / 4 (if class has magic)
   const maxMp = gameClass.usesMagic
     ? Math.floor(((stats.int + stats.wis) * character.level) / 4)
     : 0
 
-  // Armor: sum of equipment protection + DEX/4
+  // Armor: sum of equipment protection + DEX/4 + resilience bonus
   // ItemTemplate uses 'protection', artifacts use 'protection' and 'toAC' bonus
   let armor = Math.floor(stats.dex / 4)
+  armor += bonuses.armorBonus // Apply resilience upgrade
   for (const slot of ARMOR_SLOTS) {
     const item = character.equipment[slot]
     if (item) {
@@ -293,7 +384,7 @@ export function calculateCombatStats(character: Character): CombatStats {
     }
   }
 
-  // Melee damage: weapon damage + STR/3
+  // Melee damage: weapon damage + STR/3, with might bonus
   // ItemTemplate uses dice notation for damage (e.g., "2d5")
   let meleeDamage = Math.floor(stats.str / 3)
   const weapon = character.equipment.weapon
@@ -308,6 +399,8 @@ export function calculateCombatStats(character: Character): CombatStats {
       meleeDamage += weapon.artifact.bonuses.toDam
     }
   }
+  // Apply might upgrade (damage percent)
+  meleeDamage = Math.floor(meleeDamage * (1 + bonuses.damagePercent / 100))
 
   // Accuracy: 50 + DEX + level + artifact toHit bonuses
   let accuracy = 50 + stats.dex + character.level
@@ -315,9 +408,10 @@ export function calculateCombatStats(character: Character): CombatStats {
     accuracy += weapon.artifact.bonuses.toHit
   }
 
-  // Evasion: DEX/2 + equipment bonuses
+  // Evasion: DEX/2 + swiftness bonus
   // Note: current ItemTemplate doesn't have evasion field, but artifacts might
-  const evasion = Math.floor(stats.dex / 2)
+  let evasion = Math.floor(stats.dex / 2)
+  evasion += bonuses.dodgePercent // Apply swiftness upgrade
 
   // Speed: base 100 + equipment modifiers
   // Artifacts use 'SPEED' in bonuses Record
@@ -415,6 +509,14 @@ function applyLevelUp(character: Character): void {
 
   // Recalculate stats with equipment
   character.stats = calculateStats(character)
+
+  // Learn new spells at this level
+  const newSpells = getNewSpellsAtLevel(character.classId, character.level)
+  for (const spell of newSpells) {
+    if (!character.knownSpells.includes(spell.id)) {
+      character.knownSpells.push(spell.id)
+    }
+  }
 }
 
 // ============================================================================
@@ -478,9 +580,10 @@ export function equipItem(
   // Equip the new item
   character.equipment[slot] = item
 
-  // Recalculate stats and combat
+  // Recalculate stats, combat, and resistances
   character.stats = calculateStats(character)
   character.combat = calculateCombatStats(character)
+  character.resistances = calculateResistances(character)
 
   // Update max HP/MP (but don't reduce current values below 1)
   character.maxHp = character.combat.maxHp
@@ -511,9 +614,10 @@ export function unequipItem(character: Character, slot: EquipSlot): Item | null 
   // Add to inventory
   character.inventory.push(item)
 
-  // Recalculate stats and combat
+  // Recalculate stats, combat, and resistances
   character.stats = calculateStats(character)
   character.combat = calculateCombatStats(character)
+  character.resistances = calculateResistances(character)
 
   // Update max HP/MP (but don't reduce current values below 1)
   character.maxHp = character.combat.maxHp

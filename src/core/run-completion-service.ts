@@ -6,8 +6,9 @@
  */
 
 import type { RunResult } from '@/game/game-runner'
-import type { RunStats } from '@/types/progression'
+import type { RunStats, EquipmentSnapshot } from '@/types/progression'
 import { useProgressionStore } from '@stores/progression'
+import { saveRun } from '@stores/persistence'
 
 // ============================================================================
 // TYPES
@@ -41,7 +42,7 @@ export interface RunCompletionResult {
  * @param result - The RunResult from game-runner
  * @returns RunCompletionResult with earned rewards and stats
  */
-export function handleRunCompletion(result: RunResult): RunCompletionResult {
+export async function handleRunCompletion(result: RunResult): Promise<RunCompletionResult> {
   const progression = useProgressionStore()
   const isVictory = result.reason === 'victory'
 
@@ -52,8 +53,20 @@ export function handleRunCompletion(result: RunResult): RunCompletionResult {
   const essenceEarned = progression.calculateEssenceReward(runStats, isVictory)
   runStats.essenceEarned = essenceEarned
 
-  // Record the run in history
+  // Record the run in history (memory)
   progression.recordRun(runStats, isVictory)
+
+  // Persist run to IndexedDB - AWAIT to ensure run is saved before progression
+  try {
+    await saveRun(runStats)
+  } catch (err) {
+    console.error('[RunCompletion] Failed to save run:', err)
+  }
+
+  // Record monster kills to bestiary
+  if (result.game.stats.monsterKills) {
+    progression.recordMonsterKills(result.game.stats.monsterKills)
+  }
 
   // Add essence to currency
   progression.addEssence(essenceEarned)
@@ -80,6 +93,24 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
   const game = result.game
   const char = game.character
 
+  // Extract equipment snapshot
+  const equipment: EquipmentSnapshot[] = []
+  for (const [slot, item] of Object.entries(char.equipment)) {
+    if (item) {
+      equipment.push({
+        slot,
+        name: item.artifact?.name ?? item.template.name,
+        enchantment: item.enchantment,
+        isArtifact: !!item.artifact,
+      })
+    }
+  }
+
+  // Extract inventory item names
+  const inventory = char.inventory.map(
+    (item) => item.artifact?.name ?? item.template.name
+  )
+
   return {
     id: game.runId,
     startTime: game.stats.startTime,
@@ -92,6 +123,11 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
     xpEarned: char.xp,
     deathCause: isVictory ? undefined : getDeathCause(game),
     essenceEarned: 0, // Will be filled in after calculation
+    // Extended fields
+    equipment,
+    inventory,
+    turns: game.turn,
+    personality: game.upgradeBonuses ? undefined : undefined, // Note: personality not stored on GameState
   }
 }
 

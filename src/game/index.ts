@@ -72,6 +72,7 @@ export {
   createHealingPotions,
   createTeleportScrolls,
   createStartingEquipment,
+  createRandomPotion,
 } from './items'
 // Note: GroundItem is exported from './types'
 
@@ -89,16 +90,55 @@ export {
   handleDrop,
   handleUnequip,
   handleWait,
+  handleUseFountain,
+  handleUseAltar,
+  handleShopBuy,
+  handleShopSell,
+  handleCast,
   processMonsterTurns,
 } from './game-loop'
+
+// Features
+export {
+  useFountain,
+  useAltar,
+  buyFromMerchant,
+  sellToMerchant,
+  findAdjacentMerchant,
+  isOnFountain,
+  isOnAltar,
+  getFountainAt,
+  getAltarAt,
+  awardMonsterGold,
+  createGoldPile,
+  pickupGold,
+  initializeFountain,
+  initializeAltar,
+  initializeMerchant,
+  // Trap functions
+  initializeTrap,
+  checkTrapDetection,
+  triggerTrap,
+  getRevealedTrapAt,
+  getTrapAt,
+} from './features'
 
 // Bot AI
 export {
   buildBotContext,
-  decideAction as decideBotAction,
   runBotTick,
   evaluateDanger,
   getBotStatus,
+  createBotState,
+  getPersonalityConfig,
+  BASE_CONFIGS,
+} from './bot-ai'
+
+// Bot AI Types
+export type {
+  BotState,
+  BotGoal,
+  PersonalityConfig,
 } from './bot-ai'
 
 // Game Runner
@@ -111,3 +151,43 @@ export {
   type RunResult,
   type BatchResult,
 } from './game-runner'
+
+// Upgrade Effects
+export {
+  computeUpgradeBonuses,
+  applyDamageBonus,
+  applyGoldBonus,
+  mergeWithBoosterBonuses,
+} from './upgrade-effects'
+export type { CombinedBonuses } from './upgrade-effects'
+
+// Booster Effects
+export { computeBoosterBonuses, DEFAULT_BOOSTER_BONUSES } from './booster-effects'
+export type { BoosterBonuses } from './booster-effects'
+
+// Booster Data
+export {
+  boosters,
+  boostersByCategory,
+  getBoosterById,
+  canUnlockBooster,
+  getBoostersDependingOn,
+} from './data/boosters'
+export type { BoosterDefinition, BoosterCategory, BoosterEffect } from './data/boosters'
+
+// Spell Resolution
+export {
+  castSpell,
+  canCast,
+  getKnownSpells,
+  knowsSpell,
+  isOnCooldown,
+  getCooldownRemaining,
+  getAvailableSpells,
+  calculateSpellPower,
+  selectAOETargets,
+  findTarget,
+  getNearestVisibleMonster,
+  findTeleportDestination,
+  type SpellCastResult,
+} from './spell-resolution'

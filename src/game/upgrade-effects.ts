@@ -29,6 +29,9 @@ export interface UpgradeBonuses {
   identifySpeedPercent: number // Item identification speed (from quick_learner)
   retreatIQBonus: number // Better retreat decisions (from tactician)
   lootIQBonus: number // Better loot prioritization (from pack_rat)
+  hasDangerSense: boolean // Factor resistances into danger assessment (from danger_sense)
+  hasEfficientHealing: boolean // Use appropriate potion tier (from efficient_healer)
+  battleInstinctBonus: number // Smarter combat scoring (from battle_instinct)
 
   // QoL bonuses
   turboSpeedPercent: number // Extra turbo speed (from turbo_mode)
@@ -68,6 +71,9 @@ export function computeUpgradeBonuses(levels: UpgradeLevels): UpgradeBonuses {
     identifySpeedPercent: getEffectValue(levels, 'quick_learner'),
     retreatIQBonus: getEffectValue(levels, 'tactician'),
     lootIQBonus: getEffectValue(levels, 'pack_rat'),
+    hasDangerSense: (levels['danger_sense'] || 0) > 0,
+    hasEfficientHealing: (levels['efficient_healer'] || 0) > 0,
+    battleInstinctBonus: getEffectValue(levels, 'battle_instinct'),
 
     // QoL bonuses
     turboSpeedPercent: getEffectValue(levels, 'turbo_mode'),
@@ -107,6 +113,9 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   identifySpeedPercent: 0,
   retreatIQBonus: 0,
   lootIQBonus: 0,
+  hasDangerSense: false,
+  hasEfficientHealing: false,
+  battleInstinctBonus: 0,
   turboSpeedPercent: 0,
   hasAutoRestart: false,
 }
@@ -134,4 +143,70 @@ export function applyXPBonus(baseXP: number, bonuses: UpgradeBonuses): number {
  */
 export function applyGoldBonus(baseGold: number, bonuses: UpgradeBonuses): number {
   return Math.floor(baseGold * bonuses.goldMultiplier)
+}
+
+// ============================================================================
+// BOOSTER INTEGRATION
+// ============================================================================
+
+import type { BoosterBonuses } from './booster-effects'
+import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
+
+/** Combined bonuses from both upgrades and boosters */
+export interface CombinedBonuses extends UpgradeBonuses {
+  // Booster-specific bonuses
+  strBonus: number
+  dexBonus: number
+  conBonus: number
+  intBonus: number
+  wisBonus: number
+  startingWeaponBonus: number
+  startingArmorBonus: number
+  startsWithPotion: boolean
+  hasSecondWind: boolean
+  secondWindPercent: number
+  inventoryBonus: number
+}
+
+/**
+ * Merge upgrade bonuses with booster bonuses
+ *
+ * - Stat bonuses from boosters are passed through for character creation
+ * - Equipment bonuses are passed through for starting gear
+ * - Multipliers stack multiplicatively
+ * - Special effects are combined
+ *
+ * @param upgradeBonuses - Bonuses from meta-progression upgrades
+ * @param boosterBonuses - Bonuses from active per-run boosters
+ * @returns Combined bonuses ready for game systems
+ */
+export function mergeWithBoosterBonuses(
+  upgradeBonuses: UpgradeBonuses,
+  boosterBonuses: BoosterBonuses = DEFAULT_BOOSTER_BONUSES
+): CombinedBonuses {
+  return {
+    // Pass through all upgrade bonuses
+    ...upgradeBonuses,
+
+    // Multipliers stack multiplicatively
+    xpMultiplier: upgradeBonuses.xpMultiplier * boosterBonuses.xpMultiplier,
+    goldMultiplier: upgradeBonuses.goldMultiplier * boosterBonuses.goldMultiplier,
+
+    // Booster-specific stat bonuses (passed through to character creation)
+    strBonus: boosterBonuses.strBonus,
+    dexBonus: boosterBonuses.dexBonus,
+    conBonus: boosterBonuses.conBonus,
+    intBonus: boosterBonuses.intBonus,
+    wisBonus: boosterBonuses.wisBonus,
+
+    // Equipment bonuses
+    startingWeaponBonus: boosterBonuses.startingWeaponBonus,
+    startingArmorBonus: boosterBonuses.startingArmorBonus,
+
+    // Special effects
+    startsWithPotion: boosterBonuses.startsWithPotion,
+    hasSecondWind: boosterBonuses.hasSecondWind,
+    secondWindPercent: boosterBonuses.secondWindPercent,
+    inventoryBonus: boosterBonuses.inventoryBonus,
+  }
 }

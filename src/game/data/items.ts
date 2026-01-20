@@ -929,14 +929,15 @@ export const POTIONS: ItemTemplate[] = [
     effect: 'Cure poison',
     minDepth: 1,
   },
-  {
-    name: 'Potion of True Seeing',
-    type: 'potion',
-    tier: 2,
-    weight: 4,
-    effect: 'Cure blind, see invisible for 50-60 turns',
-    minDepth: 3,
-  },
+  // Phase 4-5: Needs invisible system
+  // {
+  //   name: 'Potion of True Seeing',
+  //   type: 'potion',
+  //   tier: 2,
+  //   weight: 4,
+  //   effect: 'Cure blind, see invisible for 50-60 turns',
+  //   minDepth: 3,
+  // },
 ]
 
 // ============================================================================
@@ -976,17 +977,18 @@ export const SCROLLS: ItemTemplate[] = [
     type: 'scroll',
     tier: 2,
     weight: 5,
-    effect: 'Reveal level layout',
+    effect: 'Magic Mapping - reveal level',
     minDepth: 5,
   },
-  {
-    name: 'Scroll of Detect Invisible',
-    type: 'scroll',
-    tier: 1,
-    weight: 5,
-    effect: 'Detect invisible monsters',
-    minDepth: 1,
-  },
+  // Phase 4-5: Needs invisible system
+  // {
+  //   name: 'Scroll of Detect Invisible',
+  //   type: 'scroll',
+  //   tier: 1,
+  //   weight: 5,
+  //   effect: 'Detect invisible monsters',
+  //   minDepth: 1,
+  // },
   {
     name: 'Scroll of Treasure Detection',
     type: 'scroll',
@@ -996,33 +998,17 @@ export const SCROLLS: ItemTemplate[] = [
     minDepth: 0,
   },
 
-  // Identification
-  {
-    name: 'Scroll of Identify Rune',
-    type: 'scroll',
-    tier: 1,
-    weight: 5,
-    effect: 'Identify one item',
-    minDepth: 5,
-  },
+  // Phase 4-5: Needs unidentified items system
+  // {
+  //   name: 'Scroll of Identify Rune',
+  //   type: 'scroll',
+  //   tier: 1,
+  //   weight: 5,
+  //   effect: 'Identify one item',
+  //   minDepth: 5,
+  // },
 
-  // Utility
-  {
-    name: 'Scroll of Word of Recall',
-    type: 'scroll',
-    tier: 2,
-    weight: 5,
-    effect: 'Return to town or dungeon',
-    minDepth: 5,
-  },
-  {
-    name: 'Scroll of Remove Hunger',
-    type: 'scroll',
-    tier: 1,
-    weight: 5,
-    effect: 'Satisfy hunger',
-    minDepth: 5,
-  },
+  // Utility - Removed: Word of Recall (needs town), Remove Hunger (needs hunger)
   {
     name: 'Scroll of Light',
     type: 'scroll',
@@ -1049,14 +1035,15 @@ export const SCROLLS: ItemTemplate[] = [
     effect: '+1 to armor AC',
     minDepth: 15,
   },
-  {
-    name: 'Scroll of Remove Curse',
-    type: 'scroll',
-    tier: 2,
-    weight: 5,
-    effect: 'Remove weak curses',
-    minDepth: 10,
-  },
+  // Phase 4-5: Needs curse system
+  // {
+  //   name: 'Scroll of Remove Curse',
+  //   type: 'scroll',
+  //   tier: 2,
+  //   weight: 5,
+  //   effect: 'Remove weak curses',
+  //   minDepth: 10,
+  // },
 
   // Combat
   {
@@ -1075,40 +1062,41 @@ export const SCROLLS: ItemTemplate[] = [
     effect: 'Protection from evil monsters',
     minDepth: 30,
   },
-  {
-    name: 'Scroll of Monster Confusion',
-    type: 'scroll',
-    tier: 1,
-    weight: 5,
-    effect: 'Next melee hit confuses monster',
-    minDepth: 5,
-  },
+  // Phase 4-5: Needs confusion status
+  // {
+  //   name: 'Scroll of Monster Confusion',
+  //   type: 'scroll',
+  //   tier: 1,
+  //   weight: 5,
+  //   effect: 'Next melee hit confuses monster',
+  //   minDepth: 5,
+  // },
 
-  // High Level
-  {
-    name: 'Scroll of Banishment',
-    type: 'scroll',
-    tier: 4,
-    weight: 5,
-    effect: 'Banish one type of monster',
-    minDepth: 40,
-  },
-  {
-    name: 'Scroll of *Destruction*',
-    type: 'scroll',
-    tier: 4,
-    weight: 5,
-    effect: 'Destroy nearby area',
-    minDepth: 40,
-  },
-  {
-    name: 'Scroll of Rune of Protection',
-    type: 'scroll',
-    tier: 4,
-    weight: 5,
-    effect: 'Create protective glyph',
-    minDepth: 70,
-  },
+  // Phase 4-5: Complex targeting/AOE - needs more work
+  // {
+  //   name: 'Scroll of Banishment',
+  //   type: 'scroll',
+  //   tier: 4,
+  //   weight: 5,
+  //   effect: 'Banish one type of monster',
+  //   minDepth: 40,
+  // },
+  // {
+  //   name: 'Scroll of *Destruction*',
+  //   type: 'scroll',
+  //   tier: 4,
+  //   weight: 5,
+  //   effect: 'Destroy nearby area',
+  //   minDepth: 40,
+  // },
+  // {
+  //   name: 'Scroll of Rune of Protection',
+  //   type: 'scroll',
+  //   tier: 4,
+  //   weight: 5,
+  //   effect: 'Create protective glyph',
+  //   minDepth: 70,
+  // },
 ]
 
 // ============================================================================

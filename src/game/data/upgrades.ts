@@ -169,6 +169,57 @@ const packRat: UpgradeDefinition = {
   icon: '$',
 }
 
+const dangerSense: UpgradeDefinition = {
+  id: 'danger_sense',
+  name: 'Danger Sense',
+  description: 'Bot factors resistances into danger assessment',
+  category: 'borg',
+  maxLevel: 1,
+  baseCost: 400,
+  costScaling: 1,
+  effect: {
+    type: 'unlock',
+    stat: 'dangerSense',
+    baseValue: 1,
+    perLevel: 0,
+  },
+  icon: '⚠',
+}
+
+const efficientHealer: UpgradeDefinition = {
+  id: 'efficient_healer',
+  name: 'Efficient Healer',
+  description: 'Bot uses appropriate potion tier for wounds',
+  category: 'borg',
+  maxLevel: 1,
+  baseCost: 250,
+  costScaling: 1,
+  effect: {
+    type: 'unlock',
+    stat: 'efficientHealing',
+    baseValue: 1,
+    perLevel: 0,
+  },
+  icon: '✚',
+}
+
+const battleInstinct: UpgradeDefinition = {
+  id: 'battle_instinct',
+  name: 'Battle Instinct',
+  description: 'Smarter combat decisions (+1 scoring factors per level)',
+  category: 'borg',
+  maxLevel: 3,
+  baseCost: 350,
+  costScaling: 1.8,
+  effect: {
+    type: 'flat',
+    stat: 'battleInstinct',
+    baseValue: 1,
+    perLevel: 1,
+  },
+  icon: '◎',
+}
+
 // =============================================================================
 // META UPGRADES
 // =============================================================================
@@ -327,6 +378,9 @@ export const upgrades: UpgradeDefinition[] = [
   quickLearner,
   tactician,
   packRat,
+  dangerSense,
+  efficientHealer,
+  battleInstinct,
   // Meta
   essenceBoost,
   goldDigger,

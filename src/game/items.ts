@@ -6,6 +6,8 @@
 
 import type { Item, Point, DungeonLevel, GroundItem } from './types'
 import type { ItemTemplate } from './data/items'
+import type { BoosterBonuses } from './booster-effects'
+import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import type { ArtifactTemplate } from './data/artifacts'
 import { getItemsForDepth, POTIONS, SCROLLS, ALL_EQUIPMENT } from './data/index'
 import { getArtifactsForDepth } from './data/artifacts'
@@ -436,6 +438,17 @@ export function createHealingPotions(count: number): Item[] {
 }
 
 /**
+ * Create a random potion (for Lucky Start booster)
+ */
+export function createRandomPotion(): Item | null {
+  if (POTIONS.length === 0) return null
+  const randomIndex = Math.floor(Math.random() * POTIONS.length)
+  const potion = POTIONS[randomIndex]
+  if (!potion) return null
+  return createItem(potion, 0)
+}
+
+/**
  * Spawn a specific number of teleport scrolls (for starting equipment)
  */
 export function createTeleportScrolls(count: number): Item[] {
@@ -453,22 +466,32 @@ export function createTeleportScrolls(count: number): Item[] {
  * Create starting equipment for a character based on class
  *
  * @param classId - The character's class ID
+ * @param boosterBonuses - Optional booster bonuses for equipment enchantments
  * @returns Array of starting items
  */
-export function createStartingEquipment(classId: string): Item[] {
+export function createStartingEquipment(
+  classId: string,
+  boosterBonuses?: BoosterBonuses
+): Item[] {
   const items: Item[] = []
+  const bonuses = boosterBonuses ?? DEFAULT_BOOSTER_BONUSES
+
+  // Get enchantment bonuses from boosters
+  const weaponEnchant = bonuses.startingWeaponBonus
+  const armorEnchant = bonuses.startingArmorBonus
 
   // Basic weapon based on class
   const weaponName = getStartingWeaponForClass(classId)
   const weapon = ALL_EQUIPMENT.find((e) => e.name === weaponName)
   if (weapon) {
-    items.push(createItem(weapon, 0))
+    items.push(createItem(weapon, weaponEnchant))
   }
 
-  // Basic armor
-  const robe = ALL_EQUIPMENT.find((e) => e.name === 'Robe')
-  if (robe) {
-    items.push(createItem(robe, 0))
+  // Class-specific armor
+  const armorName = getStartingArmorForClass(classId)
+  const armor = ALL_EQUIPMENT.find((e) => e.name === armorName)
+  if (armor) {
+    items.push(createItem(armor, armorEnchant))
   }
 
   // Some potions and scrolls
@@ -483,20 +506,59 @@ export function createStartingEquipment(classId: string): Item[] {
  */
 function getStartingWeaponForClass(classId: string): string {
   switch (classId) {
+    // Heavy melee fighters - short sword
     case 'warrior':
     case 'paladin':
-      return 'Short Sword'
-    case 'mage':
-    case 'necromancer':
-      return 'Dagger'
-    case 'priest':
-      return 'Mace'
-    case 'rogue':
-    case 'ranger':
-      return 'Dagger'
+    case 'berserker':
     case 'blackguard':
       return 'Short Sword'
+    // Casters - dagger
+    case 'mage':
+    case 'necromancer':
+    case 'archmage':
+      return 'Dagger'
+    // Holy classes - mace
+    case 'priest':
+    case 'druid':
+      return 'Mace'
+    // Dex-based classes - dagger
+    case 'rogue':
+    case 'ranger':
+    case 'monk':
+    case 'bard':
+    case 'artificer':
+      return 'Dagger'
     default:
       return 'Dagger'
+  }
+}
+
+/**
+ * Get the starting armor name for a class
+ */
+function getStartingArmorForClass(classId: string): string {
+  switch (classId) {
+    // Heavy fighters - studded leather
+    case 'warrior':
+    case 'paladin':
+    case 'berserker':
+    case 'blackguard':
+      return 'Studded Leather Armour'
+    // Light fighters - soft leather
+    case 'rogue':
+    case 'ranger':
+    case 'bard':
+    case 'artificer':
+      return 'Soft Leather Armour'
+    // Casters, monks, and nature classes - robe
+    case 'mage':
+    case 'necromancer':
+    case 'archmage':
+    case 'priest':
+    case 'druid':
+    case 'monk':
+      return 'Robe'
+    default:
+      return 'Robe'
   }
 }

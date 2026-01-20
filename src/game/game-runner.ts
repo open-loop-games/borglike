@@ -6,8 +6,17 @@
  */
 
 import type { GameState, GameEvent, GameEventListener, RunConfig, BotPersonality } from './types'
+import { MAX_DEPTH } from './types'
 import { createGame, processTurn } from './game-loop'
-import { runBotTick, buildBotContext, getBotStatus, evaluateDanger } from './bot-ai'
+import { runBotTick, buildBotContext, getBotStatus, evaluateDanger, createBotState, type BotState } from './bot-ai'
+import { DEFAULT_BONUSES } from './upgrade-effects'
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/** Turns on same level before forcing death (circuit breaker for stuck bots) */
+const STALE_LEVEL_THRESHOLD = 1000
 
 // ============================================================================
 // TYPES
@@ -52,6 +61,8 @@ export function createGameRunner(config: RunnerConfig) {
   const onEnd = config.onEnd
 
   const game = createGame(config)
+  const botState = createBotState() // Persistent bot state for this run
+  const upgrades = config.upgradeBonuses ?? DEFAULT_BONUSES
   let isRunning = true
 
   /**
@@ -62,11 +73,18 @@ export function createGameRunner(config: RunnerConfig) {
       return []
     }
 
-    // Get bot decision
-    const action = runBotTick(game, personality)
+    // Get bot decision with persistent state and upgrades
+    const action = runBotTick(game, personality, upgrades, botState)
 
     // Process the turn
     const events = processTurn(game, action)
+
+    // Circuit breaker: force death if stuck on same level too long
+    if (botState.turnsOnLevel > STALE_LEVEL_THRESHOLD && game.character.depth < MAX_DEPTH) {
+      game.character.hp = 0
+      game.character.isDead = true
+      game.isRunning = false
+    }
 
     // Emit events
     if (onEvent) {
@@ -193,6 +211,13 @@ export function createGameRunner(config: RunnerConfig) {
     return evaluateDanger(context)
   }
 
+  /**
+   * Get the current bot state (for debugging/inspection)
+   */
+  function getBotState(): BotState {
+    return botState
+  }
+
   return {
     step,
     runToCompletion,
@@ -203,6 +228,7 @@ export function createGameRunner(config: RunnerConfig) {
     stop,
     getStatus,
     getDanger,
+    getBotState,
   }
 }
 
