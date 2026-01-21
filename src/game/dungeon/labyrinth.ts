@@ -7,6 +7,7 @@
 import { Map as RotMap } from 'rot-js'
 import type { Tile } from '../types'
 import type { DepthProfile, RoomData } from './types'
+import { random, randomInt } from '../rng'
 
 export interface LabyrinthResult {
   tiles: Tile[][]
@@ -73,15 +74,15 @@ function createOpenSpaces(
   height: number
 ): RoomData[] {
   const rooms: RoomData[] = []
-  const roomCount = 2 + Math.floor(Math.random() * 3) // 2-4 rooms
+  const roomCount = randomInt(2, 4) // 2-4 rooms
 
   for (let i = 0; i < roomCount; i++) {
     // Random position avoiding edges
-    const roomWidth = 3 + Math.floor(Math.random() * 3) // 3-5
-    const roomHeight = 3 + Math.floor(Math.random() * 3) // 3-5
+    const roomWidth = randomInt(3, 5) // 3-5
+    const roomHeight = randomInt(3, 5) // 3-5
 
-    const x = 3 + Math.floor(Math.random() * (width - roomWidth - 6))
-    const y = 3 + Math.floor(Math.random() * (height - roomHeight - 6))
+    const x = randomInt(3, width - roomWidth - 4)
+    const y = randomInt(3, height - roomHeight - 4)
 
     // Carve out the room
     for (let ry = y; ry < y + roomHeight && ry < height - 1; ry++) {
@@ -128,7 +129,7 @@ function removeDeadEndWalls(
 
       // If wall separates two floor areas, maybe remove it
       if ((north && south) || (east && west)) {
-        if (Math.random() < removalChance) {
+        if (random() < removalChance) {
           tile.type = 'floor'
         }
       }

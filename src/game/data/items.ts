@@ -29,6 +29,8 @@ export interface ItemTemplate {
   weight: number // in 0.1 lbs
   effect?: string // special effect description
   minDepth?: number // minimum depth to find
+  /** Light radius in tiles (only for light sources) */
+  lightRadius?: number
 }
 
 // ============================================================================
@@ -878,6 +880,7 @@ export const LIGHTS: ItemTemplate[] = [
     weight: 22,
     effect: 'Light radius 2, Burns out',
     minDepth: 1,
+    lightRadius: 2,
   },
   {
     name: 'Lantern',
@@ -887,6 +890,7 @@ export const LIGHTS: ItemTemplate[] = [
     weight: 50,
     effect: 'Light radius 3, Takes fuel',
     minDepth: 5,
+    lightRadius: 3,
   },
 ]
 

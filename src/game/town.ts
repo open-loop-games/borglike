@@ -11,25 +11,30 @@ import type {
   Tile,
   TileType,
   TownPortalState,
-  MerchantState,
   ActionResult,
   Item,
 } from './types'
+import { randomInt } from './rng'
 import {
   TOWN_LAYOUT,
   TOWN_WIDTH,
   TOWN_HEIGHT,
   HEALER_POSITION,
-  MERCHANT_POSITION,
   DUNGEON_ENTRANCE_POSITION,
   PORTAL_SPAWN_POSITION,
   HEALER_COST_PER_HP,
   PORTAL_DURATION,
+  TOWN_SHOP_IDS,
+  TOWN_SHOP_POSITIONS,
+  type TownShopId,
 } from './data/town'
 import { getTile, setTile, computeFOV } from './dungeon'
-import { FOV_RADIUS } from './types'
-import { initializeMerchant } from './features'
-import { SCROLLS, POTIONS } from './data/items'
+import { calculateLightRadius } from './lighting'
+import { initializeMerchant, initializeFeaturesFromVault } from './features'
+import { saveLevelEntities, loadLevelEntities } from './level-cache'
+import { spawnMonstersForLevel } from './monster-ai'
+import { spawnItemsForLevel, generateMerchantInventory } from './items'
+import { SCROLLS, POTIONS, ALL_EQUIPMENT, type ItemTemplate } from './data/items'
 import { createItem } from './items'
 
 // ============================================================================
@@ -74,21 +79,29 @@ export function generateTownLevel(): DungeonLevel {
 
 /**
  * Convert ASCII character to tile type
+ *
+ * All non-wall characters are walkable floor tiles.
+ * The visual characters (,, ~, 1-5) create variety but don't block movement.
  */
 function charToTileType(char: string): TileType {
   switch (char) {
     case '#':
       return 'wall'
-    case '.':
-      return 'floor'
-    case 'H':
-      return 'healer'
-    case 'M':
-      return 'floor' // Merchant stands on floor
     case '<':
       return 'dungeon_entrance'
-    case '@':
-      return 'floor' // Spawn point is just floor
+    case 'H':
+      return 'healer'
+    // All decorative and floor characters map to 'floor'
+    case '.':
+    case ',': // Cobblestone
+    case '~': // Well (decorative)
+    case '1': // Shop 1 (General Store)
+    case '2': // Shop 2 (Armory)
+    case '3': // Shop 3 (Weapon Smithy)
+    case '4': // Shop 4 (Alchemy Shop)
+    case '5': // Shop 5 (Magic Shop)
+    case '@': // Spawn point
+      return 'floor'
     default:
       return 'wall'
   }
@@ -121,12 +134,15 @@ export function createTownPortal(game: GameState): TownPortalState {
 /**
  * Enter town through portal
  *
- * Saves current dungeon state and teleports player to town.
+ * Saves current dungeon state (including entities) and teleports player to town.
  */
 export function enterTown(game: GameState): void {
   if (!game.townPortal) return
 
-  // Save current level state to cache
+  // Save current level entities (monsters, items, features) to cache
+  saveLevelEntities(game)
+
+  // Save current level geometry to cache
   game.levelCache.set(game.character.depth, game.currentLevel)
 
   // Get or generate town level
@@ -147,8 +163,9 @@ export function enterTown(game: GameState): void {
   // Initialize town features
   initializeTown(game)
 
-  // Update FOV - town is fully visible
-  computeFOV(townLevel, game.character.position, FOV_RADIUS)
+  // Update FOV - town is fully visible (calculateLightRadius returns MAX for depth 0)
+  const lightRadius = calculateLightRadius(game.character, 0)
+  computeFOV(townLevel, game.character.position, lightRadius)
 
   // Clear monsters and items (town has no monsters)
   game.monsters = []
@@ -181,11 +198,38 @@ export function returnFromTown(game: GameState): ActionResult {
   game.character.depth = portal.dungeonDepth
   game.character.position = { ...portal.dungeonPosition }
 
-  // Respawn monsters and items (simplified - full implementation would persist)
-  // For now, this is handled by the game loop when depth changes
+  // Restore entities from cache, or spawn fresh if not cached
+  const cachedEntities = loadLevelEntities(game.entityCache, portal.dungeonDepth)
+  if (cachedEntities) {
+    // Restore cached entities (monsters, items, features)
+    game.monsters = cachedEntities.monsters
+    game.items = cachedEntities.items
+    game.fountains = cachedEntities.fountains
+    game.altars = cachedEntities.altars
+    game.merchants = cachedEntities.merchants
+    game.traps = cachedEntities.traps
+  } else {
+    // Spawn fresh entities (fallback if cache was evicted)
+    game.monsters = spawnMonstersForLevel(dungeonLevel, portal.dungeonDepth)
+    game.items = spawnItemsForLevel(dungeonLevel, portal.dungeonDepth)
+    game.fountains = new Map()
+    game.altars = new Map()
+    game.merchants = []
+    game.traps = new Map()
+    initializeFeaturesFromVault(
+      dungeonLevel,
+      portal.dungeonDepth,
+      game.fountains,
+      game.altars,
+      game.merchants,
+      game.traps,
+      generateMerchantInventory
+    )
+  }
 
-  // Update FOV
-  computeFOV(dungeonLevel, game.character.position, FOV_RADIUS)
+  // Update FOV (dynamic light radius based on equipment/race/depth)
+  const lightRadius = calculateLightRadius(game.character, portal.dungeonDepth)
+  computeFOV(dungeonLevel, game.character.position, lightRadius)
 
   // Clear town-specific state
   game.healer = null
@@ -239,7 +283,7 @@ function destroyPortal(game: GameState): void {
 // ============================================================================
 
 /**
- * Initialize town features (healer, merchant)
+ * Initialize town features (healer, 5 specialized shops)
  */
 function initializeTown(game: GameState): void {
   // Initialize healer
@@ -248,11 +292,19 @@ function initializeTown(game: GameState): void {
     costPerHP: HEALER_COST_PER_HP,
   }
 
-  // Initialize merchant with town portal scrolls and consumables
+  // Initialize all 5 town shops
   game.merchants = []
-  const townMerchant = initializeTownMerchant()
-  if (townMerchant) {
-    game.merchants.push(townMerchant)
+  for (const shopId of TOWN_SHOP_IDS) {
+    const position = TOWN_SHOP_POSITIONS[shopId]
+    const merchant = initializeMerchant(
+      shopId,
+      { ...position },
+      0, // Town level (depth 0)
+      generateTownShopInventory
+    )
+    if (merchant) {
+      game.merchants.push(merchant)
+    }
   }
 
   // Reset features
@@ -262,77 +314,191 @@ function initializeTown(game: GameState): void {
 }
 
 /**
- * Initialize town merchant with appropriate stock
- * Town merchant sells consumables including Town Portal Scrolls
+ * Generate inventory for town shops based on shop type
  */
-function initializeTownMerchant(): MerchantState | null {
-  // Use the wandering_trader template for town
-  const merchant = initializeMerchant(
-    'wandering_trader',
-    { ...MERCHANT_POSITION },
-    1, // Low depth for basic item tiers
-    generateTownMerchantInventory
-  )
-  if (!merchant) return null
-
-  // Town merchant has more gold
-  merchant.gold = 5000
-
-  return merchant
+function generateTownShopInventory(merchantId: string, _depth: number): Item[] {
+  switch (merchantId as TownShopId) {
+    case 'town_general':
+      return generateGeneralStoreInventory()
+    case 'town_armory':
+      return generateArmoryInventory()
+    case 'town_weapons':
+      return generateWeaponShopInventory()
+    case 'town_alchemy':
+      return generateAlchemyShopInventory()
+    case 'town_magic':
+      return generateMagicShopInventory()
+    default:
+      return []
+  }
 }
 
 /**
- * Generate inventory for the town merchant
- * Includes Town Portal Scrolls and basic consumables
+ * General Store: Town Portal scrolls, basic gear (tier 1), light potions
  */
-function generateTownMerchantInventory(_merchantId: string, _depth: number): Item[] {
+function generateGeneralStoreInventory(): Item[] {
   const items: Item[] = []
 
   // Always stock Town Portal Scrolls (3-5)
   const tpScroll = SCROLLS.find(s => s.name === 'Scroll of Town Portal')
   if (tpScroll) {
-    const count = 3 + Math.floor(Math.random() * 3)
+    const count = randomInt(3, 5)
     for (let i = 0; i < count; i++) {
       const item = createItem(tpScroll, 0)
-      // Set shop price (roughly 2.5x base value since tier 2)
       item.shopPrice = 75
       items.push(item)
     }
   }
 
-  // Stock healing potions
-  const healingPotions = POTIONS.filter(p =>
-    p.name.includes('Cure') || p.name.includes('Healing')
+  // Stock light healing potions (2-3 each of Cure Light and Cure Serious)
+  const lightHealing = POTIONS.filter(p =>
+    p.name === 'Potion of Cure Light Wounds' || p.name === 'Potion of Cure Serious Wounds'
   )
-  for (const potion of healingPotions.slice(0, 3)) {
-    const count = 2 + Math.floor(Math.random() * 2)
+  for (const potion of lightHealing) {
+    const count = randomInt(2, 3)
     for (let i = 0; i < count; i++) {
       const item = createItem(potion, 0)
-      item.shopPrice = Math.floor(potion.tier * 15 * 2.5)
+      item.shopPrice = Math.floor(potion.tier * 15 * 2.0)
       items.push(item)
     }
   }
 
-  // Stock teleport scrolls
+  // Stock Phase Door scrolls (2-3)
+  const phaseDoor = SCROLLS.find(s => s.name === 'Scroll of Phase Door')
+  if (phaseDoor) {
+    const count = randomInt(2, 3)
+    for (let i = 0; i < count; i++) {
+      const item = createItem(phaseDoor, 0)
+      item.shopPrice = Math.floor(phaseDoor.tier * 20 * 2.0)
+      items.push(item)
+    }
+  }
+
+  return items
+}
+
+/**
+ * Armory: Armor, shields, helms, gloves, boots (tier 1-2)
+ */
+function generateArmoryInventory(): Item[] {
+  const items: Item[] = []
+
+  // Filter for armor-type items (tier 1-2)
+  const armorTypes: ItemTemplate['slot'][] = ['body', 'shield', 'helm', 'gloves', 'boots']
+  const armorItems = ALL_EQUIPMENT.filter(e =>
+    e.slot && armorTypes.includes(e.slot) && e.tier <= 2
+  )
+
+  // Stock 6-8 random armor pieces
+  const count = randomInt(6, 8)
+  for (let i = 0; i < count && armorItems.length > 0; i++) {
+    const template = armorItems[randomInt(0, armorItems.length - 1)]!
+    const item = createItem(template, 0)
+    item.shopPrice = Math.floor(template.tier * 50 * 2.0)
+    items.push(item)
+  }
+
+  return items
+}
+
+/**
+ * Weapon Smithy: Weapons and bows (tier 1-2)
+ */
+function generateWeaponShopInventory(): Item[] {
+  const items: Item[] = []
+
+  // Filter for weapon-type items (tier 1-2)
+  const weaponTypes: ItemTemplate['slot'][] = ['weapon', 'bow']
+  const weaponItems = ALL_EQUIPMENT.filter(e =>
+    e.slot && weaponTypes.includes(e.slot) && e.tier <= 2
+  )
+
+  // Stock 6-8 random weapons
+  const count = randomInt(6, 8)
+  for (let i = 0; i < count && weaponItems.length > 0; i++) {
+    const template = weaponItems[randomInt(0, weaponItems.length - 1)]!
+    const item = createItem(template, 0)
+    item.shopPrice = Math.floor(template.tier * 50 * 2.0)
+    items.push(item)
+  }
+
+  return items
+}
+
+/**
+ * Alchemy Shop: All healing potions, utility potions (speed, neutralize)
+ */
+function generateAlchemyShopInventory(): Item[] {
+  const items: Item[] = []
+
+  // Stock all healing potions (2-4 each)
+  const healingPotions = POTIONS.filter(p =>
+    p.name.includes('Cure') || p.name.includes('Healing')
+  )
+  for (const potion of healingPotions) {
+    const count = randomInt(2, 4)
+    for (let i = 0; i < count; i++) {
+      const item = createItem(potion, 0)
+      item.shopPrice = Math.floor(potion.tier * 15 * 1.8)
+      items.push(item)
+    }
+  }
+
+  // Stock utility potions (speed, neutralize poison, restore mana)
+  const utilityPotions = POTIONS.filter(p =>
+    p.name.includes('Speed') || p.name.includes('Neutralize') || p.name.includes('Restore Mana')
+  )
+  for (const potion of utilityPotions) {
+    const count = randomInt(2, 3)
+    for (let i = 0; i < count; i++) {
+      const item = createItem(potion, 0)
+      item.shopPrice = Math.floor(potion.tier * 20 * 1.8)
+      items.push(item)
+    }
+  }
+
+  return items
+}
+
+/**
+ * Magic Shop: Scrolls (Town Portal, Phase Door, Teleport, Light, Mapping)
+ */
+function generateMagicShopInventory(): Item[] {
+  const items: Item[] = []
+
+  // Always stock Town Portal Scrolls (4-6, main source)
+  const tpScroll = SCROLLS.find(s => s.name === 'Scroll of Town Portal')
+  if (tpScroll) {
+    const count = randomInt(4, 6)
+    for (let i = 0; i < count; i++) {
+      const item = createItem(tpScroll, 0)
+      item.shopPrice = 75
+      items.push(item)
+    }
+  }
+
+  // Stock teleport scrolls (Phase Door, Teleportation)
   const teleportScrolls = SCROLLS.filter(s =>
     s.name.includes('Phase Door') || s.name.includes('Teleportation')
   )
   for (const scroll of teleportScrolls) {
-    const count = 2 + Math.floor(Math.random() * 2)
+    const count = randomInt(3, 4)
     for (let i = 0; i < count; i++) {
       const item = createItem(scroll, 0)
-      item.shopPrice = Math.floor(scroll.tier * 20 * 2.5)
+      item.shopPrice = Math.floor(scroll.tier * 20 * 2.2)
       items.push(item)
     }
   }
 
-  // Stock speed potions
-  const speedPotion = POTIONS.find(p => p.name.includes('Speed'))
-  if (speedPotion) {
-    const count = 1 + Math.floor(Math.random() * 2)
+  // Stock utility scrolls (Light, Magic Mapping)
+  const utilityScrolls = SCROLLS.filter(s =>
+    s.name.includes('Light') || s.name.includes('Magic Mapping')
+  )
+  for (const scroll of utilityScrolls) {
+    const count = randomInt(2, 3)
     for (let i = 0; i < count; i++) {
-      const item = createItem(speedPotion, 0)
-      item.shopPrice = 50
+      const item = createItem(scroll, 0)
+      item.shopPrice = Math.floor(scroll.tier * 15 * 2.2)
       items.push(item)
     }
   }
@@ -447,5 +613,6 @@ export {
   PORTAL_SPAWN_POSITION,
   DUNGEON_ENTRANCE_POSITION,
   HEALER_POSITION,
-  MERCHANT_POSITION,
+  TOWN_SHOP_IDS,
+  TOWN_SHOP_POSITIONS,
 }

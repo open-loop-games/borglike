@@ -7,6 +7,7 @@
  */
 
 import type { StatModifiers } from './races'
+import type { UnlockContext } from '@/types/progression'
 
 /** Player class definition */
 export interface GameClass {
@@ -30,6 +31,8 @@ export interface GameClass {
   unlockCondition?: string
   /** Is this a prestige class (late-game unlock)? */
   prestige?: boolean
+  /** Predicate to check if unlock condition is met (for prestige classes) */
+  checkCondition?: (ctx: UnlockContext) => boolean
   /** Brief flavor text */
   description: string
   /** Bot behavior hint for auto-player AI */
@@ -224,6 +227,7 @@ const necromancer: GameClass = {
   starting: false,
   unlockCondition: 'Die 100 times total',
   prestige: true,
+  checkCondition: (ctx) => ctx.globalStats.totalDeaths >= 100,
   description: 'Masters of death who raise fallen enemies as allies.',
   botBehavior: 'Summoner: raises slain monsters, builds undead army, stays behind minions',
 }
@@ -249,8 +253,9 @@ const berserker: GameClass = {
   ],
   usesMagic: false,
   starting: false,
-  unlockCondition: 'Win a run without using any healing items',
+  unlockCondition: 'Win a run with Warrior class',
   prestige: true,
+  checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['Warrior'] ?? 0) >= 1,
   description: 'Unstoppable fury incarnate - no healing, only damage.',
   botBehavior: 'All-in: never retreats, maximum aggression, wins fast or dies trying',
 }
@@ -278,6 +283,7 @@ const archmage: GameClass = {
   starting: false,
   unlockCondition: 'Win a run with Mage defeating the final boss',
   prestige: true,
+  checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['Mage'] ?? 0) >= 1,
   description: 'Supreme magical power at the cost of extreme fragility.',
   botBehavior:
     'Glass cannon: devastating AOE spells, teleports constantly, one-shots or gets one-shot',
@@ -339,6 +345,58 @@ const blackguard: GameClass = {
   botBehavior: 'Bloodthirsty: aggressive melee, heals by dealing damage, fears nothing',
 }
 
+const monk: GameClass = {
+  id: 'monk',
+  name: 'Monk',
+  stats: { str: 0, int: -1, wis: 2, dex: 3, con: -1 },
+  hitdie: 4,
+  maxAttacks: 6, // Fast unarmed strikes
+  primaryStat: 'dex',
+  titles: [
+    'Initiate',
+    'Student',
+    'Disciple',
+    'Immaculate',
+    'Adept',
+    'Guru',
+    'Sensei',
+    'Master',
+    'Grand Master',
+    'Transcendent',
+  ],
+  usesMagic: false, // Ki-based abilities, not traditional magic
+  starting: false,
+  unlockCondition: 'Win a run with Rogue',
+  description: 'Martial artists who channel inner power through unarmed combat.',
+  botBehavior: 'Swift: high speed, multiple attacks, dodges over blocking, hit-and-run tactics',
+}
+
+const bard: GameClass = {
+  id: 'bard',
+  name: 'Bard',
+  stats: { str: -1, int: 1, wis: 1, dex: 1, con: 0 },
+  hitdie: 3,
+  maxAttacks: 4,
+  primaryStat: 'int',
+  titles: [
+    'Busker',
+    'Minstrel',
+    'Performer',
+    'Troubadour',
+    'Entertainer',
+    'Virtuoso',
+    'Maestro',
+    'Loremaster',
+    'Songweaver',
+    'Legendary Bard',
+  ],
+  usesMagic: true, // Song magic
+  starting: false,
+  unlockCondition: 'Discover 50 different monsters',
+  description: 'Wandering performers whose songs inspire allies and confound enemies.',
+  botBehavior: 'Adaptive: buffs self, debuffs enemies, moderate combat, jack of all trades',
+}
+
 // =============================================================================
 // EXPORTS
 // =============================================================================
@@ -355,6 +413,8 @@ export const classes: GameClass[] = [
   paladin,
   druid,
   blackguard,
+  monk,
+  bard,
   // Prestige classes
   necromancer,
   berserker,

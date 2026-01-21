@@ -5,6 +5,8 @@
  * Most traps are single-use; some can rearm after triggering.
  */
 
+import { random } from '../rng'
+
 export type TrapEffect = 'damage' | 'poison' | 'teleport' | 'alarm' | 'pit'
 
 export interface TrapTemplate {
@@ -102,7 +104,7 @@ export function selectTrap(depth: number): TrapTemplate | null {
   if (available.length === 0) return null
 
   const totalRarity = available.reduce((sum, t) => sum + t.rarity, 0)
-  let roll = Math.random() * totalRarity
+  let roll = random() * totalRarity
 
   for (const trap of available) {
     roll -= trap.rarity

@@ -4,6 +4,8 @@
  * These are special tiles that provide effects when used.
  */
 
+import { random } from '../rng'
+
 export type FeatureEffect = 'heal' | 'mana' | 'buff' | 'cure' | 'bless' | 'random'
 
 export interface FountainTemplate {
@@ -160,7 +162,7 @@ export function selectFountain(depth: number): FountainTemplate | null {
   if (available.length === 0) return null
 
   const totalRarity = available.reduce((sum, f) => sum + f.rarity, 0)
-  let roll = Math.random() * totalRarity
+  let roll = random() * totalRarity
 
   for (const fountain of available) {
     roll -= fountain.rarity
@@ -185,7 +187,7 @@ export function selectAltar(depth: number): AltarTemplate | null {
   if (available.length === 0) return null
 
   const totalRarity = available.reduce((sum, a) => sum + a.rarity, 0)
-  let roll = Math.random() * totalRarity
+  let roll = random() * totalRarity
 
   for (const altar of available) {
     roll -= altar.rarity

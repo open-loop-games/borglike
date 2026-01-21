@@ -10,6 +10,7 @@
 
 import type { Tile, Point } from '../types'
 import type { VaultTemplate, VaultPlacement, RoomData } from './types'
+import { random, randomInt } from '../rng'
 
 /** Available vault templates */
 export const VAULTS: VaultTemplate[] = [
@@ -380,7 +381,7 @@ export function tryPlaceVault(
   vaultChance: number
 ): VaultPlacement | null {
   // Check if we should place a vault
-  if (Math.random() > vaultChance) return null
+  if (random() > vaultChance) return null
 
   const available = getAvailableVaults(depth)
   if (available.length === 0) return null
@@ -392,7 +393,7 @@ export function tryPlaceVault(
     return 1.0
   })
   const totalWeight = weights.reduce((a, b) => a + b, 0)
-  let roll = Math.random() * totalWeight
+  let roll = random() * totalWeight
 
   let vault: VaultTemplate = available[0]!
   for (let i = 0; i < available.length; i++) {
@@ -424,8 +425,8 @@ function findVaultPlacement(
   const attempts = 50
 
   for (let i = 0; i < attempts; i++) {
-    const x = 2 + Math.floor(Math.random() * (width - vault.width - 4))
-    const y = 2 + Math.floor(Math.random() * (height - vault.height - 4))
+    const x = randomInt(2, width - vault.width - 3)
+    const y = randomInt(2, height - vault.height - 3)
 
     if (isValidVaultPosition(tiles, x, y, vault, rooms)) {
       return { x, y }

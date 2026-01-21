@@ -6,6 +6,12 @@
  * See ANGBAND-LITE-DESIGN.md for unlock conditions and design rationale.
  */
 
+import type { UnlockContext } from '@/types/progression'
+import { getDragonNames } from './monsters'
+
+/** Starting race names for prestige unlock validation */
+const STARTING_RACE_NAMES = ['Human', 'Dwarf', 'Elf']
+
 /** Stat modifiers for a race */
 export interface StatModifiers {
   str: number
@@ -42,6 +48,8 @@ export interface Race {
   unlockCondition?: string
   /** Is this a prestige race (late-game unlock)? */
   prestige?: boolean
+  /** Predicate to check if unlock condition is met (for prestige races) */
+  checkCondition?: (ctx: UnlockContext) => boolean
   /** Brief flavor text */
   description: string
 }
@@ -331,6 +339,10 @@ const vampire: Race = {
   starting: false,
   unlockCondition: 'Win a run with each starting race (Human, Dwarf, Elf)',
   prestige: true,
+  checkCondition: (ctx) => {
+    const wins = ctx.globalStats.victoriesPerRace ?? {}
+    return STARTING_RACE_NAMES.every((race) => (wins[race] ?? 0) >= 1)
+  },
   description: 'Immortal predators who sustain themselves on the life force of others.',
 }
 
@@ -361,6 +373,7 @@ const golem: Race = {
   starting: false,
   unlockCondition: 'Collect 10,000 gold total across all runs',
   prestige: true,
+  checkCondition: (ctx) => ctx.globalStats.totalGold >= 10000,
   description: 'Animated constructs of stone and metal, nearly indestructible.',
 }
 
@@ -391,6 +404,14 @@ const draconian: Race = {
   starting: false,
   unlockCondition: 'Kill 50 dragons total',
   prestige: true,
+  checkCondition: (ctx) => {
+    const dragonNames = getDragonNames()
+    const totalDragonKills = dragonNames.reduce(
+      (sum, name) => sum + (ctx.bestiary[name]?.kills ?? 0),
+      0
+    )
+    return totalDragonKills >= 50
+  },
   description: 'Dragon-blooded humanoids with elemental powers.',
 }
 

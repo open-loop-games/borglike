@@ -96,6 +96,40 @@ const swiftness: UpgradeDefinition = {
   icon: '»',
 }
 
+const precision: UpgradeDefinition = {
+  id: 'precision',
+  name: 'Precision',
+  description: '+3 accuracy per level',
+  category: 'stats',
+  maxLevel: 5,
+  baseCost: 100,
+  costScaling: 1.6,
+  effect: {
+    type: 'flat',
+    stat: 'accuracy',
+    baseValue: 3,
+    perLevel: 3,
+  },
+  icon: '◎',
+}
+
+const celerity: UpgradeDefinition = {
+  id: 'celerity',
+  name: 'Celerity',
+  description: '+2 speed per level',
+  category: 'stats',
+  maxLevel: 5,
+  baseCost: 125,
+  costScaling: 1.8,
+  effect: {
+    type: 'flat',
+    stat: 'speed',
+    baseValue: 2,
+    perLevel: 2,
+  },
+  icon: '⚡',
+}
+
 // =============================================================================
 // META UPGRADES
 // =============================================================================
@@ -149,6 +183,23 @@ const fastLearner: UpgradeDefinition = {
     perLevel: 5,
   },
   icon: '★',
+}
+
+const haggler: UpgradeDefinition = {
+  id: 'haggler',
+  name: 'Haggler',
+  description: '5% better merchant prices per level',
+  category: 'meta',
+  maxLevel: 5,
+  baseCost: 100,
+  costScaling: 1.5,
+  effect: {
+    type: 'percent',
+    stat: 'merchantPrices',
+    baseValue: 5,
+    perLevel: 5,
+  },
+  icon: '⚖',
 }
 
 // =============================================================================
@@ -249,10 +300,13 @@ export const upgrades: UpgradeDefinition[] = [
   might,
   resilience,
   swiftness,
+  precision,
+  celerity,
   // Meta
   essenceBoost,
   goldDigger,
   fastLearner,
+  haggler,
   // QoL
   turboMode,
   autoRestart,

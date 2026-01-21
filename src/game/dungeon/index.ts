@@ -7,6 +7,7 @@
 
 import type { DungeonLevel, Tile, Point } from '../types'
 import { MAX_DEPTH } from '../types'
+import { randomInt } from '../rng'
 import type { GeneratorType, RoomData, VaultPlacement } from './types'
 import { getDepthProfile, selectGenerator } from './profiles'
 import { generateClassic } from './classic'
@@ -52,8 +53,9 @@ export function generateLevel(
   }
 
   const result = generateLevelWithInfo(depth, width, height)
-  // Attach vault data to level for feature initialization
+  // Attach metadata to level for feature initialization and bot AI
   result.level.vault = result.vault
+  result.level.generatorType = result.generatorType
   return result.level
 }
 
@@ -103,9 +105,13 @@ export function generateLevelWithInfo(
   // Try to place a vault (depth-dependent chance)
   const vault = tryPlaceVault(tiles, rooms, width, height, depth, profile.vaultChance)
 
-  // Place doors at corridor chokepoints
-  const doorCandidates = findDoorCandidates(tiles, width, height)
-  const placedDoors = placeDoors(tiles, doorCandidates, profile.doorChance)
+  // Place doors at room entrances (not mid-corridor)
+  // Labyrinths have few/no doors - the maze itself is the obstacle
+  const effectiveDoorChance = generatorType === 'labyrinth'
+    ? profile.doorChance * 0.15  // Greatly reduced for labyrinths
+    : profile.doorChance
+  const doorCandidates = findDoorCandidates(tiles, width, height, rooms)
+  const placedDoors = placeDoors(tiles, doorCandidates, effectiveDoorChance)
 
   // Place stairs
   const { stairsUp, stairsDown } = placeStairs(tiles, width, height, depth)
@@ -117,6 +123,7 @@ export function generateLevelWithInfo(
     tiles,
     stairsUp,
     stairsDown,
+    generatorType,
   }
 
   return {
@@ -183,7 +190,7 @@ function placeStairs(
  */
 function shuffleArray<T>(array: T[]): void {
   for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = randomInt(0, i)
     const temp = array[i]!
     array[i] = array[j]!
     array[j] = temp

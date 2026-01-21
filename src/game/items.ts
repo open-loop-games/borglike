@@ -9,9 +9,10 @@ import type { ItemTemplate } from './data/items'
 import type { BoosterBonuses } from './booster-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import type { ArtifactTemplate } from './data/artifacts'
-import { getItemsForDepth, POTIONS, SCROLLS, ALL_EQUIPMENT, BOWS } from './data/index'
+import { getItemsForDepth, POTIONS, SCROLLS, ALL_EQUIPMENT, BOWS, LIGHTS } from './data/index'
 import { getArtifactsForDepth } from './data/artifacts'
 import { findOpenPositions, getTile } from './dungeon'
+import { random, randomInt } from './rng'
 
 // ============================================================================
 // UNIQUE ID GENERATION
@@ -169,7 +170,7 @@ export function spawnItemsForLevel(level: DungeonLevel, depth: number): GroundIt
 
   // Small chance to spawn an artifact (1% per 10 depth levels)
   const artifactChance = Math.min(0.1, depth * 0.01)
-  if (Math.random() < artifactChance) {
+  if (random() < artifactChance) {
     const artifact = pickRandomArtifact(depth)
     const artifactPos = validPositions[spawnCount]
     if (artifact && artifactPos) {
@@ -207,7 +208,7 @@ function pickRandomItem(templates: ItemTemplate[], depth: number): ItemTemplate 
 
   // Weighted random selection
   const totalWeight = weighted.reduce((sum, w) => sum + w.weight, 0)
-  let roll = Math.random() * totalWeight
+  let roll = random() * totalWeight
 
   for (const w of weighted) {
     roll -= w.weight
@@ -230,7 +231,7 @@ function pickRandomArtifact(depth: number): ArtifactTemplate | null {
   const artifacts = getArtifactsForDepth(depth)
   if (artifacts.length === 0) return null
 
-  const index = Math.floor(Math.random() * artifacts.length)
+  const index = randomInt(0, artifacts.length - 1)
   return artifacts[index] ?? null
 }
 
@@ -244,17 +245,17 @@ function pickRandomArtifact(depth: number): ArtifactTemplate | null {
  */
 function rollEnchantment(depth: number): number {
   // 70% chance of no enchantment
-  if (Math.random() > 0.3) {
+  if (random() > 0.3) {
     return 0
   }
 
   // 20% chance of +1
-  if (Math.random() > 0.5) {
+  if (random() > 0.5) {
     return 1
   }
 
   // 8% chance of +2
-  if (Math.random() > 0.5 || depth < 20) {
+  if (random() > 0.5 || depth < 20) {
     return 2
   }
 
@@ -444,8 +445,8 @@ export function createHealingPotions(count: number): Item[] {
  */
 export function createRandomPotion(): Item | null {
   if (POTIONS.length === 0) return null
-  const randomIndex = Math.floor(Math.random() * POTIONS.length)
-  const potion = POTIONS[randomIndex]
+  const index = randomInt(0, POTIONS.length - 1)
+  const potion = POTIONS[index]
   if (!potion) return null
   return createItem(potion, 0)
 }
@@ -520,6 +521,12 @@ export function createStartingEquipment(
     if (bow) {
       items.push(createItem(bow, 0))
     }
+  }
+
+  // Starting torch for light
+  const torch = LIGHTS.find((l) => l.name === 'Wooden Torch')
+  if (torch) {
+    items.push(createItem(torch, 0))
   }
 
   // Some potions and scrolls
@@ -653,7 +660,7 @@ export function generateMerchantInventory(merchantId: string, depth: number): It
 
   // Generate items with markup
   for (let i = 0; i < itemCount && shopItems.length > 0; i++) {
-    const template = shopItems[Math.floor(Math.random() * shopItems.length)]
+    const template = shopItems[randomInt(0, shopItems.length - 1)]
     if (!template) continue
 
     const enchantment = rollEnchantmentForShop(depth)
@@ -661,7 +668,7 @@ export function generateMerchantInventory(merchantId: string, depth: number): It
 
     // Calculate shop price (base tier * 50 + enchant bonus)
     const basePrice = template.tier * 50 + enchantment * 30
-    const markup = 1.5 + Math.random() * 0.5 // 1.5x to 2.0x markup
+    const markup = 1.5 + random() * 0.5 // 1.5x to 2.0x markup
     item.shopPrice = Math.floor(basePrice * markup)
 
     items.push(item)
@@ -674,7 +681,7 @@ export function generateMerchantInventory(merchantId: string, depth: number): It
  * Roll enchantment for shop items (slightly better than random drops)
  */
 function rollEnchantmentForShop(depth: number): number {
-  const roll = Math.random()
+  const roll = random()
   if (roll > 0.6) return 0 // 40% no enchantment
   if (roll > 0.3 || depth < 10) return 1 // 30% +1
   if (roll > 0.1 || depth < 20) return 2 // 20% +2

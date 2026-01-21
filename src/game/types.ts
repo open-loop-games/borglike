@@ -17,7 +17,8 @@ import type { FountainTemplate, AltarTemplate } from './data/features'
 import type { MerchantTemplate } from './data/merchants'
 import type { GoldPileTemplate } from './data/gold'
 import type { TrapTemplate } from './data/traps'
-import type { VaultPlacement } from './dungeon/types'
+import type { VaultPlacement, GeneratorType } from './dungeon/types'
+import type { BestiaryEntry } from '@/types/progression'
 
 // Re-export data types
 export type {
@@ -35,6 +36,8 @@ export type {
   MerchantTemplate,
   GoldPileTemplate,
   TrapTemplate,
+  BestiaryEntry,
+  GeneratorType,
 }
 
 // ============================================================================
@@ -56,6 +59,41 @@ export interface Point {
   x: number
   y: number
 }
+
+// ============================================================================
+// POINT & DISTANCE UTILITIES
+// ============================================================================
+
+/** Convert point to string key for Map/Set usage */
+export function posKey(p: Point): string {
+  return `${p.x},${p.y}`
+}
+
+/** Chebyshev distance (king's move / diagonal distance) */
+export function chebyshevDistance(a: Point, b: Point): number {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+}
+
+/** Manhattan distance (taxicab / 4-directional distance) */
+export function manhattanDistance(a: Point, b: Point): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
+}
+
+/** Check if two points are the same */
+export function isSamePoint(a: Point, b: Point): boolean {
+  return a.x === b.x && a.y === b.y
+}
+
+/** Check if two points are adjacent (including diagonals, excluding same point) */
+export function isAdjacent(a: Point, b: Point): boolean {
+  const dx = Math.abs(a.x - b.x)
+  const dy = Math.abs(a.y - b.y)
+  return dx <= 1 && dy <= 1 && (dx + dy) > 0
+}
+
+// ============================================================================
+// DIRECTIONS
+// ============================================================================
 
 /** Direction for movement (8-directional + wait) */
 export type Direction = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw' | 'wait'
@@ -122,6 +160,8 @@ export interface DungeonLevel {
   tiles: Tile[][]
   stairsUp: Point | null
   stairsDown: Point | null
+  /** Generator type used to create this level (labyrinth, cavern, classic) */
+  generatorType?: GeneratorType
   /** Vault placement data (if a vault was placed on this level) */
   vault?: VaultPlacement | null
 }
@@ -330,6 +370,11 @@ export interface Monster {
   debuffs: MonsterDebuff[]
 }
 
+/** Check if monster is a boss or unique (dangerous target) */
+export function isBossOrUnique(m: Monster): boolean {
+  return m.template.flags?.includes('UNIQUE') || m.template.flags?.includes('BOSS') || false
+}
+
 // ============================================================================
 // GAME STATE
 // ============================================================================
@@ -383,6 +428,16 @@ export interface TrapState {
   rearmTurn: number | null
 }
 
+/** Cached entity state for a dungeon level (monsters, items, features) */
+export interface LevelEntityState {
+  monsters: Monster[]
+  items: GroundItem[]
+  fountains: Map<string, FountainState>
+  altars: Map<string, AltarState>
+  merchants: MerchantState[]
+  traps: Map<string, TrapState>
+}
+
 /** Town portal state - tracks active portal between town and dungeon */
 export interface TownPortalState {
   /** Position in dungeon where portal was opened */
@@ -418,6 +473,8 @@ export interface GameState {
   currentLevel: DungeonLevel
   /** Cache of generated levels (for returning to previous depths) */
   levelCache: Map<number, DungeonLevel>
+  /** Cache of entity state per level (monsters, items, features) */
+  entityCache: Map<number, LevelEntityState>
 
   // Entities on current level
   monsters: Monster[]
@@ -453,6 +510,9 @@ export interface GameState {
 
   // Second Wind tracking (auto-heal once when critical)
   usedSecondWind?: boolean
+
+  // Bestiary data (injected from progression store for knowledge bonuses)
+  bestiary?: Record<string, BestiaryEntry>
 }
 
 /** A message in the game log */
@@ -581,6 +641,7 @@ export interface RunConfig {
   botPersonality?: BotPersonality
   upgradeBonuses?: UpgradeBonuses // Meta-progression bonuses
   boosterBonuses?: BoosterBonuses // Per-run booster bonuses
+  bestiary?: Record<string, BestiaryEntry> // Lifetime kill data for knowledge bonuses
 }
 
 // ============================================================================

@@ -4,6 +4,8 @@
  * Merchants appear in special vault rooms and offer items for sale.
  */
 
+import { random, randomInt } from '../rng'
+
 export type ShopType = 'general' | 'weapon' | 'armor' | 'potion' | 'scroll' | 'mixed' | 'blackmarket'
 
 export interface MerchantDialogue {
@@ -36,6 +38,137 @@ export interface MerchantTemplate {
 }
 
 export const MERCHANTS: MerchantTemplate[] = [
+  // ============================================================================
+  // TOWN SHOPS (minDepth: 0) - Always available in town
+  // ============================================================================
+  {
+    id: 'town_general',
+    name: 'General Store',
+    char: '1',
+    color: 0xfbbf24, // amber
+    shopType: 'mixed',
+    priceMultiplier: 2.0,
+    sellMultiplier: 0.35,
+    inventorySize: [8, 12],
+    tierRange: [1, 2],
+    minDepth: 0,
+    baseGold: 2500,
+    dialogue: {
+      greeting: [
+        'Welcome to my humble shop!',
+        'Take a look around, adventurer!',
+        'I have a bit of everything!',
+      ],
+      purchase: ['Thank you kindly!', 'A wise purchase!', 'May it serve you well!'],
+      sell: ["I'll take it off your hands.", 'Fair enough, deal!', 'This will sell nicely.'],
+      farewell: ['Safe travels!', 'Come back anytime!', 'Good luck in the dungeon!'],
+      tooExpensive: ['That one is a bit pricey.', 'Perhaps something more affordable?'],
+      cantAfford: ["I can't pay that much right now.", 'My gold reserves are limited.'],
+    },
+  },
+  {
+    id: 'town_armory',
+    name: 'Armory',
+    char: '2',
+    color: 0x64748b, // slate
+    shopType: 'armor',
+    priceMultiplier: 2.0,
+    sellMultiplier: 0.40,
+    inventorySize: [6, 10],
+    tierRange: [1, 2],
+    minDepth: 0,
+    baseGold: 3000,
+    dialogue: {
+      greeting: [
+        'The finest protection in town!',
+        'Armor saves lives, friend!',
+        'Looking to bolster your defenses?',
+      ],
+      purchase: ['May it turn aside many blows!', 'Solid choice!', 'Wear it well!'],
+      sell: ['Good craftsmanship here.', "I can repair and resell this.", 'Decent condition.'],
+      farewell: ['Stay protected!', 'Armor up before you head down!', 'Come back when you need repairs!'],
+      tooExpensive: ['Quality protection costs gold.', 'Your life is worth the price.'],
+      cantAfford: ['Bring me armor, not trinkets.', 'I deal in protective gear.'],
+    },
+  },
+  {
+    id: 'town_weapons',
+    name: 'Weapon Smithy',
+    char: '3',
+    color: 0xef4444, // red
+    shopType: 'weapon',
+    priceMultiplier: 2.0,
+    sellMultiplier: 0.40,
+    inventorySize: [6, 10],
+    tierRange: [1, 2],
+    minDepth: 0,
+    baseGold: 3000,
+    dialogue: {
+      greeting: [
+        'Looking for something sharp?',
+        'The best blades in town!',
+        'Arm yourself properly, adventurer!',
+      ],
+      purchase: ['Strike true!', 'May it serve you in battle!', 'A fine weapon indeed!'],
+      sell: ["A warrior's blade deserves respect.", 'This has seen battle.', 'Good steel here.'],
+      farewell: ['Fight well!', 'May your enemies fall!', 'Sharpen your skills and your blade!'],
+      tooExpensive: ['Quality steel costs gold.', 'These are battle-tested weapons.'],
+      cantAfford: ['I need weapons or coin, friend.', 'Bring me something of value.'],
+    },
+  },
+  {
+    id: 'town_alchemy',
+    name: 'Alchemy Shop',
+    char: '4',
+    color: 0x8b5cf6, // purple
+    shopType: 'potion',
+    priceMultiplier: 1.8,
+    sellMultiplier: 0.30,
+    inventorySize: [10, 15],
+    tierRange: [1, 2],
+    minDepth: 0,
+    baseGold: 2000,
+    dialogue: {
+      greeting: [
+        'Potions and elixirs, fresh brewed!',
+        'What ails you? I have the cure!',
+        'Step right up for magical brews!',
+      ],
+      purchase: ['Drink responsibly!', 'One sip makes all the difference!', 'Excellent choice!'],
+      sell: ['Hmm, I can recycle this.', 'The ingredients may be useful.', 'Acceptable quality.'],
+      farewell: ['Stay healthy!', "Don't forget your healing potions!", 'May your flasks never run dry!'],
+      tooExpensive: ["Quality ingredients aren't cheap!", 'Alchemy is an expensive art.'],
+      cantAfford: ['Bring me potions or gold.', 'Empty flasks are worthless.'],
+    },
+  },
+  {
+    id: 'town_magic',
+    name: 'Magic Shop',
+    char: '5',
+    color: 0x3b82f6, // blue
+    shopType: 'scroll',
+    priceMultiplier: 2.2,
+    sellMultiplier: 0.35,
+    inventorySize: [8, 12],
+    tierRange: [1, 2],
+    minDepth: 0,
+    baseGold: 2500,
+    dialogue: {
+      greeting: [
+        'Scrolls of ancient power!',
+        'Knowledge and magic await!',
+        'Seeking arcane assistance?',
+      ],
+      purchase: ['Use it wisely!', 'The words hold great power!', 'A sage choice!'],
+      sell: ['Ah, more texts for my collection.', 'The ink is still legible.', 'Interesting...'],
+      farewell: ['May the arcane guide you!', 'Magic protects!', 'Return for more scrolls!'],
+      tooExpensive: ['Wisdom has its price.', 'These scrolls are quite rare.'],
+      cantAfford: ['Bring me scrolls or gold.', 'I deal in knowledge, not junk.'],
+    },
+  },
+  // ============================================================================
+  // DUNGEON MERCHANTS (minDepth > 0) - Found in dungeon vaults
+  // ============================================================================
   {
     id: 'wandering_trader',
     name: 'Wandering Trader',
@@ -190,7 +323,7 @@ export function selectMerchant(depth: number): MerchantTemplate | null {
   })
 
   const totalWeight = weights.reduce((a, b) => a + b, 0)
-  let roll = Math.random() * totalWeight
+  let roll = random() * totalWeight
 
   for (let i = 0; i < available.length; i++) {
     roll -= weights[i]!
@@ -215,5 +348,5 @@ export function getDialogue(
   type: keyof MerchantDialogue
 ): string {
   const lines = template.dialogue[type]
-  return lines[Math.floor(Math.random() * lines.length)] ?? ''
+  return lines[randomInt(0, lines.length - 1)] ?? ''
 }

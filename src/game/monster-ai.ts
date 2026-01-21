@@ -18,8 +18,10 @@ import type {
   GameMessage,
 } from './types'
 import { MAX_DEPTH, getDirectionFromDelta, DIRECTION_VECTORS } from './types'
-import { attack, applyDamage, formatAttackMessageFromEntities } from './combat'
+import { randomInt } from './rng'
+import { attack, applyDamage, formatAttackMessageFromEntities, getStatusSpeedBonus } from './combat'
 import { checkSecondWind } from './status-effects'
+import { getKnowledgeBonuses } from './knowledge-effects'
 import { getSpawnableMonsters, getMonsterByName } from './data/index'
 import {
   findPath,
@@ -135,18 +137,35 @@ export function spawnMonstersForLevel(level: DungeonLevel, depth: number): Monst
 }
 
 /**
- * Pick a random monster template, weighted by depth appropriateness
+ * Pick a random monster template, weighted by rarity
+ *
+ * Uses template.rarity (default 1.0) as spawn weight.
+ * Lower rarity = rarer spawn. Uniques typically have 0.1-0.15 rarity.
  *
  * @param templates - Available templates to choose from
- * @returns A randomly selected template
+ * @returns A randomly selected template based on weighted probability
  */
 function pickRandomTemplate(templates: MonsterTemplate[]): MonsterTemplate | null {
   if (templates.length === 0) return null
-  // Simple random selection for now
-  // Could be weighted by rarity/depth in the future
-  const index = Math.floor(Math.random() * templates.length)
-  const template = templates[index]
-  return template !== undefined ? template : null
+
+  // Calculate total weight
+  let totalWeight = 0
+  for (const t of templates) {
+    totalWeight += t.rarity ?? 1.0
+  }
+
+  // Pick random value in weight range
+  let roll = Math.random() * totalWeight
+  for (const t of templates) {
+    const weight = t.rarity ?? 1.0
+    roll -= weight
+    if (roll <= 0) {
+      return t
+    }
+  }
+
+  // Fallback (shouldn't reach here)
+  return templates[templates.length - 1] ?? null
 }
 
 // ============================================================================
@@ -454,7 +473,7 @@ export function findRandomMove(
   if (validMoves.length === 0) return null
 
   // Pick a random valid move
-  const index = Math.floor(Math.random() * validMoves.length)
+  const index = randomInt(0, validMoves.length - 1)
   return validMoves[index] ?? null
 }
 
@@ -563,6 +582,9 @@ function addMessage(game: GameState, text: string, type: GameMessage['type']): v
 export function processMonsterTurns(game: GameState): GameEvent[] {
   const events: GameEvent[] = []
 
+  // Get player's effective speed (base from combat stats + status effects like haste)
+  const playerSpeed = game.character.combat.speed + getStatusSpeedBonus(game.character)
+
   for (const monster of game.monsters) {
     // Apply slow debuff to speed calculation
     const slowDebuff = monster.debuffs.find((d) => d.type === 'slow')
@@ -570,8 +592,9 @@ export function processMonsterTurns(game: GameState): GameEvent[] {
       ? Math.floor((monster.template.speed * (100 - slowDebuff.value)) / 100)
       : monster.template.speed
 
-    // Add energy based on speed (110 is normal)
-    monster.energy += Math.floor((effectiveSpeed / 110) * ENERGY_PER_TICK)
+    // Add energy based on monster speed, scaled by player speed
+    // Player speed > 100 (e.g., hasted) means monsters act relatively slower
+    monster.energy += Math.floor((effectiveSpeed / 110) * ENERGY_PER_TICK * (100 / playerSpeed))
 
     // Process actions while monster has enough energy
     while (monster.energy >= BASE_ENERGY_COST && !game.character.isDead) {
@@ -641,7 +664,9 @@ function executeMonsterAction(
   if (action.type === 'attack') {
     // Monster attacks player - pass primary ability type for resistance calculation
     const primaryAbility = monster.template.abilities[0] as ResistanceType | undefined
-    const attackResult = attack(monster, game.character, primaryAbility)
+    // Compute knowledge bonuses for damage reduction (player knows this monster)
+    const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary)
+    const attackResult = attack(monster, game.character, primaryAbility, knowledgeBonuses)
     const message = formatAttackMessageFromEntities(monster, game.character, attackResult)
     addMessage(game, message, 'combat')
 

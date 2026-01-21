@@ -6,6 +6,7 @@
  */
 
 import type { ItemTemplate } from './items'
+import { random, randomInt } from '../rng'
 
 export interface GoldPileTemplate extends Omit<ItemTemplate, 'type'> {
   type: 'gold'
@@ -83,7 +84,7 @@ export function selectGoldPile(depth: number): GoldPileTemplate | null {
   const weights = available.map((pile) => 1 / pile.tier)
   const totalWeight = weights.reduce((a, b) => a + b, 0)
 
-  let roll = Math.random() * totalWeight
+  let roll = random() * totalWeight
   for (let i = 0; i < available.length; i++) {
     roll -= weights[i]!
     if (roll <= 0) return available[i]!
@@ -97,7 +98,7 @@ export function selectGoldPile(depth: number): GoldPileTemplate | null {
  */
 export function rollGoldValue(pile: GoldPileTemplate, depthBonus: number = 0): number {
   const [min, max] = pile.goldValue
-  const base = min + Math.floor(Math.random() * (max - min + 1))
+  const base = randomInt(min, max)
   // Apply depth bonus (1% per depth)
   return Math.floor(base * (1 + depthBonus / 100))
 }
@@ -134,9 +135,9 @@ export function getDefaultGoldDrop(minDepth: number): MonsterGoldDrop {
  * Roll gold drop from a monster
  */
 export function rollMonsterGold(drop: MonsterGoldDrop, goldMultiplier: number = 1): number {
-  if (Math.random() > drop.chance) return 0
+  if (random() > drop.chance) return 0
 
   const [min, max] = drop.amount
-  const base = min + Math.floor(Math.random() * (max - min + 1))
+  const base = randomInt(min, max)
   return Math.floor(base * goldMultiplier)
 }

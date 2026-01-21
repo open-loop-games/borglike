@@ -18,6 +18,7 @@ import type {
   Item,
   GameMessage,
 } from './types'
+import { random, randomInt } from './rng'
 import { getTile, findOpenPosition } from './dungeon'
 import { getFountainById, getAltarById } from './data/features'
 import { getMerchantById, getDialogue } from './data/merchants'
@@ -122,7 +123,7 @@ export function useFountain(game: GameState): boolean {
 }
 
 function applyRandomFountainEffect(game: GameState): void {
-  const roll = Math.random()
+  const roll = random()
   const char = game.character
 
   if (roll < 0.25) {
@@ -136,7 +137,7 @@ function applyRandomFountainEffect(game: GameState): void {
     addMessage(game, 'The water burns! You lose ' + damage + ' HP!', 'danger')
   } else if (roll < 0.55) {
     // Gold
-    const gold = 50 + Math.floor(Math.random() * 150)
+    const gold = randomInt(50, 199)
     char.gold += gold
     game.stats.goldCollected += gold
     addMessage(game, `You find ${gold} gold coins in the water!`, 'good')
@@ -311,7 +312,9 @@ export function buyFromMerchant(
     return false
   }
 
-  const price = item.shopPrice ?? 0
+  const basePrice = item.shopPrice ?? 0
+  const bonuses = game.upgradeBonuses ?? DEFAULT_BONUSES
+  const price = Math.floor(basePrice * (1 - bonuses.merchantDiscount / 100))
   if (game.character.gold < price) {
     addMessage(game, getDialogue(merchant.template, 'tooExpensive'), 'info')
     return false
@@ -325,7 +328,7 @@ export function buyFromMerchant(
 
   // Transaction
   game.character.gold -= price
-  merchant.gold += price
+  merchant.gold += basePrice // Merchant receives full price
   merchant.inventory.splice(itemIndex, 1)
 
   // Remove shop price before adding to inventory
@@ -361,7 +364,9 @@ export function sellToMerchant(
 
   // Calculate sell price
   const baseValue = getItemValue(item)
-  const sellPrice = Math.floor(baseValue * merchant.template.sellMultiplier)
+  const baseSellPrice = Math.floor(baseValue * merchant.template.sellMultiplier)
+  const bonuses = game.upgradeBonuses ?? DEFAULT_BONUSES
+  const sellPrice = Math.floor(baseSellPrice * (1 + bonuses.merchantDiscount / 100))
 
   if (sellPrice <= 0) {
     addMessage(game, 'The merchant is not interested in that.', 'info')
@@ -375,7 +380,7 @@ export function sellToMerchant(
 
   // Transaction
   game.character.gold += sellPrice
-  merchant.gold -= sellPrice
+  merchant.gold -= baseSellPrice // Merchant pays base price
   game.character.inventory.splice(inventoryIndex, 1)
 
   addMessage(game, `Sold ${item.template.name} for ${sellPrice} gold.`, 'item')
@@ -579,7 +584,7 @@ export function checkTrapDetection(
       // Roll detection check
       // Base detection chance = 50% - trap difficulty + (character level * 2) + (trapVisionBonus * 10)
       const baseChance = 50 - trap.template.baseDifficulty + game.character.level * 2 + trapVisionBonus * 10
-      const roll = Math.random() * 100
+      const roll = random() * 100
 
       if (roll < baseChance) {
         trap.revealed = true
@@ -673,7 +678,7 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       char.statusEffects = char.statusEffects.filter(e => e.type !== 'stun')
       char.statusEffects.push({
         type: 'stun',
-        turnsRemaining: 1 + Math.floor(Math.random() * 2),
+        turnsRemaining: randomInt(1, 2),
         value: 0,
       })
 

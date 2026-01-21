@@ -6,6 +6,7 @@
  */
 
 import type { DepthProfile, GeneratorType } from './types'
+import { random } from '../rng'
 
 /**
  * Interpolate a value within a range based on depth
@@ -56,7 +57,7 @@ export function getDepthProfile(depth: number): DepthProfile {
  */
 export function selectGenerator(depth: number): GeneratorType {
   const profile = getDepthProfile(depth)
-  const roll = Math.random()
+  const roll = random()
 
   let cumulative = 0
   cumulative += profile.generatorWeights.classic

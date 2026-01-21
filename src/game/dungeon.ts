@@ -14,6 +14,7 @@
 
 import { FOV, Path } from 'rot-js'
 import type { DungeonLevel, Point, Tile, TileType } from './types'
+import { randomInt } from './rng'
 
 // Re-export generateLevel from new module
 export { generateLevel, generateLevelWithInfo } from './dungeon/index'
@@ -273,7 +274,7 @@ export function findPathThroughDoors(level: DungeonLevel, from: Point, to: Point
  */
 function shuffleArray<T>(array: T[]): void {
   for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = randomInt(0, i)
     const temp = array[i]!
     array[i] = array[j]!
     array[j] = temp

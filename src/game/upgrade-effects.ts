@@ -18,11 +18,14 @@ export interface UpgradeBonuses {
   damagePercent: number // Damage multiplier percent (from might)
   armorBonus: number // Flat armor bonus (from resilience)
   dodgePercent: number // Dodge chance percent (from swiftness)
+  accuracyBonus: number // Flat accuracy bonus (from precision)
+  speedBonus: number // Flat speed bonus (from celerity)
 
   // Meta bonuses (multipliers)
   xpMultiplier: number // XP gain multiplier (from fast_learner)
   goldMultiplier: number // Gold gain multiplier (from gold_digger)
   essenceMultiplier: number // Essence gain multiplier (from essence_boost)
+  merchantDiscount: number // Merchant price discount percent (from haggler)
 
   // QoL bonuses
   turboSpeedPercent: number // Extra turbo speed (from turbo_mode)
@@ -51,11 +54,14 @@ export function computeUpgradeBonuses(levels: UpgradeLevels): UpgradeBonuses {
     damagePercent: getEffectValue(levels, 'might'),
     armorBonus: getEffectValue(levels, 'resilience'),
     dodgePercent: getEffectValue(levels, 'swiftness'),
+    accuracyBonus: getEffectValue(levels, 'precision'),
+    speedBonus: getEffectValue(levels, 'celerity'),
 
     // Meta bonuses
     xpMultiplier: 1 + getEffectValue(levels, 'fast_learner') / 100,
     goldMultiplier: 1 + getEffectValue(levels, 'gold_digger') / 100,
     essenceMultiplier: 1 + getEffectValue(levels, 'essence_boost') / 100,
+    merchantDiscount: getEffectValue(levels, 'haggler'),
 
     // QoL bonuses
     turboSpeedPercent: getEffectValue(levels, 'turbo_mode'),
@@ -88,9 +94,12 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   damagePercent: 0,
   armorBonus: 0,
   dodgePercent: 0,
+  accuracyBonus: 0,
+  speedBonus: 0,
   xpMultiplier: 1,
   goldMultiplier: 1,
   essenceMultiplier: 1,
+  merchantDiscount: 0,
   turboSpeedPercent: 0,
   hasAutoRestart: false,
 }

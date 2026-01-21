@@ -3,9 +3,10 @@
  *
  * LRU (Least Recently Used) cache for dungeon levels.
  * Keeps recently visited levels in memory while evicting old ones.
+ * Also manages entity state cache (monsters, items, features) per level.
  */
 
-import type { DungeonLevel } from './types'
+import type { DungeonLevel, LevelEntityState, GameState } from './types'
 
 // ============================================================================
 // CONSTANTS
@@ -132,4 +133,70 @@ export function getCacheStats(cache: Map<number, DungeonLevel>): {
  */
 export function clearCache(cache: Map<number, DungeonLevel>): void {
   cache.clear()
+}
+
+// ============================================================================
+// ENTITY CACHE OPERATIONS
+// ============================================================================
+
+/**
+ * Save current level entity state to the cache
+ *
+ * Persists monsters, items, and features for the current depth so they
+ * can be restored when the player returns to this level.
+ */
+export function saveLevelEntities(game: GameState): void {
+  const depth = game.character.depth
+
+  // Don't save entities for town (depth 0) - town is always regenerated
+  if (depth === 0) return
+
+  const entityState: LevelEntityState = {
+    monsters: [...game.monsters],
+    items: [...game.items],
+    fountains: new Map(game.fountains),
+    altars: new Map(game.altars),
+    merchants: [...game.merchants],
+    traps: new Map(game.traps),
+  }
+
+  game.entityCache.set(depth, entityState)
+
+  // Evict old entity states when level cache evicts
+  evictOldEntityStates(game.entityCache, game.levelCache)
+}
+
+/**
+ * Load entity state from cache for a given depth
+ *
+ * @returns The cached entity state, or undefined if not cached
+ */
+export function loadLevelEntities(
+  cache: Map<number, LevelEntityState>,
+  depth: number
+): LevelEntityState | undefined {
+  return cache.get(depth)
+}
+
+/**
+ * Evict entity states for levels that are no longer in the level cache
+ *
+ * This keeps the entity cache in sync with the level cache.
+ */
+export function evictOldEntityStates(
+  entityCache: Map<number, LevelEntityState>,
+  levelCache: Map<number, DungeonLevel>
+): void {
+  for (const depth of entityCache.keys()) {
+    if (!levelCache.has(depth)) {
+      entityCache.delete(depth)
+    }
+  }
+}
+
+/**
+ * Check if entity state is cached for a given depth
+ */
+export function hasEntityCache(cache: Map<number, LevelEntityState>, depth: number): boolean {
+  return cache.has(depth)
 }

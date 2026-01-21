@@ -54,6 +54,8 @@ export interface MonsterTemplate {
   experience: number
   flags: string[]
   abilities: string[]
+  /** Spawn weight (default 1.0). Lower = rarer. Uniques use 0.1-0.15 */
+  rarity?: number
 }
 
 // Color mapping from Angband color codes to readable names
@@ -178,6 +180,62 @@ export const monsters: MonsterTemplate[] = [
     abilities: ['POISON'],
   },
 
+  // Depth 3
+  {
+    name: 'Giant Rat',
+    char: 'r',
+    color: 'umber',
+    minDepth: 3,
+    hp: 8,
+    speed: 120,
+    armor: 15,
+    damage: 2, // 1d3
+    experience: 3,
+    flags: ['ANIMAL'],
+    abilities: [],
+  },
+  {
+    name: 'Centipede',
+    char: 'c',
+    color: 'lightRed',
+    minDepth: 3,
+    hp: 6,
+    speed: 130,
+    armor: 20,
+    damage: 3, // 1d4 + poison
+    experience: 5,
+    flags: ['ANIMAL'],
+    abilities: ['POISON'],
+  },
+
+  // Depth 4
+  {
+    name: 'Giant Bat',
+    char: 'b',
+    color: 'slate',
+    minDepth: 4,
+    hp: 10,
+    speed: 130,
+    armor: 18,
+    damage: 3, // 1d4
+    experience: 6,
+    flags: ['ANIMAL'],
+    abilities: [],
+  },
+  {
+    name: 'Orc',
+    char: 'o',
+    color: 'green',
+    minDepth: 4,
+    hp: 20,
+    speed: 110,
+    armor: 30,
+    damage: 4, // 1d6
+    experience: 8,
+    flags: ['ORC'],
+    abilities: [],
+  },
+
   // Depth 5
   {
     name: 'Bullroarer the Hobbit',
@@ -191,6 +249,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 90,
     flags: ['UNIQUE'],
     abilities: [],
+    rarity: 0.25,
   },
   {
     name: 'Large Kobold',
@@ -233,6 +292,60 @@ export const monsters: MonsterTemplate[] = [
     flags: ['ORC'],
     abilities: [],
   },
+  {
+    name: 'Manes',
+    char: 'u',
+    color: 'red',
+    minDepth: 6,
+    hp: 25,
+    speed: 100,
+    armor: 30,
+    damage: 4, // 1d5 + 1d5
+    experience: 12,
+    flags: ['DEMON'],
+    abilities: [],
+  },
+
+  // Depth 7
+  {
+    name: 'Orc Scout',
+    char: 'o',
+    color: 'lightGreen',
+    minDepth: 7,
+    hp: 35,
+    speed: 120,
+    armor: 40,
+    damage: 7, // 2d4
+    experience: 18,
+    flags: ['ORC'],
+    abilities: [],
+  },
+  {
+    name: 'Skeleton',
+    char: 's',
+    color: 'white',
+    minDepth: 7,
+    hp: 28,
+    speed: 110,
+    armor: 35,
+    damage: 5, // 1d8
+    experience: 15,
+    flags: ['UNDEAD'],
+    abilities: [],
+  },
+  {
+    name: 'Blue Jelly',
+    char: 'j',
+    color: 'blue',
+    minDepth: 7,
+    hp: 50,
+    speed: 120,
+    armor: 1,
+    damage: 4, // cold touch
+    experience: 14,
+    flags: [],
+    abilities: ['COLD'],
+  },
 
   // Depth 8
   {
@@ -247,6 +360,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 150,
     flags: ['UNIQUE'],
     abilities: ['HEAL', 'POISON'],
+    rarity: 0.25,
   },
 
   // Depth 9
@@ -316,6 +430,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 160,
     flags: ['UNIQUE', 'ORC'],
     abilities: [],
+    rarity: 0.25,
   },
 
   // ============================================
@@ -323,6 +438,19 @@ export const monsters: MonsterTemplate[] = [
   // ============================================
 
   // Depth 11
+  {
+    name: 'Warg',
+    char: 'C',
+    color: 'slate',
+    minDepth: 11,
+    hp: 55,
+    speed: 120,
+    armor: 40,
+    damage: 10, // 2d5 + 2d5
+    experience: 45,
+    flags: ['ANIMAL'],
+    abilities: [],
+  },
   {
     name: 'Baby Multi-Hued Dragon',
     char: 'd',
@@ -335,6 +463,90 @@ export const monsters: MonsterTemplate[] = [
     experience: 45,
     flags: ['DRAGON'],
     abilities: ['BREATH'],
+  },
+
+  // Depth 12
+  {
+    name: 'Orc Warrior',
+    char: 'o',
+    color: 'lightRed',
+    minDepth: 12,
+    hp: 70,
+    speed: 110,
+    armor: 55,
+    damage: 12, // 2d6 + 2d6
+    experience: 35,
+    flags: ['ORC'],
+    abilities: [],
+  },
+  {
+    name: 'Zombie',
+    char: 'z',
+    color: 'slate',
+    minDepth: 12,
+    hp: 80,
+    speed: 100,
+    armor: 40,
+    damage: 8, // 2d4 + 2d4
+    experience: 30,
+    flags: ['UNDEAD'],
+    abilities: [],
+  },
+
+  // Depth 13
+  {
+    name: 'Ghost',
+    char: 'G',
+    color: 'white',
+    minDepth: 13,
+    hp: 55,
+    speed: 110,
+    armor: 30,
+    damage: 10, // Touch attacks
+    experience: 40,
+    flags: ['UNDEAD'],
+    abilities: ['DRAIN'],
+  },
+  {
+    name: 'Orc Shaman',
+    char: 'o',
+    color: 'violet',
+    minDepth: 13,
+    hp: 50,
+    speed: 110,
+    armor: 35,
+    damage: 8, // 2d4 + spells
+    experience: 45,
+    flags: ['ORC'],
+    abilities: ['HEAL'],
+  },
+
+  // Depth 14
+  {
+    name: 'Wight',
+    char: 'W',
+    color: 'lightDark',
+    minDepth: 14,
+    hp: 85,
+    speed: 110,
+    armor: 50,
+    damage: 14, // 2d6 + drain
+    experience: 60,
+    flags: ['UNDEAD'],
+    abilities: ['DRAIN'],
+  },
+  {
+    name: 'Black Orc',
+    char: 'o',
+    color: 'black',
+    minDepth: 14,
+    hp: 90,
+    speed: 110,
+    armor: 60,
+    damage: 15, // 3d5 + 3d5
+    experience: 55,
+    flags: ['ORC'],
+    abilities: [],
   },
 
   // Depth 15
@@ -362,6 +574,62 @@ export const monsters: MonsterTemplate[] = [
     damage: 12, // 2d8
     experience: 50,
     flags: [],
+    abilities: [],
+  },
+
+  // Depth 16
+  {
+    name: 'Stone Troll',
+    char: 'T',
+    color: 'slate',
+    minDepth: 16,
+    hp: 130,
+    speed: 100,
+    armor: 80,
+    damage: 16, // 3d5 + 3d5
+    experience: 80,
+    flags: ['TROLL'],
+    abilities: [],
+  },
+  {
+    name: 'Uruk Captain',
+    char: 'o',
+    color: 'lightPurple',
+    minDepth: 16,
+    hp: 100,
+    speed: 110,
+    armor: 70,
+    damage: 18, // 3d6 + 3d6
+    experience: 70,
+    flags: ['ORC'],
+    abilities: [],
+  },
+
+  // Depth 17
+  {
+    name: 'Wraith',
+    char: 'W',
+    color: 'slate',
+    minDepth: 17,
+    hp: 95,
+    speed: 110,
+    armor: 55,
+    damage: 12, // 2d5 + drain
+    experience: 90,
+    flags: ['UNDEAD'],
+    abilities: ['DRAIN', 'COLD'],
+  },
+  {
+    name: 'War Warg',
+    char: 'C',
+    color: 'lightRed',
+    minDepth: 17,
+    hp: 110,
+    speed: 130,
+    armor: 50,
+    damage: 14, // 2d7 + 2d7
+    experience: 75,
+    flags: ['ANIMAL'],
     abilities: [],
   },
 
@@ -406,6 +674,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 800,
     flags: ['UNIQUE', 'ORC'],
     abilities: [],
+    rarity: 0.2,
   },
   {
     name: '3-Headed Hydra',
@@ -447,6 +716,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 1111,
     flags: ['UNIQUE', 'ORC'],
     abilities: [],
+    rarity: 0.2,
   },
 
   // ============================================
@@ -552,6 +822,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 1500,
     flags: ['UNIQUE'],
     abilities: [],
+    rarity: 0.2,
   },
   {
     name: 'Mumak',
@@ -782,6 +1053,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 30000,
     flags: ['UNIQUE', 'DRAGON'],
     abilities: ['BREATH', 'FIRE'],
+    rarity: 0.05,
   },
 
   // Depth 95 - Gothmog
@@ -797,6 +1069,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 43000,
     flags: ['UNIQUE', 'DEMON'],
     abilities: ['BREATH', 'FIRE', 'SUMMON'],
+    rarity: 0.05,
   },
 
   // Depth 99 - Sauron
@@ -812,6 +1085,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 50000,
     flags: ['UNIQUE'],
     abilities: ['BRAIN_SMASH', 'SUMMON', 'BLINK'],
+    rarity: 0.05,
   },
 
   // Depth 100 - Morgoth (Final Boss)
@@ -827,6 +1101,7 @@ export const monsters: MonsterTemplate[] = [
     experience: 60000,
     flags: ['UNIQUE'],
     abilities: ['BRAIN_SMASH', 'SUMMON'],
+    rarity: 0.05,
   },
 ]
 
@@ -837,8 +1112,9 @@ export function getMonstersForDepth(minDepth: number, maxDepth: number): Monster
 
 // Helper function to get monsters that can spawn at a specific depth
 export function getSpawnableMonsters(depth: number): MonsterTemplate[] {
-  // Monsters can spawn at their minDepth or deeper (with some variance)
-  return monsters.filter((m) => m.minDepth <= depth && m.minDepth >= depth - 10)
+  // Monsters can spawn at their minDepth or deeper, within a 6-level window
+  // This prevents early uniques from dominating mid-game (Bullroarer D:5 stops at D:11)
+  return monsters.filter((m) => m.minDepth <= depth && m.minDepth >= depth - 6)
 }
 
 // Get a specific monster by name
@@ -849,6 +1125,11 @@ export function getMonsterByName(name: string): MonsterTemplate | undefined {
 // Get all unique/boss monsters
 export function getUniques(): MonsterTemplate[] {
   return monsters.filter((m) => m.flags.includes('UNIQUE'))
+}
+
+// Get all dragon monster names (for prestige unlock tracking)
+export function getDragonNames(): string[] {
+  return monsters.filter((m) => m.flags.includes('DRAGON')).map((m) => m.name)
 }
 
 // Monster count summary
