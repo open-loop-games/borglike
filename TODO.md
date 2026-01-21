@@ -8,11 +8,52 @@
 - [ ] Status effect implementation (debuffs currently cosmetic)
 
 ### Technical Debt
+- [ ] Exploration short-distance goal thrashing (~2% circuit breaker rate)
+  - Bot gets trapped in local exploration loops, picking nearby tiles instead of distant frontiers
+  - Seed 1768974377494 reproduces: 1000 turns on depth 1, 51% explored, stairs not found
+  - Potential fixes: frontier bias, longer goal persistence, better corridor-following
+- [ ] Remove debug console.log statements
+  - `src/game/bot/exploration.ts:330`, `src/game/bot/goals.ts:112`
+  - `src/stores/progression.ts:516`, `src/App.vue:71`
 
+### Prestige System (Not Implemented)
+
+Prestige races/classes show as purchasable but unlock conditions are never validated.
+The `unlockCondition` field is just a display string with no checking logic.
+
+**Unlock Condition Validation** (`src/stores/progression.ts:216-242`)
+- [x] Add `meetsCondition` check to `raceUnlocks` and `classUnlocks` computed properties
+- [x] UI should disable purchase button when condition not met (`src/ui/components/meta/UnlockItem.vue`)
+
+**Missing Stats Tracking** (for prestige conditions)
+- [x] Track victories per race: `victoriesPerRace: Record<string, number>` in GlobalStats
+- [x] Track victories per class: `victoriesPerClass: Record<string, number>` in GlobalStats
+- [x] Add dragon kill aggregation query (bestiary has per-monster kills, need total dragons)
+- [x] Update `run-completion-service.ts` to record race/class wins on victory
+
+**Prestige Race Abilities** (defined in data but not implemented)
+- [ ] Vampire `life_steal`: Melee attacks heal 20% of damage (`src/game/combat.ts`)
+- [ ] Vampire `no_potions`: Block healing potion use (`src/game/actions/consumables.ts`)
+- [ ] Golem `no_magic`: Block spell casting and scroll use (`src/game/spell-resolution.ts`, `consumables.ts`)
+- [ ] Golem `slow_heal`: 50% healing rate modifier (`src/game/game-loop.ts`)
+- [ ] Draconian `breath_weapon`: Cone AOE fire/cold/acid ability (new spell or action)
+- [ ] Draconian `wings`: Fly over pits and water (`src/game/actions/movement.ts`)
+- Vampire `light_vuln`: Works via resistance system (-100 LIGHT)
+- Golem `construct` poison immunity: Works via resistance system (+100 POISON)
+- Draconian `elem_resist`: Works via resistance system (+50 fire/cold/acid)
+
+**Prestige Class Mechanics**
+- [ ] Necromancer: Summoner behavior - raise slain monsters as allies (requires summoning system)
+- [ ] Archmage: Glass cannon - prefer AOE spells in bot spell selection (`src/game/bot/spells.ts`)
+- Berserker `neverRetreats`: Already implemented in `src/game/bot/goals.ts:139`
+
+### Other Missing Systems
+- [ ] Curse system (`src/game/features.ts:246` has TODO, altars show message but curses don't exist)
+- [ ] Monster status effects (only debuffs exist, no status effect ticking for monsters)
+- [ ] Trap status effects (traps apply poison but not other debuffs)
 
 ### Future Features
 - [ ] Statistics dashboard
-- [ ] Monster knowledge (cross-run bestiary bonuses)
 
 ---
 
@@ -26,6 +67,7 @@
 - [x] Collapsible sections
 - [x] Feed message filtering
 - [x] Achievements system
+- [x] Monster knowledge (cross-run bestiary bonuses)
 
 ### Phase 4: UI Components (2025-01-20)
 - [x] Vue components for game display (24 components)
