@@ -7,9 +7,10 @@ import RunArea from './ui/components/RunArea.vue'
 import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
 import RunHistoryModal from './ui/components/history/RunHistoryModal.vue'
 import BestiaryModal from './ui/components/bestiary/BestiaryModal.vue'
-import { useKeyboard } from './ui/composables/useKeyboard'
-import { initPersistence } from './ui/composables/usePersistence'
-import { useGameTitle } from './ui/composables/useGameTitle'
+import AchievementsModal from './ui/components/achievements/AchievementsModal.vue'
+import { useKeyboard } from './ui/composables/use-keyboard'
+import { initPersistence } from './ui/composables/use-persistence'
+import { useGameTitle } from './ui/composables/use-game-title'
 
 // Loading state - block render until persistence loads
 const isLoaded = ref(false)
@@ -31,6 +32,7 @@ onMounted(async () => {
 const showSettings = ref(false)
 const showRunHistory = ref(false)
 const showBestiary = ref(false)
+const showAchievements = ref(false)
 
 function handleOpenSettings() {
   showSettings.value = true
@@ -56,6 +58,14 @@ function handleCloseBestiary() {
   showBestiary.value = false
 }
 
+function handleOpenAchievements() {
+  showAchievements.value = true
+}
+
+function handleCloseAchievements() {
+  showAchievements.value = false
+}
+
 function handleOpenHelp() {
   // Help modal could be implemented similarly
   console.log('Help requested')
@@ -79,6 +89,7 @@ function handleOpenHelp() {
       @open-help="handleOpenHelp"
       @open-run-history="handleOpenRunHistory"
       @open-bestiary="handleOpenBestiary"
+      @open-achievements="handleOpenAchievements"
     />
     <main class="game">
       <RunArea />
@@ -111,6 +122,15 @@ function handleOpenHelp() {
       <div v-if="showBestiary" class="modal-overlay" @click="handleCloseBestiary">
         <div class="modal-container modal-lg" @click.stop>
           <BestiaryModal @close="handleCloseBestiary" />
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Achievements Modal -->
+    <Teleport to="body">
+      <div v-if="showAchievements" class="modal-overlay" @click="handleCloseAchievements">
+        <div class="modal-container modal-lg" @click.stop>
+          <AchievementsModal @close="handleCloseAchievements" />
         </div>
       </div>
     </Teleport>

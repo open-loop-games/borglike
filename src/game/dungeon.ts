@@ -55,7 +55,10 @@ export function isWalkable(tile: Tile): boolean {
     tile.type === 'floor' ||
     tile.type === 'door_open' ||
     tile.type === 'stairs_up' ||
-    tile.type === 'stairs_down'
+    tile.type === 'stairs_down' ||
+    tile.type === 'portal' ||
+    tile.type === 'dungeon_entrance' ||
+    tile.type === 'healer'
   )
 }
 

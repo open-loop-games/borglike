@@ -24,6 +24,14 @@ interface SerializedUnlockState {
   boosters: string[]
 }
 
+/** Serializable version of AchievementState */
+interface SerializedAchievementState {
+  unlocked: string[]
+  progress: Record<string, number>
+  // Note: newUnlocks is intentionally NOT persisted - it's session-only state
+  // The indicator should only show for achievements earned in the current session
+}
+
 /** Serializable version of RunLoadout */
 interface SerializedRunLoadout {
   boosters: [string | null, string | null]
@@ -42,6 +50,7 @@ interface ProgressionData {
   activeLoadout?: SerializedRunLoadout
   bestiary?: Record<string, BestiaryEntry>
   slotConfigs?: SlotConfig[]
+  achievements?: SerializedAchievementState
 }
 
 /** Database schema for type safety */
@@ -133,6 +142,29 @@ function deserializeUnlocks(data: SerializedUnlockState): UnlockState {
   }
 }
 
+/**
+ * Convert AchievementState Sets to arrays for JSON serialization
+ * Note: newUnlocks is intentionally NOT serialized - it's session-only state
+ */
+function serializeAchievements(state: { unlocked: Set<string>; progress: Record<string, number>; newUnlocks: Set<string> }): SerializedAchievementState {
+  return {
+    unlocked: Array.from(state.unlocked),
+    progress: { ...state.progress },
+  }
+}
+
+/**
+ * Convert arrays back to Sets for AchievementState
+ * Note: newUnlocks is always empty on restore - it's session-only state
+ */
+function deserializeAchievements(data: SerializedAchievementState): { unlocked: Set<string>; progress: Record<string, number>; newUnlocks: Set<string> } {
+  return {
+    unlocked: new Set(data.unlocked),
+    progress: data.progress ?? {},
+    newUnlocks: new Set(), // Always start fresh - indicator is session-only
+  }
+}
+
 // ============================================================================
 // SAVE FUNCTIONS
 // ============================================================================
@@ -170,6 +202,7 @@ export async function saveProgression(): Promise<void> {
     activeLoadout: { boosters: [progression.activeLoadout.boosters[0], progression.activeLoadout.boosters[1]] },
     bestiary: serializedBestiary,
     slotConfigs: serializedSlotConfigs,
+    achievements: serializeAchievements(progression.achievementState),
   }
 
   await database.put('progression', data, 'main')
@@ -255,6 +288,14 @@ export async function loadProgression(): Promise<boolean> {
     progression.slotConfigs.push(...data.slotConfigs)
   }
 
+  // Restore achievements
+  if (data.achievements) {
+    const achievements = deserializeAchievements(data.achievements)
+    progression.achievementState.unlocked = achievements.unlocked
+    progression.achievementState.progress = achievements.progress
+    progression.achievementState.newUnlocks = achievements.newUnlocks
+  }
+
   return true
 }
 
@@ -288,6 +329,10 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null
 const SAVE_DEBOUNCE_MS = 500 // 500ms (reduced from 2000ms for faster persistence)
 const BACKUP_KEY = 'borglike-backup'
 
+// Cleanup handles for proper resource management
+let autoSaveStopFn: (() => void) | null = null
+let unloadHandlerFn: (() => void) | null = null
+
 /**
  * Get a snapshot of the current progression state for backup
  */
@@ -320,6 +365,7 @@ function getProgressionSnapshot(): ProgressionData {
     activeLoadout: { boosters: [progression.activeLoadout.boosters[0], progression.activeLoadout.boosters[1]] },
     bestiary: serializedBestiary,
     slotConfigs: serializedSlotConfigs,
+    achievements: serializeAchievements(progression.achievementState),
   }
 }
 
@@ -373,9 +419,11 @@ export async function saveImmediately(): Promise<void> {
  *
  * Uses localStorage as a synchronous backup since IndexedDB is async
  * and may not complete before the page closes.
+ *
+ * @returns Cleanup function to remove the event listener
  */
-export function setupUnloadHandler(): void {
-  window.addEventListener('beforeunload', () => {
+export function setupUnloadHandler(): () => void {
+  const handler = () => {
     // Cancel any pending debounced save
     if (saveTimeout) {
       clearTimeout(saveTimeout)
@@ -390,9 +438,18 @@ export function setupUnloadHandler(): void {
     } catch (err) {
       console.error('[Persistence] Failed to save backup on unload:', err)
     }
-  })
+  }
 
+  window.addEventListener('beforeunload', handler)
   console.debug('[Persistence] Unload handler installed')
+
+  // Return cleanup function
+  const cleanup = () => {
+    window.removeEventListener('beforeunload', handler)
+    console.debug('[Persistence] Unload handler removed')
+  }
+  unloadHandlerFn = cleanup
+  return cleanup
 }
 
 /**
@@ -448,6 +505,13 @@ async function checkAndRestoreBackup(): Promise<void> {
         progression.slotConfigs.push(...backup.slotConfigs)
       }
 
+      if (backup.achievements) {
+        const achievements = deserializeAchievements(backup.achievements)
+        progression.achievementState.unlocked = achievements.unlocked
+        progression.achievementState.progress = achievements.progress
+        progression.achievementState.newUnlocks = achievements.newUnlocks
+      }
+
       // Save the restored data to IndexedDB
       await saveProgression()
       console.log('[Persistence] Backup restored and saved to IndexedDB')
@@ -465,13 +529,15 @@ async function checkAndRestoreBackup(): Promise<void> {
  *
  * Call this once during app initialization, after the store is created.
  * Uses a single watcher with a composite getter for efficiency.
+ *
+ * @returns Stop function to unsubscribe the watcher
  */
-export function setupAutoSave(): void {
+export function setupAutoSave(): () => void {
   const progression = useProgressionStore()
 
   // Single watcher that tracks all saveable state
   // Returns a composite value that changes when any tracked state changes
-  watch(
+  const stop = watch(
     () => ({
       essence: progression.currency.essence,
       artifacts: progression.currency.artifacts,
@@ -494,12 +560,17 @@ export function setupAutoSave(): void {
       activeLoadout: JSON.stringify(progression.activeLoadout),
       // Track run history length (saves happen via saveRun, but this catches manual changes)
       runHistoryLength: progression.runHistory.length,
+      // Track achievements
+      achievementsUnlocked: Array.from(progression.achievementState.unlocked).join(','),
+      achievementsProgress: JSON.stringify(progression.achievementState.progress),
     }),
     scheduleSave,
     { deep: false }
   )
 
+  autoSaveStopFn = stop
   console.debug('[Persistence] Auto-save enabled')
+  return stop
 }
 
 // ============================================================================
@@ -529,6 +600,7 @@ export async function exportDataAsJSON(): Promise<string> {
       activeLoadout: { boosters: [...progression.activeLoadout.boosters] },
       bestiary: { ...progression.bestiary },
       slotConfigs: progression.slotConfigs.map((config) => ({ ...config })),
+      achievements: serializeAchievements(progression.achievementState),
     },
     runHistory: runs,
   }
@@ -588,6 +660,14 @@ export async function importDataFromJSON(jsonString: string): Promise<boolean> {
       progression.slotConfigs.push(...prog.slotConfigs)
     }
 
+    // Restore achievements
+    if (prog.achievements) {
+      const achievements = deserializeAchievements(prog.achievements)
+      progression.achievementState.unlocked = achievements.unlocked
+      progression.achievementState.progress = achievements.progress
+      progression.achievementState.newUnlocks = achievements.newUnlocks
+    }
+
     // Save to IndexedDB
     await saveProgression()
 
@@ -621,6 +701,40 @@ export async function clearAllData(): Promise<void> {
   await database.delete('progression', 'main')
   await database.clear('runHistory')
   console.warn('[Persistence] All saved data cleared')
+}
+
+// ============================================================================
+// CLEANUP
+// ============================================================================
+
+/**
+ * Clean up persistence resources (watchers, event listeners, DB connection)
+ *
+ * Call this when shutting down the app or during testing.
+ */
+export function cleanupPersistence(): void {
+  // Stop auto-save watcher
+  if (autoSaveStopFn) {
+    autoSaveStopFn()
+    autoSaveStopFn = null
+    console.debug('[Persistence] Auto-save watcher stopped')
+  }
+
+  // Remove unload handler
+  if (unloadHandlerFn) {
+    unloadHandlerFn()
+    unloadHandlerFn = null
+  }
+
+  // Clear any pending save timeout
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+    saveTimeout = null
+  }
+
+  // Close database connection
+  closeDB()
+  console.debug('[Persistence] Cleanup complete')
 }
 
 // ============================================================================

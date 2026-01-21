@@ -44,6 +44,7 @@ export {
 // Items
 export {
   WEAPONS,
+  BOWS,
   ARMOR,
   SHIELDS,
   HELMS,
@@ -169,3 +170,12 @@ export {
   type ClassSpellEntry,
   type ClassSpellList,
 } from './class-spells'
+
+// Achievements
+export {
+  achievements,
+  getAchievementById,
+  getAchievementsByCategory,
+  getTotalAchievementRewards,
+  type Achievement,
+} from './achievements'

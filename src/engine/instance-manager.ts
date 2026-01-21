@@ -8,8 +8,10 @@
 import { useRunsStore, type DisplayItem, type EquipSlot } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore } from '@/stores/settings'
+import { useFeedStore } from '@/stores/feed'
 import {
   computeUpgradeBonuses,
+  computeBoosterBonuses,
   createGameRunner,
   getTile,
   type RunResult,
@@ -29,6 +31,9 @@ interface GameInstance {
 }
 
 const instances = new Map<string, GameInstance>()
+
+// Track pending auto-restart timeouts by slot (to cancel on manual stop)
+const autoRestartTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
 
 // Map race/class display names to IDs
 const RACE_IDS: Record<string, string> = {
@@ -55,11 +60,11 @@ const CLASS_IDS: Record<string, string> = {
   Rogue: 'rogue',
   Ranger: 'ranger',
   Paladin: 'paladin',
+  Druid: 'druid',
+  Blackguard: 'blackguard',
   Necromancer: 'necromancer',
-  Monk: 'monk',
-  Artificer: 'artificer',
-  Bard: 'bard',
   Berserker: 'berserker',
+  Archmage: 'archmage',
 }
 
 // Item display character by type
@@ -146,8 +151,9 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
   // Create the run in the store
   const runId = runs.createRun(slot, runConfig)
 
-  // Get upgrade bonuses
+  // Get upgrade bonuses and booster bonuses
   const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
+  const boosterBonuses = computeBoosterBonuses(progression.getActiveBoosterIds())
 
   // Create the actual game runner
   const runner = createGameRunner({
@@ -155,6 +161,7 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     classId: CLASS_IDS[className] || 'warrior',
     botPersonality: personality,
     upgradeBonuses: bonuses,
+    boosterBonuses,
     maxTurns: 0, // Unlimited
   })
 
@@ -191,11 +198,23 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
  */
 export function stopRun(runId: string): void {
   const instance = instances.get(runId)
-  if (instance?.intervalId) {
+  if (!instance) {
+    instances.delete(runId)
+    return
+  }
+
+  // Cancel any pending auto-restart timeout for this slot
+  const pendingTimeout = autoRestartTimeouts.get(instance.slot)
+  if (pendingTimeout) {
+    clearTimeout(pendingTimeout)
+    autoRestartTimeouts.delete(instance.slot)
+  }
+
+  if (instance.intervalId) {
     clearInterval(instance.intervalId)
     instance.intervalId = null
   }
-  if (instance?.runner) {
+  if (instance.runner) {
     instance.runner.stop()
   }
   instances.delete(runId)
@@ -243,6 +262,39 @@ function updateRunFromGame(runId: string, game: GameState): void {
 
     // Sync level
     run.level = game.character.level
+
+    // Sync core stats (STR, DEX, etc.)
+    run.stats = {
+      str: game.character.stats.str,
+      int: game.character.stats.int,
+      wis: game.character.stats.wis,
+      dex: game.character.stats.dex,
+      con: game.character.stats.con,
+    }
+
+    // Sync combat stats
+    run.combat = {
+      armor: game.character.combat.armor,
+      accuracy: game.character.combat.accuracy,
+      evasion: game.character.combat.evasion,
+      meleeDamage: game.character.combat.meleeDamage,
+      speed: game.character.combat.speed,
+    }
+
+    // Sync resistances (only non-zero values)
+    run.resistances = {}
+    for (const [type, value] of Object.entries(game.character.resistances)) {
+      if (value !== 0) {
+        run.resistances[type] = value
+      }
+    }
+
+    // Sync status effects
+    run.statusEffects = game.character.statusEffects.map(effect => ({
+      type: effect.type,
+      turnsRemaining: effect.turnsRemaining,
+      value: effect.value,
+    }))
 
     // Sync equipment
     run.equipment = {}
@@ -345,6 +397,19 @@ function renderGameToGrid(runId: string, game: GameState): void {
           char = '<'
           color = tile.visible ? 0x06b6d4 : 0x0e7490
           break
+        // Town-related tiles
+        case 'portal':
+          char = 'O'
+          color = tile.visible ? 0xa855f7 : 0x7e22ce // purple
+          break
+        case 'dungeon_entrance':
+          char = '>'
+          color = tile.visible ? 0x06b6d4 : 0x0e7490 // cyan (like stairs)
+          break
+        case 'healer':
+          char = '.'
+          color = tile.visible ? 0x64748b : 0x334155 // floor (healer NPC rendered separately)
+          break
       }
 
       runs.updateCell(runId, screenY, screenX, char, color)
@@ -386,6 +451,18 @@ function renderGameToGrid(runId: string, game: GameState): void {
     if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
 
     runs.updateCell(runId, screenY, screenX, 'P', 0xf59e0b) // amber
+  }
+
+  // Render healer NPC (only visible, in town)
+  if (game.healer) {
+    const tile = getTile(level, game.healer.position.x, game.healer.position.y)
+    if (tile?.visible) {
+      const screenX = game.healer.position.x - offsetX
+      const screenY = game.healer.position.y - offsetY
+      if (screenX >= 0 && screenX < VIEWPORT_WIDTH && screenY >= 0 && screenY < VIEWPORT_HEIGHT) {
+        runs.updateCell(runId, screenY, screenX, 'H', 0x22c55e) // green - healer
+      }
+    }
   }
 
   // Render revealed traps (only visible and not triggered)
@@ -489,7 +566,7 @@ function startGameLoop(runId: string): void {
     // Check turbo mode for speed (apply turbo upgrade bonus)
     const progression = useProgressionStore()
     const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
-    const baseTurboTick = 20
+    const baseTurboTick = 50
     const turboTick = Math.max(5, Math.floor(baseTurboTick / (1 + bonuses.turboSpeedPercent / 100)))
     const newTickRate = run.turbo ? turboTick : 100
     if (instance.tickRate !== newTickRate) {
@@ -516,6 +593,10 @@ function startGameLoop(runId: string): void {
     // Update UI
     updateRunFromGame(runId, game)
     renderGameToGrid(runId, game)
+
+    // Process new messages for feed
+    const feed = useFeedStore()
+    feed.processMessages(runId, run.slot, game.messages)
   }
 
   instance.intervalId = window.setInterval(tick, instance.tickRate) as unknown as number
@@ -526,9 +607,13 @@ function startGameLoop(runId: string): void {
  */
 async function handleGameEnd(runId: string, result: RunResult, _config: RunConfig, slot: number): Promise<void> {
   const runs = useRunsStore()
+  const feed = useFeedStore()
 
   // Mark run as dead
   runs.handleEvent(runId, { type: 'death' })
+
+  // Clear feed tracking for this run
+  feed.clearRunTracking(runId)
 
   // Use the run-completion-service to handle all run end logic
   // This includes: converting to RunStats, calculating essence, recording the run,
@@ -560,10 +645,19 @@ function checkAutoRestart(slot: number): void {
   if (!bonuses.hasAutoRestart) return
   if (!settings.settings.autoRestart) return
 
+  // Cancel any existing timeout for this slot (prevents duplicates)
+  const existingTimeout = autoRestartTimeouts.get(slot)
+  if (existingTimeout) {
+    clearTimeout(existingTimeout)
+  }
+
   // Load the saved slot config (includes race, class, personality, boosters)
   const slotConfig = progression.getSlotConfig(slot)
 
-  setTimeout(() => {
+  const timeoutId = setTimeout(() => {
+    // Clean up tracking when timeout executes
+    autoRestartTimeouts.delete(slot)
+
     const runs = useRunsStore()
     const existingRun = runs.getRunBySlot(slot)
     if (existingRun && existingRun.state !== 'dead') return
@@ -582,6 +676,9 @@ function checkAutoRestart(slot: number): void {
       personality: slotConfig.personality,
     })
   }, 1500)
+
+  // Track the timeout so it can be cancelled if needed
+  autoRestartTimeouts.set(slot, timeoutId)
 }
 
 /**

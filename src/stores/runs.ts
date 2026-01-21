@@ -4,6 +4,34 @@ import type { RunConfig, AngbandEvent } from '../types'
 import type { RunStats } from '@/types/progression'
 import { useSettingsStore } from './settings'
 
+/** Core character stats */
+export interface DisplayStats {
+  str: number
+  int: number
+  wis: number
+  dex: number
+  con: number
+}
+
+/** Combat-derived stats */
+export interface DisplayCombat {
+  armor: number
+  accuracy: number
+  evasion: number
+  meleeDamage: number
+  speed: number
+}
+
+/** Active status effect */
+export interface DisplayStatusEffect {
+  type: string
+  turnsRemaining: number
+  value: number
+}
+
+/** Resistance values (0-100, negative = vulnerability) */
+export type DisplayResistances = Partial<Record<string, number>>
+
 export interface ActiveRun {
   id: string
   slot: number
@@ -25,6 +53,18 @@ export interface ActiveRun {
 
   // Character info
   level: number
+
+  // Core stats (STR, DEX, etc.)
+  stats: DisplayStats
+
+  // Combat stats (AC, evasion, damage, speed)
+  combat: DisplayCombat
+
+  // Resistances (fire, cold, poison, etc.)
+  resistances: DisplayResistances
+
+  // Active status effects (heroism, speed, etc.)
+  statusEffects: DisplayStatusEffect[]
 
   // Equipment & inventory
   equipment: Partial<Record<EquipSlot, DisplayItem>>
@@ -98,6 +138,10 @@ export const useRunsStore = defineStore('runs', () => {
       kills: 0,
       turns: 0,
       level: 1,
+      stats: { str: 10, int: 10, wis: 10, dex: 10, con: 10 },
+      combat: { armor: 0, accuracy: 0, evasion: 0, meleeDamage: 0, speed: 100 },
+      resistances: {},
+      statusEffects: [],
       equipment: {},
       inventory: [],
       grid: createEmptyGrid(),

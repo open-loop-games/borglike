@@ -15,6 +15,7 @@ import { generateLabyrinth } from './labyrinth'
 import { findDoorCandidates, placeDoors } from './doors'
 import { validateConnectivity, ensureConnectivity } from './validation'
 import { tryPlaceVault } from './vaults'
+import { generateTownLevel } from '../town'
 
 // Re-export types
 export type { GeneratorType, RoomData, VaultPlacement } from './types'
@@ -38,13 +39,21 @@ export interface GenerationResult {
  *
  * Uses depth-based profiles to select generator type and parameters.
  * Applies post-processing: doors, vaults, connectivity validation, stairs.
+ * Depth 0 generates the town level (safe zone).
  */
 export function generateLevel(
   depth: number,
   width: number = DEFAULT_WIDTH,
   height: number = DEFAULT_HEIGHT
 ): DungeonLevel {
+  // Special case: depth 0 is the town
+  if (depth === 0) {
+    return generateTownLevel()
+  }
+
   const result = generateLevelWithInfo(depth, width, height)
+  // Attach vault data to level for feature initialization
+  result.level.vault = result.vault
   return result.level
 }
 

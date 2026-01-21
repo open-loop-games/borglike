@@ -27,6 +27,8 @@ export interface RunCompletionResult {
     races: string[]
     classes: string[]
   }
+  /** New achievements earned this run */
+  newAchievements: string[]
 }
 
 // ============================================================================
@@ -74,11 +76,15 @@ export async function handleRunCompletion(result: RunResult): Promise<RunComplet
   // Check for and apply any milestone unlocks
   const newUnlocks = checkMilestoneUnlocks(result, progression)
 
+  // Check for and award any achievements
+  const newAchievements = checkAchievements(result, progression)
+
   return {
     runStats,
     essenceEarned,
     isVictory,
     newUnlocks,
+    newAchievements,
   }
 }
 
@@ -237,6 +243,55 @@ function checkMilestoneUnlocks(
   }
 
   return { races: newRaces, classes: newClasses }
+}
+
+// ============================================================================
+// ACHIEVEMENT CHECKING
+// ============================================================================
+
+/**
+ * Check and award achievements based on the run result and global stats
+ */
+function checkAchievements(
+  result: RunResult,
+  progression: ReturnType<typeof useProgressionStore>
+): string[] {
+  const newAchievements: string[] = []
+
+  // Helper to check and award
+  const checkAndAward = (id: string): boolean => {
+    if (progression.awardAchievement(id)) {
+      newAchievements.push(id)
+      return true
+    }
+    return false
+  }
+
+  // Progress achievements (per-run checks)
+  if (result.kills >= 1) checkAndAward('first_blood')
+  if (result.maxDepth >= 10) checkAndAward('depth_10')
+  if (result.maxDepth >= 25) checkAndAward('depth_25')
+  if (result.maxDepth >= 50) checkAndAward('depth_50')
+  if (result.reason === 'victory') checkAndAward('first_victory')
+
+  // Challenge achievements (single-run challenges)
+  if (result.kills >= 50) checkAndAward('massacre')
+  if (result.game.stats.goldCollected >= 1000) checkAndAward('treasure_hunter')
+
+  // Speed demon: reach depth 10 in under 500 turns
+  if (result.maxDepth >= 10 && result.game.turn < 500) {
+    checkAndAward('speed_demon')
+  }
+
+  // Cumulative achievements (global stat checks)
+  // Note: globalStats have already been updated by recordRun at this point
+  if (progression.globalStats.totalKills >= 100) checkAndAward('centurion')
+  if (progression.globalStats.totalKills >= 1000) checkAndAward('slayer')
+  if (progression.globalStats.totalGold >= 10000) checkAndAward('millionaire')
+  if (progression.globalStats.totalDeaths >= 100) checkAndAward('frequent_dier')
+  if (progression.globalStats.totalRuns >= 50) checkAndAward('veteran')
+
+  return newAchievements
 }
 
 // ============================================================================

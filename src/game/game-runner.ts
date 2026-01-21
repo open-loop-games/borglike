@@ -8,8 +8,7 @@
 import type { GameState, GameEvent, GameEventListener, RunConfig, BotPersonality } from './types'
 import { MAX_DEPTH } from './types'
 import { createGame, processTurn } from './game-loop'
-import { runBotTick, buildBotContext, getBotStatus, evaluateDanger, createBotState, type BotState } from './bot-ai'
-import { DEFAULT_BONUSES } from './upgrade-effects'
+import { runBotTick, buildBotContext, getBotStatus, evaluateDanger, createBotState, type BotState } from './bot'
 
 // ============================================================================
 // CONSTANTS
@@ -62,7 +61,6 @@ export function createGameRunner(config: RunnerConfig) {
 
   const game = createGame(config)
   const botState = createBotState() // Persistent bot state for this run
-  const upgrades = config.upgradeBonuses ?? DEFAULT_BONUSES
   let isRunning = true
 
   /**
@@ -73,8 +71,8 @@ export function createGameRunner(config: RunnerConfig) {
       return []
     }
 
-    // Get bot decision with persistent state and upgrades
-    const action = runBotTick(game, personality, upgrades, botState)
+    // Get bot decision with persistent state
+    const action = runBotTick(game, personality, botState)
 
     // Process the turn
     const events = processTurn(game, action)

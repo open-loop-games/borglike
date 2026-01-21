@@ -24,15 +24,6 @@ export interface UpgradeBonuses {
   goldMultiplier: number // Gold gain multiplier (from gold_digger)
   essenceMultiplier: number // Essence gain multiplier (from essence_boost)
 
-  // Bot/AI bonuses
-  trapVisionBonus: number // Extra trap detection range (from sharp_eyes)
-  identifySpeedPercent: number // Item identification speed (from quick_learner)
-  retreatIQBonus: number // Better retreat decisions (from tactician)
-  lootIQBonus: number // Better loot prioritization (from pack_rat)
-  hasDangerSense: boolean // Factor resistances into danger assessment (from danger_sense)
-  hasEfficientHealing: boolean // Use appropriate potion tier (from efficient_healer)
-  battleInstinctBonus: number // Smarter combat scoring (from battle_instinct)
-
   // QoL bonuses
   turboSpeedPercent: number // Extra turbo speed (from turbo_mode)
   hasAutoRestart: boolean // Auto-restart enabled (from auto_restart)
@@ -65,15 +56,6 @@ export function computeUpgradeBonuses(levels: UpgradeLevels): UpgradeBonuses {
     xpMultiplier: 1 + getEffectValue(levels, 'fast_learner') / 100,
     goldMultiplier: 1 + getEffectValue(levels, 'gold_digger') / 100,
     essenceMultiplier: 1 + getEffectValue(levels, 'essence_boost') / 100,
-
-    // Bot/AI bonuses
-    trapVisionBonus: getEffectValue(levels, 'sharp_eyes'),
-    identifySpeedPercent: getEffectValue(levels, 'quick_learner'),
-    retreatIQBonus: getEffectValue(levels, 'tactician'),
-    lootIQBonus: getEffectValue(levels, 'pack_rat'),
-    hasDangerSense: (levels['danger_sense'] || 0) > 0,
-    hasEfficientHealing: (levels['efficient_healer'] || 0) > 0,
-    battleInstinctBonus: getEffectValue(levels, 'battle_instinct'),
 
     // QoL bonuses
     turboSpeedPercent: getEffectValue(levels, 'turbo_mode'),
@@ -109,13 +91,6 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   xpMultiplier: 1,
   goldMultiplier: 1,
   essenceMultiplier: 1,
-  trapVisionBonus: 0,
-  identifySpeedPercent: 0,
-  retreatIQBonus: 0,
-  lootIQBonus: 0,
-  hasDangerSense: false,
-  hasEfficientHealing: false,
-  battleInstinctBonus: 0,
   turboSpeedPercent: 0,
   hasAutoRestart: false,
 }
