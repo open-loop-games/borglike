@@ -1,41 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useFeedStore, type FeedEventType } from '@/stores/feed'
 
-interface FeedEvent {
-  id: number
-  slot: number
-  message: string
-  type: 'info' | 'combat' | 'item' | 'level' | 'death'
-  timestamp: number
-}
-
-const events = ref<FeedEvent[]>([])
-let eventId = 0
-
-// Demo events for now - will be wired to actual game events
-function addEvent(slot: number, message: string, type: FeedEvent['type'] = 'info') {
-  events.value.unshift({
-    id: eventId++,
-    slot,
-    message,
-    type,
-    timestamp: Date.now(),
-  })
-  // Keep only last 50 events
-  if (events.value.length > 50) {
-    events.value.pop()
-  }
-}
-
-// Expose for external use
-defineExpose({ addEvent })
+const feedStore = useFeedStore()
 
 function getSlotColor(slot: number): string {
+  // -1 is system message
+  if (slot < 0) return 'var(--text-dim)'
   const colors = ['var(--cyan)', 'var(--green)', 'var(--amber)', 'var(--purple)']
   return colors[slot % colors.length] ?? 'var(--text-secondary)'
 }
 
-function getTypeClass(type: FeedEvent['type']): string {
+function getSlotLabel(slot: number): string {
+  return slot < 0 ? 'SYS' : String(slot + 1)
+}
+
+function getTypeClass(type: FeedEventType): string {
   return `event-${type}`
 }
 </script>
@@ -46,18 +25,18 @@ function getTypeClass(type: FeedEvent['type']): string {
     <div class="feed-scroll">
       <TransitionGroup name="feed" tag="div" class="feed-events">
         <div
-          v-for="event in events.slice(0, 10)"
+          v-for="event in feedStore.recentEvents"
           :key="event.id"
           class="feed-event"
           :class="getTypeClass(event.type)"
         >
           <span class="event-slot" :style="{ color: getSlotColor(event.slot) }">
-            [{{ event.slot + 1 }}]
+            [{{ getSlotLabel(event.slot) }}]
           </span>
           <span class="event-message">{{ event.message }}</span>
         </div>
       </TransitionGroup>
-      <div v-if="events.length === 0" class="feed-empty">Waiting for events...</div>
+      <div v-if="!feedStore.hasEvents" class="feed-empty">Waiting for events...</div>
     </div>
   </footer>
 </template>
@@ -124,6 +103,15 @@ function getTypeClass(type: FeedEvent['type']): string {
 .event-death .event-message {
   color: var(--red);
   text-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+}
+
+.event-good .event-message {
+  color: var(--green);
+}
+
+.event-danger .event-message {
+  color: var(--red);
+  font-weight: bold;
 }
 
 .feed-empty {
