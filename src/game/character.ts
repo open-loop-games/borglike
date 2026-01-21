@@ -27,6 +27,7 @@ const ARMOR_SLOTS: EquipSlot[] = ['armor', 'shield', 'helm', 'gloves', 'boots']
 /** Map ItemTemplate slot names to EquipSlot names */
 const SLOT_MAP: Record<string, EquipSlot> = {
   weapon: 'weapon',
+  bow: 'bow',
   body: 'armor',
   shield: 'shield',
   helm: 'helm',
@@ -173,6 +174,8 @@ export function createCharacter(config: {
     accuracy: 50 + stats.dex + 1, // level 1
     evasion: baseEvasion,
     meleeDamage: baseMeleeDamage,
+    rangedDamage: Math.floor(stats.dex / 3), // DEX-based, no bow yet
+    rangedAccuracy: 50 + stats.dex + 1, // level 1
     speed: 100,
   }
 
@@ -422,6 +425,34 @@ export function calculateCombatStats(character: Character): CombatStats {
     }
   }
 
+  // Ranged combat stats (DEX-based)
+  let rangedDamage = Math.floor(stats.dex / 3)
+  let rangedAccuracy = 50 + stats.dex + character.level
+
+  // Apply bow bonuses if equipped
+  const bow = character.equipment.bow
+  if (bow) {
+    // Parse dice notation for bow damage
+    rangedDamage += parseDiceAverage(bow.template.damage) + bow.enchantment
+    // Artifact bow bonuses
+    if (bow.artifact?.damage) {
+      rangedDamage += parseDiceAverage(bow.artifact.damage)
+    }
+    if (bow.artifact?.bonuses?.toDam) {
+      rangedDamage += bow.artifact.bonuses.toDam
+    }
+    // Hit bonus from bow template
+    if (bow.template.hitBonus) {
+      rangedAccuracy += bow.template.hitBonus
+    }
+    // Artifact hit bonus
+    if (bow.artifact?.bonuses?.toHit) {
+      rangedAccuracy += bow.artifact.bonuses.toHit
+    }
+  }
+  // Apply might upgrade to ranged damage too
+  rangedDamage = Math.floor(rangedDamage * (1 + bonuses.damagePercent / 100))
+
   return {
     maxHp,
     maxMp,
@@ -429,6 +460,8 @@ export function calculateCombatStats(character: Character): CombatStats {
     accuracy,
     evasion,
     meleeDamage,
+    rangedDamage,
+    rangedAccuracy,
     speed,
   }
 }

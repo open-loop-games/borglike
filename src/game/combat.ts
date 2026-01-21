@@ -5,7 +5,7 @@
  * Functions are pure where possible - actual state mutation happens in the game loop.
  */
 
-import type { Character, Monster, ResistanceType } from './types'
+import type { Character, Monster, ResistanceType, Point } from './types'
 
 // ============================================================================
 // TYPES
@@ -65,9 +65,17 @@ export function getAttackerStats(entity: Character | Monster): AttackerStats {
     // Monster: accuracy derived from speed (faster = more accurate)
     // Base accuracy of 50, modified by speed (110 is normal)
     const speedBonus = Math.floor((entity.template.speed - 110) / 2)
+    let damage = entity.template.damage
+
+    // Apply weaken debuff (reduces damage)
+    const weakenDebuff = entity.debuffs?.find(d => d.type === 'weaken')
+    if (weakenDebuff) {
+      damage = Math.floor(damage * (100 - weakenDebuff.value) / 100)
+    }
+
     return {
       accuracy: 50 + speedBonus,
-      damage: entity.template.damage,
+      damage,
     }
   }
 }
@@ -336,4 +344,146 @@ export function formatAttackMessageFromEntities(
   const defenderName = isCharacter(defender) ? 'you' : `the ${defender.template.name}`
 
   return formatAttackMessage(attackerName, defenderName, result)
+}
+
+// ============================================================================
+// RANGED COMBAT
+// ============================================================================
+
+/** Minimum range for ranged attacks (can't shoot adjacent targets) */
+const MIN_RANGED_RANGE = 2
+
+/** Maximum range for ranged attacks (bow range) */
+const MAX_RANGED_RANGE = 8
+
+/**
+ * Check if character can perform a ranged attack on target
+ *
+ * Requirements:
+ * - Has a bow equipped
+ * - Target is not adjacent (distance >= 2)
+ * - Target is within range (distance <= 8)
+ */
+export function canRangedAttack(character: Character, targetPos: Point): boolean {
+  // Must have a bow equipped
+  const bow = character.equipment.bow
+  if (!bow) return false
+
+  // Calculate distance
+  const dx = Math.abs(targetPos.x - character.position.x)
+  const dy = Math.abs(targetPos.y - character.position.y)
+  const distance = Math.max(dx, dy) // Chebyshev distance
+
+  // Must be at least MIN_RANGED_RANGE tiles away (not adjacent)
+  if (distance < MIN_RANGED_RANGE) return false
+
+  // Must be within bow range
+  const range = bow.template.range ?? MAX_RANGED_RANGE
+  if (distance > range) return false
+
+  return true
+}
+
+/**
+ * Get the range of the equipped bow
+ */
+export function getBowRange(character: Character): number {
+  const bow = character.equipment.bow
+  if (!bow) return 0
+  return bow.template.range ?? MAX_RANGED_RANGE
+}
+
+/**
+ * Resolve a ranged attack between character and monster
+ *
+ * Similar to melee attack but:
+ * - Uses rangedDamage and rangedAccuracy
+ * - Distance penalty: -5% hit chance per tile beyond 2
+ */
+export function rangedAttack(
+  attacker: Character,
+  defender: Monster,
+  distance: number
+): AttackResult {
+  // Get ranged stats
+  let accuracy = attacker.combat.rangedAccuracy
+  let damage = attacker.combat.rangedDamage
+
+  // Apply status effect bonuses
+  accuracy += getStatusHitBonus(attacker)
+  damage += getStatusDamageBonus(attacker)
+
+  // Distance penalty: -5% hit chance per tile beyond 2
+  const distancePenalty = Math.max(0, distance - 2) * 5
+  accuracy -= distancePenalty
+
+  // Get defender stats
+  const defenderStats = getDefenderStats(defender)
+
+  // Calculate hit chance (clamped between 5% and 95%)
+  const baseHitChance = 50 + accuracy - defenderStats.evasion
+  const hitChance = Math.max(5, Math.min(95, baseHitChance))
+
+  // Roll for hit
+  const hitRoll = Math.random() * 100
+  const hit = hitRoll < hitChance
+
+  if (!hit) {
+    return {
+      hit: false,
+      damage: 0,
+      critical: false,
+      killed: false,
+    }
+  }
+
+  // Calculate base damage (minimum 1)
+  const baseDamage = Math.max(1, damage - defenderStats.armor / 2)
+
+  // Apply variance (+/- 20%)
+  const variance = 0.8 + Math.random() * 0.4
+  let finalDamage = Math.floor(baseDamage * variance)
+
+  // Check for critical hit (5% chance)
+  const critRoll = Math.random() * 100
+  const critical = critRoll < 5
+
+  if (critical) {
+    finalDamage *= 2
+  }
+
+  // Ensure minimum damage of 1 on a hit
+  finalDamage = Math.max(1, finalDamage)
+
+  // Check if defender would be killed
+  const killed = finalDamage >= defender.hp
+
+  return {
+    hit: true,
+    damage: finalDamage,
+    critical,
+    killed,
+  }
+}
+
+/**
+ * Format ranged attack message
+ */
+export function formatRangedAttackMessage(
+  defenderName: string,
+  result: AttackResult
+): string {
+  if (!result.hit) {
+    return `Your arrow misses ${defenderName}.`
+  }
+
+  if (result.killed) {
+    return `Your arrow kills ${defenderName}!`
+  }
+
+  if (result.critical) {
+    return `Your arrow critically hits ${defenderName} for ${result.damage} damage!`
+  }
+
+  return `Your arrow hits ${defenderName} for ${result.damage} damage.`
 }
