@@ -7,6 +7,7 @@ export interface ItemTemplate {
   name: string
   type:
     | 'weapon'
+    | 'bow'
     | 'armor'
     | 'shield'
     | 'helm'
@@ -17,7 +18,11 @@ export interface ItemTemplate {
     | 'light'
     | 'potion'
     | 'scroll'
-  slot?: 'weapon' | 'body' | 'shield' | 'helm' | 'gloves' | 'boots' | 'ring' | 'amulet' | 'light'
+  slot?: 'weapon' | 'bow' | 'body' | 'shield' | 'helm' | 'gloves' | 'boots' | 'ring' | 'amulet' | 'light'
+  /** Ranged weapon range (tiles) - only for bows */
+  range?: number
+  /** Hit bonus for ranged weapons */
+  hitBonus?: number
   tier: number // 1-4 based on power level and alloc-depth
   damage?: string // dice notation e.g. "2d5"
   protection?: number // AC value
@@ -201,6 +206,72 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '8d4',
     weight: 250,
     minDepth: 60,
+  },
+]
+
+// ============================================================================
+// BOWS - Ranged Weapons
+// ============================================================================
+
+export const BOWS: ItemTemplate[] = [
+  // Tier 1 - Early Game (depth 0-10)
+  {
+    name: 'Short Bow',
+    type: 'bow',
+    slot: 'bow',
+    tier: 1,
+    damage: '1d6',
+    weight: 30,
+    range: 8,
+    minDepth: 0,
+  },
+
+  // Tier 2 - Mid Game (depth 10-25)
+  {
+    name: 'Long Bow',
+    type: 'bow',
+    slot: 'bow',
+    tier: 2,
+    damage: '2d4',
+    weight: 40,
+    range: 8,
+    minDepth: 10,
+  },
+  {
+    name: 'Composite Bow',
+    type: 'bow',
+    slot: 'bow',
+    tier: 2,
+    damage: '2d5',
+    weight: 45,
+    range: 8,
+    minDepth: 15,
+  },
+
+  // Tier 3 - Deep Game (depth 25-40)
+  {
+    name: 'Elven Bow',
+    type: 'bow',
+    slot: 'bow',
+    tier: 3,
+    damage: '2d6',
+    weight: 35,
+    range: 8,
+    hitBonus: 2,
+    minDepth: 25,
+  },
+
+  // Tier 4 - Endgame (depth 40+)
+  {
+    name: 'Bow of Precision',
+    type: 'bow',
+    slot: 'bow',
+    tier: 4,
+    damage: '3d5',
+    weight: 40,
+    range: 8,
+    hitBonus: 5,
+    minDepth: 45,
   },
 ]
 
@@ -1045,6 +1116,16 @@ export const SCROLLS: ItemTemplate[] = [
   //   minDepth: 10,
   // },
 
+  // Town Portal
+  {
+    name: 'Scroll of Town Portal',
+    type: 'scroll',
+    tier: 2,
+    weight: 5,
+    effect: 'Opens portal to town for 1000 turns',
+    minDepth: 1,
+  },
+
   // Combat
   {
     name: 'Scroll of Blessing',
@@ -1105,6 +1186,7 @@ export const SCROLLS: ItemTemplate[] = [
 
 export const ALL_EQUIPMENT: ItemTemplate[] = [
   ...WEAPONS,
+  ...BOWS,
   ...ARMOR,
   ...SHIELDS,
   ...HELMS,

@@ -3,7 +3,6 @@
  *
  * Categories:
  * - stats: Direct stat bonuses (HP, damage, etc.)
- * - borg: AI behavior modifications (better decisions)
  * - meta: XP/gold/essence multipliers
  * - qol: Quality of life (turbo speed, auto-restart)
  */
@@ -12,7 +11,7 @@ export interface UpgradeDefinition {
   id: string
   name: string
   description: string
-  category: 'stats' | 'borg' | 'meta' | 'qol'
+  category: 'stats' | 'meta' | 'qol'
   maxLevel: number
   baseCost: number
   costScaling: number // Multiplier per level (e.g., 1.5 = 50% more each level)
@@ -95,129 +94,6 @@ const swiftness: UpgradeDefinition = {
     perLevel: 5,
   },
   icon: '»',
-}
-
-// =============================================================================
-// BORG (AI) UPGRADES
-// =============================================================================
-
-const sharpEyes: UpgradeDefinition = {
-  id: 'sharp_eyes',
-  name: 'Sharp Eyes',
-  description: 'Bot sees traps from +1 tile away per level',
-  category: 'borg',
-  maxLevel: 3,
-  baseCost: 200,
-  costScaling: 2.0,
-  effect: {
-    type: 'flat',
-    stat: 'trapVision',
-    baseValue: 1,
-    perLevel: 1,
-  },
-  icon: '◉',
-}
-
-const quickLearner: UpgradeDefinition = {
-  id: 'quick_learner',
-  name: 'Quick Learner',
-  description: 'Bot identifies items +10% faster per level',
-  category: 'borg',
-  maxLevel: 5,
-  baseCost: 100,
-  costScaling: 1.5,
-  effect: {
-    type: 'percent',
-    stat: 'identifySpeed',
-    baseValue: 10,
-    perLevel: 10,
-  },
-  icon: '?',
-}
-
-const tactician: UpgradeDefinition = {
-  id: 'tactician',
-  name: 'Tactician',
-  description: 'Bot makes better retreat decisions',
-  category: 'borg',
-  maxLevel: 3,
-  baseCost: 300,
-  costScaling: 2.0,
-  effect: {
-    type: 'flat',
-    stat: 'retreatIQ',
-    baseValue: 1,
-    perLevel: 1,
-  },
-  icon: '☆',
-}
-
-const packRat: UpgradeDefinition = {
-  id: 'pack_rat',
-  name: 'Pack Rat',
-  description: 'Bot prioritizes valuable items better',
-  category: 'borg',
-  maxLevel: 3,
-  baseCost: 150,
-  costScaling: 1.8,
-  effect: {
-    type: 'flat',
-    stat: 'lootIQ',
-    baseValue: 1,
-    perLevel: 1,
-  },
-  icon: '$',
-}
-
-const dangerSense: UpgradeDefinition = {
-  id: 'danger_sense',
-  name: 'Danger Sense',
-  description: 'Bot factors resistances into danger assessment',
-  category: 'borg',
-  maxLevel: 1,
-  baseCost: 400,
-  costScaling: 1,
-  effect: {
-    type: 'unlock',
-    stat: 'dangerSense',
-    baseValue: 1,
-    perLevel: 0,
-  },
-  icon: '⚠',
-}
-
-const efficientHealer: UpgradeDefinition = {
-  id: 'efficient_healer',
-  name: 'Efficient Healer',
-  description: 'Bot uses appropriate potion tier for wounds',
-  category: 'borg',
-  maxLevel: 1,
-  baseCost: 250,
-  costScaling: 1,
-  effect: {
-    type: 'unlock',
-    stat: 'efficientHealing',
-    baseValue: 1,
-    perLevel: 0,
-  },
-  icon: '✚',
-}
-
-const battleInstinct: UpgradeDefinition = {
-  id: 'battle_instinct',
-  name: 'Battle Instinct',
-  description: 'Smarter combat decisions (+1 scoring factors per level)',
-  category: 'borg',
-  maxLevel: 3,
-  baseCost: 350,
-  costScaling: 1.8,
-  effect: {
-    type: 'flat',
-    stat: 'battleInstinct',
-    baseValue: 1,
-    perLevel: 1,
-  },
-  icon: '◎',
 }
 
 // =============================================================================
@@ -373,14 +249,6 @@ export const upgrades: UpgradeDefinition[] = [
   might,
   resilience,
   swiftness,
-  // Borg
-  sharpEyes,
-  quickLearner,
-  tactician,
-  packRat,
-  dangerSense,
-  efficientHealer,
-  battleInstinct,
   // Meta
   essenceBoost,
   goldDigger,
@@ -395,7 +263,6 @@ export const upgrades: UpgradeDefinition[] = [
 
 export const upgradesByCategory = {
   stats: upgrades.filter((u) => u.category === 'stats'),
-  borg: upgrades.filter((u) => u.category === 'borg'),
   meta: upgrades.filter((u) => u.category === 'meta'),
   qol: upgrades.filter((u) => u.category === 'qol'),
 }

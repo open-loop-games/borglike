@@ -9,7 +9,7 @@ import type { ItemTemplate } from './data/items'
 import type { BoosterBonuses } from './booster-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import type { ArtifactTemplate } from './data/artifacts'
-import { getItemsForDepth, POTIONS, SCROLLS, ALL_EQUIPMENT } from './data/index'
+import { getItemsForDepth, POTIONS, SCROLLS, ALL_EQUIPMENT, BOWS } from './data/index'
 import { getArtifactsForDepth } from './data/artifacts'
 import { findOpenPositions, getTile } from './dungeon'
 
@@ -367,6 +367,8 @@ export function getItemGlyph(item: Item): string {
   switch (item.template.type) {
     case 'weapon':
       return '/'
+    case 'bow':
+      return '}'
     case 'armor':
       return '['
     case 'shield':
@@ -463,6 +465,23 @@ export function createTeleportScrolls(count: number): Item[] {
 }
 
 /**
+ * Create Town Portal scrolls
+ *
+ * @param count - Number of scrolls to create
+ * @returns Array of Town Portal scroll items
+ */
+export function createTownPortalScrolls(count: number): Item[] {
+  const tpScroll = SCROLLS.find((s) => s.name === 'Scroll of Town Portal')
+  if (!tpScroll) return []
+
+  const items: Item[] = []
+  for (let i = 0; i < count; i++) {
+    items.push(createItem(tpScroll, 0))
+  }
+  return items
+}
+
+/**
  * Create starting equipment for a character based on class
  *
  * @param classId - The character's class ID
@@ -494,9 +513,21 @@ export function createStartingEquipment(
     items.push(createItem(armor, armorEnchant))
   }
 
+  // Starting bow for ranged classes
+  const bowName = getStartingBowForClass(classId)
+  if (bowName) {
+    const bow = BOWS.find((b) => b.name === bowName)
+    if (bow) {
+      items.push(createItem(bow, 0))
+    }
+  }
+
   // Some potions and scrolls
   items.push(...createHealingPotions(3))
   items.push(...createTeleportScrolls(2))
+
+  // Town Portal scroll (always start with 1)
+  items.push(...createTownPortalScrolls(1))
 
   return items
 }
@@ -534,6 +565,18 @@ function getStartingWeaponForClass(classId: string): string {
 }
 
 /**
+ * Get the starting bow name for a class (null if class doesn't start with a bow)
+ */
+function getStartingBowForClass(classId: string): string | null {
+  switch (classId) {
+    case 'ranger':
+      return 'Short Bow'
+    default:
+      return null
+  }
+}
+
+/**
  * Get the starting armor name for a class
  */
 function getStartingArmorForClass(classId: string): string {
@@ -561,4 +604,79 @@ function getStartingArmorForClass(classId: string): string {
     default:
       return 'Robe'
   }
+}
+
+// ============================================================================
+// MERCHANT INVENTORY
+// ============================================================================
+
+/**
+ * Generate inventory for a merchant based on their type and dungeon depth
+ *
+ * @param merchantId - The merchant's ID (determines shop type)
+ * @param depth - Current dungeon depth (affects item quality)
+ * @returns Array of items for the merchant's inventory
+ */
+export function generateMerchantInventory(merchantId: string, depth: number): Item[] {
+  const items: Item[] = []
+  const itemCount = 4 + Math.floor(depth / 10) // 4-9 items based on depth
+
+  // Determine shop type from merchant ID
+  const isWeaponShop = merchantId.includes('weapon') || merchantId.includes('smith')
+  const isArmorShop = merchantId.includes('armor') || merchantId.includes('armour')
+  const isPotionShop = merchantId.includes('potion') || merchantId.includes('alchemist')
+  const isScrollShop = merchantId.includes('scroll') || merchantId.includes('magic')
+  const isGeneralShop = !isWeaponShop && !isArmorShop && !isPotionShop && !isScrollShop
+
+  // Get items appropriate for shop type
+  const availableItems = getItemsForDepth(depth)
+  let shopItems: ItemTemplate[] = []
+
+  if (isWeaponShop) {
+    shopItems = availableItems.filter(i => i.type === 'weapon' || i.type === 'bow')
+  } else if (isArmorShop) {
+    shopItems = availableItems.filter(i => ['armor', 'shield', 'helm', 'gloves', 'boots'].includes(i.type))
+  } else if (isPotionShop) {
+    shopItems = POTIONS.filter(p => (p.minDepth ?? 0) <= depth)
+  } else if (isScrollShop) {
+    shopItems = SCROLLS.filter(s => (s.minDepth ?? 0) <= depth)
+  } else if (isGeneralShop) {
+    // Mix of everything
+    const potions = POTIONS.filter(p => (p.minDepth ?? 0) <= depth)
+    const scrolls = SCROLLS.filter(s => (s.minDepth ?? 0) <= depth)
+    shopItems = [...availableItems.slice(0, 5), ...potions.slice(0, 3), ...scrolls.slice(0, 3)]
+  }
+
+  if (shopItems.length === 0) {
+    shopItems = availableItems.slice(0, 5)
+  }
+
+  // Generate items with markup
+  for (let i = 0; i < itemCount && shopItems.length > 0; i++) {
+    const template = shopItems[Math.floor(Math.random() * shopItems.length)]
+    if (!template) continue
+
+    const enchantment = rollEnchantmentForShop(depth)
+    const item = createItem(template, enchantment)
+
+    // Calculate shop price (base tier * 50 + enchant bonus)
+    const basePrice = template.tier * 50 + enchantment * 30
+    const markup = 1.5 + Math.random() * 0.5 // 1.5x to 2.0x markup
+    item.shopPrice = Math.floor(basePrice * markup)
+
+    items.push(item)
+  }
+
+  return items
+}
+
+/**
+ * Roll enchantment for shop items (slightly better than random drops)
+ */
+function rollEnchantmentForShop(depth: number): number {
+  const roll = Math.random()
+  if (roll > 0.6) return 0 // 40% no enchantment
+  if (roll > 0.3 || depth < 10) return 1 // 30% +1
+  if (roll > 0.1 || depth < 20) return 2 // 20% +2
+  return 3 // 10% +3 (only deep levels)
 }
