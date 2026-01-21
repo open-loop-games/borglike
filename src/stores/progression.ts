@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Currency, UnlockState, GlobalStats, RunStats, RunLoadout, BestiaryEntry, SlotConfig, AchievementState } from '../types'
+import type { Currency, UnlockState, GlobalStats, RunStats, RunLoadout, BestiaryEntry, SlotConfig, AchievementState, UnlockContext } from '../types'
 import { achievements, getAchievementById } from '@/game/data/achievements'
 import {
   unlockableRaces,
@@ -42,8 +42,8 @@ export const useProgressionStore = defineStore('progression', () => {
 
   // Unlocks
   const unlocks = ref<UnlockState>({
-    races: new Set(['Human']),
-    classes: new Set(['Warrior']),
+    races: new Set(['Human', 'Dwarf', 'Elf']),
+    classes: new Set(['Warrior', 'Mage', 'Rogue']),
     runSlots: 1,
     upgrades: new Set(),
     boosters: new Set(),
@@ -74,6 +74,7 @@ export const useProgressionStore = defineStore('progression', () => {
     totalKills: 0,
     totalGold: 0,
     totalEssence: 0,
+    totalFloorsVisited: 0,
     maxDepthEver: 0,
   })
 
@@ -211,17 +212,27 @@ export const useProgressionStore = defineStore('progression', () => {
   const allUpgrades = computed(() => upgradeData.value.all)
   const upgradesByCategory = computed(() => upgradeData.value.byCategory)
 
-  // Race/class unlock info (includes canAfford to avoid remapping in components)
+  // Context for evaluating prestige unlock conditions
+  const unlockContext = computed<UnlockContext>(() => ({
+    globalStats: globalStats.value,
+    bestiary: bestiary.value,
+  }))
+
+  // Race/class unlock info (includes canAfford and meetsCondition for prestige)
   const raceUnlocks = computed(() => {
     const locked = [...unlockableRaces, ...prestigeRaces]
     const essence = currency.value.essence
+    const ctx = unlockContext.value
     return locked.map((race) => {
       const cost = race.prestige ? 5000 : 500
+      // Non-prestige races always meet condition, prestige races need checkCondition
+      const meetsCondition = !race.prestige || !race.checkCondition || race.checkCondition(ctx)
       return {
         ...race,
         isUnlocked: unlocks.value.races.has(race.name),
         cost,
         canAfford: essence >= cost,
+        meetsCondition,
       }
     })
   })
@@ -229,13 +240,17 @@ export const useProgressionStore = defineStore('progression', () => {
   const classUnlocks = computed(() => {
     const locked = [...unlockableClasses, ...prestigeClasses]
     const essence = currency.value.essence
+    const ctx = unlockContext.value
     return locked.map((cls) => {
       const cost = cls.prestige ? 5000 : 500
+      // Non-prestige classes always meet condition, prestige classes need checkCondition
+      const meetsCondition = !cls.prestige || !cls.checkCondition || cls.checkCondition(ctx)
       return {
         ...cls,
         isUnlocked: unlocks.value.classes.has(cls.name),
         cost,
         canAfford: essence >= cost,
+        meetsCondition,
       }
     })
   })
@@ -444,11 +459,21 @@ export const useProgressionStore = defineStore('progression', () => {
     globalStats.value.totalRuns++
     if (isVictory) {
       totalVictories.value++
+      // Track victories per race and class for prestige unlock conditions
+      if (!globalStats.value.victoriesPerRace) {
+        globalStats.value.victoriesPerRace = {}
+      }
+      if (!globalStats.value.victoriesPerClass) {
+        globalStats.value.victoriesPerClass = {}
+      }
+      globalStats.value.victoriesPerRace[stats.race] = (globalStats.value.victoriesPerRace[stats.race] ?? 0) + 1
+      globalStats.value.victoriesPerClass[stats.class] = (globalStats.value.victoriesPerClass[stats.class] ?? 0) + 1
     } else {
       globalStats.value.totalDeaths++
     }
     globalStats.value.totalKills += stats.kills
     globalStats.value.totalGold += stats.goldEarned
+    globalStats.value.totalFloorsVisited += stats.maxDepth
     if (stats.maxDepth > globalStats.value.maxDepthEver) {
       globalStats.value.maxDepthEver = stats.maxDepth
     }
@@ -461,12 +486,29 @@ export const useProgressionStore = defineStore('progression', () => {
     const now = Date.now()
     for (const [name, count] of Object.entries(monsterKills)) {
       if (!bestiary.value[name]) {
-        bestiary.value[name] = { kills: 0, firstKillTime: now }
+        bestiary.value[name] = { kills: 0, firstKillTime: now, deaths: 0 }
       }
       bestiary.value[name].kills += count
     }
     // Save immediately - bestiary data is important
     saveImmediately().catch((err) => console.error('[Progression] Failed to save after recordMonsterKills:', err))
+  }
+
+  /**
+   * Record a death caused by a specific monster
+   */
+  function recordMonsterDeath(monsterName: string) {
+    const now = Date.now()
+    if (!bestiary.value[monsterName]) {
+      bestiary.value[monsterName] = { kills: 0, firstKillTime: now, deaths: 0 }
+    }
+    const entry = bestiary.value[monsterName]
+    entry.deaths = (entry.deaths ?? 0) + 1
+    if (!entry.firstDeathTime) {
+      entry.firstDeathTime = now
+    }
+    // Save immediately
+    saveImmediately().catch((err) => console.error('[Progression] Failed to save after recordMonsterDeath:', err))
   }
 
   // Achievement getters
@@ -662,6 +704,7 @@ export const useProgressionStore = defineStore('progression', () => {
     unlockRunSlot,
     recordRun,
     recordMonsterKills,
+    recordMonsterDeath,
     calculateEssenceReward,
     debugAddEssence,
     prestige,

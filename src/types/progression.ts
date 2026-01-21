@@ -60,10 +60,12 @@ export interface EquipmentSnapshot {
   isArtifact: boolean
 }
 
-/** Bestiary entry tracking kills per monster */
+/** Bestiary entry tracking kills and deaths per monster */
 export interface BestiaryEntry {
   kills: number
   firstKillTime: number
+  deaths: number // How many times this monster has killed the player
+  firstDeathTime?: number
 }
 
 export interface RunStats {
@@ -83,6 +85,7 @@ export interface RunStats {
   inventory?: string[] // Item names at death
   turns?: number // Total turns played
   personality?: string // Bot personality used
+  seed?: number // RNG seed for reproducibility
 }
 
 export interface GlobalStats {
@@ -91,9 +94,19 @@ export interface GlobalStats {
   totalKills: number
   totalGold: number
   totalEssence: number
+  totalFloorsVisited: number
   maxDepthEver: number
   fastestDepth10?: number // Turns to reach depth 10
   longestRun?: number // Most turns survived
+  // Prestige unlock tracking
+  victoriesPerRace?: Record<string, number> // race name → win count
+  victoriesPerClass?: Record<string, number> // class name → win count
+}
+
+/** Context passed to prestige unlock condition predicates */
+export interface UnlockContext {
+  globalStats: GlobalStats
+  bestiary: Record<string, BestiaryEntry>
 }
 
 /** Achievement tracking state */

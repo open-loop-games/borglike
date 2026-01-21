@@ -6,10 +6,11 @@
  */
 
 import { openDB, type IDBPDatabase, type DBSchema } from 'idb'
-import { useProgressionStore } from './progression'
+import { useProgressionStore, type UpgradeState } from './progression'
 import { watch } from 'vue'
 import type { Currency, UnlockState, GlobalStats, RunStats, BestiaryEntry, SlotConfig } from '@/types/progression'
-import type { UpgradeState } from './progression'
+import { startingRaces } from '@/game/data/races'
+import { startingClasses } from '@/game/data/classes'
 
 // ============================================================================
 // DATABASE SCHEMA
@@ -166,17 +167,35 @@ function deserializeAchievements(data: SerializedAchievementState): { unlocked: 
 }
 
 // ============================================================================
-// SAVE FUNCTIONS
+// CENTRALIZED HELPERS
 // ============================================================================
 
 /**
- * Save current progression state to IndexedDB
+ * Run migrations to ensure data integrity after loading
+ * Imports starting races/classes from source of truth
  */
-export async function saveProgression(): Promise<void> {
-  const database = await initDB()
+function runMigrations(): void {
   const progression = useProgressionStore()
 
-  // Deep clone slotConfigs to strip Vue reactivity (nested boosters array is reactive)
+  // Ensure all starting races are unlocked
+  for (const race of startingRaces) {
+    progression.unlocks.races.add(race.name)
+  }
+
+  // Ensure all starting classes are unlocked
+  for (const cls of startingClasses) {
+    progression.unlocks.classes.add(cls.name)
+  }
+}
+
+/**
+ * Serialize the current progression store state into a ProgressionData object
+ * Single source of truth for all save/snapshot operations
+ */
+function serializeProgression(): ProgressionData {
+  const progression = useProgressionStore()
+
+  // Deep clone slotConfigs to strip Vue reactivity
   const serializedSlotConfigs = progression.slotConfigs.map((config) => ({
     race: config.race,
     class: config.class,
@@ -187,10 +206,15 @@ export async function saveProgression(): Promise<void> {
   // Deep clone bestiary to strip reactivity
   const serializedBestiary: Record<string, BestiaryEntry> = {}
   for (const [key, entry] of Object.entries(progression.bestiary)) {
-    serializedBestiary[key] = { kills: entry.kills, firstKillTime: entry.firstKillTime }
+    serializedBestiary[key] = {
+      kills: entry.kills,
+      firstKillTime: entry.firstKillTime,
+      deaths: entry.deaths ?? 0,
+      firstDeathTime: entry.firstDeathTime,
+    }
   }
 
-  const data: ProgressionData = {
+  return {
     version: 1,
     currency: { essence: progression.currency.essence, artifacts: progression.currency.artifacts },
     unlocks: serializeUnlocks(progression.unlocks),
@@ -204,52 +228,16 @@ export async function saveProgression(): Promise<void> {
     slotConfigs: serializedSlotConfigs,
     achievements: serializeAchievements(progression.achievementState),
   }
-
-  await database.put('progression', data, 'main')
 }
 
 /**
- * Save a run to history
+ * Restore progression store state from a ProgressionData object
+ * Single source of truth for all load/restore operations
  */
-export async function saveRun(run: RunStats): Promise<void> {
-  const database = await initDB()
-  await database.add('runHistory', run)
-}
-
-/**
- * Save all runs from the store (for bulk operations)
- */
-export async function saveAllRuns(runs: RunStats[]): Promise<void> {
-  const database = await initDB()
-  const tx = database.transaction('runHistory', 'readwrite')
-
-  for (const run of runs) {
-    await tx.store.add(run)
-  }
-
-  await tx.done
-}
-
-// ============================================================================
-// LOAD FUNCTIONS
-// ============================================================================
-
-/**
- * Load progression state from IndexedDB
- *
- * @returns true if data was loaded, false if no saved data exists
- */
-export async function loadProgression(): Promise<boolean> {
-  const database = await initDB()
-  const data = await database.get('progression', 'main')
-
-  if (!data) {
-    return false
-  }
-
+function restoreProgressionFromData(data: ProgressionData): void {
   const progression = useProgressionStore()
 
-  // Restore state
+  // Restore currency
   progression.currency.essence = data.currency.essence
   progression.currency.artifacts = data.currency.artifacts
 
@@ -296,6 +284,62 @@ export async function loadProgression(): Promise<boolean> {
     progression.achievementState.newUnlocks = achievements.newUnlocks
   }
 
+  // Run migrations to ensure data integrity
+  runMigrations()
+}
+
+// ============================================================================
+// SAVE FUNCTIONS
+// ============================================================================
+
+/**
+ * Save current progression state to IndexedDB
+ */
+export async function saveProgression(): Promise<void> {
+  const database = await initDB()
+  await database.put('progression', serializeProgression(), 'main')
+}
+
+/**
+ * Save a run to history
+ */
+export async function saveRun(run: RunStats): Promise<void> {
+  const database = await initDB()
+  await database.add('runHistory', run)
+}
+
+/**
+ * Save all runs from the store (for bulk operations)
+ */
+export async function saveAllRuns(runs: RunStats[]): Promise<void> {
+  const database = await initDB()
+  const tx = database.transaction('runHistory', 'readwrite')
+
+  for (const run of runs) {
+    await tx.store.add(run)
+  }
+
+  await tx.done
+}
+
+// ============================================================================
+// LOAD FUNCTIONS
+// ============================================================================
+
+/**
+ * Load progression state from IndexedDB
+ *
+ * @returns true if data was loaded, false if no saved data exists
+ */
+export async function loadProgression(): Promise<boolean> {
+  const database = await initDB()
+  const data = await database.get('progression', 'main')
+
+  if (!data) {
+    return false
+  }
+
+  restoreProgressionFromData(data)
   return true
 }
 
@@ -337,36 +381,7 @@ let unloadHandlerFn: (() => void) | null = null
  * Get a snapshot of the current progression state for backup
  */
 function getProgressionSnapshot(): ProgressionData {
-  const progression = useProgressionStore()
-
-  // Deep clone slotConfigs to strip Vue reactivity (nested boosters array is reactive)
-  const serializedSlotConfigs = progression.slotConfigs.map((config) => ({
-    race: config.race,
-    class: config.class,
-    personality: config.personality,
-    boosters: [config.boosters[0], config.boosters[1]] as [string | null, string | null],
-  }))
-
-  // Deep clone bestiary to strip reactivity
-  const serializedBestiary: Record<string, BestiaryEntry> = {}
-  for (const [key, entry] of Object.entries(progression.bestiary)) {
-    serializedBestiary[key] = { kills: entry.kills, firstKillTime: entry.firstKillTime }
-  }
-
-  return {
-    version: 1,
-    currency: { essence: progression.currency.essence, artifacts: progression.currency.artifacts },
-    unlocks: serializeUnlocks(progression.unlocks),
-    globalStats: { ...progression.globalStats },
-    upgradeLevels: { ...progression.upgradeLevels },
-    prestigeLevel: progression.prestigeLevel,
-    lifetimeEssence: progression.lifetimeEssence,
-    totalVictories: progression.totalVictories,
-    activeLoadout: { boosters: [progression.activeLoadout.boosters[0], progression.activeLoadout.boosters[1]] },
-    bestiary: serializedBestiary,
-    slotConfigs: serializedSlotConfigs,
-    achievements: serializeAchievements(progression.achievementState),
-  }
+  return serializeProgression()
 }
 
 /**
@@ -473,46 +488,7 @@ async function checkAndRestoreBackup(): Promise<void> {
 
     if (backupLifetime > currentLifetime) {
       console.log('[Persistence] Restoring from localStorage backup (more recent data detected)')
-
-      // Restore from backup
-      progression.currency.essence = backup.currency.essence
-      progression.currency.artifacts = backup.currency.artifacts
-
-      const unlocks = deserializeUnlocks(backup.unlocks)
-      progression.unlocks.races = unlocks.races
-      progression.unlocks.classes = unlocks.classes
-      progression.unlocks.runSlots = unlocks.runSlots
-      progression.unlocks.upgrades = unlocks.upgrades
-      progression.unlocks.boosters = unlocks.boosters
-
-      Object.assign(progression.globalStats, backup.globalStats)
-      Object.assign(progression.upgradeLevels, backup.upgradeLevels)
-
-      progression.prestigeLevel = backup.prestigeLevel ?? 0
-      progression.lifetimeEssence = backup.lifetimeEssence ?? 0
-      progression.totalVictories = backup.totalVictories ?? 0
-
-      if (backup.activeLoadout) {
-        progression.activeLoadout.boosters = backup.activeLoadout.boosters
-      }
-
-      if (backup.bestiary) {
-        Object.assign(progression.bestiary, backup.bestiary)
-      }
-
-      if (backup.slotConfigs) {
-        progression.slotConfigs.length = 0
-        progression.slotConfigs.push(...backup.slotConfigs)
-      }
-
-      if (backup.achievements) {
-        const achievements = deserializeAchievements(backup.achievements)
-        progression.achievementState.unlocked = achievements.unlocked
-        progression.achievementState.progress = achievements.progress
-        progression.achievementState.newUnlocks = achievements.newUnlocks
-      }
-
-      // Save the restored data to IndexedDB
+      restoreProgressionFromData(backup)
       await saveProgression()
       console.log('[Persistence] Backup restored and saved to IndexedDB')
     }
@@ -623,62 +599,31 @@ export async function importDataFromJSON(jsonString: string): Promise<boolean> {
       return false
     }
 
-    const progression = useProgressionStore()
-
-    // Import progression
+    // Convert export format to ProgressionData format
     const prog = data.progression
-    progression.currency.essence = prog.currency.essence
-    progression.currency.artifacts = prog.currency.artifacts
-
-    const unlocks = deserializeUnlocks(prog.unlocks)
-    progression.unlocks.races = unlocks.races
-    progression.unlocks.classes = unlocks.classes
-    progression.unlocks.runSlots = unlocks.runSlots
-    progression.unlocks.upgrades = unlocks.upgrades
-    progression.unlocks.boosters = unlocks.boosters
-
-    Object.assign(progression.globalStats, prog.globalStats)
-    Object.assign(progression.upgradeLevels, prog.upgradeLevels)
-
-    progression.prestigeLevel = prog.prestigeLevel ?? 0
-    progression.lifetimeEssence = prog.lifetimeEssence ?? 0
-    progression.totalVictories = prog.totalVictories ?? 0
-
-    // Restore active loadout
-    if (prog.activeLoadout) {
-      progression.activeLoadout.boosters = prog.activeLoadout.boosters
+    const progressionData: ProgressionData = {
+      version: 1,
+      currency: prog.currency,
+      unlocks: prog.unlocks,
+      globalStats: prog.globalStats,
+      upgradeLevels: prog.upgradeLevels,
+      prestigeLevel: prog.prestigeLevel,
+      lifetimeEssence: prog.lifetimeEssence,
+      totalVictories: prog.totalVictories,
+      activeLoadout: prog.activeLoadout,
+      bestiary: prog.bestiary,
+      slotConfigs: prog.slotConfigs,
+      achievements: prog.achievements,
     }
 
-    // Restore bestiary
-    if (prog.bestiary) {
-      Object.assign(progression.bestiary, prog.bestiary)
-    }
-
-    // Restore slot configs
-    if (prog.slotConfigs) {
-      progression.slotConfigs.length = 0
-      progression.slotConfigs.push(...prog.slotConfigs)
-    }
-
-    // Restore achievements
-    if (prog.achievements) {
-      const achievements = deserializeAchievements(prog.achievements)
-      progression.achievementState.unlocked = achievements.unlocked
-      progression.achievementState.progress = achievements.progress
-      progression.achievementState.newUnlocks = achievements.newUnlocks
-    }
-
-    // Save to IndexedDB
+    restoreProgressionFromData(progressionData)
     await saveProgression()
 
     // Import run history
     if (data.runHistory && Array.isArray(data.runHistory)) {
       const database = await initDB()
-      // Clear existing history
       await database.clear('runHistory')
-      // Add imported runs
       await saveAllRuns(data.runHistory)
-      // Load into store
       await loadRunHistoryIntoStore()
     }
 

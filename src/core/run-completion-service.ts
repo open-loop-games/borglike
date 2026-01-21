@@ -70,6 +70,14 @@ export async function handleRunCompletion(result: RunResult): Promise<RunComplet
     progression.recordMonsterKills(result.game.stats.monsterKills)
   }
 
+  // Record monster death (which monster killed the player)
+  if (!isVictory && runStats.deathCause) {
+    const killerMonster = extractKillerMonster(runStats.deathCause)
+    if (killerMonster) {
+      progression.recordMonsterDeath(killerMonster)
+    }
+  }
+
   // Add essence to currency
   progression.addEssence(essenceEarned)
 
@@ -134,6 +142,7 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
     inventory,
     turns: game.turn,
     personality: game.upgradeBonuses ? undefined : undefined, // Note: personality not stored on GameState
+    seed: game.seed,
   }
 }
 
@@ -147,10 +156,27 @@ function getDeathCause(game: RunResult['game']): string {
     if (msg.type === 'danger' && msg.text.includes('killed')) {
       return msg.text
     }
+    // Also check for "kills you" format from combat
+    if (msg.type === 'combat' && msg.text.includes('kills you')) {
+      return msg.text
+    }
   }
 
   // Default death message
   return `Slain on depth ${game.character.depth}`
+}
+
+/**
+ * Extract the monster name that killed the player from a death message
+ * Format: "The Monster Name kills you!" -> "Monster Name"
+ */
+function extractKillerMonster(deathCause: string): string | null {
+  // Match "The X kills you!" pattern
+  const killMatch = deathCause.match(/^The (.+) kills you!?$/i)
+  if (killMatch && killMatch[1]) {
+    return killMatch[1]
+  }
+  return null
 }
 
 // ============================================================================
@@ -285,11 +311,32 @@ function checkAchievements(
 
   // Cumulative achievements (global stat checks)
   // Note: globalStats have already been updated by recordRun at this point
+
+  // Monster kill tiers
   if (progression.globalStats.totalKills >= 100) checkAndAward('centurion')
   if (progression.globalStats.totalKills >= 1000) checkAndAward('slayer')
+  if (progression.globalStats.totalKills >= 5000) checkAndAward('butcher')
+  if (progression.globalStats.totalKills >= 25000) checkAndAward('annihilator')
+  if (progression.globalStats.totalKills >= 100000) checkAndAward('genocide')
+
+  // Gold tiers
   if (progression.globalStats.totalGold >= 10000) checkAndAward('millionaire')
+  if (progression.globalStats.totalGold >= 100000) checkAndAward('tycoon')
+  if (progression.globalStats.totalGold >= 500000) checkAndAward('mogul')
+  if (progression.globalStats.totalGold >= 1000000) checkAndAward('dragons_hoard')
+
+  // Death tiers
   if (progression.globalStats.totalDeaths >= 100) checkAndAward('frequent_dier')
+  if (progression.globalStats.totalDeaths >= 500) checkAndAward('professional_corpse')
+  if (progression.globalStats.totalDeaths >= 1000) checkAndAward('death_enthusiast')
+  if (progression.globalStats.totalDeaths >= 5000) checkAndAward('immortally_mortal')
+
+  // Run completion tiers
   if (progression.globalStats.totalRuns >= 50) checkAndAward('veteran')
+  if (progression.globalStats.totalRuns >= 100) checkAndAward('seasoned')
+  if (progression.globalStats.totalRuns >= 250) checkAndAward('grizzled')
+  if (progression.globalStats.totalRuns >= 500) checkAndAward('eternal')
+  if (progression.globalStats.totalRuns >= 1000) checkAndAward('timeless')
 
   return newAchievements
 }

@@ -19,6 +19,7 @@ import {
   type BotPersonality,
   type Item,
 } from '@/game'
+import { randomInt } from '@/game/rng'
 import { handleRunCompletion } from '@/core/run-completion-service'
 import type { RunConfig } from '@/types'
 
@@ -93,6 +94,28 @@ const TIER_COLORS: Record<number, number> = {
 // Artifact color
 const ARTIFACT_COLOR = 0xf59e0b  // amber
 
+// Monster colors (matching Angband color names to hex)
+const MONSTER_COLORS: Record<string, number> = {
+  white: 0xffffff,
+  red: 0xef4444,
+  green: 0x22c55e,
+  blue: 0x3b82f6,
+  yellow: 0xeab308,
+  orange: 0xf97316,
+  purple: 0x8b5cf6,
+  violet: 0xa78bfa,
+  umber: 0x92400e,
+  lightUmber: 0xd97706,
+  slate: 0x64748b,
+  lightDark: 0x374151,
+  lightRed: 0xf87171,
+  lightGreen: 0x4ade80,
+  lightBlue: 0x60a5fa,
+  lightPurple: 0xc084fc,
+  lightSlate: 0x94a3b8,
+  black: 0x1f2937,
+}
+
 /**
  * Convert a game Item to a DisplayItem for the UI
  */
@@ -138,8 +161,8 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
 
   // Create run config with defaults
   const settings = useSettingsStore()
-  const raceName = config?.race || availableRaces[Math.floor(Math.random() * availableRaces.length)] || 'Human'
-  const className = config?.class || availableClasses[Math.floor(Math.random() * availableClasses.length)] || 'Warrior'
+  const raceName = config?.race || availableRaces[randomInt(0, availableRaces.length - 1)] || 'Human'
+  const className = config?.class || availableClasses[randomInt(0, availableClasses.length - 1)] || 'Warrior'
   const personality: BotPersonality = (config?.personality as BotPersonality) || settings.settings.defaultPersonality
 
   const runConfig: RunConfig = {
@@ -155,6 +178,9 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
   const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
   const boosterBonuses = computeBoosterBonuses(progression.getActiveBoosterIds())
 
+  // Get bestiary data for knowledge bonuses
+  const bestiary = progression.bestiary
+
   // Create the actual game runner
   const runner = createGameRunner({
     raceId: RACE_IDS[raceName] || 'human',
@@ -162,6 +188,7 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     botPersonality: personality,
     upgradeBonuses: bonuses,
     boosterBonuses,
+    bestiary,
     maxTurns: 0, // Unlimited
   })
 
@@ -337,6 +364,61 @@ function calculateViewport(
   return { offsetX, offsetY }
 }
 
+// Grid cell type for local building
+interface LocalGridCell {
+  char: string
+  color: number
+}
+
+// Create empty local grid (not reactive)
+function createLocalGrid(): LocalGridCell[][] {
+  const grid: LocalGridCell[][] = []
+  for (let y = 0; y < VIEWPORT_HEIGHT; y++) {
+    const row: LocalGridCell[] = []
+    for (let x = 0; x < VIEWPORT_WIDTH; x++) {
+      row.push({ char: ' ', color: 0xffffff })
+    }
+    grid.push(row)
+  }
+  return grid
+}
+
+// Set cell in local grid (bounds-checked)
+function setLocalCell(grid: LocalGridCell[][], row: number, col: number, char: string, color: number): void {
+  if (row < 0 || row >= VIEWPORT_HEIGHT || col < 0 || col >= VIEWPORT_WIDTH) return
+  const rowArray = grid[row]
+  if (rowArray) rowArray[col] = { char, color }
+}
+
+/**
+ * Render a collection of entities to the grid with common visibility and bounds checks.
+ * Returns null from getDisplay to skip rendering an entity.
+ */
+function renderEntities<T>(
+  grid: LocalGridCell[][],
+  entities: Iterable<T>,
+  level: GameState['currentLevel'],
+  offsetX: number,
+  offsetY: number,
+  getPosition: (entity: T) => { x: number; y: number },
+  getDisplay: (entity: T) => { char: string; color: number } | null
+): void {
+  for (const entity of entities) {
+    const pos = getPosition(entity)
+    const tile = getTile(level, pos.x, pos.y)
+    if (!tile?.visible) continue
+
+    const screenX = pos.x - offsetX
+    const screenY = pos.y - offsetY
+    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
+
+    const display = getDisplay(entity)
+    if (!display) continue
+
+    setLocalCell(grid, screenY, screenX, display.char, display.color)
+  }
+}
+
 /**
  * Render game state to the grid
  */
@@ -353,8 +435,8 @@ function renderGameToGrid(runId: string, game: GameState): void {
     level.height
   )
 
-  // Clear grid first
-  runs.clearGrid(runId)
+  // Build grid locally (not reactive - avoids 1920 individual store mutations)
+  const grid = createLocalGrid()
 
   // Render tiles (only explored ones, with visibility)
   for (let screenY = 0; screenY < VIEWPORT_HEIGHT; screenY++) {
@@ -412,139 +494,74 @@ function renderGameToGrid(runId: string, game: GameState): void {
           break
       }
 
-      runs.updateCell(runId, screenY, screenX, char, color)
+      setLocalCell(grid, screenY, screenX, char, color)
     }
   }
 
-  // Render fountains (only visible)
-  for (const fountain of game.fountains.values()) {
-    const tile = getTile(level, fountain.position.x, fountain.position.y)
-    if (!tile?.visible) continue
+  // Render fountains
+  renderEntities(grid, game.fountains.values(), level, offsetX, offsetY,
+    f => f.position,
+    f => ({ char: f.usesRemaining > 0 ? '≈' : '~', color: f.template.color })
+  )
 
-    const screenX = fountain.position.x - offsetX
-    const screenY = fountain.position.y - offsetY
-    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
+  // Render altars
+  renderEntities(grid, game.altars.values(), level, offsetX, offsetY,
+    a => a.position,
+    a => ({ char: '_', color: a.template.color })
+  )
 
-    const char = fountain.usesRemaining > 0 ? '≈' : '~'
-    runs.updateCell(runId, screenY, screenX, char, fountain.template.color)
-  }
+  // Render merchants
+  renderEntities(grid, game.merchants, level, offsetX, offsetY,
+    m => m.position,
+    () => ({ char: 'P', color: 0xf59e0b }) // amber
+  )
 
-  // Render altars (only visible)
-  for (const altar of game.altars.values()) {
-    const tile = getTile(level, altar.position.x, altar.position.y)
-    if (!tile?.visible) continue
-
-    const screenX = altar.position.x - offsetX
-    const screenY = altar.position.y - offsetY
-    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
-
-    runs.updateCell(runId, screenY, screenX, '_', altar.template.color)
-  }
-
-  // Render merchants (only visible)
-  for (const merchant of game.merchants) {
-    const tile = getTile(level, merchant.position.x, merchant.position.y)
-    if (!tile?.visible) continue
-
-    const screenX = merchant.position.x - offsetX
-    const screenY = merchant.position.y - offsetY
-    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
-
-    runs.updateCell(runId, screenY, screenX, 'P', 0xf59e0b) // amber
-  }
-
-  // Render healer NPC (only visible, in town)
+  // Render healer NPC (wrap single entity in array)
   if (game.healer) {
-    const tile = getTile(level, game.healer.position.x, game.healer.position.y)
-    if (tile?.visible) {
-      const screenX = game.healer.position.x - offsetX
-      const screenY = game.healer.position.y - offsetY
-      if (screenX >= 0 && screenX < VIEWPORT_WIDTH && screenY >= 0 && screenY < VIEWPORT_HEIGHT) {
-        runs.updateCell(runId, screenY, screenX, 'H', 0x22c55e) // green - healer
-      }
+    renderEntities(grid, [game.healer], level, offsetX, offsetY,
+      h => h.position,
+      () => ({ char: 'H', color: 0x22c55e }) // green
+    )
+  }
+
+  // Render revealed traps (filter in getDisplay)
+  renderEntities(grid, game.traps.values(), level, offsetX, offsetY,
+    t => t.position,
+    t => (!t.revealed || t.triggered) ? null : { char: '^', color: t.template.color }
+  )
+
+  // Render items
+  renderEntities(grid, game.items, level, offsetX, offsetY,
+    i => i.position,
+    item => {
+      if (item.goldValue) return { char: '$', color: 0xfbbf24 }
+      if (item.template.type === 'potion') return { char: '!', color: 0x8b5cf6 }
+      if (item.template.type === 'scroll') return { char: '?', color: 0xffffff }
+      if (item.template.slot === 'weapon') return { char: ')', color: 0x64748b }
+      if (item.template.slot === 'body') return { char: '[', color: 0x22c55e }
+      return { char: '*', color: 0xf59e0b }
     }
-  }
+  )
 
-  // Render revealed traps (only visible and not triggered)
-  for (const trap of game.traps.values()) {
-    if (!trap.revealed) continue
-    if (trap.triggered) continue
-
-    const tile = getTile(level, trap.position.x, trap.position.y)
-    if (!tile?.visible) continue
-
-    const screenX = trap.position.x - offsetX
-    const screenY = trap.position.y - offsetY
-    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
-
-    runs.updateCell(runId, screenY, screenX, '^', trap.template.color)
-  }
-
-  // Render items (only visible)
-  for (const item of game.items) {
-    const tile = getTile(level, item.position.x, item.position.y)
-    if (!tile?.visible) continue
-
-    // Convert world to screen coordinates
-    const screenX = item.position.x - offsetX
-    const screenY = item.position.y - offsetY
-    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
-
-    // Use different symbols for item types
-    let char = '*'
-    let color = 0xf59e0b // amber
-
-    // Gold items
-    if (item.goldValue) {
-      char = '$'
-      color = 0xfbbf24 // amber/gold
-    } else if (item.template.type === 'potion') {
-      char = '!'
-      color = 0x8b5cf6 // purple
-    } else if (item.template.type === 'scroll') {
-      char = '?'
-      color = 0xffffff // white
-    } else if (item.template.slot === 'weapon') {
-      char = ')'
-      color = 0x64748b // gray
-    } else if (item.template.slot === 'body') {
-      char = '['
-      color = 0x22c55e // green
-    }
-
-    runs.updateCell(runId, screenY, screenX, char, color)
-  }
-
-  // Render monsters (only visible)
-  for (const monster of game.monsters) {
-    const tile = getTile(level, monster.position.x, monster.position.y)
-    if (!tile?.visible) continue
-
-    // Convert world to screen coordinates
-    const screenX = monster.position.x - offsetX
-    const screenY = monster.position.y - offsetY
-    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
-
-    // Use first letter of monster name
-    const char = monster.template.name.charAt(0)
-    // Color based on danger level (using minDepth as proxy for difficulty)
-    let color = 0xef4444 // red
-    if (monster.template.minDepth < game.character.depth) {
-      color = 0xf97316 // orange - weaker monster
-    } else if (monster.template.minDepth > game.character.depth + 5) {
-      color = 0xdc2626 // dark red - dangerous monster
-    }
-
-    runs.updateCell(runId, screenY, screenX, char, color)
-  }
+  // Render monsters
+  renderEntities(grid, game.monsters, level, offsetX, offsetY,
+    m => m.position,
+    m => ({ char: m.template.char, color: MONSTER_COLORS[m.template.color] ?? 0xef4444 })
+  )
 
   // Render player (convert world to screen coordinates)
   const playerScreenX = playerPos.x - offsetX
   const playerScreenY = playerPos.y - offsetY
+  let cursorX = 0
+  let cursorY = 0
   if (playerScreenX >= 0 && playerScreenX < VIEWPORT_WIDTH && playerScreenY >= 0 && playerScreenY < VIEWPORT_HEIGHT) {
-    runs.updateCell(runId, playerScreenY, playerScreenX, '@', 0x22c55e)
-    runs.setCursor(runId, playerScreenY, playerScreenX)
+    setLocalCell(grid, playerScreenY, playerScreenX, '@', 0x22c55e)
+    cursorX = playerScreenX
+    cursorY = playerScreenY
   }
+
+  // Assign entire grid to store in one operation (triggers single reactive update)
+  runs.setGrid(runId, grid, cursorX, cursorY)
 }
 
 /**

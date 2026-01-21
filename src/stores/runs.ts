@@ -229,6 +229,15 @@ export const useRunsStore = defineStore('runs', () => {
     run.grid = createEmptyGrid()
   }
 
+  // Optimized: set entire grid at once (avoids 1920 individual reactive updates)
+  function setGrid(runId: string, grid: GridCell[][], cursorX: number, cursorY: number) {
+    const run = runs.value.get(runId)
+    if (!run) return
+    run.grid = grid
+    run.cursorX = cursorX
+    run.cursorY = cursorY
+  }
+
   // Focus management
   function setFocusedSlot(slot: number | null) {
     focusedSlot.value = slot
@@ -277,6 +286,7 @@ export const useRunsStore = defineStore('runs', () => {
     updateCell,
     setCursor,
     clearGrid,
+    setGrid,
     setFocusedSlot,
     toggleFocus,
     clearFocus,
