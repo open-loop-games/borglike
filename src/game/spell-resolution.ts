@@ -11,24 +11,15 @@ import type {
   Monster,
   Point,
   StatusEffect,
-  TempResistance,
+  ActionResult,
 } from './types'
 import { getSpellById, getSchoolStat, type SpellTemplate } from './data/spells'
 import { getSpellIdsForLevel } from './data/class-spells'
 import { applyDamage } from './combat'
 import { getTile, findOpenPosition, isWalkable } from './dungeon'
+import { addStatusEffect, addTempResistance } from './status-effects'
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
-export interface SpellCastResult {
-  success: boolean
-  message: string
-  damage?: number
-  healed?: number
-  targets?: string[] // monster IDs affected
-}
+// SpellCastResult has been unified into ActionResult in types.ts
 
 // ============================================================================
 // SPELL AVAILABILITY
@@ -303,7 +294,7 @@ export function castSpell(
   game: GameState,
   spellId: string,
   targetId?: string
-): SpellCastResult {
+): ActionResult {
   const spell = getSpellById(spellId)
   if (!spell) {
     return { success: false, message: 'Unknown spell.' }
@@ -369,7 +360,7 @@ function castDamageSpell(
   game: GameState,
   spell: SpellTemplate,
   targetId?: string
-): SpellCastResult {
+): ActionResult {
   // Find target
   let target: Monster | null = null
   if (targetId) {
@@ -418,13 +409,20 @@ function castDamageSpell(
     message: `You cast ${spell.name} at ${target.template.name} for ${damage} damage.${killedStr}`,
     damage,
     targets: [target.id],
+    events: [{
+      type: 'attack',
+      attackerId: game.character.id,
+      defenderId: target.id,
+      damage,
+      killed,
+    }],
   }
 }
 
 /**
  * Cast an AOE damage spell
  */
-function castAOEDamageSpell(game: GameState, spell: SpellTemplate): SpellCastResult {
+function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult {
   const maxTargets = spell.maxTargets ?? 3
   const targets = selectAOETargets(game, maxTargets)
 
@@ -436,6 +434,7 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): SpellCastRes
   let killedCount = 0
   const targetIds: string[] = []
   const targetNames: string[] = []
+  const events: ActionResult['events'] = []
 
   // Calculate base damage (same for all targets)
   const baseDamage = calculateSpellPower(game.character, spell, false)
@@ -453,6 +452,15 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): SpellCastRes
     totalDamage += damage
     targetIds.push(target.id)
     targetNames.push(target.template.name)
+
+    // Emit attack event for this target
+    events.push({
+      type: 'attack',
+      attackerId: game.character.id,
+      defenderId: target.id,
+      damage,
+      killed,
+    })
 
     if (killed) {
       const idx = game.monsters.indexOf(target)
@@ -480,13 +488,14 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): SpellCastRes
     message: `You cast ${spell.name} hitting ${targets.length} enemies for ${totalDamage} total damage.${killedStr}`,
     damage: totalDamage,
     targets: targetIds,
+    events,
   }
 }
 
 /**
  * Cast a healing spell
  */
-function castHealSpell(game: GameState, spell: SpellTemplate): SpellCastResult {
+function castHealSpell(game: GameState, spell: SpellTemplate): ActionResult {
   const healAmount = calculateSpellPower(game.character, spell, true)
   const oldHp = game.character.hp
 
@@ -509,7 +518,7 @@ function castHealSpell(game: GameState, spell: SpellTemplate): SpellCastResult {
 /**
  * Cast a buff spell
  */
-function castBuffSpell(game: GameState, spell: SpellTemplate): SpellCastResult {
+function castBuffSpell(game: GameState, spell: SpellTemplate): ActionResult {
   if (!spell.buff) {
     return { success: true, message: `You cast ${spell.name}.` }
   }
@@ -546,7 +555,7 @@ function castDebuffSpell(
   game: GameState,
   spell: SpellTemplate,
   targetId?: string
-): SpellCastResult {
+): ActionResult {
   if (!spell.debuff) {
     return { success: true, message: `You cast ${spell.name}.` }
   }
@@ -579,7 +588,7 @@ function castLifedrainSpell(
   game: GameState,
   spell: SpellTemplate,
   targetId?: string
-): SpellCastResult {
+): ActionResult {
   // Find target
   let target: Monster | null = null
   if (targetId) {
@@ -623,13 +632,20 @@ function castLifedrainSpell(
     damage,
     healed: actualHeal,
     targets: [target.id],
+    events: [{
+      type: 'attack',
+      attackerId: game.character.id,
+      defenderId: target.id,
+      damage,
+      killed,
+    }],
   }
 }
 
 /**
  * Cast a teleport spell
  */
-function castTeleportSpell(game: GameState, spell: SpellTemplate): SpellCastResult {
+function castTeleportSpell(game: GameState, spell: SpellTemplate): ActionResult {
   const range = spell.teleportRange ?? 0
   const destination = findTeleportDestination(game, range)
 
@@ -647,34 +663,26 @@ function castTeleportSpell(game: GameState, spell: SpellTemplate): SpellCastResu
 // ============================================================================
 
 /**
- * Add or replace a status effect on a character
- */
-function addStatusEffect(character: Character, effect: StatusEffect): void {
-  character.statusEffects = character.statusEffects.filter((e) => e.type !== effect.type)
-  character.statusEffects.push(effect)
-}
-
-/**
- * Add or replace a temporary resistance on a character
- */
-function addTempResistance(character: Character, resistance: TempResistance): void {
-  character.tempResistances = character.tempResistances.filter((r) => r.type !== resistance.type)
-  character.tempResistances.push(resistance)
-}
-
-/**
- * Apply a debuff to a monster (simplified - just tracks in memory for now)
- * In a full implementation, this would affect monster behavior/stats
+ * Apply a debuff to a monster
+ * Replaces existing debuff of the same type
  */
 function applyMonsterDebuff(
-  _monster: Monster,
-  _type: string,
-  _value: number,
-  _duration: number
+  monster: Monster,
+  type: string,
+  value: number,
+  duration: number
 ): void {
-  // TODO: Implement monster debuffs properly
-  // For now, debuffs are cosmetic (slow/weaken messages shown but not enforced)
-  // This is intentional simplification for v1
+  const debuffType = type as 'slow' | 'weaken' | 'blind'
+
+  // Remove existing debuff of same type
+  monster.debuffs = monster.debuffs.filter(d => d.type !== debuffType)
+
+  // Add new debuff
+  monster.debuffs.push({
+    type: debuffType,
+    turnsRemaining: duration,
+    value,
+  })
 }
 
 /**

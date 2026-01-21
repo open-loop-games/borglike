@@ -5,8 +5,21 @@
  * and the speed/energy system for turn-based combat.
  */
 
-import type { Monster, Point, DungeonLevel, GameState, GameAction, MonsterTemplate } from './types'
-import { MAX_DEPTH, getDirectionFromDelta } from './types'
+import type {
+  Monster,
+  Point,
+  DungeonLevel,
+  GameState,
+  GameAction,
+  GameEvent,
+  MonsterTemplate,
+  Direction,
+  ResistanceType,
+  GameMessage,
+} from './types'
+import { MAX_DEPTH, getDirectionFromDelta, DIRECTION_VECTORS } from './types'
+import { attack, applyDamage, formatAttackMessageFromEntities } from './combat'
+import { checkSecondWind } from './status-effects'
 import { getSpawnableMonsters, getMonsterByName } from './data/index'
 import {
   findPath,
@@ -61,6 +74,7 @@ export function spawnMonster(template: MonsterTemplate, position: Point): Monste
     energy: 0,
     isAwake: false,
     seen: false,
+    debuffs: [],
   }
 }
 
@@ -468,7 +482,13 @@ const ENERGY_THRESHOLD = 100
  * @returns True if the monster has enough energy to act
  */
 export function updateMonsterEnergy(monster: Monster): boolean {
-  monster.energy += monster.template.speed
+  // Apply slow debuff to speed calculation
+  const slowDebuff = monster.debuffs.find(d => d.type === 'slow')
+  const effectiveSpeed = slowDebuff
+    ? Math.floor(monster.template.speed * (100 - slowDebuff.value) / 100)
+    : monster.template.speed
+
+  monster.energy += effectiveSpeed
 
   if (monster.energy >= ENERGY_THRESHOLD) {
     monster.energy -= ENERGY_THRESHOLD
@@ -476,6 +496,18 @@ export function updateMonsterEnergy(monster: Monster): boolean {
   }
 
   return false
+}
+
+/**
+ * Tick down monster debuffs, removing expired ones
+ *
+ * @param monster - The monster to tick debuffs for
+ */
+export function tickMonsterDebuffs(monster: Monster): void {
+  monster.debuffs = monster.debuffs.filter(debuff => {
+    debuff.turnsRemaining--
+    return debuff.turnsRemaining > 0
+  })
 }
 
 /**
@@ -495,4 +527,170 @@ export function resetMonsterEnergy(monster: Monster): void {
  */
 export function canMonsterAct(monster: Monster): boolean {
   return monster.energy >= ENERGY_THRESHOLD
+}
+
+// ============================================================================
+// MONSTER TURN PROCESSING
+// ============================================================================
+
+/** Base energy cost for actions (100 = 1 turn) */
+const BASE_ENERGY_COST = 100
+
+/** Energy gained per game tick based on speed */
+const ENERGY_PER_TICK = 100
+
+/**
+ * Add a message to the game log
+ */
+function addMessage(game: GameState, text: string, type: GameMessage['type']): void {
+  game.messages.push({
+    turn: game.turn,
+    text,
+    type,
+  })
+
+  // Keep only last 100 messages
+  if (game.messages.length > 100) {
+    game.messages.shift()
+  }
+}
+
+/**
+ * Process all monster turns
+ *
+ * Uses energy/speed system where faster monsters act more often
+ */
+export function processMonsterTurns(game: GameState): GameEvent[] {
+  const events: GameEvent[] = []
+
+  for (const monster of game.monsters) {
+    // Apply slow debuff to speed calculation
+    const slowDebuff = monster.debuffs.find((d) => d.type === 'slow')
+    const effectiveSpeed = slowDebuff
+      ? Math.floor((monster.template.speed * (100 - slowDebuff.value)) / 100)
+      : monster.template.speed
+
+    // Add energy based on speed (110 is normal)
+    monster.energy += Math.floor((effectiveSpeed / 110) * ENERGY_PER_TICK)
+
+    // Process actions while monster has enough energy
+    while (monster.energy >= BASE_ENERGY_COST && !game.character.isDead) {
+      monster.energy -= BASE_ENERGY_COST
+
+      // Get AI decision and execute
+      const monsterAction = getMonsterAction(game, monster)
+
+      if (monsterAction) {
+        const monsterEvents = executeMonsterAction(game, monster, monsterAction)
+        events.push(...monsterEvents)
+      }
+    }
+
+    // Tick debuffs at end of monster's turn
+    tickMonsterDebuffs(monster)
+  }
+
+  return events
+}
+
+/**
+ * Get monster AI decision
+ *
+ * Uses the full monster AI module for detection, pathfinding, and decision making.
+ */
+function getMonsterAction(
+  game: GameState,
+  monster: Monster
+): { type: 'move'; direction: Direction } | { type: 'attack' } | null {
+  // Mark monster as seen if visible to player (for UI purposes)
+  const tile = getTile(game.currentLevel, monster.position.x, monster.position.y)
+  if (tile?.visible && !monster.seen) {
+    monster.seen = true
+  }
+
+  // Use the full monster AI decision system
+  // This handles: detection, waking up, pathfinding, and attack decisions
+  const action = decideAction(monster, game)
+
+  if (!action) {
+    return null
+  }
+
+  // Convert GameAction to the expected format
+  if (action.type === 'attack') {
+    return { type: 'attack' }
+  }
+
+  if (action.type === 'move') {
+    return { type: 'move', direction: action.direction }
+  }
+
+  return null
+}
+
+/**
+ * Execute a monster action
+ */
+function executeMonsterAction(
+  game: GameState,
+  monster: Monster,
+  action: { type: 'move'; direction: Direction } | { type: 'attack' }
+): GameEvent[] {
+  const events: GameEvent[] = []
+
+  if (action.type === 'attack') {
+    // Monster attacks player - pass primary ability type for resistance calculation
+    const primaryAbility = monster.template.abilities[0] as ResistanceType | undefined
+    const attackResult = attack(monster, game.character, primaryAbility)
+    const message = formatAttackMessageFromEntities(monster, game.character, attackResult)
+    addMessage(game, message, 'combat')
+
+    if (attackResult.hit) {
+      applyDamage(game.character, attackResult.damage)
+      game.stats.damageTaken += attackResult.damage
+
+      // Check for Second Wind booster (auto-heal when critical)
+      checkSecondWind(game, addMessage)
+
+      events.push({
+        type: 'attack',
+        attackerId: monster.id,
+        defenderId: game.character.id,
+        damage: attackResult.damage,
+        killed: attackResult.killed,
+      })
+    }
+  } else if (action.type === 'move') {
+    const delta = DIRECTION_VECTORS[action.direction]
+    const newX = monster.position.x + delta.x
+    const newY = monster.position.y + delta.y
+
+    // Check if position is valid
+    const targetTile = getTile(game.currentLevel, newX, newY)
+
+    if (targetTile && isWalkable(targetTile)) {
+      // Check if another monster is there
+      const blockingMonster = game.monsters.find(
+        (m) => m.id !== monster.id && m.position.x === newX && m.position.y === newY
+      )
+
+      // Check if player is there
+      const playerBlocking =
+        game.character.position.x === newX && game.character.position.y === newY
+
+      if (!blockingMonster && !playerBlocking) {
+        const oldPos = { ...monster.position }
+        monster.position = { x: newX, y: newY }
+
+        events.push({
+          type: 'move',
+          entityId: monster.id,
+          from: oldPos,
+          to: monster.position,
+        })
+      }
+    }
+  }
+
+  return events
 }
