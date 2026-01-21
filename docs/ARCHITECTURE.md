@@ -2,287 +2,201 @@
 
 ## System Overview
 
-Borglike is a TypeScript roguelike with auto-play bot, designed for idle gameplay with meta-progression.
-
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                           Browser (Main Thread)                       │
-│                                                                       │
-│  ┌─────────────┐    ┌─────────────────────────────────────────────┐ │
-│  │   Sidebar   │    │              Run Area                        │ │
-│  │             │    │  ┌─────────┐ ┌─────────┐ ┌─────────┐        │ │
-│  │ - Essence   │    │  │  Run 1  │ │  Run 2  │ │  Run 3  │ ...    │ │
-│  │ - Stats     │    │  │ ASCII   │ │ ASCII   │ │ ASCII   │        │ │
-│  │ - Upgrades  │    │  │ Grid    │ │ Grid    │ │ Grid    │        │ │
-│  │ - Unlocks   │    │  └─────────┘ └─────────┘ └─────────┘        │ │
-│  └─────────────┘    └─────────────────────────────────────────────┘ │
-│         │                              │                             │
-│         └──────────────┬───────────────┘                             │
-│                        ▼                                             │
-│  ┌─────────────────────────────────────────────────────────────────┐│
-│  │                     Pinia Stores                                 ││
-│  │  ┌──────────────────┐  ┌──────────────────┐                     ││
-│  │  │ useProgressionStore │  │ useRunsStore       │                     ││
-│  │  │ - essence        │  │ - activeRuns     │                     ││
-│  │  │ - unlocks        │  │ - game states    │                     ││
-│  │  │ - upgrades       │  │ - bot configs    │                     ││
-│  │  └──────────────────┘  └──────────────────┘                     ││
-│  └─────────────────────────────────────────────────────────────────┘│
-│                        │                                             │
-│                        ▼                                             │
-│  ┌─────────────────────────────────────────────────────────────────┐│
-│  │                   Game Layer (src/game/)                        ││
-│  │                                                                  ││
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             ││
-│  │  │ GameRunner  │  │ Bot AI      │  │ Game Loop   │             ││
-│  │  │ - step()    │  │ - decide()  │  │ - process() │             ││
-│  │  │ - run()     │  │ - evaluate()│  │ - actions   │             ││
-│  │  └─────────────┘  └─────────────┘  └─────────────┘             ││
-│  │         │                │                │                      ││
-│  │         └────────────────┼────────────────┘                      ││
-│  │                          ▼                                       ││
-│  │  ┌─────────────────────────────────────────────────────────┐    ││
-│  │  │                  Core Systems                            │    ││
-│  │  │  Character │ Dungeon │ Combat │ Monster AI │ Items      │    ││
-│  │  └─────────────────────────────────────────────────────────┘    ││
-│  │                          │                                       ││
-│  │                          ▼                                       ││
-│  │  ┌─────────────────────────────────────────────────────────┐    ││
-│  │  │                  Game Data (src/game/data/)              │    ││
-│  │  │  Races │ Classes │ Monsters │ Items │ Artifacts         │    ││
-│  │  └─────────────────────────────────────────────────────────┘    ││
-│  └─────────────────────────────────────────────────────────────────┘│
-└──────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         Vue UI Layer                             │
+│   RunPanel, DungeonGrid, UpgradeList, Sidebar, Feed, Modals     │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ reactive bindings
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Pinia Stores                                │
+│  ┌─────────────┐ ┌──────────┐ ┌────────────┐ ┌────────┐        │
+│  │ progression │ │   runs   │ │ persistence│ │settings│        │
+│  │ essence     │ │ grid[][] │ │ IndexedDB  │ │ prefs  │        │
+│  │ upgrades    │ │ stats    │ │ auto-save  │ │        │        │
+│  │ unlocks     │ │ state    │ │ backup     │ │        │        │
+│  └─────────────┘ └──────────┘ └────────────┘ └────────┘        │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ extracted metrics only
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Instance Manager                              │
+│         (src/engine/instance-manager.ts)                        │
+│  • Manages 1-4 game instances                                   │
+│  • Tick loop (100ms base, 20ms turbo)                          │
+│  • Syncs game state → stores                                    │
+│  • Renders viewport (80x24)                                     │
+│  • Auto-restart handling                                        │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ step()
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Game Runner                                 │
+│              (src/game/game-runner.ts)                          │
+│  • Orchestrates bot + turn processing                           │
+│  • Tracks run state and stats                                   │
+│  • Calculates essence on completion                             │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+              ┌──────────────┴──────────────┐
+              ▼                              ▼
+┌──────────────────────┐        ┌──────────────────────┐
+│      Bot AI          │        │     Game Loop        │
+│  (src/game/bot/)     │        │ (src/game/game-loop) │
+│                      │        │                      │
+│  • Flow pathfinding  │        │  • Turn processing   │
+│  • Danger grid       │        │  • Action handlers   │
+│  • Goal selection    │        │  • Monster AI        │
+│  • Class profiles    │        │  • Level management  │
+│  • Survival logic    │        │  • Status effects    │
+└──────────────────────┘        └──────────────────────┘
+              │                              │
+              └──────────────┬───────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Core Systems                                │
+│  character.ts │ combat.ts │ dungeon/ │ items.ts │ monster-ai.ts │
+└─────────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Game Data                                   │
+│        (src/game/data/)                                         │
+│  races │ classes │ monsters │ items │ spells │ upgrades        │
+│  boosters │ features │ merchants │ traps │ gold │ vaults       │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Data Flow
 
-### Game Turn Flow
-
+### Turn Flow
 ```
-User clicks "Start Run"
+Instance Manager tick()
     │
-    ▼
-createGameRunner(config)
+    ├─► runner.step()
+    │       │
+    │       ├─► Bot AI decides action (runBotTick)
+    │       │       └─► buildContext → selectGoal → computeFlow → selectStep
+    │       │
+    │       └─► Game Loop processes turn (processTurn)
+    │               ├─► Execute player action
+    │               ├─► Process monster turns (energy-based)
+    │               ├─► Tick status effects, poison, regen
+    │               └─► Update FOV
     │
-    │ Creates GameState with:
-    │ - Character (race/class)
-    │ - Dungeon level
-    │ - Monsters
-    │ - Items
-    │
-    ▼
-runner.step() called (per tick)
-    │
-    ├─► Bot AI decides action
-    │   │
-    │   └─► buildBotContext()
-    │       decideAction()
-    │       Returns: GameAction
-    │
-    ├─► processTurn(game, action)
-    │   │
-    │   ├─► Execute player action
-    │   ├─► Process monster turns
-    │   ├─► Check death/victory
-    │   └─► Update FOV
-    │
-    └─► Returns: GameEvent[]
-            │
-            ▼
-        UI updates via events
+    ├─► updateRunFromGame()  →  runs store (stats, equipment)
+    ├─► renderGameToGrid()   →  runs store (grid cells)
+    └─► processMessages()    →  feed store (filtered messages)
 ```
 
-### Bot Decision Flow
-
+### Run Completion Flow
 ```
-buildBotContext()
+Game ends (death/victory)
     │
-    │ Gathers:
-    │ - Visible monsters
-    │ - Visible items
-    │ - Known stairs
-    │ - Unexplored tiles
+    ├─► runner.getResult() calculates essence
     │
-    ▼
-decideAction(context)
+    ├─► handleRunCompletion()
+    │       ├─► Convert to RunStats
+    │       ├─► Apply prestige multiplier
+    │       ├─► Check milestone unlocks
+    │       └─► Record to stores
     │
-    ├─► checkSurvival()     → Heal/retreat if needed
-    │
-    ├─► checkCombat()       → Attack adjacent, pursue (aggressive)
-    │
-    ├─► checkItems()        → Pickup valuables, equip upgrades
-    │
-    └─► checkExploration()  → Move to unexplored or stairs
-            │
-            ▼
-        GameAction
+    └─► Auto-restart check (if enabled)
 ```
 
-### Event Flow (Game → UI)
+## Key Patterns
 
-```
-Game action executed
-    │
-    ▼
-GameEvent emitted
-    │
-    │ Types:
-    │ - turn, move, attack
-    │ - levelUp, itemPickup
-    │ - depthChange, death, victory
-    │
-    ▼
-onEvent callback (optional)
-    │
-    ▼
-Pinia store update
-    │
-    ▼
-Vue component re-render
-```
+### Two-Layer State
+Full GameState stays in engine. Pinia stores hold extracted display data only. One-way flow prevents state sync issues.
+
+### Energy-Based Speed
+Monsters accumulate energy each player turn: `energy += (speed/110) * 100`. Act when `energy >= 100`. Fast monsters get multiple actions.
+
+### Flow-Based Pathfinding
+Reverse BFS from goal. Each tile stores distance. Bot follows decreasing costs. Cached for ~10 turns.
+
+### Danger Grid
+Per-tile threat score from nearby monsters. Distance falloff: 2x at monster → 0.2x at distance 4+. High danger tiles excluded from pathing.
+
+### LRU Level Cache
+Max 12 levels cached. Protects current depth ±1 from eviction. Prevents memory bloat.
+
+### Persistence Strategy
+- **Primary:** IndexedDB via `idb` library
+- **Backup:** localStorage on `beforeunload`
+- **Critical saves:** Immediate (essence, purchases)
+- **Auto-save:** 500ms debounce
+- **Recovery:** Compares `lifetimeEssence` to detect newer backup
 
 ## Module Structure
 
-### Game Layer (`src/game/`)
-
 ```
-src/game/
-├── index.ts              # Barrel exports
-├── types.ts              # All game types (Point, Tile, Character, etc.)
+src/
+├── engine/
+│   └── instance-manager.ts    # Multi-run orchestration (685 lines)
 │
-├── data/                 # Static game data
-│   ├── index.ts          # Data exports
-│   ├── races.ts          # 14 races (3 starting, 8 unlock, 3 prestige)
-│   ├── classes.ts        # 11 classes
-│   ├── monsters.ts       # 52 monster templates
-│   ├── items.ts          # Equipment and consumables
-│   └── artifacts.ts      # 12 artifacts
+├── game/
+│   ├── bot/                   # Auto-player (17 files)
+│   │   ├── index.ts           # Main decision loop
+│   │   ├── types.ts           # Bot types
+│   │   ├── goals.ts           # Goal selection
+│   │   ├── danger.ts          # Threat calculation
+│   │   ├── survival.ts        # Health/escape logic
+│   │   ├── combat.ts          # Fight decisions
+│   │   ├── exploration.ts     # Frontier detection
+│   │   ├── flow.ts            # Reverse BFS
+│   │   ├── movement.ts        # Step selection
+│   │   ├── personality.ts     # 4 personalities
+│   │   ├── class-profiles.ts  # 11 class behaviors
+│   │   └── stuck.ts           # Anti-stuck recovery
+│   │
+│   ├── dungeon/               # Level generation (7 files)
+│   │   ├── index.ts           # Main generator
+│   │   ├── classic.ts         # rot.js Digger
+│   │   ├── cavern.ts          # Cellular automata
+│   │   ├── labyrinth.ts       # IceyMaze
+│   │   ├── vaults.ts          # 21 templates
+│   │   ├── doors.ts           # Door placement
+│   │   └── profiles.ts        # Depth scaling
+│   │
+│   ├── data/                  # Static data (14 files)
+│   │
+│   ├── game-loop.ts           # Turn processing (688 lines)
+│   ├── game-runner.ts         # Run orchestration
+│   ├── character.ts           # Character creation
+│   ├── combat.ts              # Attack resolution
+│   ├── spell-resolution.ts    # Spell effects
+│   ├── features.ts            # Fountains, altars, etc.
+│   └── types.ts               # Game types
 │
-├── character.ts          # Character creation, stats, leveling
-├── dungeon.ts            # Level generation (rot.js), FOV, pathfinding
-├── combat.ts             # Attack resolution, damage calculation
-├── monster-ai.ts         # Monster spawning, AI decisions, energy system
-├── items.ts              # Item spawning, ground items, equipment
-├── game-loop.ts          # Turn processing, action handlers
-├── bot-ai.ts             # Auto-player decision making
-└── game-runner.ts        # High-level game execution, batch runs
-```
-
-### Core Layer (`src/core/`)
-
-```
-src/core/
-└── formulas.ts           # XP curves, cost scaling, essence calculation
-```
-
-### Future Layers (not yet implemented)
-
-```
-src/stores/               # Pinia stores
-├── progression.ts        # Essence, upgrades, unlocks
-├── runs.ts               # Active run states
-└── settings.ts           # User preferences
-
-src/ui/components/        # Vue components
-├── AsciiGrid.vue         # rot.js display
-├── RunPanel.vue          # Single run view
-├── StatsPanel.vue        # Character stats
-└── UpgradePanel.vue      # Upgrade UI
-```
-
-## Key Types
-
-### GameState
-
-```typescript
-interface GameState {
-  runId: string
-  seed: number
-  character: Character
-  currentLevel: DungeonLevel
-  levelCache: Map<number, DungeonLevel>
-  monsters: Monster[]
-  items: Item[]
-  turn: number
-  isRunning: boolean
-  isPaused: boolean
-  isVictory: boolean
-  stats: RunStats
-  messages: GameMessage[]
-}
-```
-
-### GameAction
-
-```typescript
-type GameAction =
-  | { type: 'move'; direction: Direction }
-  | { type: 'attack'; targetId: string }
-  | { type: 'pickup'; itemId: string }
-  | { type: 'drop'; itemId: string }
-  | { type: 'equip'; itemId: string }
-  | { type: 'unequip'; slot: EquipSlot }
-  | { type: 'use'; itemId: string }
-  | { type: 'descend' }
-  | { type: 'ascend' }
-  | { type: 'wait' }
-```
-
-### GameEvent
-
-```typescript
-type GameEvent =
-  | { type: 'turn'; turn: number }
-  | { type: 'move'; entityId: string; from: Point; to: Point }
-  | { type: 'attack'; attackerId: string; defenderId: string; damage: number; killed: boolean }
-  | { type: 'levelUp'; level: number }
-  | { type: 'itemPickup'; item: Item }
-  | { type: 'depthChange'; depth: number }
-  | { type: 'death'; character: Character }
-  | { type: 'victory' }
-```
-
-### BotPersonality
-
-```typescript
-type BotPersonality =
-  | 'cautious'    // Retreats early, uses items freely
-  | 'aggressive'  // Fights to low HP, hoards items
-  | 'greedy'      // Prioritizes gold/items over safety
-  | 'speedrunner' // Beelines for stairs
+├── stores/
+│   ├── progression.ts         # Meta-progression (612 lines)
+│   ├── runs.ts                # Active run display
+│   ├── persistence.ts         # IndexedDB layer (700 lines)
+│   ├── settings.ts            # User preferences
+│   └── feed.ts                # Event filtering
+│
+├── core/
+│   ├── formulas.ts            # Progression math
+│   └── run-completion-service.ts
+│
+└── ui/components/             # 24 Vue components
+    ├── DungeonGrid.vue
+    ├── RunPanel.vue
+    ├── Sidebar.vue
+    ├── game/
+    ├── meta/
+    ├── bestiary/
+    ├── history/
+    └── settings/
 ```
 
 ## External Dependencies
 
 | Package | Purpose |
 |---------|---------|
-| **rot-js** | Dungeon generation, FOV, pathfinding |
-| **vue** | UI framework (planned) |
-| **pinia** | State management (planned) |
-
-## Performance Considerations
-
-### Current (Single Thread)
-
-- Game logic runs on main thread
-- `requestAnimationFrame` for tick timing
-- Suitable for 1-2 runs at normal speed
-
-### Future (Multi-Instance)
-
-Options for 4 simultaneous runs:
-
-1. **Time-sliced main thread** - Round-robin game ticks
-2. **Web Workers** - One worker per game instance
-3. **Headless turbo** - Skip rendering for background runs
-
-### Memory
-
-Each game instance holds:
-- DungeonLevel (~80x40 tiles) per cached level
-- ~20-50 monsters per level
-- ~10-20 items per level
-- Message history (capped at 100)
-
-Estimated: ~1-2 MB per active run, manageable for 4 instances.
+| rot-js | Dungeon generation (Digger, Cellular, IceyMaze), FOV, pathfinding |
+| vue | UI framework |
+| pinia | State management |
+| idb | IndexedDB wrapper |

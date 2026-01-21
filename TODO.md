@@ -1,56 +1,65 @@
 # TODO
 
-## Current Phase: UI Components (Phase 4)
+## Current Focus: Polish & Balance
 
-### Next Steps
-- [ ] Vue components for game display
-- [ ] Essence/upgrade purchase interface
-- [ ] Unlock tree visualization
-- [ ] Live ASCII grid rendering (rot.js Display)
+### Active Work
+- [ ] Balance pass on essence curves and upgrade costs
+- [ ] Tune bot personalities for distinct playstyles
+- [ ] Status effect implementation (debuffs currently cosmetic)
 
-### Multi-Instance Support
-- [ ] Run manager (spawn/destroy game instances)
-- [ ] 1/2/4 grid layouts
-- [ ] Cross-run features (shared stash, monster knowledge)
-- [ ] Performance optimization
+### Technical Debt
 
----
 
-## Future Phases
-
-### Phase 5: Polish
-- [ ] Achievements system
-- [ ] Balance pass
-- [ ] Auto-restart toggle (uses auto_restart upgrade)
+### Future Features
 - [ ] Statistics dashboard
+- [ ] Monster knowledge (cross-run bestiary bonuses)
 
 ---
 
-## Done
+## Completed
+
+### Phase 5: UI Polish (2025-01-20)
+- [x] Bestiary modal with monster details
+- [x] Run history modal with past runs
+- [x] Loadout editor for boosters
+- [x] Settings panel
+- [x] Collapsible sections
+- [x] Feed message filtering
+- [x] Achievements system
+
+### Phase 4: UI Components (2025-01-20)
+- [x] Vue components for game display (24 components)
+- [x] DungeonGrid ASCII renderer
+- [x] RunPanel compact and expanded views
+- [x] Essence/upgrade purchase interface
+- [x] Unlock list for races/classes
+- [x] Progress bars, panel frames
 
 ### Phase 3: Meta-Progression (2025-01-19)
-- [x] Essence system using proper formulas (essenceFromDeath, essenceFromVictory)
-- [x] Prestige multipliers applied to essence rewards
-- [x] 16 upgrades defined with purchase logic (stats, borg, meta, qol)
-- [x] Upgrade effects applied to gameplay (HP, armor, damage, XP multiplier)
-- [x] Unlock tree (races, classes via milestones; run slots via upgrades)
-- [x] Run completion service (bridges game-runner → stores)
-- [x] Persistence layer (IndexedDB with auto-save, export/import)
-- [x] Prestige system (reset upgrades, keep unlocks, gain multiplier)
+- [x] Essence system with prestige multipliers
+- [x] 16 upgrades (stats, borg, meta, qol)
+- [x] Upgrade effects applied to gameplay
+- [x] Unlock tree (races, classes, run slots)
+- [x] Run completion service
+- [x] IndexedDB persistence with auto-save
+- [x] Prestige system (reset upgrades, keep unlocks)
 
 ### Phase 2: Auto-Player (2025-01-19)
-- [x] Bot decision loop (buildBotContext, priority-based actions)
-- [x] Survival logic (HP threshold healing, retreat, teleport escape)
-- [x] Exploration (pathfind to unexplored, stair priority)
-- [x] Combat decisions (engage when advantageous, target selection)
-- [x] Item management (auto-equip, use potions, pickup)
-- [x] Bot personalities (Cautious, Aggressive, Greedy, Speedrunner)
-- [x] Game runner for batch testing
+- [x] Bot decision loop with priority layers
+- [x] Flow-based pathfinding (reverse BFS)
+- [x] Danger grid with threat assessment
+- [x] Goal system (FLEE, KILL, TAKE, DESCEND, EXPLORE)
+- [x] Survival logic (retreat, healing, escape)
+- [x] Combat decisions with class profiles
+- [x] 4 personalities + 11 class behavior profiles
+- [x] Anti-stuck detection and recovery
 
 ### Phase 1: Core Game (2025-01-19)
-- [x] Dungeon generation with rot.js
+- [x] Dungeon generation (classic, cavern, labyrinth)
+- [x] 21 vault templates
 - [x] Character creation (14 races, 11 classes)
-- [x] Movement and FOV
-- [x] Combat system (damage, armor, criticals)
-- [x] Monster spawning and AI (52 monsters)
-- [x] Item system (equipment, potions, scrolls, 12 artifacts)
+- [x] Combat system with spells
+- [x] 52 monsters + Morgoth boss
+- [x] Items, equipment, artifacts
+- [x] Fountains, altars, merchants, traps
+- [x] 21 spells across 4 schools
