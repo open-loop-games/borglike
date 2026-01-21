@@ -25,6 +25,12 @@ export function createBotState(): BotState {
     twitchCounter: 0,
     lastProgressTurn: 0,
     fleeCooldownUntil: 0,
+    // Town tracking
+    isInTown: false,
+    townEntryTurn: 0,
+    healerVisited: false,
+    itemsSold: false,
+    itemsBought: false,
   }
 }
 
@@ -43,6 +49,12 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.cachedDanger = null
   state.twitchCounter = 0
   state.lastProgressTurn = turn
+  // Town tracking - reset when entering any level
+  state.isInTown = newDepth === 0
+  state.townEntryTurn = newDepth === 0 ? turn : 0
+  state.healerVisited = false
+  state.itemsSold = false
+  state.itemsBought = false
 }
 
 /**

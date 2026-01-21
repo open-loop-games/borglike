@@ -5,9 +5,11 @@
  * Determines when to fight vs flee based on personality and situation.
  */
 
-import type { GameState, Monster, Character, Point } from '../types'
+import type { GameState, Monster, Character, Point, Direction } from '../types'
 import type { BotContext, PersonalityConfig } from './types'
-import { getAdjacentPositions } from '../dungeon'
+import type { ClassBehaviorProfile } from './class-profiles'
+import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
+import { canRangedAttack, getBowRange } from '../combat'
 
 // ============================================================================
 // TYPES
@@ -337,15 +339,198 @@ function countEscapeRoutes(game: GameState, pos: Point): number {
   let routes = 0
 
   for (const adj of adjacent) {
-    // Check if walkable and not occupied by monster
+    // Check if tile is walkable
+    const tile = getTile(game.currentLevel, adj.x, adj.y)
+    if (!tile || !isWalkable(tile)) continue
+
+    // Check if not occupied by monster
     const hasMonster = game.monsters.some(
       m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
     )
     if (!hasMonster) {
-      // Simple check - in real implementation would check tile walkability
       routes++
     }
   }
 
   return routes
+}
+
+// ============================================================================
+// RANGED COMBAT HELPERS
+// ============================================================================
+
+/**
+ * Check if character has a ranged weapon equipped
+ */
+export function hasRangedWeapon(game: GameState): boolean {
+  return game.character.equipment.bow !== null
+}
+
+/**
+ * Find best target for ranged attack
+ *
+ * Prefers targets at optimal range (2-4 tiles) that we can hit
+ */
+export function findBestRangedTarget(
+  game: GameState,
+  visibleMonsters: Monster[]
+): Monster | null {
+  const character = game.character
+  const pos = character.position
+  const bowRange = getBowRange(character)
+
+  if (bowRange === 0) return null
+
+  let bestTarget: Monster | null = null
+  let bestScore = -Infinity
+
+  for (const monster of visibleMonsters) {
+    if (monster.hp <= 0) continue
+
+    // Check if we can hit this target
+    if (!canRangedAttack(character, monster.position)) continue
+
+    const dx = Math.abs(monster.position.x - pos.x)
+    const dy = Math.abs(monster.position.y - pos.y)
+    const distance = Math.max(dx, dy)
+
+    // Score based on:
+    // - Optimal range (3-4 tiles = highest)
+    // - Lower HP = easier kill
+    // - Threat level
+    let score = 100
+
+    // Range bonus: prefer 3-4 tiles, penalty for 2 or 5+
+    if (distance >= 3 && distance <= 4) {
+      score += 20
+    } else if (distance === 2) {
+      score += 10
+    } else {
+      score -= (distance - 4) * 5
+    }
+
+    // HP bonus: prefer low HP targets
+    const hpPercent = monster.hp / monster.maxHp
+    score += (1 - hpPercent) * 30
+
+    // Awake monsters are more urgent
+    if (monster.isAwake) {
+      score += 15
+    }
+
+    if (score > bestScore) {
+      bestScore = score
+      bestTarget = monster
+    }
+  }
+
+  return bestTarget
+}
+
+/**
+ * Find best position to kite from (maintain distance while able to shoot)
+ *
+ * Returns a direction to move to maintain optimal range from enemies
+ */
+export function findKitePosition(
+  game: GameState,
+  targetMonster: Monster,
+  classProfile: ClassBehaviorProfile
+): Direction | null {
+  const character = game.character
+  const pos = character.position
+  const targetPos = targetMonster.position
+
+  const currentDx = targetPos.x - pos.x
+  const currentDy = targetPos.y - pos.y
+  const currentDist = Math.max(Math.abs(currentDx), Math.abs(currentDy))
+
+  const optimalRange = classProfile.engageDistance || 3
+  const bowRange = getBowRange(character)
+
+  // If we're at optimal range or better, no need to move
+  if (currentDist >= optimalRange && currentDist <= bowRange) {
+    return null
+  }
+
+  // Need to move away from the monster
+  const adjacent = getAdjacentPositions(pos)
+  let bestDirection: Direction | null = null
+  let bestScore = -Infinity
+
+  for (const adj of adjacent) {
+    const tile = getTile(game.currentLevel, adj.x, adj.y)
+    if (!tile) continue
+    if (!isWalkable(tile) && tile.type !== 'door_closed') continue
+
+    // Skip if occupied by monster
+    const hasMonster = game.monsters.some(
+      m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
+    )
+    if (hasMonster) continue
+
+    // Calculate new distance to target
+    const newDx = targetPos.x - adj.x
+    const newDy = targetPos.y - adj.y
+    const newDist = Math.max(Math.abs(newDx), Math.abs(newDy))
+
+    // Score this position
+    let score = 0
+
+    // Prefer positions closer to optimal range
+    const distFromOptimal = Math.abs(newDist - optimalRange)
+    score = 100 - distFromOptimal * 20
+
+    // Bonus if we can still shoot from this position
+    if (newDist >= 2 && newDist <= bowRange) {
+      score += 50
+    }
+
+    // Bonus for moving away when too close
+    if (currentDist < optimalRange && newDist > currentDist) {
+      score += 30
+    }
+
+    // Calculate direction
+    const dx = adj.x - pos.x
+    const dy = adj.y - pos.y
+    const direction = deltaToDirection(dx, dy)
+    if (!direction) continue
+
+    if (score > bestScore) {
+      bestScore = score
+      bestDirection = direction
+    }
+  }
+
+  return bestDirection
+}
+
+/**
+ * Check if we should avoid melee based on class profile
+ */
+export function shouldAvoidMelee(
+  classProfile: ClassBehaviorProfile,
+  distance: number
+): boolean {
+  // Ranged classes should avoid adjacent (distance 1) if possible
+  if (classProfile.prefersRanged && distance <= 1) {
+    return true
+  }
+  return false
+}
+
+/**
+ * Convert delta coordinates to direction
+ */
+function deltaToDirection(dx: number, dy: number): Direction | null {
+  if (dx === 0 && dy === -1) return 'n'
+  if (dx === 0 && dy === 1) return 's'
+  if (dx === 1 && dy === 0) return 'e'
+  if (dx === -1 && dy === 0) return 'w'
+  if (dx === 1 && dy === -1) return 'ne'
+  if (dx === -1 && dy === -1) return 'nw'
+  if (dx === 1 && dy === 1) return 'se'
+  if (dx === -1 && dy === 1) return 'sw'
+  return null
 }

@@ -308,3 +308,73 @@ export function getDangerTier(danger: number, avoidance: number): DangerTier {
   }
   return 'CRITICAL'
 }
+
+// ============================================================================
+// IMMEDIATE DANGER (Two-Scope System)
+// ============================================================================
+
+/**
+ * Get danger from ADJACENT monsters only (distance <= 1)
+ * Used for consumable decisions - don't waste items on distant threats
+ *
+ * Following Angband borg pattern: immediate threats are tracked separately
+ * from general danger. This prevents wasting healing potions and escape
+ * scrolls when monsters are visible but not actually threatening.
+ */
+export function getImmediateDanger(game: GameState): number {
+  const character = game.character
+  const pos = character.position
+  let immediateDanger = 0
+
+  for (const monster of game.monsters) {
+    if (monster.hp <= 0) continue
+
+    // Chebyshev distance (8-directional)
+    const dx = Math.abs(monster.position.x - pos.x)
+    const dy = Math.abs(monster.position.y - pos.y)
+    const dist = Math.max(dx, dy)
+
+    // Only count adjacent monsters (distance <= 1)
+    if (dist <= 1) {
+      immediateDanger += getMonsterThreat(monster, character)
+    }
+    // Also count distance-2 monsters if they're faster (can close gap)
+    else if (dist === 2 && monster.template.speed > 100) {
+      immediateDanger += getMonsterThreat(monster, character) * 0.5
+    }
+  }
+
+  return Math.floor(immediateDanger)
+}
+
+/**
+ * Get danger tier based on immediate (adjacent) danger
+ * More conservative thresholds since these are actual threats
+ *
+ * Unlike getDangerTier which uses an avoidance threshold,
+ * this compares danger directly to current HP (Angband pattern)
+ *
+ * @param hasAdjacentMonster - Whether there's any adjacent monster (for SAFE check)
+ */
+export function getImmediateDangerTier(
+  immediateDanger: number,
+  currentHP: number,
+  _maxHP: number,
+  hasAdjacentMonster: boolean = false
+): DangerTier {
+  // Any adjacent monster means NOT safe (even 0-damage monsters like Floating Eyes)
+  if (immediateDanger === 0 && !hasAdjacentMonster) {
+    return 'SAFE'
+  }
+  // Adjacent monster with 0 threat (gaze-only, etc.) - still needs handling
+  if (immediateDanger === 0 && hasAdjacentMonster) {
+    return 'CAUTION'
+  }
+  if (immediateDanger < currentHP * 0.5) {
+    return 'CAUTION' // Can take 2+ hits
+  }
+  if (immediateDanger < currentHP) {
+    return 'DANGER' // Can take 1 hit
+  }
+  return 'CRITICAL' // Might die this turn
+}

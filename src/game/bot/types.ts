@@ -5,13 +5,28 @@
  */
 
 import type { Point, GameState, Monster, GroundItem, BotPersonality } from '../types'
+import type { ClassBehaviorProfile } from './class-profiles'
 
 // ============================================================================
 // GOAL TYPES
 // ============================================================================
 
 /** Bot goal types */
-export type GoalType = 'KILL' | 'TAKE' | 'DESCEND' | 'FLEE' | 'EXPLORE' | 'RECOVER' | 'WAIT'
+export type GoalType =
+  | 'KILL'
+  | 'TAKE'
+  | 'DESCEND'
+  | 'FLEE'
+  | 'EXPLORE'
+  | 'RECOVER'
+  | 'WAIT'
+  | 'KITE'
+  // Town-related goals (order: sell → heal → buy)
+  | 'SELL_TO_MERCHANT' // Sell loot first to get gold
+  | 'VISIT_HEALER'     // Heal with gold from selling
+  | 'BUY_FROM_MERCHANT' // Buy consumables after healing
+  | 'RETURN_PORTAL'    // Return through portal
+  | 'EXIT_TOWN'        // Use dungeon entrance (fallback)
 
 /** A bot's current goal */
 export interface BotGoal {
@@ -96,6 +111,13 @@ export interface BotState {
 
   // Flee cooldown (turn until which fleeing is disabled)
   fleeCooldownUntil: number
+
+  // Town tracking
+  isInTown: boolean
+  townEntryTurn: number
+  healerVisited: boolean
+  itemsSold: boolean    // Sold loot to merchant
+  itemsBought: boolean  // Bought from merchant
 }
 
 // ============================================================================
@@ -107,6 +129,11 @@ export interface BotContext {
   game: GameState
   personality: BotPersonality
   config: PersonalityConfig
+
+  // Class-aware fields
+  classId: string
+  classProfile: ClassBehaviorProfile
+  effectiveConfig: PersonalityConfig // personality + class modifiers
 
   // Derived data
   visibleMonsters: Monster[]

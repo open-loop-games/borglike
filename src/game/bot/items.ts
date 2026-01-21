@@ -626,6 +626,17 @@ export function findMappingScroll(character: Character): Item | null {
 }
 
 /**
+ * Find a Town Portal scroll in inventory
+ */
+export function findTownPortalScroll(character: Character): Item | null {
+  return character.inventory.find(item => {
+    if (item.template.type !== 'scroll') return false
+    const name = item.template.name.toLowerCase()
+    return name.includes('town portal')
+  }) ?? null
+}
+
+/**
  * Find an enchant scroll (weapon or armour)
  */
 export function findEnchantScroll(character: Character, type?: 'weapon' | 'armor'): Item | null {

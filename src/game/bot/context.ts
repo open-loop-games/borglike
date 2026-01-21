@@ -5,12 +5,10 @@
  */
 
 import type { GameState, BotPersonality, Point, DungeonLevel } from '../types'
-import type { BotContext, BotState } from './types'
+import type { BotContext, BotState, PersonalityConfig } from './types'
 import { getTile, getAdjacentPositions } from '../dungeon'
-import { getPersonalityConfig, BASE_CONFIGS } from './personality'
-
-// Re-export personality functions and configs for backward compatibility
-export { BASE_CONFIGS, getPersonalityConfig }
+import { getPersonalityConfig } from './personality'
+import { getClassProfile } from './class-profiles'
 
 // ============================================================================
 // CONTEXT BUILDING
@@ -33,6 +31,12 @@ function createMinimalBotState(): BotState {
     twitchCounter: 0,
     lastProgressTurn: 0,
     fleeCooldownUntil: 0,
+    // Town tracking
+    isInTown: false,
+    townEntryTurn: 0,
+    healerVisited: false,
+    itemsSold: false,
+    itemsBought: false,
   }
 }
 
@@ -45,6 +49,11 @@ export function buildBotContext(
   botState?: BotState
 ): BotContext {
   const config = getPersonalityConfig(personality)
+
+  // Get class-aware information
+  const classId = game.character.classId
+  const classProfile = getClassProfile(classId)
+  const effectiveConfig = computeEffectiveConfig(config, classProfile)
 
   // Find visible monsters
   const visibleMonsters = game.monsters.filter((m) => {
@@ -68,12 +77,38 @@ export function buildBotContext(
     game,
     personality,
     config,
+    classId,
+    classProfile,
+    effectiveConfig,
     visibleMonsters,
     visibleItems,
     knownStairs,
     unexploredTiles,
     botState: botState ?? createMinimalBotState(),
   }
+}
+
+/**
+ * Compute effective config by blending personality with class modifiers
+ */
+function computeEffectiveConfig(
+  config: PersonalityConfig,
+  profile: { aggressionMod: number; cautionMod: number }
+): PersonalityConfig {
+  return {
+    aggression: clamp(config.aggression + profile.aggressionMod, 0, 100),
+    greed: config.greed,
+    caution: clamp(config.caution + profile.cautionMod, 0, 100),
+    exploration: config.exploration,
+    patience: config.patience,
+  }
+}
+
+/**
+ * Clamp a value between min and max
+ */
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
 }
 
 /**

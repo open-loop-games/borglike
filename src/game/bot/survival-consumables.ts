@@ -1,0 +1,440 @@
+/**
+ * Consumable Usage Logic
+ *
+ * Handles decisions about when to use healing potions, escape scrolls,
+ * buff potions, resistance potions, and utility items.
+ */
+
+import type { GameState, GameAction, Point } from '../types'
+import type { PersonalityConfig, DangerMap, BotState } from './types'
+import {
+  getLocalDanger,
+  calculateAvoidance,
+  getDangerTier,
+  getImmediateDanger,
+  getImmediateDangerTier,
+  getMonsterThreat,
+} from './danger'
+import { isInCombat, countAdjacentMonsters } from './combat'
+import {
+  findHealingPotion,
+  findEscapeScroll,
+  findPhaseDoorScroll,
+  findFullTeleportScroll,
+  findSpeedPotion,
+  findBuffPotion,
+  findResistancePotion,
+  findNeutralizePoison,
+  findBlessingScroll,
+  findProtectionScroll,
+  findMappingScroll,
+  findEnchantScroll,
+  findTownPortalScroll,
+  hasStatusEffect,
+  hasTempResistance,
+} from './items'
+import { shouldUseTownPortal, evaluatePhaseDoorSafety, shouldEscapeOverHeal } from './survival-teleport'
+
+// ============================================================================
+// SURVIVAL CONSUMABLES
+// ============================================================================
+
+/**
+ * Check if we should use a consumable for survival
+ * Returns an action if we should use something, null otherwise
+ *
+ * Decision flow (Angband-inspired 4-tier system):
+ * 1. Cure poison (unchanged - always priority)
+ * 2. Calculate avoidance and danger tier
+ * 3. If CRITICAL and shouldEscapeOverHeal:
+ *    → Try full teleport (always safe - goes anywhere)
+ *    → Try phase door (skip safety check - desperate)
+ * 4. If DANGER or higher with healing available:
+ *    → Use healing potion
+ * 5. If CAUTION or higher, no healing, has escape:
+ *    → Check phase door safety
+ *    → Use escape if safe OR use full teleport
+ * 6. If twitchCounter > 30 and has escape:
+ *    → Use escape to break stuck state
+ * 7. Return null
+ */
+export function getSurvivalConsumableAction(
+  game: GameState,
+  config: PersonalityConfig,
+  dangers: DangerMap,
+  botState?: BotState,
+  personality?: string
+): GameAction | null {
+  const character = game.character
+  const hpRatio = character.hp / character.maxHp
+  const adjacentCount = countAdjacentMonsters(game, character.position)
+  const inCombat = isInCombat(game)
+  const hasHealing = findHealingPotion(character) !== null
+
+  // 1. Cure poison immediately if poisoned (unchanged - always priority)
+  if (character.poison) {
+    const antidote = findNeutralizePoison(character)
+    if (antidote) {
+      return { type: 'use', itemId: antidote.id }
+    }
+    // Also check resistance potion which cures poison
+    const resistPotion = findResistancePotion(character, 'poison')
+    if (resistPotion) {
+      return { type: 'use', itemId: resistPotion.id }
+    }
+  }
+
+  // 2. Calculate BOTH danger scopes (Angband two-scope pattern)
+  // Local danger: for pathfinding and general threat assessment
+  const localDanger = getLocalDanger(dangers, character.position)
+  const avoidance = calculateAvoidance(game, config)
+  const localTier = getDangerTier(localDanger, avoidance)
+
+  // Immediate danger: ONLY adjacent monsters - for consumable decisions
+  // This prevents wasting items on distant threats
+  const immediateDanger = getImmediateDanger(game)
+  const immediateTier = getImmediateDangerTier(immediateDanger, character.hp, character.maxHp)
+
+  // 3. If CRITICAL and shouldEscapeOverHeal: escape takes priority
+  // Use LOCAL tier for this (retreat from dangerous area)
+  if (localTier === 'CRITICAL' && shouldEscapeOverHeal(game, localTier, adjacentCount)) {
+    // Try full teleport first (always safe - random destination)
+    const fullTeleport = findFullTeleportScroll(character)
+    if (fullTeleport) {
+      return { type: 'use', itemId: fullTeleport.id }
+    }
+    // Try phase door (skip safety check - desperate mode)
+    const phaseDoor = findPhaseDoorScroll(character)
+    if (phaseDoor) {
+      return { type: 'use', itemId: phaseDoor.id }
+    }
+    // Fall back to any escape scroll
+    const anyEscape = findEscapeScroll(character)
+    if (anyEscape) {
+      return { type: 'use', itemId: anyEscape.id }
+    }
+  }
+
+  // 4. Healing decision based on IMMEDIATE danger and HP ratio
+  // Don't heal at full HP just because distant monsters exist
+  // Following Angband borg: heal when HP missing AND threat is REAL (adjacent)
+  const shouldHeal =
+    // Must have taken some damage (not at 100% HP)
+    hpRatio < 0.95 &&
+    (
+      // Actual adjacent monster AND HP below 75%
+      (adjacentCount > 0 && hpRatio < 0.75) ||
+      // OR immediate danger could kill us (danger > 70% of current HP)
+      immediateDanger > character.hp * 0.7 ||
+      // OR we're in local CRITICAL with HP below 65% (retreat situation)
+      (localTier === 'CRITICAL' && hpRatio < 0.65)
+    )
+
+  if (shouldHeal) {
+    // Try stronger potions first when more hurt
+    const minTier = hpRatio < 0.25 ? 2 : 1
+    const potion = findHealingPotion(character, minTier) ?? findHealingPotion(character, 1)
+    if (potion) {
+      return { type: 'use', itemId: potion.id }
+    }
+  }
+
+  // 4b. Town Portal decision - use when not adjacent to monsters
+  // This is a strategic escape/resupply - not for immediate combat
+  if (adjacentCount === 0 && personality) {
+    const portalDecision = shouldUseTownPortal(game, config, personality)
+    if (portalDecision.shouldUse) {
+      const scroll = findTownPortalScroll(character)
+      if (scroll) {
+        return { type: 'use', itemId: scroll.id }
+      }
+    }
+  }
+
+  // 5. Escape decision based on IMMEDIATE danger
+  // Don't escape from distant monsters - only from actual adjacent threats
+  // CAUTION tier from distance-2 monsters is NOT enough to trigger escape
+  const shouldEscape =
+    (
+      // Actual adjacent monsters present AND no healing AND damaged
+      adjacentCount > 0 && !hasHealing && hpRatio < 0.8
+    ) ||
+    (
+      // OR immediate danger is CRITICAL (could die this turn)
+      immediateTier === 'CRITICAL'
+    ) ||
+    (
+      // OR surrounded (2+ adjacent)
+      adjacentCount >= 2 && hpRatio < 0.9
+    ) ||
+    (
+      // OR local CRITICAL with no healing and significantly damaged
+      localTier === 'CRITICAL' && !hasHealing && hpRatio < 0.7
+    )
+
+  if (shouldEscape) {
+    // Try full teleport (always safe)
+    const fullTeleport = findFullTeleportScroll(character)
+    if (fullTeleport) {
+      return { type: 'use', itemId: fullTeleport.id }
+    }
+
+    // Try phase door with safety check
+    const phaseDoor = findPhaseDoorScroll(character)
+    if (phaseDoor) {
+      const safety = evaluatePhaseDoorSafety(game, dangers, avoidance)
+      if (safety.isSafe) {
+        return { type: 'use', itemId: phaseDoor.id }
+      }
+    }
+
+    // Use speed potion to outrun enemies if no teleport available
+    // Only when not adjacent (already disengaged, now fleeing)
+    if (adjacentCount === 0 && !hasStatusEffect(character, 'speed')) {
+      const speedPotion = findSpeedPotion(character)
+      if (speedPotion) {
+        return { type: 'use', itemId: speedPotion.id }
+      }
+    }
+  }
+
+  // 6. Twitchy escape: if stuck for 30+ turns, use escape to break deadlock
+  const TWITCH_THRESHOLD = 30
+  if (botState && botState.twitchCounter > TWITCH_THRESHOLD) {
+    const fullTeleport = findFullTeleportScroll(character)
+    if (fullTeleport) {
+      return { type: 'use', itemId: fullTeleport.id }
+    }
+    const phaseDoor = findPhaseDoorScroll(character)
+    if (phaseDoor) {
+      return { type: 'use', itemId: phaseDoor.id }
+    }
+    const anyEscape = findEscapeScroll(character)
+    if (anyEscape) {
+      return { type: 'use', itemId: anyEscape.id }
+    }
+  }
+
+  // 7. Also check for basic healing outside of combat when HP is low
+  if (!inCombat && hpRatio < 0.4) {
+    const potion = findHealingPotion(character, 1)
+    if (potion) {
+      return { type: 'use', itemId: potion.id }
+    }
+  }
+
+  return null
+}
+
+// ============================================================================
+// PRE-COMBAT BUFFS
+// ============================================================================
+
+/**
+ * Check if we should use a pre-combat buff when approaching dangerous enemies
+ *
+ * This is for consumables like blessing scrolls that should be used BEFORE
+ * engaging in melee, not during active combat (wasting a turn mid-fight).
+ *
+ * Triggers when:
+ * - Visible dangerous monster approaching (threat > 100)
+ * - Not yet in melee (adjacentCount == 0)
+ * - Don't already have the buff active
+ */
+export function getPreCombatBuffAction(
+  game: GameState,
+  _config: PersonalityConfig,
+  visibleMonsters: { position: Point; hp: number; template: { damage: number; speed: number }; isAwake: boolean }[]
+): GameAction | null {
+  const character = game.character
+  const adjacentCount = countAdjacentMonsters(game, character.position)
+
+  // Only use pre-combat buffs when NOT in melee yet
+  if (adjacentCount > 0) return null
+
+  // No visible monsters, no need to buff
+  if (visibleMonsters.length === 0) return null
+
+  // Check if any visible monster is dangerous enough to warrant buffing
+  // Threshold: 100 threat = roughly a 10-damage monster that's awake
+  const THREAT_THRESHOLD = 100
+  const hasDangerousMonster = visibleMonsters.some(m => {
+    // Use partial monster info for threat calculation
+    const threat = getMonsterThreat(m as Parameters<typeof getMonsterThreat>[0], character)
+    return threat >= THREAT_THRESHOLD
+  })
+
+  if (!hasDangerousMonster) return null
+
+  // Check if already buffed
+  const hasBlessing = hasStatusEffect(character, 'blessing')
+  const hasProtection = hasStatusEffect(character, 'protection')
+
+  // Use blessing scroll before engaging dangerous enemy
+  if (!hasBlessing) {
+    const blessingScroll = findBlessingScroll(character)
+    if (blessingScroll) {
+      return { type: 'use', itemId: blessingScroll.id }
+    }
+  }
+
+  // Use protection from evil in deep dungeon before engaging
+  if (!hasProtection && character.depth >= 15) {
+    const protScroll = findProtectionScroll(character)
+    if (protScroll) {
+      return { type: 'use', itemId: protScroll.id }
+    }
+  }
+
+  return null
+}
+
+// ============================================================================
+// COMBAT BUFFS
+// ============================================================================
+
+/**
+ * Check if we should use a combat buff during high-danger situations
+ *
+ * This handles:
+ * - Heroism/Berserk potions for tough fights (high localDanger)
+ * - Resistance potions when facing elemental monsters
+ *
+ * Note: Speed and Blessing are handled elsewhere:
+ * - Speed: escape logic (outrun enemies) or speedrunner utility
+ * - Blessing: pre-combat buff (before engaging)
+ */
+export function getCombatBuffAction(
+  game: GameState,
+  _config: PersonalityConfig,
+  dangers: DangerMap
+): GameAction | null {
+  const character = game.character
+  const inCombat = isInCombat(game)
+  const localDanger = getLocalDanger(dangers, character.position)
+
+  // Only use buffs when in combat or approaching strong enemies
+  if (!inCombat && localDanger < 30) return null
+
+  // Check if already buffed
+  const hasHeroism = hasStatusEffect(character, 'heroism')
+  const hasBerserk = hasStatusEffect(character, 'berserk')
+
+  // Use buff potion (heroism/berserk) for tough fights
+  if (!hasHeroism && !hasBerserk && localDanger > 50) {
+    const buffPotion = findBuffPotion(character)
+    if (buffPotion) {
+      return { type: 'use', itemId: buffPotion.id }
+    }
+  }
+
+  // Use resistance potions based on nearby monster types
+  const nearbyMonsters = game.monsters.filter(m => {
+    const dx = Math.abs(m.position.x - character.position.x)
+    const dy = Math.abs(m.position.y - character.position.y)
+    return dx <= 3 && dy <= 3 && m.hp > 0
+  })
+
+  for (const monster of nearbyMonsters) {
+    const abilities = monster.template.abilities || []
+
+    // Fire resistance for fire-breathing monsters
+    if (abilities.some(a => a.toLowerCase().includes('fire')) && !hasTempResistance(character, 'FIRE')) {
+      const firePotion = findResistancePotion(character, 'fire')
+      if (firePotion) {
+        return { type: 'use', itemId: firePotion.id }
+      }
+    }
+
+    // Cold resistance for frost monsters
+    if (abilities.some(a => a.toLowerCase().includes('cold') || a.toLowerCase().includes('frost')) && !hasTempResistance(character, 'COLD')) {
+      const coldPotion = findResistancePotion(character, 'cold')
+      if (coldPotion) {
+        return { type: 'use', itemId: coldPotion.id }
+      }
+    }
+
+    // Poison resistance for venomous monsters
+    if (abilities.some(a => a.toLowerCase().includes('poison') || a.toLowerCase().includes('venom')) && !hasTempResistance(character, 'POISON')) {
+      const poisonPotion = findResistancePotion(character, 'poison')
+      if (poisonPotion) {
+        return { type: 'use', itemId: poisonPotion.id }
+      }
+    }
+  }
+
+  return null
+}
+
+// ============================================================================
+// UTILITY CONSUMABLES
+// ============================================================================
+
+/**
+ * Check if we should use a utility consumable (mapping, enchant, etc.)
+ * Only when safe and not in combat
+ *
+ * @param personality - Optional personality name for personality-specific behavior
+ */
+export function getUtilityConsumableAction(
+  game: GameState,
+  _config: PersonalityConfig,
+  dangers: DangerMap,
+  personality?: string
+): GameAction | null {
+  const character = game.character
+  const inCombat = isInCombat(game)
+  const localDanger = getLocalDanger(dangers, character.position)
+
+  // Only use utility items when safe
+  if (inCombat || localDanger > 20) return null
+
+  // Speedrunner: use speed potion when exploring safely to move faster
+  if (personality === 'speedrunner' && !hasStatusEffect(character, 'speed')) {
+    const speedPotion = findSpeedPotion(character)
+    if (speedPotion) {
+      return { type: 'use', itemId: speedPotion.id }
+    }
+  }
+
+  // Use enchant scrolls when safe and have equipment
+  const weapon = character.equipment.weapon
+  const armor = character.equipment.armor
+
+  // Enchant weapon if we have one equipped and a scroll
+  if (weapon && weapon.enchantment < 5) {
+    const enchantWeapon = findEnchantScroll(character, 'weapon')
+    if (enchantWeapon) {
+      return { type: 'use', itemId: enchantWeapon.id }
+    }
+  }
+
+  // Enchant armor if we have one equipped and a scroll
+  if (armor && armor.enchantment < 5) {
+    const enchantArmor = findEnchantScroll(character, 'armor')
+    if (enchantArmor) {
+      return { type: 'use', itemId: enchantArmor.id }
+    }
+  }
+
+  // Use mapping scroll if exploration is low (< 30%)
+  const totalTiles = game.currentLevel.width * game.currentLevel.height
+  let exploredCount = 0
+  for (const row of game.currentLevel.tiles) {
+    if (row) {
+      for (const tile of row) {
+        if (tile?.explored) exploredCount++
+      }
+    }
+  }
+  const explorationRatio = exploredCount / totalTiles
+
+  if (explorationRatio < 0.3) {
+    const mappingScroll = findMappingScroll(character)
+    if (mappingScroll) {
+      return { type: 'use', itemId: mappingScroll.id }
+    }
+  }
+
+  return null
+}

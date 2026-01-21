@@ -5,25 +5,37 @@
  * and goal persistence to prevent thrashing.
  */
 
-import type { GroundItem } from '../types'
 import type { BotState, BotGoal, BotContext, GoalType, DangerMap } from './types'
-import { getTile } from '../dungeon'
 import { getLocalDanger } from './danger'
-import { isSamePosition } from './movement'
-import { selectTarget, shouldEngage, findAdjacentMonster } from './combat'
-import { shouldRetreat, findBestEscapeRoute } from './survival'
-import { evaluateItem, shouldPickup } from './items'
+import { findAdjacentMonster, hasRangedWeapon } from './combat'
+import { isInTown, HEALER_POSITION, MERCHANT_POSITION, DUNGEON_ENTRANCE_POSITION } from '../town'
+
+// Import evaluators from separate module
 import {
-  findExplorationTarget as findExploreTarget,
-  getExplorationProgress,
-} from './exploration'
+  evaluateFlee,
+  evaluateKite,
+  evaluateRecover,
+  evaluateKill,
+  evaluateTake,
+  evaluateDescend,
+  evaluateExplore,
+} from './goal-evaluators'
+
+// Re-export evaluators for external use
+export {
+  evaluateFlee,
+  evaluateKite,
+  evaluateRecover,
+  evaluateKill,
+  evaluateTake,
+  evaluateDescend,
+  evaluateExplore,
+  findBestItem,
+} from './goal-evaluators'
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-/** Toggle to disable exploration module for A/B testing */
-const USE_EXPLORATION_MODULE = true
 
 /** Minimum turns before forced goal re-evaluation */
 const GOAL_REEVALUATE_INTERVAL = 10
@@ -34,6 +46,13 @@ const EXPLORE_REEVALUATE_INTERVAL = 5
 /** Priority order for goals (higher = more important) */
 const GOAL_PRIORITY: Record<GoalType, number> = {
   FLEE: 100,
+  KITE: 90, // Higher than RECOVER, ranged classes prefer kiting
+  // Town goals (order: sell → heal → buy → return)
+  SELL_TO_MERCHANT: 88, // Sell loot first to get gold
+  VISIT_HEALER: 85,     // Heal with gold from selling
+  BUY_FROM_MERCHANT: 82, // Buy consumables after healing
+  RETURN_PORTAL: 70,    // Return through portal
+  EXIT_TOWN: 65,        // Fallback if no portal
   RECOVER: 80,
   KILL: 70,
   TAKE: 50,
@@ -96,10 +115,25 @@ export function selectGoal(
   // Full goal evaluation
   const localDanger = getLocalDanger(dangers, pos)
   const hpRatio = game.character.hp / game.character.maxHp
+  const { classProfile } = context
 
-  // 1. FLEE - HP critical and in danger
-  const fleeGoal = evaluateFlee(context, dangers, dangerThreshold, localDanger, hpRatio)
-  if (fleeGoal) return fleeGoal
+  // 0. TOWN GOALS - If in town, handle town-specific behavior
+  if (isInTown(game)) {
+    const townGoal = selectTownGoal(context, botState, hpRatio)
+    if (townGoal) return townGoal
+  }
+
+  // 1. FLEE - HP critical and in danger (skip for Berserker)
+  if (!classProfile.neverRetreats) {
+    const fleeGoal = evaluateFlee(context, dangers, dangerThreshold, localDanger, hpRatio)
+    if (fleeGoal) return fleeGoal
+  }
+
+  // 1.5 KITE - Ranged classes maintain distance and shoot
+  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
+    const kiteGoal = evaluateKite(context, dangers, dangerThreshold)
+    if (kiteGoal) return kiteGoal
+  }
 
   // 2. RECOVER - Low HP but safe
   const recoverGoal = evaluateRecover(context, dangerThreshold, localDanger, hpRatio)
@@ -183,8 +217,42 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       }
       return true
 
+    case 'KITE':
+      // Kite is valid if we have a ranged weapon and visible monsters
+      if (!hasRangedWeapon(game)) return false
+      if (context.visibleMonsters.length === 0) return false
+      // If target monster is dead, need new target
+      if (goal.targetId) {
+        return game.monsters.some((m) => m.id === goal.targetId && m.hp > 0)
+      }
+      return true
+
     case 'WAIT':
       return false // Always re-evaluate
+
+    // Town goals
+    case 'SELL_TO_MERCHANT':
+      // Valid while in town and haven't sold yet
+      return isInTown(game) && !botState.itemsSold
+
+    case 'VISIT_HEALER':
+      // Valid while in town and not yet healed
+      return isInTown(game) && !botState.healerVisited && game.character.hp < game.character.maxHp
+
+    case 'BUY_FROM_MERCHANT':
+      // Valid while in town and haven't bought yet (and have sold)
+      return isInTown(game) && botState.itemsSold && !botState.itemsBought
+
+    case 'RETURN_PORTAL':
+      // Valid while in town and portal exists
+      return isInTown(game) && game.townPortal !== null
+
+    case 'EXIT_TOWN':
+      // Valid while in town (fallback when no portal)
+      return isInTown(game)
+
+    default:
+      return false
   }
 }
 
@@ -199,6 +267,12 @@ function checkHighPriorityOverride(
   currentPriority: number
 ): BotGoal | null {
   const { game } = context
+
+  // No combat overrides in town - town goals handle everything
+  if (isInTown(game)) {
+    return null
+  }
+
   const pos = game.character.position
   const localDanger = getLocalDanger(dangers, pos)
   const hpRatio = game.character.hp / game.character.maxHp
@@ -233,284 +307,82 @@ function checkHighPriorityOverride(
 }
 
 // ============================================================================
-// GOAL EVALUATORS
+// TOWN GOAL SELECTION
 // ============================================================================
 
 /**
- * Evaluate FLEE goal - escape from danger
+ * Select the appropriate town goal based on current state
+ *
+ * Town behavior priority (economically optimal):
+ * 1. SELL_TO_MERCHANT - Sell loot first to get gold
+ * 2. VISIT_HEALER - Heal with gold from selling
+ * 3. BUY_FROM_MERCHANT - Buy consumables after healing
+ * 4. RETURN_PORTAL - Return through active portal
+ * 5. EXIT_TOWN - Fallback: use dungeon entrance
  */
-function evaluateFlee(
+function selectTownGoal(
   context: BotContext,
-  dangers: DangerMap,
-  _dangerThreshold: number,
-  _localDanger: number,
-  _hpRatio: number
-): BotGoal | null {
-  const { game, config, botState } = context
-
-  // Check flee cooldown (set after stop_fleeing to prevent immediately fleeing again)
-  if (game.turn < botState.fleeCooldownUntil) {
-    return null
-  }
-
-  // Use survival module for retreat decision
-  const retreatEval = shouldRetreat(game, config, dangers)
-
-  if (!retreatEval.shouldRetreat) return null
-
-  // Find best escape route using survival module
-  const escapeRoute = findBestEscapeRoute(game, dangers)
-  if (!escapeRoute) {
-    // No escape - try stairs as last resort
-    if (game.currentLevel.stairsDown) {
-      const stairsTile = getTile(
-        game.currentLevel,
-        game.currentLevel.stairsDown.x,
-        game.currentLevel.stairsDown.y
-      )
-      if (stairsTile?.explored) {
-        return {
-          type: 'FLEE',
-          target: game.currentLevel.stairsDown,
-          targetId: null,
-          reason: retreatEval.reason,
-          startTurn: game.turn,
-        }
-      }
-    }
-    return null
-  }
-
-  return {
-    type: 'FLEE',
-    target: escapeRoute.target,
-    targetId: null,
-    reason: retreatEval.reason,
-    startTurn: game.turn,
-  }
-}
-
-/**
- * Evaluate RECOVER goal - rest to heal
- */
-function evaluateRecover(
-  context: BotContext,
-  dangerThreshold: number,
-  localDanger: number,
+  botState: BotState,
   hpRatio: number
 ): BotGoal | null {
   const { game } = context
-  const pos = game.character.position
+  const turn = game.turn
 
-  // Recover if: HP < 50% AND safe AND no visible monsters
-  const shouldRecover =
-    hpRatio < 0.5 &&
-    localDanger < dangerThreshold * 0.5 &&
-    context.visibleMonsters.length === 0
-
-  if (!shouldRecover) return null
-
-  // Stay in place to recover
-  return {
-    type: 'RECOVER',
-    target: pos,
-    targetId: null,
-    reason: `Recovering (HP: ${Math.round(hpRatio * 100)}%)`,
-    startTurn: game.turn,
-  }
-}
-
-/**
- * Evaluate KILL goal - hunt monsters
- */
-function evaluateKill(
-  context: BotContext,
-  _hpRatio: number
-): BotGoal | null {
-  const { game, config } = context
-
-  // Check for adjacent monster first (always attack)
-  const adjacentMonster = findAdjacentMonster(game)
-  if (adjacentMonster) {
+  // 1. Sell items first to get gold for healing
+  if (!botState.itemsSold) {
     return {
-      type: 'KILL',
-      target: adjacentMonster.position,
-      targetId: adjacentMonster.id,
-      reason: 'Adjacent monster',
-      startTurn: game.turn,
+      type: 'SELL_TO_MERCHANT',
+      target: { ...MERCHANT_POSITION },
+      targetId: null,
+      reason: 'Selling loot to merchant',
+      startTurn: turn,
     }
   }
 
-  // Use combat module for target selection
-  const targetSelection = selectTarget(context, false)
-  if (!targetSelection) return null
-
-  // Check if we should engage this target
-  if (!shouldEngage(game, targetSelection.target, config)) {
-    return null
-  }
-
-  return {
-    type: 'KILL',
-    target: targetSelection.target.position,
-    targetId: targetSelection.target.id,
-    reason: `Hunting ${targetSelection.target.template.name} (${targetSelection.reason})`,
-    startTurn: game.turn,
-  }
-}
-
-/**
- * Evaluate TAKE goal - pick up items
- */
-function evaluateTake(
-  context: BotContext,
-  dangers: DangerMap,
-  dangerThreshold: number
-): BotGoal | null {
-  const { game, config } = context
-  const pos = game.character.position
-
-  // Check for item at current position first
-  const itemHere = game.items.find((item) => isSamePosition(item.position, pos))
-  if (itemHere) {
+  // 2. Visit healer if HP is not full and haven't visited yet
+  // healerVisited is set when we reach the healer, regardless of heal outcome
+  // This prevents getting stuck if we can't afford a full heal
+  if (!botState.healerVisited && hpRatio < 1.0) {
     return {
-      type: 'TAKE',
-      target: pos,
-      targetId: itemHere.id,
-      reason: 'Item at position',
-      startTurn: game.turn,
+      type: 'VISIT_HEALER',
+      target: { ...HEALER_POSITION },
+      targetId: null,
+      reason: `Going to healer (HP: ${Math.round(hpRatio * 100)}%)`,
+      startTurn: turn,
     }
   }
 
-  // Check if safe enough to detour for items
-  const localDanger = getLocalDanger(dangers, pos)
-  if (localDanger > dangerThreshold) return null
-
-  // Find best item within greed radius
-  const maxDetour = Math.floor(config.greed / 10) + 3
-  const nearestItem = findBestItem(context, maxDetour)
-  if (!nearestItem) return null
-
-  return {
-    type: 'TAKE',
-    target: nearestItem.position,
-    targetId: nearestItem.id,
-    reason: 'Collecting item',
-    startTurn: game.turn,
+  // 3. Buy from merchant after healing
+  if (!botState.itemsBought) {
+    return {
+      type: 'BUY_FROM_MERCHANT',
+      target: { ...MERCHANT_POSITION },
+      targetId: null,
+      reason: 'Buying supplies from merchant',
+      startTurn: turn,
+    }
   }
-}
 
-/**
- * Evaluate DESCEND goal - go to next level
- */
-function evaluateDescend(context: BotContext, botState: BotState): BotGoal | null {
-  const { game, config } = context
+  // 4. Return through portal if active
+  if (game.townPortal) {
+    return {
+      type: 'RETURN_PORTAL',
+      target: { ...game.townPortal.townPosition },
+      targetId: null,
+      reason: `Returning through portal (${game.townPortal.turnsRemaining} turns left)`,
+      startTurn: turn,
+    }
+  }
 
-  // Need to know where stairs are
-  if (!botState.knownStairsDown) return null
-
-  // Check if ready to descend
-  const explorationProgress = getExplorationProgress(game)
-  const shouldDescend =
-    explorationProgress >= config.exploration ||
-    botState.turnsOnLevel >= config.patience
-
-  if (!shouldDescend) return null
-
+  // 5. Exit town via dungeon entrance (fallback)
   return {
-    type: 'DESCEND',
-    target: botState.knownStairsDown,
+    type: 'EXIT_TOWN',
+    target: { ...DUNGEON_ENTRANCE_POSITION },
     targetId: null,
-    reason: `Descending (${explorationProgress}% explored)`,
-    startTurn: game.turn,
+    reason: 'Exiting town',
+    startTurn: turn,
   }
 }
-
-/**
- * Evaluate EXPLORE goal - find unexplored areas
- */
-function evaluateExplore(context: BotContext): BotGoal | null {
-  const { game, unexploredTiles, botState } = context
-
-  if (unexploredTiles.length === 0) return null
-
-  let target
-
-  if (USE_EXPLORATION_MODULE) {
-    // Use smart exploration target selection
-    target = findExploreTarget(game, botState)
-  } else {
-    // Simple: pick nearest unexplored tile
-    const pos = game.character.position
-    let nearest = unexploredTiles[0]!
-    let nearestDist = Math.abs(nearest.x - pos.x) + Math.abs(nearest.y - pos.y)
-
-    for (const tile of unexploredTiles) {
-      const dist = Math.abs(tile.x - pos.x) + Math.abs(tile.y - pos.y)
-      if (dist < nearestDist) {
-        nearestDist = dist
-        nearest = tile
-      }
-    }
-    target = nearest
-  }
-
-  if (!target) return null
-
-  return {
-    type: 'EXPLORE',
-    target,
-    targetId: null,
-    reason: 'Exploring dungeon',
-    startTurn: game.turn,
-  }
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Find best item within distance using smart evaluation
- */
-function findBestItem(context: BotContext, maxDistance: number): GroundItem | null {
-  const { game, visibleItems, config } = context
-  const pos = game.character.position
-  const character = game.character
-
-  let best: GroundItem | null = null
-  let bestScore = -Infinity
-
-  for (const item of visibleItems) {
-    const dx = Math.abs(item.position.x - pos.x)
-    const dy = Math.abs(item.position.y - pos.y)
-    const distance = dx + dy
-
-    if (distance > maxDistance) continue
-
-    // Check if we should pick up this item
-    if (!shouldPickup(item, character, config)) continue
-
-    // Evaluate item value
-    const evaluation = evaluateItem(item, character)
-
-    // Score = value - distance penalty
-    // Upgrades get big bonus to encourage pickup
-    let score = evaluation.score
-    if (evaluation.isUpgrade) {
-      score += 50
-    }
-    score -= distance * 3 // Distance penalty
-
-    if (score > bestScore) {
-      bestScore = score
-      best = item
-    }
-  }
-
-  return best
-}
-
 
 // ============================================================================
 // EXPORTS
