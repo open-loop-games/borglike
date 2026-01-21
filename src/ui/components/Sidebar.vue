@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
+import { races } from '@/game/data/races'
+import { classes } from '@/game/data/classes'
+import { boosters } from '@/game/data/boosters'
 import PanelFrame from './common/PanelFrame.vue'
 import UpgradeList from './meta/UpgradeList.vue'
 import UnlockList from './meta/UnlockList.vue'
@@ -9,6 +12,11 @@ const progression = useProgressionStore()
 
 type Tab = 'stats' | 'upgrades' | 'unlocks'
 const activeTab = ref<Tab>('stats')
+
+// Totals for unlock display
+const totalRaces = races.length
+const totalClasses = classes.length
+const totalBoosters = boosters.length
 </script>
 
 <template>
@@ -64,8 +72,10 @@ const activeTab = ref<Tab>('stats')
               }}</span>
             </PanelFrame>
             <PanelFrame class="stat">
-              <span class="stat-label">Total Deaths</span>
-              <span class="stat-value deaths">{{ progression.globalStats.totalDeaths }}</span>
+              <span class="stat-label">Floors Traveled</span>
+              <span class="stat-value depth">{{
+                (progression.globalStats.totalFloorsVisited ?? 0).toLocaleString()
+              }}</span>
             </PanelFrame>
             <PanelFrame class="stat">
               <span class="stat-label">Essence Earned</span>
@@ -85,11 +95,15 @@ const activeTab = ref<Tab>('stats')
             </div>
             <div class="summary-row">
               <span class="summary-label">Races</span>
-              <span class="summary-value">{{ progression.availableRaces.length }}</span>
+              <span class="summary-value">{{ progression.availableRaces.length }} / {{ totalRaces }}</span>
             </div>
             <div class="summary-row">
               <span class="summary-label">Classes</span>
-              <span class="summary-value">{{ progression.availableClasses.length }}</span>
+              <span class="summary-value">{{ progression.availableClasses.length }} / {{ totalClasses }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Boosters</span>
+              <span class="summary-value">{{ progression.unlocks.boosters.size }} / {{ totalBoosters }}</span>
             </div>
           </PanelFrame>
         </section>
@@ -244,10 +258,6 @@ const activeTab = ref<Tab>('stats')
 .stat-value.gold {
   color: var(--amber);
   text-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-}
-
-.stat-value.deaths {
-  color: var(--red);
 }
 
 .stat-value.essence {

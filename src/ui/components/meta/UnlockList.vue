@@ -118,6 +118,7 @@ function getPrereqNames(boosterId: string): string[] {
           :can-afford="item.canAfford"
           :unlock-condition="item.unlockCondition"
           :prestige="item.prestige"
+          :meets-condition="item.meetsCondition"
           :type="item.type"
           :stats="item.stats"
           :hitdie="item.hitdie"

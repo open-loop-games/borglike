@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import type { ActiveRun, DisplayItem, EquipSlot } from '@/stores/runs'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore, type PanelStates } from '@/stores/settings'
 import { useRunDuration } from '@/ui/composables/use-run-duration'
-import DungeonGrid from '../DungeonGrid.vue'
+import { useKillHoldButton } from '@/ui/composables/use-kill-hold'
+import DungeonGrid from '../DungeonGridCanvas.vue'
 import ProgressBar from '../common/ProgressBar.vue'
 import CollapsibleSection from '../common/CollapsibleSection.vue'
 import RunSummary from '../analytics/RunSummary.vue'
@@ -138,44 +139,16 @@ function handleDismiss() {
   emit('dismiss')
 }
 
-// Kill button hold state using requestAnimationFrame for smoother animation
-const KILL_HOLD_DURATION = 1000
-const killHoldProgress = ref(0)
-let killHoldStart: number | null = null
-let killHoldRafId: number | null = null
-
-function updateKillProgress() {
-  if (killHoldStart === null) return
-
-  const elapsed = Date.now() - killHoldStart
-  killHoldProgress.value = Math.min(100, (elapsed / KILL_HOLD_DURATION) * 100)
-
-  if (elapsed >= KILL_HOLD_DURATION) {
-    emit('kill')
-    cancelKillHold()
-  } else {
-    killHoldRafId = requestAnimationFrame(updateKillProgress)
-  }
-}
+// Kill button hold state using composable
+const killHold = useKillHoldButton({
+  duration: 1000,
+  onComplete: () => emit('kill'),
+})
 
 function startKillHold() {
   if (props.run.state === 'dead') return
-  killHoldStart = Date.now()
-  killHoldRafId = requestAnimationFrame(updateKillProgress)
+  killHold.start()
 }
-
-function cancelKillHold() {
-  killHoldStart = null
-  killHoldProgress.value = 0
-  if (killHoldRafId !== null) {
-    cancelAnimationFrame(killHoldRafId)
-    killHoldRafId = null
-  }
-}
-
-onUnmounted(() => {
-  cancelKillHold()
-})
 </script>
 
 <template>
@@ -204,22 +177,22 @@ onUnmounted(() => {
         </button>
         <button
           class="kill-btn"
-          :class="{ holding: killHoldProgress > 0, disabled: run.state === 'dead' }"
+          :class="{ holding: killHold.progress.value > 0, disabled: run.state === 'dead' }"
           :disabled="run.state === 'dead'"
           title="Hold to end run"
           @mousedown="startKillHold"
-          @mouseup="cancelKillHold"
-          @mouseleave="cancelKillHold"
+          @mouseup="killHold.cancel"
+          @mouseleave="killHold.cancel"
           @touchstart.prevent="startKillHold"
-          @touchend="cancelKillHold"
-          @touchcancel="cancelKillHold"
+          @touchend="killHold.cancel"
+          @touchcancel="killHold.cancel"
         >
           <span class="kill-icon">&#x2717;</span>
           Kill
           <span
-            v-if="killHoldProgress > 0"
+            v-if="killHold.progress.value > 0"
             class="kill-progress"
-            :style="{ width: killHoldProgress + '%' }"
+            :style="{ width: killHold.progress.value + '%' }"
           />
         </button>
       </div>

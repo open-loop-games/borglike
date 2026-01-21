@@ -112,6 +112,10 @@ const duration = computed(() => {
             <span class="label">Personality:</span>
             <span class="value">{{ run.personality }}</span>
           </div>
+          <div class="detail" v-if="run.seed">
+            <span class="label">Seed:</span>
+            <span class="value seed">{{ run.seed }}</span>
+          </div>
         </div>
       </div>
 
@@ -277,6 +281,11 @@ const duration = computed(() => {
 
 .detail .value {
   color: var(--text-primary);
+}
+
+.detail .value.seed {
+  font-family: var(--font-mono);
+  color: var(--indigo);
 }
 
 .equipment-grid {

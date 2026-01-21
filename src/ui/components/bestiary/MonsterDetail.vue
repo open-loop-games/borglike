@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { MonsterTemplate } from '@/game/data/monsters'
 import type { BestiaryEntry } from '@/types/progression'
+import { getKnowledgeBonus } from '@/game/knowledge-effects'
 
 interface Props {
   monster: MonsterTemplate
@@ -24,7 +25,11 @@ function getUnlockTier(kills: number): number {
 }
 
 const kills = computed(() => props.entry?.kills ?? 0)
+const deaths = computed(() => props.entry?.deaths ?? 0)
 const tier = computed(() => getUnlockTier(kills.value))
+
+// Knowledge bonus calculation
+const knowledgeBonus = computed(() => getKnowledgeBonus(kills.value))
 const isLocked = computed(() => tier.value === 0)
 
 // Format first kill time
@@ -84,15 +89,38 @@ const nextUnlock = computed(() => {
         <h2 class="monster-name">{{ isLocked ? 'Unknown Monster' : monster.name }}</h2>
       </div>
 
-      <!-- Kill count -->
-      <div class="kill-section">
-        <div class="kill-count">
+      <!-- Kill/Death counts -->
+      <div class="stats-row">
+        <div class="stat-box kills">
           <span class="count">{{ kills }}</span>
-          <span class="label">Total Kills</span>
+          <span class="label">Kills</span>
         </div>
-        <div v-if="firstKillDate" class="first-kill">
-          First killed: {{ firstKillDate }}
+        <div class="stat-box deaths">
+          <span class="count">{{ deaths }}</span>
+          <span class="label">Deaths</span>
         </div>
+      </div>
+
+      <!-- Knowledge Bonus -->
+      <div v-if="kills > 0" class="knowledge-section">
+        <div class="knowledge-header">
+          <span class="knowledge-label">Knowledge Bonus</span>
+          <span class="knowledge-value">+{{ knowledgeBonus.toFixed(1) }}%</span>
+        </div>
+        <div class="knowledge-bar">
+          <div class="knowledge-fill" :style="{ width: `${(knowledgeBonus / 25) * 100}%` }"></div>
+        </div>
+        <div class="knowledge-tiers">
+          <span :class="{ active: knowledgeBonus >= 10 }">10%</span>
+          <span :class="{ active: knowledgeBonus >= 25 }">25%</span>
+        </div>
+        <div class="knowledge-desc">
+          Deal +{{ knowledgeBonus.toFixed(1) }}% damage, take -{{ knowledgeBonus.toFixed(1) }}% damage
+        </div>
+      </div>
+
+      <div v-if="firstKillDate" class="first-kill">
+        First killed: {{ firstKillDate }}
       </div>
 
       <!-- Stats (tier 2+) -->
@@ -223,36 +251,104 @@ const nextUnlock = computed(() => {
   color: var(--text-primary);
 }
 
-.kill-section {
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-box {
   text-align: center;
-  padding: 16px;
+  padding: 12px;
   background: var(--highlight);
   border-radius: 6px;
-  margin-bottom: 20px;
 }
 
-.kill-count {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-}
-
-.kill-count .count {
-  font-size: 32px;
+.stat-box .count {
+  display: block;
+  font-size: 28px;
   font-weight: bold;
+}
+
+.stat-box.kills .count {
   color: var(--purple);
 }
 
-.kill-count .label {
-  font-size: 14px;
+.stat-box.deaths .count {
+  color: var(--red);
+}
+
+.stat-box .label {
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
+.knowledge-section {
+  padding: 16px;
+  background: var(--highlight);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.knowledge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.knowledge-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.knowledge-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--green);
+}
+
+.knowledge-bar {
+  height: 8px;
+  background: var(--void);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.knowledge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green) 0%, var(--purple) 100%);
+  transition: width 0.3s ease;
+}
+
+.knowledge-tiers {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.knowledge-tiers span.active {
+  color: var(--green);
+  font-weight: bold;
+}
+
+.knowledge-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 .first-kill {
-  margin-top: 8px;
   font-size: 12px;
   color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 16px;
 }
 
 .stats-section,

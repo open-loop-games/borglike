@@ -11,6 +11,7 @@ const props = defineProps<{
   canAfford: boolean
   unlockCondition?: string
   prestige?: boolean
+  meetsCondition?: boolean
   type: 'race' | 'class'
   // Extended data for tooltips
   stats?: StatModifiers
@@ -25,6 +26,14 @@ const props = defineProps<{
   usesMagic?: boolean
   botBehavior?: string
 }>()
+
+// Can only unlock if: not already unlocked, can afford, and meets condition (if prestige)
+const canUnlock = computed(() => {
+  if (props.isUnlocked) return false
+  if (!props.canAfford) return false
+  if (props.prestige && props.meetsCondition === false) return false
+  return true
+})
 
 const showTooltip = ref(false)
 const tooltipPosition = ref({ x: 0, y: 0 })
@@ -61,7 +70,7 @@ const emit = defineEmits<{
 }>()
 
 function handleUnlock() {
-  if (!props.isUnlocked && props.canAfford) {
+  if (canUnlock.value) {
     emit('unlock', props.name, props.type)
   }
 }
@@ -72,9 +81,10 @@ function handleUnlock() {
     class="unlock-item"
     :class="{
       'is-unlocked': isUnlocked,
-      'can-afford': canAfford && !isUnlocked,
-      'cannot-afford': !canAfford && !isUnlocked,
+      'can-afford': canUnlock,
+      'cannot-afford': !isUnlocked && !canUnlock,
       'is-prestige': prestige,
+      'condition-not-met': prestige && !isUnlocked && meetsCondition === false,
     }"
     @click="handleUnlock"
     @mouseenter="handleMouseEnter"
@@ -82,6 +92,7 @@ function handleUnlock() {
   >
     <div class="unlock-badge">
       <span v-if="isUnlocked" class="badge-icon unlocked">&#x2713;</span>
+      <span v-else-if="prestige && meetsCondition === false" class="badge-icon locked">&#x1F512;</span>
       <span v-else-if="prestige" class="badge-icon prestige">&#x2605;</span>
       <span v-else class="badge-icon locked">&#x25CF;</span>
     </div>
@@ -92,12 +103,15 @@ function handleUnlock() {
         <span v-if="prestige" class="prestige-tag">Prestige</span>
       </div>
       <div class="unlock-desc">{{ description }}</div>
+      <div v-if="prestige && !isUnlocked && meetsCondition === false && unlockCondition" class="unlock-condition">
+        {{ unlockCondition }}
+      </div>
     </div>
 
     <div class="unlock-status">
       <span v-if="isUnlocked" class="status-unlocked">&#x2713;</span>
       <template v-else>
-        <button class="unlock-btn" :disabled="!canAfford">
+        <button class="unlock-btn" :disabled="!canUnlock">
           <span class="cost-icon">&#x25C6;</span>
           <span>{{ cost.toLocaleString() }}</span>
         </button>
@@ -292,6 +306,25 @@ function handleUnlock() {
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
+}
+
+.unlock-condition {
+  font-size: 9px;
+  color: var(--amber);
+  margin-top: 2px;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.condition-not-met {
+  border-color: var(--text-dim);
+  opacity: 0.7;
+}
+
+.condition-not-met .prestige-tag {
+  background: rgba(100, 100, 100, 0.2);
+  border-color: var(--text-dim);
+  color: var(--text-dim);
 }
 
 .unlock-status {

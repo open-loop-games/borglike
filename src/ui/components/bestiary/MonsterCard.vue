@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { MonsterTemplate } from '@/game/data/monsters'
 import type { BestiaryEntry } from '@/types/progression'
+import { getKnowledgeBonus } from '@/game/knowledge-effects'
 
 interface Props {
   monster: MonsterTemplate
@@ -27,6 +28,9 @@ const kills = computed(() => props.entry?.kills ?? 0)
 const tier = computed(() => getUnlockTier(kills.value))
 const isLocked = computed(() => tier.value === 0)
 const isFullyUnlocked = computed(() => tier.value >= 4)
+
+// Knowledge bonus
+const knowledgeBonus = computed(() => getKnowledgeBonus(kills.value))
 
 // Progress to next tier
 const progress = computed(() => {
@@ -83,6 +87,9 @@ const monsterColor = computed(() => {
       </div>
       <div v-if="!isLocked" class="kill-count">
         {{ kills }} kill{{ kills !== 1 ? 's' : '' }}
+      </div>
+      <div v-if="knowledgeBonus > 0" class="knowledge-badge">
+        +{{ knowledgeBonus.toFixed(0) }}%
       </div>
     </div>
 
@@ -170,6 +177,16 @@ const monsterColor = computed(() => {
 .kill-count {
   font-size: 10px;
   color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.knowledge-badge {
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--green);
+  background: rgba(34, 197, 94, 0.15);
+  padding: 2px 6px;
+  border-radius: 3px;
   margin-top: 4px;
 }
 
