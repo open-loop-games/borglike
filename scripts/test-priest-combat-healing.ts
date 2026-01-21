@@ -4,7 +4,7 @@
  */
 
 import { createGame, processTurn } from '../src/game/game-loop'
-import { runBotTick, createBotState } from '../src/game/bot-ai'
+import { runBotTick, createBotState } from '../src/game/bot'
 import type { RunConfig, Monster } from '../src/game/types'
 import { getMonsterByName } from '../src/game/data/monsters'
 
@@ -30,12 +30,13 @@ const ratTemplate = getMonsterByName('Giant white rat')!
 const adjacentMonster: Monster = {
   id: 'test_rat',
   template: ratTemplate,
-  hp: ratTemplate.maxHp,
-  maxHp: ratTemplate.maxHp,
+  hp: ratTemplate.hp,
+  maxHp: ratTemplate.hp,
   position: { x: charPos.x + 1, y: charPos.y },
   isAwake: true,
   seen: true,
   energy: 100,
+  debuffs: [],
 }
 game.monsters.push(adjacentMonster)
 console.log('Spawned rat at:', adjacentMonster.position)
@@ -56,7 +57,7 @@ for (let i = 0; i < 10; i++) {
   const hpPercent = Math.floor(game.character.hp / game.character.maxHp * 100)
 
   // Get bot action
-  const action = runBotTick(game, personality, undefined, botState)
+  const action = runBotTick(game, personality, botState)
 
   console.log(`Turn ${i}: HP=${game.character.hp}/${game.character.maxHp} (${hpPercent}%), MP=${game.character.mp}/${game.character.maxMp}`)
   console.log(`  Adjacent monster: ${isAdjacent}`)
@@ -79,7 +80,7 @@ for (let i = 0; i < 10; i++) {
 
   // Revive monster if dead
   if (adjacentMonster.hp <= 0) {
-    adjacentMonster.hp = ratTemplate.maxHp
+    adjacentMonster.hp = ratTemplate.hp
     game.monsters.push(adjacentMonster)
     console.log('  (Revived monster)')
   }

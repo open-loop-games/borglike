@@ -2,7 +2,7 @@
  * Test the circuit breaker with lower threshold
  */
 import { createGame, processTurn } from '../src/game/game-loop'
-import { runBotTick, createBotState } from '../src/game/bot-ai'
+import { runBotTick, createBotState } from '../src/game/bot'
 import { MAX_DEPTH } from '../src/game/types'
 
 const STALE_LEVEL_THRESHOLD = 100 // Lower for testing
@@ -21,7 +21,7 @@ console.log('')
 
 let triggered = false
 for (let i = 0; i < 500 && game.isRunning; i++) {
-  const action = runBotTick(game, 'cautious', undefined, botState)
+  const action = runBotTick(game, 'cautious', botState)
   processTurn(game, action)
   
   // Circuit breaker check (same as game-runner.ts)

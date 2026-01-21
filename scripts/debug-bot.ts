@@ -3,8 +3,7 @@
  */
 
 import { createGame, processTurn } from '../src/game/game-loop'
-import { runBotTick, createBotState } from '../src/game/bot-ai'
-import { DEFAULT_BONUSES } from '../src/game/upgrade-effects'
+import { runBotTick, createBotState } from '../src/game/bot'
 
 function main() {
   console.log('='.repeat(80))
@@ -27,7 +26,7 @@ function main() {
   let actionCounts = new Map<string, number>()
 
   for (let i = 0; i < 500 && game.isRunning; i++) {
-    const action = runBotTick(game, 'cautious', DEFAULT_BONUSES, botState)
+    const action = runBotTick(game, 'cautious', botState)
 
     // Track stats
     totalTwitchSum += botState.twitchCounter

@@ -3,7 +3,7 @@
  */
 
 import { createGame, processTurn } from '../src/game/game-loop'
-import { runBotTick, createBotState } from '../src/game/bot-ai'
+import { runBotTick, createBotState } from '../src/game/bot'
 import { getAvailableSpells, getKnownSpells } from '../src/game/spell-resolution'
 import { getHealingSpellAction } from '../src/game/bot/spells'
 import { getPersonalityConfig } from '../src/game/bot/personality'
@@ -57,7 +57,7 @@ console.log('Heal action:', healAction)
 // Run a few bot ticks to see behavior
 console.log('\n=== Running bot ticks ===')
 for (let i = 0; i < 10; i++) {
-  const action = runBotTick(game, personality, undefined, botState)
+  const action = runBotTick(game, personality, botState)
   console.log(`Turn ${game.turn}: action=${action.type}${action.type === 'cast' ? ` (spell: ${(action as any).spellId})` : ''}`)
   console.log(`  HP: ${game.character.hp}/${game.character.maxHp}, MP: ${game.character.mp}/${game.character.maxMp}`)
 

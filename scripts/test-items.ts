@@ -11,8 +11,8 @@ import {
   shouldEquip,
   compareEquipment,
   calculateEquipmentScore,
-} from '../src/game/bot/items'
-import { BASE_CONFIGS } from '../src/game/bot/context'
+  BASE_CONFIGS,
+} from '../src/game/bot'
 
 // Create a mock character for testing
 function createMockCharacter(equipment: Partial<Equipment> = {}): Character {
