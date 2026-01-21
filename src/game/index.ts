@@ -193,6 +193,10 @@ export type { CombinedBonuses } from './upgrade-effects'
 export { computeBoosterBonuses, DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 export type { BoosterBonuses } from './booster-effects'
 
+// Knowledge Effects
+export { getKnowledgeBonus, getKnowledgeBonuses, DEFAULT_KNOWLEDGE_BONUSES } from './knowledge-effects'
+export type { KnowledgeBonuses } from './knowledge-effects'
+
 // Booster Data
 export {
   boosters,
