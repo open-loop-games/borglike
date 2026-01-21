@@ -9,6 +9,7 @@
 
 import type {
   GameState,
+  DungeonLevel,
   Point,
   FountainState,
   AltarState,
@@ -77,14 +78,25 @@ export function useFountain(game: GameState): boolean {
       break
     }
     case 'buff': {
-      // Simple buff - add to accuracy and armor temporarily
-      // TODO: Implement proper buff system
+      // Apply blessing status effect
+      const duration = 20 + Math.floor(template.power / 2)
+      char.statusEffects = char.statusEffects.filter(e => e.type !== 'blessing')
+      char.statusEffects.push({
+        type: 'blessing',
+        turnsRemaining: duration,
+        value: Math.floor(template.power / 4),
+      })
       addMessage(game, `You feel blessed by the ${template.name}!`, 'good')
       break
     }
     case 'cure': {
-      // TODO: Implement status effects
-      addMessage(game, `The ${template.name} purifies you!`, 'good')
+      // Clear poison status
+      if (char.poison) {
+        char.poison = null
+        addMessage(game, `The ${template.name} purifies you! The poison is cleansed!`, 'good')
+      } else {
+        addMessage(game, `The ${template.name} purifies you!`, 'good')
+      }
       break
     }
     case 'random': {
@@ -623,8 +635,14 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       const damage = template.damage
       char.hp -= damage
       game.stats.damageTaken += damage
-      addMessage(game, `A ${template.name} hits you! You take ${damage} damage and feel ill!`, 'danger')
-      // TODO: Apply poison status effect when status effects are implemented
+
+      // Apply lingering poison
+      char.poison = {
+        damagePerTurn: Math.max(1, Math.floor(template.damage / 4)),
+        turnsRemaining: 3 + Math.floor(game.character.depth / 10),
+      }
+
+      addMessage(game, `A ${template.name} hits you! You take ${damage} damage and are poisoned!`, 'danger')
 
       if (char.hp <= 0) {
         char.hp = 0
@@ -650,8 +668,16 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       const damage = template.damage
       char.hp -= damage
       game.stats.damageTaken += damage
-      addMessage(game, `You fall into a ${template.name}! You take ${damage} damage!`, 'danger')
-      // TODO: Apply stunned status effect when status effects are implemented
+
+      // Apply stun (1-2 turns)
+      char.statusEffects = char.statusEffects.filter(e => e.type !== 'stun')
+      char.statusEffects.push({
+        type: 'stun',
+        turnsRemaining: 1 + Math.floor(Math.random() * 2),
+        value: 0,
+      })
+
+      addMessage(game, `You fall into a ${template.name}! You take ${damage} damage and are stunned!`, 'danger')
 
       if (char.hp <= 0) {
         char.hp = 0
@@ -689,4 +715,69 @@ export function getRevealedTrapAt(game: GameState, pos: Point): TrapState | null
 export function getTrapAt(game: GameState, pos: Point): TrapState | null {
   const key = `${pos.x},${pos.y}`
   return game.traps.get(key) ?? null
+}
+
+// ============================================================================
+// VAULT FEATURE INITIALIZATION
+// ============================================================================
+
+/**
+ * Initialize features (fountains, altars, merchants, traps) from vault data
+ *
+ * @param level - The dungeon level with vault data
+ * @param depth - Current dungeon depth
+ * @param fountains - Map to populate with fountain states
+ * @param altars - Map to populate with altar states
+ * @param merchants - Array to populate with merchant states
+ * @param traps - Map to populate with trap states
+ * @param generateInventory - Function to generate merchant inventory
+ */
+export function initializeFeaturesFromVault(
+  level: DungeonLevel,
+  depth: number,
+  fountains: Map<string, FountainState>,
+  altars: Map<string, AltarState>,
+  merchants: MerchantState[],
+  traps: Map<string, TrapState>,
+  generateInventory: (merchantId: string, depth: number) => Item[]
+): void {
+  const vault = level.vault
+  if (!vault) return
+
+  // Initialize fountains
+  for (const fp of vault.fountainPositions) {
+    const state = initializeFountain(fp.fountainId, { x: fp.x, y: fp.y })
+    if (state) {
+      fountains.set(`${fp.x},${fp.y}`, state)
+    }
+  }
+
+  // Initialize altars
+  for (const ap of vault.altarPositions) {
+    const state = initializeAltar(ap.altarId, { x: ap.x, y: ap.y })
+    if (state) {
+      altars.set(`${ap.x},${ap.y}`, state)
+    }
+  }
+
+  // Initialize merchants
+  for (const mp of vault.merchantPositions) {
+    const state = initializeMerchant(
+      mp.merchantId,
+      { x: mp.x, y: mp.y },
+      depth,
+      generateInventory
+    )
+    if (state) {
+      merchants.push(state)
+    }
+  }
+
+  // Initialize traps
+  for (const tp of vault.trapPositions) {
+    const state = initializeTrap(tp.trapId, { x: tp.x, y: tp.y })
+    if (state) {
+      traps.set(`${tp.x},${tp.y}`, state)
+    }
+  }
 }

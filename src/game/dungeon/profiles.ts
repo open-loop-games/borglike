@@ -2,72 +2,52 @@
  * Depth-based generation profiles
  *
  * Controls how dungeon generation scales with depth.
+ * Uses smooth interpolation for gradual scaling.
  */
 
 import type { DepthProfile, GeneratorType } from './types'
 
-/** Depth tier thresholds */
-const SHALLOW_MAX = 10
-const MID_MAX = 25
-const DEEP_MAX = 40
-// Abyss is 41-50
-
-/** Profile for shallow depths (1-10) */
-const SHALLOW_PROFILE: DepthProfile = {
-  generatorWeights: { classic: 0.92, cavern: 0.06, labyrinth: 0.02 },
-  roomCount: [4, 8],
-  roomSize: [3, 7],
-  corridorLength: [2, 6],
-  dugPercentage: 0.25,
-  doorChance: 0.1,
-  vaultChance: 0,
-}
-
-/** Profile for mid depths (11-25) */
-const MID_PROFILE: DepthProfile = {
-  generatorWeights: { classic: 0.70, cavern: 0.20, labyrinth: 0.10 },
-  roomCount: [5, 10],
-  roomSize: [4, 9],
-  corridorLength: [3, 8],
-  dugPercentage: 0.30,
-  doorChance: 0.25,
-  vaultChance: 0.08,
-}
-
-/** Profile for deep depths (26-40) */
-const DEEP_PROFILE: DepthProfile = {
-  generatorWeights: { classic: 0.55, cavern: 0.30, labyrinth: 0.15 },
-  roomCount: [6, 12],
-  roomSize: [5, 11],
-  corridorLength: [4, 10],
-  dugPercentage: 0.35,
-  doorChance: 0.40,
-  vaultChance: 0.18,
-}
-
-/** Profile for abyss depths (41-50) */
-const ABYSS_PROFILE: DepthProfile = {
-  generatorWeights: { classic: 0.45, cavern: 0.35, labyrinth: 0.20 },
-  roomCount: [7, 14],
-  roomSize: [5, 13],
-  corridorLength: [4, 12],
-  dugPercentage: 0.38,
-  doorChance: 0.50,
-  vaultChance: 0.28,
+/**
+ * Interpolate a value within a range based on depth
+ * Useful for gradual scaling within a tier
+ */
+export function interpolateByDepth(
+  depth: number,
+  minDepth: number,
+  maxDepth: number,
+  minValue: number,
+  maxValue: number
+): number {
+  const t = Math.max(0, Math.min(1, (depth - minDepth) / (maxDepth - minDepth)))
+  return minValue + t * (maxValue - minValue)
 }
 
 /**
  * Get the generation profile for a given depth
+ * Uses smooth interpolation across the full depth range (1-50)
  */
 export function getDepthProfile(depth: number): DepthProfile {
-  if (depth <= SHALLOW_MAX) {
-    return SHALLOW_PROFILE
-  } else if (depth <= MID_MAX) {
-    return MID_PROFILE
-  } else if (depth <= DEEP_MAX) {
-    return DEEP_PROFILE
-  } else {
-    return ABYSS_PROFILE
+  return {
+    generatorWeights: {
+      classic: interpolateByDepth(depth, 1, 50, 0.92, 0.45),
+      cavern: interpolateByDepth(depth, 1, 50, 0.06, 0.35),
+      labyrinth: interpolateByDepth(depth, 1, 50, 0.02, 0.20),
+    },
+    roomCount: [
+      Math.round(interpolateByDepth(depth, 1, 50, 4, 7)),
+      Math.round(interpolateByDepth(depth, 1, 50, 8, 14)),
+    ],
+    roomSize: [
+      Math.round(interpolateByDepth(depth, 1, 50, 3, 5)),
+      Math.round(interpolateByDepth(depth, 1, 50, 7, 13)),
+    ],
+    corridorLength: [
+      Math.round(interpolateByDepth(depth, 1, 50, 2, 4)),
+      Math.round(interpolateByDepth(depth, 1, 50, 6, 12)),
+    ],
+    dugPercentage: interpolateByDepth(depth, 1, 50, 0.25, 0.38),
+    doorChance: interpolateByDepth(depth, 1, 50, 0.1, 0.50),
+    vaultChance: interpolateByDepth(depth, 1, 50, 0, 0.28),
   }
 }
 
@@ -86,19 +66,4 @@ export function selectGenerator(depth: number): GeneratorType {
   if (roll < cumulative) return 'cavern'
 
   return 'labyrinth'
-}
-
-/**
- * Interpolate a value within a range based on depth
- * Useful for gradual scaling within a tier
- */
-export function interpolateByDepth(
-  depth: number,
-  minDepth: number,
-  maxDepth: number,
-  minValue: number,
-  maxValue: number
-): number {
-  const t = Math.max(0, Math.min(1, (depth - minDepth) / (maxDepth - minDepth)))
-  return minValue + t * (maxValue - minValue)
 }
