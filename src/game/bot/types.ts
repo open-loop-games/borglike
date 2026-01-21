@@ -4,7 +4,7 @@
  * All bot-specific types in one place for easy importing.
  */
 
-import type { Point, GameState, Monster, GroundItem, BotPersonality } from '../types'
+import type { Point, GameState, Monster, GroundItem, BotPersonality, Direction } from '../types'
 import type { ClassBehaviorProfile } from './class-profiles'
 
 // ============================================================================
@@ -61,6 +61,16 @@ export interface DangerResult {
   computedAt: number // Turn when computed
 }
 
+/** Result of safety flow computation (inverted Dijkstra) */
+export interface SafetyFlowResult {
+  /** Target position to flee toward (null if surrounded) */
+  target: Point | null
+  /** The computed safety values (for debugging) */
+  safetyMap: Map<string, number>
+  /** Turn when computed */
+  computedAt: number
+}
+
 // ============================================================================
 // DANGER TIER TYPES (Angband-inspired 4-tier system)
 // ============================================================================
@@ -105,6 +115,9 @@ export interface BotState {
   // Cached danger (recomputed each turn monsters change)
   cachedDanger: DangerResult | null
 
+  // Cached safety flow for flee behavior (inverted Dijkstra)
+  cachedSafetyFlow: SafetyFlowResult | null
+
   // Stuck detection (Phase 3 prep)
   twitchCounter: number
   lastProgressTurn: number
@@ -116,8 +129,20 @@ export interface BotState {
   isInTown: boolean
   townEntryTurn: number
   healerVisited: boolean
-  itemsSold: boolean    // Sold loot to merchant
-  itemsBought: boolean  // Bought from merchant
+
+  // Multi-shop tracking (per-shop visited state)
+  shopsVisitedForSelling: Set<string>  // Shop IDs where we sold items
+  shopsVisitedForBuying: Set<string>   // Shop IDs where we bought items
+
+  // Labyrinth/corridor exploration mode
+  /** Whether we're actively following a corridor (for labyrinth exploration) */
+  corridorFollowingMode: boolean
+  /** Direction we're facing while corridor-following (for consistent movement) */
+  corridorFacing: Direction | null
+
+  // Exploration blacklist (unreachable targets)
+  /** Targets that couldn't be reached - blacklisted until turn expires */
+  blacklistedTargets: Map<string, number> // "x,y" -> expiry turn
 }
 
 // ============================================================================

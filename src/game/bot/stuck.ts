@@ -5,9 +5,12 @@
  * escalating recovery actions to break out of stuck states.
  */
 
-import type { Point, GameState, Direction } from '../types'
+import type { Point, GameState, Direction, GameAction } from '../types'
 import { getTile, isWalkable } from '../dungeon'
 import type { BotState } from './types'
+import { computeFlow } from './flow'
+import { selectStep } from './movement'
+import { isSamePoint, manhattanDistance } from '../types'
 
 // ============================================================================
 // CONSTANTS
@@ -300,6 +303,126 @@ function deltaToDirection(dx: number, dy: number): Direction | null {
  */
 export function clearPositionHistory(state: BotState): void {
   state.recentPositions = []
+}
+
+// ============================================================================
+// RECOVERY STRATEGY HANDLERS
+// ============================================================================
+
+/**
+ * Reset bot state (common cleanup for stuck recovery)
+ */
+export function resetBotState(botState: BotState, turn: number): void {
+  clearPositionHistory(botState)
+  botState.cachedFlow = null
+  botState.currentGoal = null
+  botState.goalTarget = null
+  botState.lastProgressTurn = turn
+}
+
+/**
+ * Handle wall_follow strategy - follow walls to find new areas
+ */
+export function handleWallFollowStrategy(
+  game: GameState,
+  botState: BotState
+): GameAction | null {
+  const wallDir = getWallFollowDirection(game, botState)
+  if (wallDir) {
+    // Record position for history
+    const pos = game.character.position
+    if (botState.recentPositions.length >= 25) {
+      botState.recentPositions.shift()
+    }
+    botState.recentPositions.push({ ...pos })
+    return { type: 'move', direction: wallDir }
+  }
+  return null
+}
+
+/**
+ * Handle clear_history strategy - clear history and re-evaluate
+ */
+export function handleClearHistoryStrategy(
+  botState: BotState,
+  turn: number
+): void {
+  resetBotState(botState, turn)
+}
+
+/**
+ * Handle force_descent strategy - head to stairs ignoring exploration
+ */
+export function handleForceDescentStrategy(
+  game: GameState,
+  botState: BotState
+): GameAction | null {
+  if (!botState.knownStairsDown) return null
+
+  const pos = game.character.position
+
+  // If already on stairs, descend
+  if (isSamePoint(pos, botState.knownStairsDown)) {
+    botState.lastProgressTurn = game.turn
+    return { type: 'descend' }
+  }
+
+  // Path to stairs
+  const stairsFlow = computeFlow(game.currentLevel, botState.knownStairsDown)
+  const stairsDir = selectStep(game, botState, stairsFlow)
+  if (stairsDir !== 'wait') {
+    // Record position for history
+    if (botState.recentPositions.length >= 25) {
+      botState.recentPositions.shift()
+    }
+    botState.recentPositions.push({ ...pos })
+    return { type: 'move', direction: stairsDir }
+  }
+
+  return null
+}
+
+/**
+ * Handle stop_fleeing strategy - stop fleeing and switch to combat/explore
+ */
+export function handleStopFleeingStrategy(
+  game: GameState,
+  botState: BotState,
+  findAdjacentMonster: (g: GameState) => { id: string; position: Point } | null
+): GameAction | null {
+  // Set flee cooldown
+  botState.fleeCooldownUntil = game.turn + 20
+
+  // If there's an adjacent monster, attack it
+  const adjacentTarget = findAdjacentMonster(game)
+  if (adjacentTarget) {
+    botState.lastProgressTurn = game.turn
+    return { type: 'attack', targetId: adjacentTarget.id }
+  }
+
+  // Find nearest monster and set as kill goal
+  const pos = game.character.position
+  const nearestMonster = game.monsters
+    .filter(m => m.hp > 0)
+    .map(m => ({ m, dist: manhattanDistance(pos, m.position) }))
+    .sort((a, b) => a.dist - b.dist)[0]?.m
+
+  if (nearestMonster) {
+    resetBotState(botState, game.turn)
+    botState.currentGoal = {
+      type: 'KILL',
+      target: nearestMonster.position,
+      targetId: nearestMonster.id,
+      reason: 'Forced combat (stuck fleeing)',
+      startTurn: game.turn,
+    }
+    botState.goalTarget = nearestMonster.position
+  } else {
+    // No monsters - just reset and explore
+    resetBotState(botState, game.turn)
+  }
+
+  return null
 }
 
 // ============================================================================

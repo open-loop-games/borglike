@@ -5,7 +5,8 @@
  */
 
 import type { GameState, ActionResult, Item } from '../types'
-import { FOV_RADIUS } from '../types'
+import { randomInt } from '../rng'
+import { calculateLightRadius } from '../lighting'
 import { getTile, isWalkable, findOpenPosition, computeFOV } from '../dungeon'
 import { addStatusEffect, addTempResistance, clearPoison } from '../status-effects'
 import { createTownPortal, enterTown, isInTown } from '../town'
@@ -66,7 +67,7 @@ const POTION_EFFECTS: Array<{
   {
     match: (e) => e.includes('Haste') || e.includes('+10 speed'),
     apply: (game) => {
-      const duration = 20 + Math.floor(Math.random() * 20)
+      const duration = randomInt(20, 39)
       addStatusEffect(game.character, { type: 'speed', turnsRemaining: duration, value: 10 })
       return { success: true, message: 'You feel yourself moving faster!' }
     },
@@ -77,7 +78,7 @@ const POTION_EFFECTS: Array<{
     match: (e) => e.includes('+12 to hit'),
     apply: (game, item) => {
       const effect = item.template.effect || ''
-      const duration = 25 + Math.floor(Math.random() * 25)
+      const duration = randomInt(25, 49)
       addStatusEffect(game.character, { type: 'heroism', turnsRemaining: duration, value: 12 })
       // Small heal from heroism
       if (effect.includes('Heal 10')) {
@@ -92,7 +93,7 @@ const POTION_EFFECTS: Array<{
     match: (e) => e.includes('berserk'),
     apply: (game, item) => {
       const effect = item.template.effect || ''
-      const duration = 25 + Math.floor(Math.random() * 25)
+      const duration = randomInt(25, 49)
       addStatusEffect(game.character, { type: 'berserk', turnsRemaining: duration, value: 24 })
       // Berserk also heals 30 HP
       if (effect.includes('Heal 30')) {
@@ -185,8 +186,8 @@ const SCROLL_EFFECTS: Array<{
       const attempts = 20
       let newPos = { ...game.character.position }
       for (let i = 0; i < attempts; i++) {
-        const dx = Math.floor(Math.random() * 21) - 10 // -10 to +10
-        const dy = Math.floor(Math.random() * 21) - 10
+        const dx = randomInt(-10, 10)
+        const dy = randomInt(-10, 10)
         const testX = game.character.position.x + dx
         const testY = game.character.position.y + dy
         const tile = getTile(game.currentLevel, testX, testY)
@@ -199,7 +200,8 @@ const SCROLL_EFFECTS: Array<{
         }
       }
       game.character.position = newPos
-      computeFOV(game.currentLevel, newPos, FOV_RADIUS)
+      const lightRadius = calculateLightRadius(game.character, game.character.depth)
+      computeFOV(game.currentLevel, newPos, lightRadius)
       return { success: true, message: `You read the ${item.template.name}. You blink!` }
     },
   },
@@ -210,7 +212,8 @@ const SCROLL_EFFECTS: Array<{
     apply: (game, item) => {
       const newPos = findOpenPosition(game.currentLevel)
       game.character.position = newPos
-      computeFOV(game.currentLevel, newPos, FOV_RADIUS)
+      const lightRadius = calculateLightRadius(game.character, game.character.depth)
+      computeFOV(game.currentLevel, newPos, lightRadius)
       return { success: true, message: `You read the ${item.template.name}. You teleport!` }
     },
   },
@@ -221,7 +224,8 @@ const SCROLL_EFFECTS: Array<{
     apply: (game, item) => {
       const newPos = findOpenPosition(game.currentLevel)
       game.character.position = newPos
-      computeFOV(game.currentLevel, newPos, FOV_RADIUS)
+      const lightRadius = calculateLightRadius(game.character, game.character.depth)
+      computeFOV(game.currentLevel, newPos, lightRadius)
       return { success: true, message: `You read the ${item.template.name}. You teleport!` }
     },
   },
@@ -311,7 +315,7 @@ const SCROLL_EFFECTS: Array<{
   {
     match: (e) => e.includes('+5 to hit') && e.includes('+5 AC'),
     apply: (game) => {
-      const duration = 6 + Math.floor(Math.random() * 12)
+      const duration = randomInt(6, 17)
       addStatusEffect(game.character, { type: 'blessing', turnsRemaining: duration, value: 5 })
       return { success: true, message: 'You feel righteous!' }
     },
@@ -321,7 +325,7 @@ const SCROLL_EFFECTS: Array<{
   {
     match: (e) => e.includes('Protection from evil'),
     apply: (game) => {
-      const duration = 24 + Math.floor(Math.random() * 24)
+      const duration = randomInt(24, 47)
       addStatusEffect(game.character, { type: 'protection', turnsRemaining: duration, value: 50 })
       return { success: true, message: 'You feel protected from evil!' }
     },

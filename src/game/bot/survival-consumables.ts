@@ -33,7 +33,7 @@ import {
   hasStatusEffect,
   hasTempResistance,
 } from './items'
-import { shouldUseTownPortal, evaluatePhaseDoorSafety, shouldEscapeOverHeal } from './survival-teleport'
+import { shouldUseTownPortal, evaluatePhaseDoorSafety, shouldEscapeOverHeal } from './survival-retreat'
 
 // ============================================================================
 // SURVIVAL CONSUMABLES
@@ -141,7 +141,8 @@ export function getSurvivalConsumableAction(
 
   // 4b. Town Portal decision - use when not adjacent to monsters
   // This is a strategic escape/resupply - not for immediate combat
-  if (adjacentCount === 0 && personality) {
+  // Skip if portal already active (would fail and loop forever)
+  if (adjacentCount === 0 && personality && !game.townPortal) {
     const portalDecision = shouldUseTownPortal(game, config, personality)
     if (portalDecision.shouldUse) {
       const scroll = findTownPortalScroll(character)
@@ -188,6 +189,16 @@ export function getSurvivalConsumableAction(
       }
     }
 
+    // Try town portal as escape when not adjacent (safe to cast)
+    // This is a valid escape - returns us to town for healing
+    // Skip if portal already active (would fail and loop forever)
+    if (adjacentCount === 0 && !game.townPortal) {
+      const townPortal = findTownPortalScroll(character)
+      if (townPortal) {
+        return { type: 'use', itemId: townPortal.id }
+      }
+    }
+
     // Use speed potion to outrun enemies if no teleport available
     // Only when not adjacent (already disengaged, now fleeing)
     if (adjacentCount === 0 && !hasStatusEffect(character, 'speed')) {
@@ -208,6 +219,13 @@ export function getSurvivalConsumableAction(
     const phaseDoor = findPhaseDoorScroll(character)
     if (phaseDoor) {
       return { type: 'use', itemId: phaseDoor.id }
+    }
+    // Town portal can break stuck state too (skip if portal already active)
+    if (!game.townPortal) {
+      const townPortal = findTownPortalScroll(character)
+      if (townPortal) {
+        return { type: 'use', itemId: townPortal.id }
+      }
     }
     const anyEscape = findEscapeScroll(character)
     if (anyEscape) {

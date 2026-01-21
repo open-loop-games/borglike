@@ -13,6 +13,7 @@ import type {
   StatusEffect,
   ActionResult,
 } from './types'
+import { randomInt } from './rng'
 import { getSpellById, getSchoolStat, type SpellTemplate } from './data/spells'
 import { getSpellIdsForLevel } from './data/class-spells'
 import { applyDamage } from './combat'
@@ -124,7 +125,7 @@ function rollDice(notation: string): number {
   const sides = parseInt(match[2], 10)
   let total = 0
   for (let i = 0; i < numDice; i++) {
-    total += Math.floor(Math.random() * sides) + 1
+    total += randomInt(1, sides)
   }
   return total
 }
@@ -254,8 +255,8 @@ export function findTeleportDestination(
   // Phase door - limited range
   const attempts = 50
   for (let i = 0; i < attempts; i++) {
-    const dx = Math.floor(Math.random() * (range * 2 + 1)) - range
-    const dy = Math.floor(Math.random() * (range * 2 + 1)) - range
+    const dx = randomInt(-range, range)
+    const dy = randomInt(-range, range)
     const newX = charPos.x + dx
     const newY = charPos.y + dy
 

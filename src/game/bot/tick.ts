@@ -12,6 +12,7 @@
  */
 
 import type { GameState, GameAction, BotPersonality } from '../types'
+import { isBossOrUnique } from '../types'
 import { getTile } from '../dungeon'
 import { canRangedAttack } from '../combat'
 
@@ -24,8 +25,9 @@ import {
   setGoal,
   recordProgress,
   incrementTurn,
+  cleanupBlacklist,
 } from './state'
-import { computeFlow, createFlowResult, isFlowValid, getFlowCost } from './flow'
+import { computeFlow, computeExplorationFlow, createFlowResult, isFlowValid, getFlowCost } from './flow'
 import { selectStep, isSamePosition } from './movement'
 import { buildBotContext } from './context'
 import {
@@ -35,14 +37,18 @@ import {
   getLocalDanger,
   getImmediateDanger,
   getImmediateDangerTier,
+  getMonsterThreat,
 } from './danger'
 import {
   detectStuckLevel,
   getStuckResponse,
-  getWallFollowDirection,
-  clearPositionHistory,
+  handleWallFollowStrategy,
+  handleClearHistoryStrategy,
+  handleForceDescentStrategy,
+  handleStopFleeingStrategy,
 } from './stuck'
 import { selectGoal } from './goals'
+import { invalidateFrontierCache, getFrontierPositions } from './exploration'
 import { findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition } from './combat'
 import { findEquipmentUpgrades } from './items'
 import { getSurvivalConsumableAction, getCombatBuffAction, getPreCombatBuffAction, getUtilityConsumableAction } from './survival'
@@ -71,10 +77,14 @@ export function runBotTick(
   // Check for level change
   if (game.character.depth !== botState.currentDepth) {
     resetLevelState(botState, game.character.depth, game.turn)
+    invalidateFrontierCache()
   }
 
   // Increment turn counter
   incrementTurn(botState)
+
+  // Clean up expired blacklist entries
+  cleanupBlacklist(botState, game.turn)
 
   // Build context
   const context = buildBotContext(game, personality, botState)
@@ -179,6 +189,7 @@ function handleCriticalTier(
   // 4. Desperate attack if cornered (no escape, no heal)
   const adjacentMonster = findAdjacentMonster(game)
   if (adjacentMonster) {
+    setKillGoal(botState, adjacentMonster, game.turn, 'Desperate attack')
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
   }
@@ -240,6 +251,7 @@ function handleDangerTier(
 
   // 5. Melee attack if we must
   if (adjacentMonster) {
+    setKillGoal(botState, adjacentMonster, game.turn, 'Melee attack (danger)')
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
   }
@@ -272,25 +284,32 @@ function handleCautionTier(
   const adjacentMonster = findAdjacentMonster(game)
   const hpRatio = game.character.hp / game.character.maxHp
 
-  // 1. Combat buffs when approaching enemies
+  // 1. Combat buffs only for bosses/uniques when approaching
   if (visibleMonsters.length > 0 && !adjacentMonster) {
-    const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers)
-    if (combatBuff) {
-      recordProgress(botState, game.turn)
-      return combatBuff
+    // Only buff for dangerous targets (uniques/bosses)
+    const hasBossTarget = visibleMonsters.some(isBossOrUnique)
+
+    if (hasBossTarget) {
+      const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers)
+      if (combatBuff) {
+        recordProgress(botState, game.turn)
+        return combatBuff
+      }
+
+      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters)
+      if (preCombatBuff) {
+        recordProgress(botState, game.turn)
+        return preCombatBuff
+      }
+
+      const buffSpell = getBuffSpellAction(game, config, visibleMonsters)
+      if (buffSpell) {
+        recordProgress(botState, game.turn)
+        return buffSpell
+      }
     }
 
-    const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters)
-    if (preCombatBuff) {
-      recordProgress(botState, game.turn)
-      return preCombatBuff
-    }
-
-    const buffSpell = getBuffSpellAction(game, config, visibleMonsters)
-    if (buffSpell) {
-      recordProgress(botState, game.turn)
-      return buffSpell
-    }
+    // No buffs - let goal system handle movement toward monsters (creates KILL goal)
   }
 
   // 2. Ranged combat for ranged classes
@@ -314,6 +333,7 @@ function handleCautionTier(
 
   // 3. Melee combat
   if (adjacentMonster) {
+    setKillGoal(botState, adjacentMonster, game.turn, 'Melee combat')
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
   }
@@ -412,18 +432,22 @@ function handleSafeTier(
     }
   }
 
-  // 4. Pre-combat buffs if monsters visible
+  // 4. Pre-combat buffs only for bosses/uniques
   if (visibleMonsters.length > 0) {
-    const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters)
-    if (preCombatBuff) {
-      recordProgress(botState, game.turn)
-      return preCombatBuff
-    }
+    const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 
-    const buffSpell = getBuffSpellAction(game, config, visibleMonsters)
-    if (buffSpell) {
-      recordProgress(botState, game.turn)
-      return buffSpell
+    if (hasBossTarget) {
+      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters)
+      if (preCombatBuff) {
+        recordProgress(botState, game.turn)
+        return preCombatBuff
+      }
+
+      const buffSpell = getBuffSpellAction(game, config, visibleMonsters)
+      if (buffSpell) {
+        recordProgress(botState, game.turn)
+        return buffSpell
+      }
     }
 
     // Engage distant enemies with spells
@@ -432,6 +456,8 @@ function handleSafeTier(
       recordProgress(botState, game.turn)
       return damageSpell
     }
+
+    // No spells - let goal system handle movement toward monsters (creates KILL goal)
   }
 
   // 5. Utility consumables (enchants, mapping)
@@ -488,9 +514,7 @@ function handleStuckRecovery(
   _context: BotContext,
   botState: BotState
 ): GameAction | null {
-  const pos = game.character.position
   const stuckLevel = detectStuckLevel(botState, game)
-
   if (stuckLevel === 0) return null
 
   const adjacentMonster = findAdjacentMonster(game)
@@ -503,84 +527,29 @@ function handleStuckRecovery(
   )
 
   switch (stuckResponse) {
-    case 'wall_follow': {
-      const wallDir = getWallFollowDirection(game, botState)
-      if (wallDir) {
-        recordPosition(botState, pos)
-        return { type: 'move', direction: wallDir }
-      }
-      break
-    }
+    case 'wall_follow':
+      return handleWallFollowStrategy(game, botState)
 
     case 'clear_history':
-      clearPositionHistory(botState)
-      botState.cachedFlow = null
-      botState.currentGoal = null
-      botState.goalTarget = null
-      recordProgress(botState, game.turn)
-      break
+      handleClearHistoryStrategy(botState, game.turn)
+      return null
 
     case 'force_combat':
       // Handled by tier system now
-      break
+      return null
 
     case 'force_descent':
-      if (botState.knownStairsDown) {
-        if (isSamePosition(pos, botState.knownStairsDown)) {
-          recordProgress(botState, game.turn)
-          return { type: 'descend' }
-        }
-        const stairsFlow = computeFlow(game.currentLevel, botState.knownStairsDown)
-        const stairsDir = selectStep(game, botState, stairsFlow)
-        if (stairsDir !== 'wait') {
-          recordPosition(botState, pos)
-          return { type: 'move', direction: stairsDir }
-        }
-      }
-      break
+      return handleForceDescentStrategy(game, botState)
 
-    case 'stop_fleeing': {
-      botState.fleeCooldownUntil = game.turn + 20
-      const forceAttackTarget = findAdjacentMonster(game)
-      if (forceAttackTarget) {
-        recordProgress(botState, game.turn)
-        return { type: 'attack', targetId: forceAttackTarget.id }
-      }
-      const nearestMonster = game.monsters
-        .filter(m => m.hp > 0)
-        .map(m => ({
-          m,
-          dist: Math.abs(m.position.x - pos.x) + Math.abs(m.position.y - pos.y)
-        }))
-        .sort((a, b) => a.dist - b.dist)[0]?.m
-
-      if (nearestMonster) {
-        clearPositionHistory(botState)
-        botState.cachedFlow = null
-        botState.currentGoal = {
-          type: 'KILL',
-          target: nearestMonster.position,
-          targetId: nearestMonster.id,
-          reason: 'Forced combat (stuck fleeing)',
-          startTurn: game.turn,
-        }
-        botState.goalTarget = nearestMonster.position
-        recordProgress(botState, game.turn)
-      } else {
-        clearPositionHistory(botState)
-        botState.cachedFlow = null
-        botState.currentGoal = null
-        botState.goalTarget = null
-        recordProgress(botState, game.turn)
-      }
-      break
-    }
+    case 'stop_fleeing':
+      return handleStopFleeingStrategy(game, botState, findAdjacentMonster)
 
     case 'wait':
       return { type: 'wait' }
-  }
 
-  return null
+    default:
+      return null
+  }
 }
 
 function handleGoalMovement(
@@ -618,11 +587,27 @@ function handleGoalMovement(
 
   // Compute or reuse flow
   let flowCosts: FlowMap | undefined = botState.cachedFlow?.costs
-  const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)
 
-  if (needsRecompute) {
-    flowCosts = computeFlow(game.currentLevel, goal.target, avoidSet)
-    botState.cachedFlow = createFlowResult(goal.target, flowCosts, game.turn)
+  // For EXPLORE goals, use Dijkstra map approach (all frontiers as goals)
+  // This eliminates target selection thrashing - bot just "rolls downhill"
+  if (goal.type === 'EXPLORE') {
+    // Recompute exploration flow each turn (frontier changes as we move)
+    const frontiers = getFrontierPositions(game)
+    if (frontiers.length === 0) {
+      // No frontiers - exploration complete
+      botState.currentGoal = null
+      botState.goalTarget = null
+      return { type: 'wait' }
+    }
+    flowCosts = computeExplorationFlow(game.currentLevel, frontiers, avoidSet)
+    botState.cachedFlow = null // Don't use single-target cache for EXPLORE
+  } else {
+    // Standard single-target flow for other goal types
+    const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)
+    if (needsRecompute) {
+      flowCosts = computeFlow(game.currentLevel, goal.target, avoidSet)
+      botState.cachedFlow = createFlowResult(goal.target, flowCosts, game.turn)
+    }
   }
 
   // Check if goal is reachable
@@ -630,20 +615,60 @@ function handleGoalMovement(
   if (currentCost >= MAX_FLOW_COST) {
     // Try without avoidance
     if (avoidSet.size > 0) {
-      flowCosts = computeFlow(game.currentLevel, goal.target)
-      botState.cachedFlow = createFlowResult(goal.target, flowCosts, game.turn)
+      if (goal.type === 'EXPLORE') {
+        // For EXPLORE, recompute exploration flow without avoidance
+        const frontiers = getFrontierPositions(game)
+        flowCosts = frontiers.length > 0
+          ? computeExplorationFlow(game.currentLevel, frontiers)
+          : new Map()
+      } else {
+        flowCosts = computeFlow(game.currentLevel, goal.target)
+        botState.cachedFlow = createFlowResult(goal.target, flowCosts, game.turn)
+      }
       const fallbackCost = getFlowCost(flowCosts, pos)
       if (fallbackCost >= MAX_FLOW_COST) {
+        // Truly unreachable
         botState.currentGoal = null
         botState.goalTarget = null
         botState.cachedFlow = null
         return { type: 'wait' }
       }
     } else {
+      // No avoidance to remove - truly unreachable
       botState.currentGoal = null
       botState.goalTarget = null
       botState.cachedFlow = null
       return { type: 'wait' }
+    }
+  }
+
+  // Check for buffs when approaching dangerous KILL target
+  // This catches bosses like Wormtongue before we enter melee range
+  if (goal.type === 'KILL' && goal.targetId) {
+    const targetMonster = game.monsters.find(m => m.id === goal.targetId && m.hp > 0)
+    if (targetMonster) {
+      const threat = getMonsterThreat(targetMonster, game.character)
+      // Use same threshold as getPreCombatBuffAction (100 = roughly 10-damage awake monster)
+      // But also check for unique/boss monsters which may have lower threat but deserve buffs
+      const BUFF_THREAT_THRESHOLD = 100
+      const isUnique = targetMonster.template.flags.includes('UNIQUE')
+      const shouldBuff = threat >= BUFF_THREAT_THRESHOLD || isUnique
+
+      if (shouldBuff) {
+        // Try combat buff potions (heroism/berserk) for dangerous fights
+        const combatBuff = getCombatBuffAction(game, context.config, dangerResult.dangers)
+        if (combatBuff) {
+          recordProgress(botState, game.turn)
+          return combatBuff
+        }
+
+        // Try pre-combat buffs (blessing scrolls)
+        const preCombatBuff = getPreCombatBuffAction(game, context.config, context.visibleMonsters)
+        if (preCombatBuff) {
+          recordProgress(botState, game.turn)
+          return preCombatBuff
+        }
+      }
     }
   }
 
@@ -660,14 +685,15 @@ function handleGoalMovement(
 }
 
 function updateTownState(botState: BotState, goal: BotGoal, _game: GameState): void {
-  if (goal.type === 'SELL_TO_MERCHANT') {
-    botState.itemsSold = true
+  // Mark shop as visited based on goal type and targetId (shop ID)
+  if (goal.type === 'SELL_TO_MERCHANT' && goal.targetId) {
+    botState.shopsVisitedForSelling.add(goal.targetId)
   }
   if (goal.type === 'VISIT_HEALER') {
     botState.healerVisited = true
   }
-  if (goal.type === 'BUY_FROM_MERCHANT') {
-    botState.itemsBought = true
+  if (goal.type === 'BUY_FROM_MERCHANT' && goal.targetId) {
+    botState.shopsVisitedForBuying.add(goal.targetId)
   }
 }
 
@@ -728,4 +754,27 @@ function executeGoalAction(goal: BotGoal, game: GameState): GameAction {
     default:
       return { type: 'wait' }
   }
+}
+
+// ============================================================================
+// COMBAT HELPERS
+// ============================================================================
+
+/**
+ * Set a KILL goal for an adjacent monster
+ * This ensures combat actions are tracked in the goal system
+ */
+function setKillGoal(
+  botState: BotState,
+  monster: { id: string; position: { x: number; y: number }; template: { name: string } },
+  turn: number,
+  reason: string
+): void {
+  setGoal(botState, {
+    type: 'KILL',
+    target: monster.position,
+    targetId: monster.id,
+    reason: reason,
+    startTurn: turn,
+  })
 }

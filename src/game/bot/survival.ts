@@ -2,19 +2,19 @@
  * Survival Logic - Barrel Export
  *
  * Re-exports all survival-related functionality from sub-modules:
- * - survival-retreat.ts: Retreat decisions, escape routes, HP monitoring
+ * - survival-retreat.ts: Retreat decisions, escape routes, HP monitoring, teleport/phase door
  * - survival-consumables.ts: Consumable usage (healing, buffs, utility)
- * - survival-teleport.ts: Town portal, phase door safety
  */
 
 // ============================================================================
-// RETREAT & ESCAPE
+// RETREAT, ESCAPE & TELEPORT
 // ============================================================================
 
 export {
   // Types
   type RetreatEvaluation,
   type EscapeRoute,
+  type TownPortalDecision,
   // Retreat decisions
   shouldRetreat,
   isCriticalHP,
@@ -27,21 +27,12 @@ export {
   getHitsTillDeath,
   // Class-aware retreat
   shouldClassRetreat,
-} from './survival-retreat'
-
-// ============================================================================
-// TELEPORT & PHASE DOOR
-// ============================================================================
-
-export {
-  // Types
-  type TownPortalDecision,
   // Town portal
   shouldUseTownPortal,
   // Phase door safety
   evaluatePhaseDoorSafety,
   shouldEscapeOverHeal,
-} from './survival-teleport'
+} from './survival-retreat'
 
 // ============================================================================
 // CONSUMABLES

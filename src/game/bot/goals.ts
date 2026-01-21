@@ -5,10 +5,16 @@
  * and goal persistence to prevent thrashing.
  */
 
+// Type declaration for Node.js process (used for debug logging in scripts)
+declare const process: { env: Record<string, string | undefined> } | undefined
+
 import type { BotState, BotGoal, BotContext, GoalType, DangerMap } from './types'
+import type { GameState } from '../types'
+import { isAdjacent } from '../types'
 import { getLocalDanger } from './danger'
 import { findAdjacentMonster, hasRangedWeapon } from './combat'
-import { isInTown, HEALER_POSITION, MERCHANT_POSITION, DUNGEON_ENTRANCE_POSITION } from '../town'
+import { isInTown, HEALER_POSITION, DUNGEON_ENTRANCE_POSITION, TOWN_SHOP_POSITIONS } from '../town'
+import { type TownShopId } from '../data/town'
 
 // Import evaluators from separate module
 import {
@@ -40,8 +46,9 @@ export {
 /** Minimum turns before forced goal re-evaluation */
 const GOAL_REEVALUATE_INTERVAL = 10
 
-/** Shorter re-evaluation interval for exploration (to adapt to newly discovered areas) */
-const EXPLORE_REEVALUATE_INTERVAL = 5
+/** Re-evaluation interval for exploration - longer to prevent ping-ponging
+ * The exploration scoring system handles adapting to new discoveries via persistence bonus */
+const EXPLORE_REEVALUATE_INTERVAL = 15
 
 /** Priority order for goals (higher = more important) */
 const GOAL_PRIORITY: Record<GoalType, number> = {
@@ -101,6 +108,12 @@ export function selectGoal(
     const reevalInterval = currentGoal.type === 'EXPLORE'
       ? EXPLORE_REEVALUATE_INTERVAL
       : GOAL_REEVALUATE_INTERVAL
+
+    // Debug logging
+    if (typeof process !== 'undefined' && process.env.DEBUG_GOALS) {
+      console.log(`[GOALS] turn=${turn} currentGoal=${currentGoal.type}@(${currentGoal.target?.x},${currentGoal.target?.y}) startTurn=${currentGoal.startTurn} turnsSince=${turnsSinceGoalStart} reevalInterval=${reevalInterval}`)
+    }
+
     if (turnsSinceGoalStart < reevalInterval) {
       // Check for higher priority override
       const overrideGoal = checkHighPriorityOverride(context, botState, dangers, dangerThreshold, currentPriority)
@@ -193,10 +206,28 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
         context.visibleMonsters.length === 0
       )
 
-    case 'KILL':
-      // Kill is valid if target still exists
+    case 'KILL': {
+      // Kill is valid if target still exists AND is still visible/adjacent
       if (!goal.targetId) return false
-      return game.monsters.some((m) => m.id === goal.targetId && m.hp > 0)
+
+      const targetMonster = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
+      if (!targetMonster) return false
+
+      // Check if monster is still visible or adjacent
+      const isVisible = context.visibleMonsters.some((m) => m.id === goal.targetId)
+      const isAdjacentToPlayer = isAdjacent(game.character.position, targetMonster.position)
+
+      // Invalidate if monster went out of sight and isn't adjacent
+      if (!isVisible && !isAdjacentToPlayer) return false
+
+      // Update target position if monster moved (keeps flow computation accurate)
+      if (goal.target &&
+          (goal.target.x !== targetMonster.position.x || goal.target.y !== targetMonster.position.y)) {
+        goal.target = { ...targetMonster.position }
+      }
+
+      return true
+    }
 
     case 'TAKE':
       // Take is valid if item still exists
@@ -232,16 +263,19 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
 
     // Town goals
     case 'SELL_TO_MERCHANT':
-      // Valid while in town and haven't sold yet
-      return isInTown(game) && !botState.itemsSold
+      // Valid while in town, have unvisited sell shops, and still have items to sell
+      if (!isInTown(game)) return false
+      // Check if we've visited all relevant shops for selling
+      return selectShopForSelling(game, botState) !== null
 
     case 'VISIT_HEALER':
       // Valid while in town and not yet healed
       return isInTown(game) && !botState.healerVisited && game.character.hp < game.character.maxHp
 
     case 'BUY_FROM_MERCHANT':
-      // Valid while in town and haven't bought yet (and have sold)
-      return isInTown(game) && botState.itemsSold && !botState.itemsBought
+      // Valid while in town and have unvisited buy shops
+      if (!isInTown(game)) return false
+      return selectShopForBuying(game, botState) !== null
 
     case 'RETURN_PORTAL':
       // Valid while in town and portal exists
@@ -311,12 +345,91 @@ function checkHighPriorityOverride(
 // ============================================================================
 
 /**
+ * Select the appropriate shop for selling based on inventory contents
+ *
+ * Priority:
+ * 1. Has weapons/bows? → town_weapons (better sell multiplier)
+ * 2. Has armor? → town_armory
+ * 3. Anything else? → town_general
+ */
+function selectShopForSelling(game: GameState, botState: BotState): TownShopId | null {
+  const inventory = game.character.inventory
+  const sellableItems = inventory.filter(item =>
+    item.template.type !== 'potion' && item.template.type !== 'scroll'
+  )
+
+  // No items to sell
+  if (sellableItems.length === 0) return null
+
+  // Check what types of items we have
+  const hasWeapons = sellableItems.some(item =>
+    item.template.type === 'weapon' || item.template.type === 'bow'
+  )
+  const hasArmor = sellableItems.some(item =>
+    ['armor', 'shield', 'helm', 'gloves', 'boots'].includes(item.template.type)
+  )
+
+  // Visit appropriate shops in order of value
+  if (hasWeapons && !botState.shopsVisitedForSelling.has('town_weapons')) {
+    return 'town_weapons'
+  }
+  if (hasArmor && !botState.shopsVisitedForSelling.has('town_armory')) {
+    return 'town_armory'
+  }
+  if (!botState.shopsVisitedForSelling.has('town_general')) {
+    return 'town_general'
+  }
+
+  return null
+}
+
+/**
+ * Select the appropriate shop for buying based on character needs
+ *
+ * Priority:
+ * 1. Need Town Portal (< 2)? → town_magic
+ * 2. Need healing potions (< 3)? → town_alchemy
+ * 3. Need escape scrolls (< 3)? → town_magic (if not visited for TP)
+ */
+function selectShopForBuying(game: GameState, botState: BotState): TownShopId | null {
+  const inventory = game.character.inventory
+
+  // Count consumables
+  const tpCount = inventory.filter(item =>
+    item.template.name === 'Scroll of Town Portal'
+  ).length
+  const healCount = inventory.filter(item =>
+    item.template.name.includes('Cure') || item.template.name.includes('Healing')
+  ).length
+  const escapeCount = inventory.filter(item =>
+    item.template.name.includes('Phase Door') || item.template.name.includes('Teleportation')
+  ).length
+
+  // Need Town Portal scrolls (primary escape)
+  if (tpCount < 2 && !botState.shopsVisitedForBuying.has('town_magic')) {
+    return 'town_magic'
+  }
+
+  // Need healing potions
+  if (healCount < 3 && !botState.shopsVisitedForBuying.has('town_alchemy')) {
+    return 'town_alchemy'
+  }
+
+  // Need escape scrolls (secondary)
+  if (escapeCount < 3 && !botState.shopsVisitedForBuying.has('town_magic')) {
+    return 'town_magic'
+  }
+
+  return null
+}
+
+/**
  * Select the appropriate town goal based on current state
  *
  * Town behavior priority (economically optimal):
- * 1. SELL_TO_MERCHANT - Sell loot first to get gold
+ * 1. SELL_TO_MERCHANT - Sell loot at appropriate shops
  * 2. VISIT_HEALER - Heal with gold from selling
- * 3. BUY_FROM_MERCHANT - Buy consumables after healing
+ * 3. BUY_FROM_MERCHANT - Buy consumables from appropriate shops
  * 4. RETURN_PORTAL - Return through active portal
  * 5. EXIT_TOWN - Fallback: use dungeon entrance
  */
@@ -329,12 +442,14 @@ function selectTownGoal(
   const turn = game.turn
 
   // 1. Sell items first to get gold for healing
-  if (!botState.itemsSold) {
+  const sellShop = selectShopForSelling(game, botState)
+  if (sellShop) {
+    const position = TOWN_SHOP_POSITIONS[sellShop]
     return {
       type: 'SELL_TO_MERCHANT',
-      target: { ...MERCHANT_POSITION },
-      targetId: null,
-      reason: 'Selling loot to merchant',
+      target: { ...position },
+      targetId: sellShop,
+      reason: `Selling loot at ${sellShop.replace('town_', '')}`,
       startTurn: turn,
     }
   }
@@ -352,13 +467,15 @@ function selectTownGoal(
     }
   }
 
-  // 3. Buy from merchant after healing
-  if (!botState.itemsBought) {
+  // 3. Buy from appropriate shops after healing
+  const buyShop = selectShopForBuying(game, botState)
+  if (buyShop) {
+    const position = TOWN_SHOP_POSITIONS[buyShop]
     return {
       type: 'BUY_FROM_MERCHANT',
-      target: { ...MERCHANT_POSITION },
-      targetId: null,
-      reason: 'Buying supplies from merchant',
+      target: { ...position },
+      targetId: buyShop,
+      reason: `Buying supplies at ${buyShop.replace('town_', '')}`,
       startTurn: turn,
     }
   }

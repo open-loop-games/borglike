@@ -5,6 +5,7 @@
  */
 
 import type { GameState, BotPersonality, Point, DungeonLevel } from '../types'
+import { manhattanDistance } from '../types'
 import type { BotContext, BotState, PersonalityConfig } from './types'
 import { getTile, getAdjacentPositions } from '../dungeon'
 import { getPersonalityConfig } from './personality'
@@ -28,6 +29,7 @@ function createMinimalBotState(): BotState {
     knownStairsDown: null,
     cachedFlow: null,
     cachedDanger: null,
+    cachedSafetyFlow: null,
     twitchCounter: 0,
     lastProgressTurn: 0,
     fleeCooldownUntil: 0,
@@ -35,8 +37,14 @@ function createMinimalBotState(): BotState {
     isInTown: false,
     townEntryTurn: 0,
     healerVisited: false,
-    itemsSold: false,
-    itemsBought: false,
+    // Multi-shop tracking
+    shopsVisitedForSelling: new Set(),
+    shopsVisitedForBuying: new Set(),
+    // Corridor exploration
+    corridorFollowingMode: false,
+    corridorFacing: null,
+    // Exploration blacklist
+    blacklistedTargets: new Map(),
   }
 }
 
@@ -239,11 +247,4 @@ export function evaluateDanger(context: BotContext): number {
   }
 
   return Math.floor(danger)
-}
-
-/**
- * Calculate Manhattan distance between two points
- */
-function manhattanDistance(a: Point, b: Point): number {
-  return Math.abs(b.x - a.x) + Math.abs(b.y - a.y)
 }

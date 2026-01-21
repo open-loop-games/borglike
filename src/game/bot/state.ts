@@ -22,6 +22,7 @@ export function createBotState(): BotState {
     knownStairsDown: null,
     cachedFlow: null,
     cachedDanger: null,
+    cachedSafetyFlow: null,
     twitchCounter: 0,
     lastProgressTurn: 0,
     fleeCooldownUntil: 0,
@@ -29,8 +30,14 @@ export function createBotState(): BotState {
     isInTown: false,
     townEntryTurn: 0,
     healerVisited: false,
-    itemsSold: false,
-    itemsBought: false,
+    // Multi-shop tracking
+    shopsVisitedForSelling: new Set(),
+    shopsVisitedForBuying: new Set(),
+    // Corridor exploration
+    corridorFollowingMode: false,
+    corridorFacing: null,
+    // Exploration blacklist
+    blacklistedTargets: new Map(),
   }
 }
 
@@ -47,14 +54,21 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.knownStairsDown = null
   state.cachedFlow = null
   state.cachedDanger = null
+  state.cachedSafetyFlow = null
   state.twitchCounter = 0
   state.lastProgressTurn = turn
   // Town tracking - reset when entering any level
   state.isInTown = newDepth === 0
   state.townEntryTurn = newDepth === 0 ? turn : 0
   state.healerVisited = false
-  state.itemsSold = false
-  state.itemsBought = false
+  // Multi-shop tracking - reset on town entry
+  state.shopsVisitedForSelling.clear()
+  state.shopsVisitedForBuying.clear()
+  // Corridor exploration - reset on level change
+  state.corridorFollowingMode = false
+  state.corridorFacing = null
+  // Exploration blacklist - clear on level change
+  state.blacklistedTargets.clear()
 }
 
 /**
@@ -96,6 +110,63 @@ export function clearGoal(state: BotState): void {
   state.currentGoal = null
   state.goalTarget = null
   state.cachedFlow = null
+}
+
+/** Duration (in turns) to blacklist unreachable targets */
+const BLACKLIST_DURATION = 100
+
+/** Radius to blacklist around an unreachable target (region-based) */
+const BLACKLIST_RADIUS = 3
+
+/**
+ * Add a target to the exploration blacklist (unreachable)
+ */
+export function blacklistTarget(state: BotState, target: Point, currentTurn: number): void {
+  const key = `${target.x},${target.y}`
+  state.blacklistedTargets.set(key, currentTurn + BLACKLIST_DURATION)
+}
+
+/**
+ * Blacklist a region around an unreachable target
+ * This prevents the bot from trying adjacent tiles that are also likely unreachable
+ */
+export function blacklistRegion(state: BotState, center: Point, currentTurn: number): void {
+  const expiry = currentTurn + BLACKLIST_DURATION
+  for (let dy = -BLACKLIST_RADIUS; dy <= BLACKLIST_RADIUS; dy++) {
+    for (let dx = -BLACKLIST_RADIUS; dx <= BLACKLIST_RADIUS; dx++) {
+      // Use Chebyshev distance for the region
+      if (Math.max(Math.abs(dx), Math.abs(dy)) <= BLACKLIST_RADIUS) {
+        const key = `${center.x + dx},${center.y + dy}`
+        state.blacklistedTargets.set(key, expiry)
+      }
+    }
+  }
+}
+
+/**
+ * Check if a target is blacklisted
+ */
+export function isTargetBlacklisted(state: BotState, target: Point, currentTurn: number): boolean {
+  const key = `${target.x},${target.y}`
+  const expiry = state.blacklistedTargets.get(key)
+  if (expiry === undefined) return false
+  if (currentTurn >= expiry) {
+    // Expired - remove and return false
+    state.blacklistedTargets.delete(key)
+    return false
+  }
+  return true
+}
+
+/**
+ * Clean up expired blacklist entries
+ */
+export function cleanupBlacklist(state: BotState, currentTurn: number): void {
+  for (const [key, expiry] of state.blacklistedTargets) {
+    if (currentTurn >= expiry) {
+      state.blacklistedTargets.delete(key)
+    }
+  }
 }
 
 /**

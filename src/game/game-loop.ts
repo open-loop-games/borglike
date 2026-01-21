@@ -18,7 +18,8 @@ import type {
   AltarState,
   TrapState,
 } from './types'
-import { FOV_RADIUS } from './types'
+import { seedRNG } from './rng'
+import { calculateLightRadius } from './lighting'
 import { createCharacter } from './character'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
@@ -69,6 +70,7 @@ import { equipItem } from './character'
  */
 export function createGame(config: RunConfig): GameState {
   const seed = config.seed ?? Date.now()
+  seedRNG(seed)
   const runId = `run_${seed}_${Math.random().toString(36).substring(2, 9)}`
   const upgradeBonuses = config.upgradeBonuses ?? DEFAULT_BONUSES
   const boosterBonuses = config.boosterBonuses ?? DEFAULT_BOOSTER_BONUSES
@@ -146,6 +148,7 @@ export function createGame(config: RunConfig): GameState {
     character,
     currentLevel: firstLevel,
     levelCache,
+    entityCache: new Map(),
     monsters,
     items,
     fountains,
@@ -163,6 +166,7 @@ export function createGame(config: RunConfig): GameState {
     upgradeBonuses,
     boosterBonuses,
     usedSecondWind: false,
+    bestiary: config.bestiary,
   }
 
   // Initialize features from vault data (if vault was placed)
@@ -176,8 +180,9 @@ export function createGame(config: RunConfig): GameState {
     generateMerchantInventory
   )
 
-  // Compute initial FOV
-  computeFOV(firstLevel, character.position, FOV_RADIUS)
+  // Compute initial FOV (dynamic light radius based on equipment/race)
+  const lightRadius = calculateLightRadius(character, 1)
+  computeFOV(firstLevel, character.position, lightRadius)
 
   // Add welcome message
   addMessage(gameState, 'Welcome to the dungeon! Find your way to depth 50.', 'info')
@@ -240,6 +245,11 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     if (actionResult.message) {
       addMessage(game, actionResult.message, 'info')
     }
+    // Still advance turn to prevent infinite loops (bot tried invalid action)
+    // This is important for bot safety - a failed action should still "use" the turn
+    game.turn++
+    game.stats.turnsPlayed++
+    events.push({ type: 'turn', turn: game.turn })
     return events
   }
 
@@ -299,8 +309,9 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     return events
   }
 
-  // Update FOV
-  computeFOV(game.currentLevel, game.character.position, FOV_RADIUS)
+  // Update FOV (dynamic light radius based on equipment/race/depth)
+  const lightRadius = calculateLightRadius(game.character, game.character.depth)
+  computeFOV(game.currentLevel, game.character.position, lightRadius)
 
   return events
 }

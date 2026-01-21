@@ -6,7 +6,11 @@
 
 import type { Point, GameState, Direction } from '../types'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
-import { getDirectionFromDelta } from '../types'
+import { getDirectionFromDelta, isAdjacent, isSamePoint } from '../types'
+
+// Re-export for backwards compatibility
+export { isAdjacent }
+export { isSamePoint as isSamePosition }
 import type { BotState, FlowMap } from './types'
 import { MAX_FLOW_COST, CARDINAL_DIRECTIONS } from './types'
 import { getFlowCost } from './flow'
@@ -131,22 +135,6 @@ export function getDirectionTo(from: Point, to: Point): Direction | null {
   if (dx === 0 && dy === 0) return 'wait'
 
   return getDirectionFromDelta(dx, dy)
-}
-
-/**
- * Check if two points are the same
- */
-export function isSamePosition(a: Point, b: Point): boolean {
-  return a.x === b.x && a.y === b.y
-}
-
-/**
- * Check if target is adjacent to position
- */
-export function isAdjacent(pos: Point, target: Point): boolean {
-  const dx = Math.abs(target.x - pos.x)
-  const dy = Math.abs(target.y - pos.y)
-  return dx <= 1 && dy <= 1 && dx + dy > 0
 }
 
 /**

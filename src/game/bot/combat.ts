@@ -6,6 +6,7 @@
  */
 
 import type { GameState, Monster, Character, Point, Direction } from '../types'
+import { chebyshevDistance, isAdjacent } from '../types'
 import type { BotContext, PersonalityConfig } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
@@ -320,16 +321,6 @@ export function getCombatAdvantage(game: GameState): number {
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function isAdjacent(a: Point, b: Point): boolean {
-  const dx = Math.abs(a.x - b.x)
-  const dy = Math.abs(a.y - b.y)
-  return dx <= 1 && dy <= 1 && (dx + dy) > 0
-}
-
-function chebyshevDistance(a: Point, b: Point): number {
-  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
-}
 
 /**
  * Count escape routes (walkable adjacent tiles without monsters)

@@ -6,6 +6,8 @@
  */
 
 import type { Character, Monster, ResistanceType, Point } from './types'
+import type { KnowledgeBonuses } from './knowledge-effects'
+import { random } from './rng'
 
 // ============================================================================
 // TYPES
@@ -65,6 +67,7 @@ export function getAttackerStats(entity: Character | Monster): AttackerStats {
     // Monster: accuracy derived from speed (faster = more accurate)
     // Base accuracy of 50, modified by speed (110 is normal)
     const speedBonus = Math.floor((entity.template.speed - 110) / 2)
+    let accuracy = 50 + speedBonus
     let damage = entity.template.damage
 
     // Apply weaken debuff (reduces damage)
@@ -73,8 +76,14 @@ export function getAttackerStats(entity: Character | Monster): AttackerStats {
       damage = Math.floor(damage * (100 - weakenDebuff.value) / 100)
     }
 
+    // Apply blind debuff (reduces accuracy)
+    const blindDebuff = entity.debuffs?.find(d => d.type === 'blind')
+    if (blindDebuff) {
+      accuracy = Math.floor(accuracy * (100 - blindDebuff.value) / 100)
+    }
+
     return {
-      accuracy: 50 + speedBonus,
+      accuracy,
       damage,
     }
   }
@@ -133,6 +142,14 @@ export function getStatusACBonus(character: Character): number {
 }
 
 /**
+ * Get speed bonus from status effects (speed/haste)
+ */
+export function getStatusSpeedBonus(character: Character): number {
+  const speed = character.statusEffects.find((e) => e.type === 'speed')
+  return speed?.value ?? 0
+}
+
+/**
  * Get total resistance including temporary resistances
  */
 export function getTotalResistance(character: Character, type: ResistanceType): number {
@@ -150,19 +167,22 @@ export function getTotalResistance(character: Character, type: ResistanceType): 
  *
  * Hit chance: 50 + attackerAccuracy - defenderEvasion (clamped to 5-95%)
  * Damage: (attackerDamage - defenderArmor/2) * variance (minimum 1)
- * Variance: damage * (0.8 + Math.random() * 0.4) for +/-20%
+ * Variance: damage * (0.8 + random() * 0.4) for +/-20%
  * Critical: 5% chance for double damage
  * Resistance: If defender has resistance to the damage type, damage is reduced
+ * Knowledge: Bestiary bonuses add damage when player attacks, reduce damage when monster attacks
  *
  * @param attacker - The attacking entity
  * @param defender - The defending entity
  * @param abilityType - Optional damage type for resistance calculation (e.g., 'POISON', 'FIRE')
+ * @param knowledgeBonuses - Optional bestiary bonuses from monster knowledge
  * @returns AttackResult with hit, damage, critical, and killed flags
  */
 export function attack(
   attacker: Character | Monster,
   defender: Character | Monster,
-  abilityType?: ResistanceType
+  abilityType?: ResistanceType,
+  knowledgeBonuses?: KnowledgeBonuses
 ): AttackResult {
   const attackerStats = getAttackerStats(attacker)
   const defenderStats = getDefenderStats(defender)
@@ -186,7 +206,7 @@ export function attack(
   const hitChance = Math.max(5, Math.min(95, baseHitChance))
 
   // Roll for hit
-  const hitRoll = Math.random() * 100
+  const hitRoll = random() * 100
   const hit = hitRoll < hitChance
 
   if (!hit) {
@@ -203,15 +223,26 @@ export function attack(
   const baseDamage = Math.max(1, attackerStats.damage + damageBonus - effectiveArmor / 2)
 
   // Apply variance (+/- 20%)
-  const variance = 0.8 + Math.random() * 0.4
+  const variance = 0.8 + random() * 0.4
   let damage = Math.floor(baseDamage * variance)
 
   // Check for critical hit (5% chance)
-  const critRoll = Math.random() * 100
+  const critRoll = random() * 100
   const critical = critRoll < 5
 
   if (critical) {
     damage *= 2
+  }
+
+  // Apply knowledge bonuses from bestiary
+  if (knowledgeBonuses) {
+    if (isCharacter(attacker) && isMonster(defender)) {
+      // Player attacking monster: bonus damage
+      damage = Math.floor(damage * (1 + knowledgeBonuses.damagePercent / 100))
+    } else if (isMonster(attacker) && isCharacter(defender)) {
+      // Monster attacking player: damage reduction
+      damage = Math.floor(damage * (1 - knowledgeBonuses.reductionPercent / 100))
+    }
   }
 
   // Apply resistance if defender is a character with resistances
@@ -399,11 +430,13 @@ export function getBowRange(character: Character): number {
  * Similar to melee attack but:
  * - Uses rangedDamage and rangedAccuracy
  * - Distance penalty: -5% hit chance per tile beyond 2
+ * - Knowledge bonuses apply to damage
  */
 export function rangedAttack(
   attacker: Character,
   defender: Monster,
-  distance: number
+  distance: number,
+  knowledgeBonuses?: KnowledgeBonuses
 ): AttackResult {
   // Get ranged stats
   let accuracy = attacker.combat.rangedAccuracy
@@ -425,7 +458,7 @@ export function rangedAttack(
   const hitChance = Math.max(5, Math.min(95, baseHitChance))
 
   // Roll for hit
-  const hitRoll = Math.random() * 100
+  const hitRoll = random() * 100
   const hit = hitRoll < hitChance
 
   if (!hit) {
@@ -441,15 +474,20 @@ export function rangedAttack(
   const baseDamage = Math.max(1, damage - defenderStats.armor / 2)
 
   // Apply variance (+/- 20%)
-  const variance = 0.8 + Math.random() * 0.4
+  const variance = 0.8 + random() * 0.4
   let finalDamage = Math.floor(baseDamage * variance)
 
   // Check for critical hit (5% chance)
-  const critRoll = Math.random() * 100
+  const critRoll = random() * 100
   const critical = critRoll < 5
 
   if (critical) {
     finalDamage *= 2
+  }
+
+  // Apply knowledge bonus from bestiary (player attacking monster)
+  if (knowledgeBonuses) {
+    finalDamage = Math.floor(finalDamage * (1 + knowledgeBonuses.damagePercent / 100))
   }
 
   // Ensure minimum damage of 1 on a hit

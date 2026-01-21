@@ -17,6 +17,7 @@ import { gainXP } from '../character'
 import { DEFAULT_BONUSES, applyXPBonus } from '../upgrade-effects'
 import { awardMonsterGold } from '../features'
 import { addMessage, BASE_ENERGY_COST } from './helpers'
+import { getKnowledgeBonuses } from '../knowledge-effects'
 
 // ============================================================================
 // CONSTANTS
@@ -41,8 +42,11 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     return { success: false, message: 'No target found.', energyCost: 0 }
   }
 
-  // Resolve attack
-  const attackResult = attack(game.character, monster)
+  // Compute knowledge bonuses from bestiary
+  const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary)
+
+  // Resolve attack with knowledge bonuses
+  const attackResult = attack(game.character, monster, undefined, knowledgeBonuses)
   const message = formatAttackMessageFromEntities(game.character, monster, attackResult)
   addMessage(game, message, 'combat')
 
@@ -108,8 +112,11 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
   const dy = Math.abs(monster.position.y - game.character.position.y)
   const distance = Math.max(dx, dy)
 
-  // Resolve ranged attack
-  const attackResult = rangedAttack(game.character, monster, distance)
+  // Compute knowledge bonuses from bestiary
+  const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary)
+
+  // Resolve ranged attack with knowledge bonuses
+  const attackResult = rangedAttack(game.character, monster, distance, knowledgeBonuses)
   const message = formatRangedAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 

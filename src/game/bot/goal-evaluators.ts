@@ -12,10 +12,15 @@ import { getLocalDanger } from './danger'
 import { isSamePosition } from './movement'
 import { selectTarget, shouldEngage, findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition } from './combat'
 import { shouldRetreat, findBestEscapeRoute } from './survival'
+import { computeSafetyFlow } from './safety-flow'
 import { evaluateItem, shouldPickup } from './items'
 import {
   findExplorationTarget as findExploreTarget,
+  findLabyrinthExplorationTarget,
+  isLabyrinthLevel,
+  getLabyrinthExplorationThreshold,
   getExplorationProgress,
+  resetCorridorFollowing,
 } from './exploration'
 
 // ============================================================================
@@ -51,7 +56,40 @@ export function evaluateFlee(
 
   if (!retreatEval.shouldRetreat) return null
 
-  // Find best escape route using survival module
+  // Exit corridor-following mode when fleeing
+  resetCorridorFollowing(botState)
+
+  // Try safety flow first (inverted Dijkstra for global escape planning)
+  const nearbyMonsters = game.monsters.filter(m => {
+    if (m.hp <= 0) return false
+    const dx = Math.abs(m.position.x - game.character.position.x)
+    const dy = Math.abs(m.position.y - game.character.position.y)
+    return dx <= 10 && dy <= 10
+  })
+
+  if (nearbyMonsters.length > 0) {
+    const safetyResult = computeSafetyFlow(
+      game.currentLevel,
+      nearbyMonsters,
+      game.character.position,
+      game.turn
+    )
+
+    if (safetyResult.target) {
+      // Cache for debugging
+      botState.cachedSafetyFlow = safetyResult
+
+      return {
+        type: 'FLEE',
+        target: safetyResult.target,
+        targetId: null,
+        reason: `${retreatEval.reason} (safety flow)`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // Fallback to old escape route logic
   const escapeRoute = findBestEscapeRoute(game, dangers)
   if (!escapeRoute) {
     // No escape - try stairs as last resort
@@ -182,16 +220,24 @@ export function evaluateRecover(
 
 /**
  * Evaluate KILL goal - hunt monsters
+ *
+ * Creates KILL goals for:
+ * 1. Adjacent monsters (always)
+ * 2. Close monsters within engagement range (bypass shouldEngage for nearby threats)
+ * 3. Distant monsters if shouldEngage approves
  */
 export function evaluateKill(
   context: BotContext,
-  _hpRatio: number
+  hpRatio: number
 ): BotGoal | null {
-  const { game, config } = context
+  const { game, config, botState, visibleMonsters } = context
+  const pos = game.character.position
 
   // Check for adjacent monster first (always attack)
   const adjacentMonster = findAdjacentMonster(game)
   if (adjacentMonster) {
+    // Exit corridor-following mode when in combat
+    resetCorridorFollowing(botState)
     return {
       type: 'KILL',
       target: adjacentMonster.position,
@@ -201,7 +247,41 @@ export function evaluateKill(
     }
   }
 
-  // Use combat module for target selection
+  // For close monsters (within 4 tiles), always create KILL goal to approach
+  // This prevents the "stuck at distance 2" bug where bot won't close the gap
+  // Exception: critically low HP (< 25%) should still flee instead
+  const CLOSE_ENGAGEMENT_RANGE = 4
+  if (visibleMonsters.length > 0 && hpRatio >= 0.25) {
+    // Find closest visible monster
+    let closestMonster = visibleMonsters[0]
+    let closestDist = Infinity
+
+    for (const monster of visibleMonsters) {
+      if (monster.hp <= 0) continue
+      const dist = Math.max(
+        Math.abs(monster.position.x - pos.x),
+        Math.abs(monster.position.y - pos.y)
+      )
+      if (dist < closestDist) {
+        closestDist = dist
+        closestMonster = monster
+      }
+    }
+
+    // If monster is close, engage without shouldEngage check
+    if (closestMonster && closestDist <= CLOSE_ENGAGEMENT_RANGE) {
+      resetCorridorFollowing(botState)
+      return {
+        type: 'KILL',
+        target: closestMonster.position,
+        targetId: closestMonster.id,
+        reason: `Engaging nearby ${closestMonster.template.name}`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // For distant monsters, use full shouldEngage evaluation
   const targetSelection = selectTarget(context, false)
   if (!targetSelection) return null
 
@@ -209,6 +289,9 @@ export function evaluateKill(
   if (!shouldEngage(game, targetSelection.target, config)) {
     return null
   }
+
+  // Exit corridor-following mode when hunting
+  resetCorridorFollowing(botState)
 
   return {
     type: 'KILL',
@@ -270,6 +353,7 @@ export function evaluateTake(
 
 /**
  * Evaluate DESCEND goal - go to next level
+ * Uses lower exploration threshold for labyrinths (dead ends aren't worth exploring)
  */
 export function evaluateDescend(context: BotContext, botState: BotState): BotGoal | null {
   const { game, config } = context
@@ -279,8 +363,14 @@ export function evaluateDescend(context: BotContext, botState: BotState): BotGoa
 
   // Check if ready to descend
   const explorationProgress = getExplorationProgress(game)
+
+  // Labyrinths use lower exploration threshold
+  const explorationThreshold = isLabyrinthLevel(game)
+    ? getLabyrinthExplorationThreshold(config.exploration)
+    : config.exploration
+
   const shouldDescend =
-    explorationProgress >= config.exploration ||
+    explorationProgress >= explorationThreshold ||
     botState.turnsOnLevel >= config.patience
 
   if (!shouldDescend) return null
@@ -300,6 +390,7 @@ export function evaluateDescend(context: BotContext, botState: BotState): BotGoa
 
 /**
  * Evaluate EXPLORE goal - find unexplored areas
+ * Uses labyrinth-aware exploration for maze levels
  */
 export function evaluateExplore(context: BotContext): BotGoal | null {
   const { game, unexploredTiles, botState } = context
@@ -309,8 +400,15 @@ export function evaluateExplore(context: BotContext): BotGoal | null {
   let target
 
   if (USE_EXPLORATION_MODULE) {
-    // Use smart exploration target selection
-    target = findExploreTarget(game, botState)
+    // Use labyrinth-aware exploration for maze levels
+    if (isLabyrinthLevel(game)) {
+      target = findLabyrinthExplorationTarget(game, botState)
+    } else {
+      // Standard exploration for other level types
+      // Reset corridor-following if we were in a labyrinth before
+      resetCorridorFollowing(botState)
+      target = findExploreTarget(game, botState)
+    }
   } else {
     // Simple: pick nearest unexplored tile
     const pos = game.character.position
@@ -333,7 +431,7 @@ export function evaluateExplore(context: BotContext): BotGoal | null {
     type: 'EXPLORE',
     target,
     targetId: null,
-    reason: 'Exploring dungeon',
+    reason: isLabyrinthLevel(game) ? 'Exploring labyrinth' : 'Exploring dungeon',
     startTurn: game.turn,
   }
 }

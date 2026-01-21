@@ -129,3 +129,61 @@ export function getFlowCost(costs: FlowMap, pos: Point): number {
 export function isReachable(costs: FlowMap, pos: Point): boolean {
   return getFlowCost(costs, pos) < MAX_FLOW_COST
 }
+
+/**
+ * Compute multi-goal flow for exploration (Dijkstra map approach)
+ *
+ * All frontier tiles (unexplored adjacent to explored) are goals with cost 0.
+ * The bot follows decreasing costs toward the nearest unexplored area.
+ * No target selection needed - just roll downhill.
+ *
+ * @param level - Dungeon level
+ * @param frontierTiles - Array of frontier tile positions (unexplored but reachable)
+ * @param avoid - Set of "x,y" keys to exclude from pathing
+ * @returns FlowMap with costs to nearest frontier from any position
+ */
+export function computeExplorationFlow(
+  level: DungeonLevel,
+  frontierTiles: Point[],
+  avoid: Set<string> = new Set()
+): FlowMap {
+  const costs: FlowMap = new Map()
+  const queue: Array<{ pos: Point; cost: number }> = []
+
+  // Start BFS from ALL frontier tiles simultaneously (cost 0)
+  for (const frontier of frontierTiles) {
+    const key = `${frontier.x},${frontier.y}`
+    if (!costs.has(key)) {
+      costs.set(key, 0)
+      queue.push({ pos: frontier, cost: 0 })
+    }
+  }
+
+  // BFS expansion outward from all frontiers
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    const currentCost = costs.get(`${current.pos.x},${current.pos.y}`)!
+
+    if (currentCost >= MAX_FLOW_COST - 1) continue
+
+    const neighbors = getAdjacentPositions(current.pos)
+
+    for (const neighbor of neighbors) {
+      const neighborKey = `${neighbor.x},${neighbor.y}`
+
+      if (costs.has(neighborKey)) continue
+      if (avoid.has(neighborKey)) continue
+
+      const tile = getTile(level, neighbor.x, neighbor.y)
+      // For exploration flow, only expand through EXPLORED passable tiles
+      // (we're computing distance from frontiers back to where the bot can be)
+      if (!tile || !tile.explored || !isPassable(tile)) continue
+
+      const neighborCost = currentCost + 1
+      costs.set(neighborKey, neighborCost)
+      queue.push({ pos: neighbor, cost: neighborCost })
+    }
+  }
+
+  return costs
+}

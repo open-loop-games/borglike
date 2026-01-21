@@ -15,8 +15,8 @@ import type {
 import {
   DIRECTION_VECTORS as DirectionVectors,
   MAX_DEPTH,
-  FOV_RADIUS,
 } from '../types'
+import { calculateLightRadius } from '../lighting'
 import {
   generateLevel,
   getTile,
@@ -27,7 +27,13 @@ import {
 import { spawnMonstersForLevel } from '../monster-ai'
 import { spawnItemsForLevel, generateMerchantInventory } from '../items'
 import { triggerTrap, checkTrapDetection, initializeFeaturesFromVault } from '../features'
-import { touchLevelCache, evictOldLevels, LEVEL_CACHE_MAX_SIZE } from '../level-cache'
+import {
+  touchLevelCache,
+  evictOldLevels,
+  LEVEL_CACHE_MAX_SIZE,
+  saveLevelEntities,
+  loadLevelEntities,
+} from '../level-cache'
 import { isInTown } from '../town'
 import { addMessage } from './helpers'
 import { handleAttack } from './combat'
@@ -169,34 +175,47 @@ export function handleDescend(game: GameState): ActionResult {
     game.character.position = findOpenPosition(newLevel)
   }
 
-  // Load or spawn monsters/items for new level
-  game.monsters = spawnMonstersForLevel(newLevel, newDepth)
-  game.items = spawnItemsForLevel(newLevel, newDepth)
+  // Load entities from cache, or spawn fresh if not cached
+  const cachedEntities = loadLevelEntities(game.entityCache, newDepth)
+  if (cachedEntities) {
+    // Restore cached entities
+    game.monsters = cachedEntities.monsters
+    game.items = cachedEntities.items
+    game.fountains = cachedEntities.fountains
+    game.altars = cachedEntities.altars
+    game.merchants = cachedEntities.merchants
+    game.traps = cachedEntities.traps
+  } else {
+    // Spawn fresh entities for new level
+    game.monsters = spawnMonstersForLevel(newLevel, newDepth)
+    game.items = spawnItemsForLevel(newLevel, newDepth)
 
-  // Reset features for new level (features are generated per-level, not persisted)
-  game.fountains = new Map<string, FountainState>()
-  game.altars = new Map<string, AltarState>()
-  game.merchants = []
-  game.traps = new Map<string, TrapState>()
+    // Reset features for new level
+    game.fountains = new Map<string, FountainState>()
+    game.altars = new Map<string, AltarState>()
+    game.merchants = []
+    game.traps = new Map<string, TrapState>()
 
-  // Initialize features from vault data (if vault was placed on this level)
-  initializeFeaturesFromVault(
-    newLevel,
-    newDepth,
-    game.fountains,
-    game.altars,
-    game.merchants,
-    game.traps,
-    generateMerchantInventory
-  )
+    // Initialize features from vault data (if vault was placed on this level)
+    initializeFeaturesFromVault(
+      newLevel,
+      newDepth,
+      game.fountains,
+      game.altars,
+      game.merchants,
+      game.traps,
+      generateMerchantInventory
+    )
+  }
 
   // Update stats
   if (newDepth > game.stats.deepestDepth) {
     game.stats.deepestDepth = newDepth
   }
 
-  // Update FOV
-  computeFOV(newLevel, game.character.position, FOV_RADIUS)
+  // Update FOV (dynamic light radius)
+  const lightRadius = calculateLightRadius(game.character, newDepth)
+  computeFOV(newLevel, game.character.position, lightRadius)
 
   // Clear town-specific state when leaving town
   if (isInTown(game) || currentTile?.type === 'dungeon_entrance') {
@@ -258,29 +277,42 @@ export function handleAscend(game: GameState): ActionResult {
     game.character.position = findOpenPosition(previousLevel)
   }
 
-  // Load monsters/items for previous level (simplified - respawn)
-  game.monsters = spawnMonstersForLevel(previousLevel, newDepth)
-  game.items = spawnItemsForLevel(previousLevel, newDepth)
+  // Load entities from cache, or spawn fresh if not cached
+  const cachedEntities = loadLevelEntities(game.entityCache, newDepth)
+  if (cachedEntities) {
+    // Restore cached entities
+    game.monsters = cachedEntities.monsters
+    game.items = cachedEntities.items
+    game.fountains = cachedEntities.fountains
+    game.altars = cachedEntities.altars
+    game.merchants = cachedEntities.merchants
+    game.traps = cachedEntities.traps
+  } else {
+    // Spawn fresh entities (shouldn't happen normally for ascend)
+    game.monsters = spawnMonstersForLevel(previousLevel, newDepth)
+    game.items = spawnItemsForLevel(previousLevel, newDepth)
 
-  // Reset features for level (features are regenerated per-level)
-  game.fountains = new Map<string, FountainState>()
-  game.altars = new Map<string, AltarState>()
-  game.merchants = []
-  game.traps = new Map<string, TrapState>()
+    // Reset features for level
+    game.fountains = new Map<string, FountainState>()
+    game.altars = new Map<string, AltarState>()
+    game.merchants = []
+    game.traps = new Map<string, TrapState>()
 
-  // Initialize features from vault data (if vault was placed on this level)
-  initializeFeaturesFromVault(
-    previousLevel,
-    newDepth,
-    game.fountains,
-    game.altars,
-    game.merchants,
-    game.traps,
-    generateMerchantInventory
-  )
+    // Initialize features from vault data (if vault was placed on this level)
+    initializeFeaturesFromVault(
+      previousLevel,
+      newDepth,
+      game.fountains,
+      game.altars,
+      game.merchants,
+      game.traps,
+      generateMerchantInventory
+    )
+  }
 
-  // Update FOV
-  computeFOV(previousLevel, game.character.position, FOV_RADIUS)
+  // Update FOV (dynamic light radius)
+  const lightRadius = calculateLightRadius(game.character, newDepth)
+  computeFOV(previousLevel, game.character.position, lightRadius)
 
   addMessage(game, `You ascend to depth ${newDepth}.`, 'info')
 
@@ -293,8 +325,10 @@ export function handleAscend(game: GameState): ActionResult {
 
 /**
  * Save current level state (for returning to it later)
+ *
+ * Persists monster, item, and feature state to the entity cache
+ * so they can be restored when the player returns to this level.
  */
-function saveLevelState(_game: GameState): void {
-  // The level is already in the cache, but in a full implementation
-  // we would save monster/item positions here
+function saveLevelState(game: GameState): void {
+  saveLevelEntities(game)
 }

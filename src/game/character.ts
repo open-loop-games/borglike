@@ -405,8 +405,8 @@ export function calculateCombatStats(character: Character): CombatStats {
   // Apply might upgrade (damage percent)
   meleeDamage = Math.floor(meleeDamage * (1 + bonuses.damagePercent / 100))
 
-  // Accuracy: 50 + DEX + level + artifact toHit bonuses
-  let accuracy = 50 + stats.dex + character.level
+  // Accuracy: 50 + DEX + level + artifact toHit bonuses + precision upgrade
+  let accuracy = 50 + stats.dex + character.level + bonuses.accuracyBonus
   if (weapon?.artifact?.bonuses?.toHit) {
     accuracy += weapon.artifact.bonuses.toHit
   }
@@ -416,9 +416,9 @@ export function calculateCombatStats(character: Character): CombatStats {
   let evasion = Math.floor(stats.dex / 2)
   evasion += bonuses.dodgePercent // Apply swiftness upgrade
 
-  // Speed: base 100 + equipment modifiers
+  // Speed: base 100 + celerity upgrade + equipment modifiers
   // Artifacts use 'SPEED' in bonuses Record
-  let speed = 100
+  let speed = 100 + bonuses.speedBonus
   for (const item of Object.values(character.equipment)) {
     if (item?.artifact?.bonuses?.SPEED) {
       speed += item.artifact.bonuses.SPEED
