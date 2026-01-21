@@ -95,3 +95,10 @@ export interface GlobalStats {
   fastestDepth10?: number // Turns to reach depth 10
   longestRun?: number // Most turns survived
 }
+
+/** Achievement tracking state */
+export interface AchievementState {
+  unlocked: Set<string> // Completed achievement IDs
+  progress: Record<string, number> // Cumulative progress tracking
+  newUnlocks: Set<string> // Recently unlocked (for notification dot)
+}

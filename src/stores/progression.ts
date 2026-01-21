@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Currency, UnlockState, GlobalStats, RunStats, RunLoadout, BestiaryEntry, SlotConfig } from '../types'
+import type { Currency, UnlockState, GlobalStats, RunStats, RunLoadout, BestiaryEntry, SlotConfig, AchievementState } from '../types'
+import { achievements, getAchievementById } from '@/game/data/achievements'
 import {
   unlockableRaces,
   prestigeRaces,
@@ -88,6 +89,13 @@ export const useProgressionStore = defineStore('progression', () => {
   // Bestiary - tracks monster kills across all runs
   const bestiary = ref<Record<string, BestiaryEntry>>({})
 
+  // Achievements - tracks achievement progress and unlocks
+  const achievementState = ref<AchievementState>({
+    unlocked: new Set(),
+    progress: {},
+    newUnlocks: new Set(),
+  })
+
   // Cached best run by depth (computed once, updates only when history changes)
   const bestRunByDepth = computed(() => {
     if (runHistory.value.length === 0) return null
@@ -104,6 +112,18 @@ export const useProgressionStore = defineStore('progression', () => {
       fullyUnlocked: entries.filter((e) => e.kills >= 30).length,
     }
   })
+
+  // Achievement computed stats
+  const achievementStats = computed(() => {
+    const unlocked = achievementState.value.unlocked.size
+    const total = achievements.length
+    const essenceEarned = Array.from(achievementState.value.unlocked)
+      .map((id) => getAchievementById(id)?.reward ?? 0)
+      .reduce((sum, r) => sum + r, 0)
+    return { unlocked, total, essenceEarned }
+  })
+
+  const hasNewAchievements = computed(() => achievementState.value.newUnlocks.size > 0)
 
   // Computed
   const availableRaces = computed(() => Array.from(unlocks.value.races))
@@ -449,6 +469,50 @@ export const useProgressionStore = defineStore('progression', () => {
     saveImmediately().catch((err) => console.error('[Progression] Failed to save after recordMonsterKills:', err))
   }
 
+  // Achievement getters
+  function isAchievementUnlocked(id: string): boolean {
+    return achievementState.value.unlocked.has(id)
+  }
+
+  function getAchievementProgress(id: string): number {
+    return achievementState.value.progress[id] ?? 0
+  }
+
+  /**
+   * Award an achievement if not already unlocked
+   * @returns true if newly awarded, false if already unlocked
+   */
+  function awardAchievement(id: string): boolean {
+    if (achievementState.value.unlocked.has(id)) return false
+
+    const achievement = getAchievementById(id)
+    if (!achievement) return false
+
+    achievementState.value.unlocked.add(id)
+    achievementState.value.newUnlocks.add(id)
+
+    // Add essence reward
+    addEssence(achievement.reward)
+
+    console.log(`[Progression] Achievement unlocked: ${achievement.name} (+${achievement.reward} essence)`)
+    // Save happens via addEssence, no need to duplicate
+    return true
+  }
+
+  /**
+   * Update progress for cumulative achievements
+   */
+  function updateAchievementProgress(id: string, value: number) {
+    achievementState.value.progress[id] = value
+  }
+
+  /**
+   * Clear the new achievements notification
+   */
+  function clearNewAchievements() {
+    achievementState.value.newUnlocks.clear()
+  }
+
   function calculateEssenceReward(stats: RunStats, isVictory: boolean = false): number {
     let baseEssence: number
 
@@ -564,6 +628,11 @@ export const useProgressionStore = defineStore('progression', () => {
     bestRunByDepth,
     bestiaryStats,
 
+    // Achievement state and computed
+    achievementState,
+    achievementStats,
+    hasNewAchievements,
+
     // Booster computed
     allBoosters,
     boostersByCategory,
@@ -607,5 +676,12 @@ export const useProgressionStore = defineStore('progression', () => {
     slotConfigs,
     getSlotConfig,
     saveSlotConfig,
+
+    // Achievement getters and actions
+    isAchievementUnlocked,
+    getAchievementProgress,
+    awardAchievement,
+    updateAchievementProgress,
+    clearNewAchievements,
   }
 })
