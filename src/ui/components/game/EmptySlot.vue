@@ -21,10 +21,14 @@ const selectedClass = ref(progression.availableClasses[0] || 'Warrior')
 const showConfig = ref(false)
 
 function handleQuickStart() {
+  const savedConfig = progression.getSlotConfig(props.slot)
+  // Set active boosters from saved slot config
+  progression.setActiveBooster(0, savedConfig.boosters[0])
+  progression.setActiveBooster(1, savedConfig.boosters[1])
   emit('startRun', props.slot, {
-    race: selectedRace.value,
-    class: selectedClass.value,
-    personality: 'cautious',
+    race: savedConfig.race,
+    class: savedConfig.class,
+    personality: savedConfig.personality,
   })
 }
 

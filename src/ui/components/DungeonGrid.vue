@@ -23,6 +23,8 @@ const CELL_TYPE_MAP: Record<string, string> = {
   '~': 'cell-fountain',
   _: 'cell-altar',
   P: 'cell-merchant',
+  H: 'cell-healer',
+  O: 'cell-portal',
   '^': 'cell-trap',
   $: 'cell-gold',
   '!': 'cell-item',
@@ -202,6 +204,16 @@ const processedRows = computed(() => {
 .cell-merchant {
   color: var(--amber) !important;
   text-shadow: 0 0 5px rgba(245, 158, 11, 0.6);
+}
+
+.cell-healer {
+  color: var(--green) !important;
+  text-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
+}
+
+.cell-portal {
+  color: #a855f7 !important;
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.8);
 }
 
 .cell-trap {

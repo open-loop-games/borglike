@@ -5,13 +5,12 @@ import UpgradeItem from './UpgradeItem.vue'
 
 const progression = useProgressionStore()
 
-type Category = 'stats' | 'borg' | 'meta' | 'qol'
+type Category = 'stats' | 'meta' | 'qol'
 
 const activeCategory = ref<Category>('stats')
 
 const categories: { id: Category; label: string; icon: string }[] = [
   { id: 'stats', label: 'Stats', icon: '♥' },
-  { id: 'borg', label: 'Bot AI', icon: '◉' },
   { id: 'meta', label: 'Meta', icon: '◆' },
   { id: 'qol', label: 'QoL', icon: '▶' },
 ]

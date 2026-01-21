@@ -39,6 +39,7 @@ const emit = defineEmits<{
   openHelp: []
   openRunHistory: []
   openBestiary: []
+  openAchievements: []
 }>()
 
 // Debug function to add essence
@@ -82,6 +83,15 @@ function debugAddEssence() {
       </button>
       <button class="header-btn" title="Run History" @click="emit('openRunHistory')">
         <span>&#x2261;</span>
+      </button>
+      <button
+        class="header-btn"
+        :class="{ 'has-notification': progression.hasNewAchievements }"
+        title="Achievements"
+        @click="emit('openAchievements')"
+      >
+        <span>&#x1F3C6;</span>
+        <span v-if="progression.hasNewAchievements" class="notification-dot"></span>
       </button>
       <button class="header-btn" title="Bestiary" @click="emit('openBestiary')">
         <span>&#x1F4D6;</span>
@@ -269,6 +279,33 @@ function debugAddEssence() {
   background: var(--border);
   color: var(--text-primary);
   border-color: var(--indigo);
+}
+
+.header-btn.has-notification {
+  position: relative;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: notification-pulse 1.5s infinite;
+}
+
+@keyframes notification-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
 }
 
 @keyframes pulse {

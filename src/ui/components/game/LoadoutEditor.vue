@@ -2,6 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById } from '@/game/data/boosters'
+import { races, type Race } from '@/game/data/races'
+import { classes, type GameClass } from '@/game/data/classes'
 import PanelFrame from '../common/PanelFrame.vue'
 
 const props = defineProps<{
@@ -42,6 +44,26 @@ onMounted(() => {
 // Available options
 const availableRaces = computed(() => progression.availableRaces)
 const availableClasses = computed(() => progression.availableClasses)
+
+// Selected race/class details for description panels
+const selectedRaceData = computed((): Race | undefined => {
+  return races.find((r) => r.name === selectedRace.value)
+})
+
+const selectedClassData = computed((): GameClass | undefined => {
+  return classes.find((c) => c.name === selectedClass.value)
+})
+
+function formatStat(value: number): string {
+  if (value > 0) return `+${value}`
+  return String(value)
+}
+
+function formatStatClass(value: number): string {
+  if (value > 0) return 'stat-positive'
+  if (value < 0) return 'stat-negative'
+  return 'stat-neutral'
+}
 
 // Unlocked boosters for selection
 const unlockedBoosters = computed(() => progression.unlockedBoosters)
@@ -127,6 +149,24 @@ function handleCancel() {
             {{ race }}
           </button>
         </div>
+        <!-- Race Description -->
+        <div v-if="selectedRaceData" class="selection-details">
+          <div class="details-stats">
+            <span :class="formatStatClass(selectedRaceData.stats.str)">STR {{ formatStat(selectedRaceData.stats.str) }}</span>
+            <span :class="formatStatClass(selectedRaceData.stats.int)">INT {{ formatStat(selectedRaceData.stats.int) }}</span>
+            <span :class="formatStatClass(selectedRaceData.stats.wis)">WIS {{ formatStat(selectedRaceData.stats.wis) }}</span>
+            <span :class="formatStatClass(selectedRaceData.stats.dex)">DEX {{ formatStat(selectedRaceData.stats.dex) }}</span>
+            <span :class="formatStatClass(selectedRaceData.stats.con)">CON {{ formatStat(selectedRaceData.stats.con) }}</span>
+            <span class="stat-info">HD +{{ selectedRaceData.hitdie }}</span>
+            <span v-if="selectedRaceData.expPenalty !== 100" class="stat-xp">XP {{ selectedRaceData.expPenalty }}%</span>
+          </div>
+          <div class="details-desc">{{ selectedRaceData.description }}</div>
+          <div v-if="selectedRaceData.abilities.length > 0" class="details-abilities">
+            <span v-for="ability in selectedRaceData.abilities" :key="ability.id" class="ability-tag" :title="ability.description">
+              {{ ability.name }}
+            </span>
+          </div>
+        </div>
       </PanelFrame>
 
       <!-- Class Selection -->
@@ -142,6 +182,23 @@ function handleCancel() {
           >
             {{ cls }}
           </button>
+        </div>
+        <!-- Class Description -->
+        <div v-if="selectedClassData" class="selection-details">
+          <div class="details-stats">
+            <span :class="formatStatClass(selectedClassData.stats.str)">STR {{ formatStat(selectedClassData.stats.str) }}</span>
+            <span :class="formatStatClass(selectedClassData.stats.int)">INT {{ formatStat(selectedClassData.stats.int) }}</span>
+            <span :class="formatStatClass(selectedClassData.stats.wis)">WIS {{ formatStat(selectedClassData.stats.wis) }}</span>
+            <span :class="formatStatClass(selectedClassData.stats.dex)">DEX {{ formatStat(selectedClassData.stats.dex) }}</span>
+            <span :class="formatStatClass(selectedClassData.stats.con)">CON {{ formatStat(selectedClassData.stats.con) }}</span>
+            <span class="stat-info">HD {{ selectedClassData.hitdie >= 0 ? '+' : '' }}{{ selectedClassData.hitdie }}</span>
+            <span class="stat-info">{{ selectedClassData.maxAttacks }} atk</span>
+            <span v-if="selectedClassData.usesMagic" class="stat-magic">Magic</span>
+          </div>
+          <div class="details-desc">{{ selectedClassData.description }}</div>
+          <div class="details-behavior">
+            <span class="behavior-label">AI:</span> {{ selectedClassData.botBehavior }}
+          </div>
         </div>
       </PanelFrame>
 
@@ -311,6 +368,89 @@ function handleCancel() {
   border-color: var(--indigo);
   color: var(--indigo);
   text-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+/* Selection Details */
+.selection-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.details-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.stat-positive {
+  color: var(--green);
+}
+
+.stat-negative {
+  color: var(--red);
+}
+
+.stat-neutral {
+  color: var(--text-dim);
+}
+
+.stat-info {
+  color: var(--cyan);
+}
+
+.stat-xp {
+  color: var(--amber);
+}
+
+.stat-magic {
+  color: var(--purple);
+  padding: 1px 4px;
+  background: rgba(139, 92, 246, 0.15);
+  border-radius: 2px;
+}
+
+.details-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.details-abilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ability-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 3px 6px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 3px;
+  color: var(--cyan);
+  cursor: help;
+}
+
+.ability-tag:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--cyan);
+}
+
+.details-behavior {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.behavior-label {
+  color: var(--purple);
+  font-weight: bold;
 }
 
 .personality-list {

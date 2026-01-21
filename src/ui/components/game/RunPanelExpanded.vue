@@ -3,10 +3,11 @@ import { ref, computed, onUnmounted } from 'vue'
 import type { ActiveRun, DisplayItem, EquipSlot } from '@/stores/runs'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
-import { useRunDuration } from '@/ui/composables/useRunDuration'
+import { useSettingsStore, type PanelStates } from '@/stores/settings'
+import { useRunDuration } from '@/ui/composables/use-run-duration'
 import DungeonGrid from '../DungeonGrid.vue'
 import ProgressBar from '../common/ProgressBar.vue'
-import PanelFrame from '../common/PanelFrame.vue'
+import CollapsibleSection from '../common/CollapsibleSection.vue'
 import RunSummary from '../analytics/RunSummary.vue'
 
 const props = defineProps<{
@@ -22,6 +23,52 @@ const emit = defineEmits<{
 
 const runs = useRunsStore()
 const progression = useProgressionStore()
+const settingsStore = useSettingsStore()
+
+// Panel toggle helper
+function togglePanel(panel: keyof PanelStates) {
+  settingsStore.togglePanel(panel)
+}
+
+// Resistance display config
+const RESIST_CONFIG: Record<string, { label: string; color: string }> = {
+  FIRE: { label: 'F', color: '#ef4444' },
+  COLD: { label: 'C', color: '#06b6d4' },
+  POISON: { label: 'P', color: '#22c55e' },
+  ACID: { label: 'A', color: '#84cc16' },
+  LIGHTNING: { label: 'L', color: '#eab308' },
+  LIGHT: { label: 'Lt', color: '#fbbf24' },
+  DARK: { label: 'Dk', color: '#6366f1' },
+  DRAIN: { label: 'Dr', color: '#a855f7' },
+}
+
+// Computed: active resistances for display
+const activeResistances = computed(() => {
+  return Object.entries(props.run.resistances)
+    .filter(([_, value]) => value !== 0)
+    .map(([type, value]) => ({
+      type,
+      value: value as number,
+      ...RESIST_CONFIG[type] || { label: type[0], color: '#94a3b8' }
+    }))
+})
+
+// Status effect display config
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  speed: { label: 'SPD', color: '#06b6d4' },
+  heroism: { label: 'HERO', color: '#f59e0b' },
+  berserk: { label: 'BRSRK', color: '#ef4444' },
+  blessing: { label: 'BLESS', color: '#fbbf24' },
+  protection: { label: 'PROT', color: '#3b82f6' },
+}
+
+// Computed: formatted status effects
+const activeStatuses = computed(() => {
+  return props.run.statusEffects.map(effect => ({
+    ...effect,
+    ...STATUS_CONFIG[effect.type] || { label: effect.type.toUpperCase(), color: '#94a3b8' }
+  }))
+})
 
 // Get personal best for comparison in RunSummary (uses cached value from store)
 const personalBest = computed(() => {
@@ -182,8 +229,12 @@ onUnmounted(() => {
     <div class="expanded-content">
       <!-- Stats Panel -->
       <aside class="stats-panel">
-        <!-- Vitals: Compact HP/MP bars + level/XP/gold -->
-        <PanelFrame class="stat-section vitals">
+        <!-- Vitals: HP/MP bars + level/XP/gold -->
+        <CollapsibleSection
+          title="Vitals"
+          :expanded="settingsStore.panelStates.vitals"
+          @toggle="togglePanel('vitals')"
+        >
           <div class="resource-row">
             <span class="stat-label">HP</span>
             <ProgressBar :current="run.hp" :max="run.maxHp" variant="hp" :show-text="true" size="md" />
@@ -202,11 +253,120 @@ onUnmounted(() => {
             <span class="stat-item">T:<span class="val">{{ run.turns.toLocaleString() }}</span></span>
             <span class="stat-item">K:<span class="val kills">{{ run.kills }}</span></span>
           </div>
-        </PanelFrame>
+        </CollapsibleSection>
 
-        <!-- Equipment Grid: 6x2 -->
-        <PanelFrame class="stat-section equipment">
-          <h3>Equipped</h3>
+        <!-- Core Stats: STR, DEX, etc. -->
+        <CollapsibleSection
+          title="Stats"
+          :expanded="settingsStore.panelStates.stats"
+          @toggle="togglePanel('stats')"
+        >
+          <div class="core-stats-grid">
+            <div class="core-stat">
+              <span class="core-label">STR</span>
+              <span class="core-val str">{{ run.stats.str }}</span>
+            </div>
+            <div class="core-stat">
+              <span class="core-label">INT</span>
+              <span class="core-val int">{{ run.stats.int }}</span>
+            </div>
+            <div class="core-stat">
+              <span class="core-label">DEX</span>
+              <span class="core-val dex">{{ run.stats.dex }}</span>
+            </div>
+            <div class="core-stat">
+              <span class="core-label">WIS</span>
+              <span class="core-val wis">{{ run.stats.wis }}</span>
+            </div>
+            <div class="core-stat">
+              <span class="core-label">CON</span>
+              <span class="core-val con">{{ run.stats.con }}</span>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        <!-- Combat Stats: AC, EVA, DMG, SPD -->
+        <CollapsibleSection
+          title="Combat"
+          :expanded="settingsStore.panelStates.combat"
+          @toggle="togglePanel('combat')"
+        >
+          <div class="combat-stats">
+            <div class="combat-row">
+              <span class="combat-label">AC</span>
+              <span class="combat-val armor">{{ run.combat.armor }}</span>
+            </div>
+            <div class="combat-row">
+              <span class="combat-label">EVA</span>
+              <span class="combat-val evasion">{{ run.combat.evasion }}</span>
+            </div>
+            <div class="combat-row">
+              <span class="combat-label">DMG</span>
+              <span class="combat-val damage">{{ run.combat.meleeDamage }}</span>
+            </div>
+            <div class="combat-row">
+              <span class="combat-label">SPD</span>
+              <span class="combat-val speed" :class="{ buffed: run.combat.speed > 100, debuffed: run.combat.speed < 100 }">
+                {{ run.combat.speed }}
+              </span>
+            </div>
+            <div class="combat-row">
+              <span class="combat-label">ACC</span>
+              <span class="combat-val accuracy">{{ run.combat.accuracy }}</span>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        <!-- Resistances (only show if any) -->
+        <CollapsibleSection
+          v-if="activeResistances.length > 0"
+          title="Resist"
+          :expanded="settingsStore.panelStates.resist"
+          :badge="activeResistances.length"
+          @toggle="togglePanel('resist')"
+        >
+          <div class="resist-grid">
+            <div
+              v-for="resist in activeResistances"
+              :key="resist.type"
+              class="resist-item"
+              :title="`${resist.type}: ${resist.value}%`"
+            >
+              <span class="resist-label" :style="{ color: resist.color }">{{ resist.label }}</span>
+              <span class="resist-val" :class="{ immune: resist.value >= 100, vuln: resist.value < 0 }">
+                {{ resist.value }}
+              </span>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        <!-- Status Effects (only show if any) -->
+        <CollapsibleSection
+          v-if="activeStatuses.length > 0"
+          title="Status"
+          :expanded="settingsStore.panelStates.status"
+          :badge="activeStatuses.length"
+          @toggle="togglePanel('status')"
+        >
+          <div class="status-effects">
+            <div
+              v-for="status in activeStatuses"
+              :key="status.type"
+              class="status-effect"
+              :style="{ borderColor: status.color }"
+            >
+              <span class="status-name" :style="{ color: status.color }">{{ status.label }}</span>
+              <span class="status-turns">{{ status.turnsRemaining }}</span>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        <!-- Equipment Grid -->
+        <CollapsibleSection
+          title="Equipped"
+          :expanded="settingsStore.panelStates.equipment"
+          @toggle="togglePanel('equipment')"
+        >
           <div class="equip-grid">
             <div v-for="slot in equipSlots" :key="slot.id" class="equip-slot" :title="getSlotTooltip(slot.id)">
               <span class="slot-char" :style="{ color: getSlotColor(slot.id) }">
@@ -215,11 +375,15 @@ onUnmounted(() => {
               <span class="slot-label">{{ slot.label }}</span>
             </div>
           </div>
-        </PanelFrame>
+        </CollapsibleSection>
 
-        <!-- Inventory: Scrollable list -->
-        <PanelFrame class="stat-section inventory">
-          <h3>Pack ({{ run.inventory.length }})</h3>
+        <!-- Inventory -->
+        <CollapsibleSection
+          title="Pack"
+          :expanded="settingsStore.panelStates.inventory"
+          :badge="run.inventory.length"
+          @toggle="togglePanel('inventory')"
+        >
           <div class="inventory-list">
             <div v-for="item in run.inventory" :key="item.id" class="inv-item">
               <span class="item-char" :style="{ color: '#' + item.color.toString(16).padStart(6, '0') }">{{ item.char }}</span>
@@ -229,17 +393,15 @@ onUnmounted(() => {
             </div>
             <div v-if="run.inventory.length === 0" class="inv-empty">Empty</div>
           </div>
-        </PanelFrame>
+        </CollapsibleSection>
 
-        <!-- Status -->
-        <PanelFrame class="stat-section">
-          <div class="status-badges">
-            <span class="status-badge" :class="run.state">
-              {{ run.state === 'dead' ? 'DEAD' : run.state === 'running' ? 'ACTIVE' : 'STARTING' }}
-            </span>
-            <span v-if="run.turbo" class="status-badge turbo">TURBO</span>
-          </div>
-        </PanelFrame>
+        <!-- Run Status Badge -->
+        <div class="run-status-badges">
+          <span class="status-badge" :class="run.state">
+            {{ run.state === 'dead' ? 'DEAD' : run.state === 'running' ? 'ACTIVE' : 'STARTING' }}
+          </span>
+          <span v-if="run.turbo" class="status-badge turbo">TURBO</span>
+        </div>
       </aside>
 
       <!-- Dungeon View -->
@@ -635,6 +797,152 @@ onUnmounted(() => {
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid var(--amber);
   color: var(--amber);
+}
+
+/* Run status badges at bottom of panel */
+.run-status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  background: var(--highlight);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+/* Vitals layout (inside collapsible) */
+.resource-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.resource-row :deep(.progress-bar) {
+  flex: 1;
+}
+
+.resource-row .stat-label {
+  width: 20px;
+  flex-shrink: 0;
+}
+
+/* Core Stats Grid */
+.core-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 8px;
+}
+
+.core-stat {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.core-label {
+  color: var(--text-dim);
+}
+
+.core-val {
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.core-val.str { color: var(--red); }
+.core-val.dex { color: var(--green); }
+.core-val.con { color: var(--amber); }
+.core-val.int { color: var(--cyan); }
+.core-val.wis { color: var(--purple); }
+
+/* Combat Stats */
+.combat-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.combat-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.combat-label {
+  color: var(--text-dim);
+}
+
+.combat-val {
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.combat-val.armor { color: var(--cyan); }
+.combat-val.evasion { color: var(--green); }
+.combat-val.damage { color: var(--red); }
+.combat-val.accuracy { color: var(--amber); }
+.combat-val.speed { color: var(--text-secondary); }
+.combat-val.speed.buffed { color: var(--green); }
+.combat-val.speed.debuffed { color: var(--red); }
+
+/* Resistances Grid */
+.resist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 8px;
+}
+
+.resist-item {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.resist-label {
+  font-weight: bold;
+}
+
+.resist-val {
+  color: var(--text-secondary);
+}
+
+.resist-val.immune {
+  color: var(--green);
+  text-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+}
+
+.resist-val.vuln {
+  color: var(--red);
+}
+
+/* Status Effects */
+.status-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.status-effect {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: var(--highlight);
+  border: 1px solid;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.status-name {
+  font-weight: bold;
+}
+
+.status-turns {
+  color: var(--text-dim);
 }
 
 /* Dungeon */

@@ -119,6 +119,15 @@ function getPrereqNames(boosterId: string): string[] {
           :unlock-condition="item.unlockCondition"
           :prestige="item.prestige"
           :type="item.type"
+          :stats="item.stats"
+          :hitdie="item.hitdie"
+          :infravision="'infravision' in item ? item.infravision : undefined"
+          :exp-penalty="'expPenalty' in item ? item.expPenalty : undefined"
+          :abilities="'abilities' in item ? item.abilities : undefined"
+          :max-attacks="'maxAttacks' in item ? item.maxAttacks : undefined"
+          :primary-stat="'primaryStat' in item ? item.primaryStat : undefined"
+          :uses-magic="'usesMagic' in item ? item.usesMagic : undefined"
+          :bot-behavior="'botBehavior' in item ? item.botBehavior : undefined"
           @unlock="handleUnlock"
         />
 
