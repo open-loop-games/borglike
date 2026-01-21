@@ -54,6 +54,7 @@ export {
   updateMonsterEnergy,
   resetMonsterEnergy,
   canMonsterAct,
+  processMonsterTurns,
 } from './monster-ai'
 
 // Items
@@ -80,8 +81,15 @@ export {
 export {
   createGame,
   processTurn,
+  addMessage,
+  BASE_ENERGY_COST,
+} from './game-loop'
+
+// Action Handlers
+export {
   handleMove,
   handleAttack,
+  handleRangedAttack,
   handleDescend,
   handleAscend,
   handlePickup,
@@ -95,8 +103,28 @@ export {
   handleShopBuy,
   handleShopSell,
   handleCast,
-  processMonsterTurns,
-} from './game-loop'
+  handleReturnPortal,
+  handleUseHealer,
+} from './actions'
+
+// Status Effects
+export {
+  addStatusEffect,
+  tickStatusEffects,
+  addTempResistance,
+  tickTempResistances,
+  processPoison,
+  checkSecondWind,
+} from './status-effects'
+
+// Level Cache
+export {
+  touchLevelCache,
+  evictOldLevels,
+  getCachedLevel,
+  cacheLevel,
+  LEVEL_CACHE_MAX_SIZE,
+} from './level-cache'
 
 // Features
 export {
@@ -132,14 +160,14 @@ export {
   createBotState,
   getPersonalityConfig,
   BASE_CONFIGS,
-} from './bot-ai'
+} from './bot'
 
 // Bot AI Types
 export type {
   BotState,
   BotGoal,
   PersonalityConfig,
-} from './bot-ai'
+} from './bot'
 
 // Game Runner
 export {
@@ -189,5 +217,4 @@ export {
   findTarget,
   getNearestVisibleMonster,
   findTeleportDestination,
-  type SpellCastResult,
 } from './spell-resolution'
