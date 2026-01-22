@@ -174,6 +174,10 @@ export function getDepthBracket(depth: number): DepthRequirement {
 /**
  * Check if the character is ready for a target depth.
  *
+ * Checks:
+ * 1. Level requirements (class-specific, Angband borg-inspired)
+ * 2. Consumable requirements (potions, scrolls, portals)
+ *
  * @param caution - Personality caution level (0-100). Default 50 for baseline.
  *                  Lower caution = lower requirements (aggressive can yolo).
  *                  Higher caution = stricter requirements (cautious over-prepares).
@@ -185,6 +189,14 @@ export function getDepthReadiness(
   targetDepth: number,
   caution: number = 50
 ): string | null {
+  // Level check: class-specific requirements
+  // Warriors can go deep early, mages need to overlevel
+  const classId = (character as { classId?: string }).classId
+  const minLevel = getMinLevel(targetDepth, classId)
+  if (character.level < minLevel) {
+    return `Need level ${minLevel} for depth ${targetDepth} (have ${character.level})`
+  }
+
   const baseReq = getDepthBracket(targetDepth)
   const req = scaleRequirement(baseReq, caution)
 
@@ -395,21 +407,87 @@ export function getEffectiveGold(character: Character): number {
 }
 
 /**
- * Get minimum character level for a depth.
- * Simple 1:1 ratio - character should be at least level N for depth N.
+ * Class tier for level requirements (Angband borg-inspired).
  *
- * This is used to determine if bot should ascend to farm easier content.
+ * - TANK: Warriors/melee - can handle 4 levels deeper than their level
+ * - MEDIUM: Hybrid classes - need to match depth with level
+ * - SQUISHY: Pure casters - need 5 levels above depth
  */
-export function getMinLevel(depth: number): number {
-  return Math.max(1, depth)
+type ClassTier = 'TANK' | 'MEDIUM' | 'SQUISHY'
+
+/**
+ * Get class tier for level requirement calculation.
+ * Based on Angband borg's class-specific depth rules.
+ */
+function getClassTier(classId: string): ClassTier {
+  switch (classId) {
+    // Tank: Strong melee, high HP - can go deep early
+    case 'warrior':
+    case 'berserker':
+    case 'blackguard':
+      return 'TANK'
+
+    // Squishy: Pure casters - need to overlevel significantly
+    case 'mage':
+    case 'archmage':
+    case 'necromancer':
+      return 'SQUISHY'
+
+    // Medium: Hybrids - need level to match depth
+    case 'paladin':
+    case 'priest':
+    case 'druid':
+    case 'ranger':
+    case 'rogue':
+    case 'monk':
+    case 'bard':
+    default:
+      return 'MEDIUM'
+  }
 }
 
 /**
- * Check if character is under-leveled for current depth.
- * Returns true if character level < depth (1:1 ratio).
+ * Get level offset for a class tier.
+ * Positive = needs to be higher level than depth.
+ * Negative = can be lower level than depth.
+ *
+ * Formula: required level = depth + offset
  */
-export function isUnderLeveled(characterLevel: number, depth: number): boolean {
-  return characterLevel < getMinLevel(depth)
+function getClassLevelOffset(tier: ClassTier): number {
+  switch (tier) {
+    case 'TANK': return -4    // level >= depth - 4
+    case 'MEDIUM': return 0   // level >= depth
+    case 'SQUISHY': return 5  // level >= depth + 5
+  }
+}
+
+/**
+ * Get minimum character level for a depth, accounting for class.
+ *
+ * Angband borg-inspired:
+ * - Warriors: can handle depth 4 levels above their level
+ * - Hybrids: need to match depth with level
+ * - Mages: need to be 5 levels above depth
+ *
+ * @param depth - Target dungeon depth
+ * @param classId - Character's class ID (defaults to medium tier)
+ */
+export function getMinLevel(depth: number, classId?: string): number {
+  const tier = classId ? getClassTier(classId) : 'MEDIUM'
+  const offset = getClassLevelOffset(tier)
+  return Math.max(1, depth + offset)
+}
+
+/**
+ * Check if character is under-leveled for a depth.
+ * Uses class-specific requirements.
+ *
+ * @param characterLevel - Current character level
+ * @param depth - Target depth to check against
+ * @param classId - Character's class ID (defaults to medium tier)
+ */
+export function isUnderLeveled(characterLevel: number, depth: number, classId?: string): boolean {
+  return characterLevel < getMinLevel(depth, classId)
 }
 
 // ============================================================================

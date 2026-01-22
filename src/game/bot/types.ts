@@ -155,6 +155,8 @@ export interface BotState {
   // Farming loop state (depth preparation system)
   /** Whether bot is in farming mode (blocked from descent, farming for gold/XP) */
   farmingMode: boolean
+  /** The depth we're trying to reach but can't (triggers farming) */
+  farmBlockedDepth: number
   /** Gold target to reach before town trip */
   farmGoldTarget: number
   /** Turn when farming started (for timeout detection) */
@@ -169,6 +171,8 @@ export interface BotState {
   tetheredFlipCount: number
   /** Turn when last level flip occurred (for minimum interval enforcement) */
   lastFlipTurn: number
+  /** Tiles seen via FOV on THIS level visit - reset on level change */
+  seenThisVisit: Set<string>
 }
 
 // ============================================================================

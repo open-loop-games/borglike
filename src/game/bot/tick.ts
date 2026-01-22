@@ -23,6 +23,7 @@ import {
   resetLevelState,
   recordPosition,
   setGoal,
+  clearGoal,
   recordProgress,
   incrementTurn,
   cleanupBlacklist,
@@ -77,37 +78,29 @@ export function runBotTick(
 
   // Check for level change
   if (game.character.depth !== botState.currentDepth) {
-    const prevDepth = botState.currentDepth
     const wasInFarmingMode = botState.farmingMode
     resetLevelState(botState, game.character.depth, game.turn)
     invalidateFrontierCache()
 
-    // Set knownStairsUp based on how we entered the level
+    // Set known stairs immediately from level data on level transition
+    // Both stairsUp and stairsDown positions are stored in the level
     if (game.character.depth > 0) {
-      if (prevDepth === 0) {
-        // Returned from town via portal: current position is portal, not stairs
-        // Get stairsUp from level data
-        const stairsUp = game.currentLevel.stairsUp
-        if (stairsUp) {
-          botState.knownStairsUp = { x: stairsUp.x, y: stairsUp.y }
-        }
-      } else if (game.character.depth > prevDepth) {
-        // Descended normally: current position is stairs_up
-        botState.knownStairsUp = { x: game.character.position.x, y: game.character.position.y }
-      } else if (game.character.depth < prevDepth) {
-        // Ascended: use cached level's stairsUp (we visited this level before)
-        const stairsUp = game.currentLevel.stairsUp
-        if (stairsUp) {
-          botState.knownStairsUp = { x: stairsUp.x, y: stairsUp.y }
-        }
+      const stairsUp = game.currentLevel.stairsUp
+      const stairsDown = game.currentLevel.stairsDown
+
+      if (stairsUp) {
+        botState.knownStairsUp = { x: stairsUp.x, y: stairsUp.y }
+      }
+      if (stairsDown) {
+        botState.knownStairsDown = { x: stairsDown.x, y: stairsDown.y }
       }
     }
 
     // Set tethered origin after level change if in farming mode (for tethered exploration)
-    // Origin = stairsUp position (not portal position if returning from town)
+    // Origin = current position (where we entered the level)
+    // The tether check in evaluateAscendToFarm will block flipping until exploration is done
     if (wasInFarmingMode && game.character.depth !== 0) {
-      const origin = botState.knownStairsUp ?? { x: game.character.position.x, y: game.character.position.y }
-      botState.tetheredOrigin = origin
+      botState.tetheredOrigin = { x: game.character.position.x, y: game.character.position.y }
     }
   }
 
@@ -122,6 +115,9 @@ export function runBotTick(
 
   // Update known stairs if visible
   updateKnownStairs(game, botState)
+
+  // Record all currently visible tiles (for tethered exploration check)
+  recordVisibleTiles(game, botState)
 
   // Compute danger grid
   const dangerResult = computeDangerGrid(game)
@@ -571,6 +567,25 @@ function updateKnownStairs(game: GameState, botState: BotState): void {
   }
 }
 
+/**
+ * Record all currently visible tiles for tethered exploration tracking.
+ * This allows us to check if the bot has "seen" tiles on THIS level visit,
+ * rather than relying on cached exploration state which persists across visits.
+ */
+function recordVisibleTiles(game: GameState, botState: BotState): void {
+  const level = game.currentLevel
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+    for (let x = 0; x < level.width; x++) {
+      const tile = row[x]
+      if (tile?.visible) {
+        botState.seenThisVisit.add(`${x},${y}`)
+      }
+    }
+  }
+}
+
 function handleStuckRecovery(
   game: GameState,
   _context: BotContext,
@@ -638,7 +653,7 @@ function handleGoalMovement(
   if (isSamePosition(pos, goal.target)) {
     recordProgress(botState, game.turn)
     updateTownState(botState, goal, game)
-    return executeGoalAction(goal, game)
+    return executeGoalAction(goal, game, botState)
   }
 
   // Build avoid set (skip when fleeing)
@@ -786,7 +801,7 @@ function updateTownState(botState: BotState, goal: BotGoal, _game: GameState): v
   }
 }
 
-function executeGoalAction(goal: BotGoal, game: GameState): GameAction {
+function executeGoalAction(goal: BotGoal, game: GameState, botState: BotState): GameAction {
   switch (goal.type) {
     case 'DESCEND':
       return { type: 'descend' }
@@ -839,6 +854,36 @@ function executeGoalAction(goal: BotGoal, game: GameState): GameAction {
 
     case 'EXIT_TOWN':
       return { type: 'descend' }
+
+    case 'ASCEND_TO_FARM':
+      return { type: 'ascend' }
+
+    case 'TOWN_TRIP':
+      // Use the town portal scroll (stored in targetId)
+      if (goal.targetId) {
+        return { type: 'use', itemId: goal.targetId }
+      }
+      return { type: 'wait' }
+
+    case 'USE_ALTAR':
+      return { type: 'use_altar' }
+
+    case 'VISIT_MERCHANT':
+      // Reached merchant - wait for next tick to re-evaluate and handle shop interaction
+      // (Shop interaction requires more complex state than just reaching position)
+      return { type: 'wait' }
+
+    case 'HUNT_UNIQUE':
+      // Reached unique position - wait for tier system to handle adjacent combat
+      // (Monster may have moved; tier handlers will engage when adjacent)
+      return { type: 'wait' }
+
+    case 'FARM':
+      // Reached farm target - clear goal to immediately re-evaluate
+      // Tether sweep targets are just positions to reveal FOV, no need to wait
+      // If there's a monster/item, tier system will handle on next tick
+      clearGoal(botState)
+      return { type: 'wait' }
 
     default:
       return { type: 'wait' }

@@ -41,6 +41,7 @@ export function createBotState(): BotState {
     blacklistedTargets: new Map(),
     // Farming loop state
     farmingMode: false,
+    farmBlockedDepth: 0,
     farmGoldTarget: 0,
     farmStartTurn: 0,
     // Tethered exploration
@@ -48,6 +49,7 @@ export function createBotState(): BotState {
     tetheredRadius: 0,
     tetheredFlipCount: 0,
     lastFlipTurn: 0,
+    seenThisVisit: new Set(),
   }
 }
 
@@ -79,6 +81,8 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.corridorFacing = null
   // Exploration blacklist - clear on level change
   state.blacklistedTargets.clear()
+  // Tethered exploration - reset seen tiles for this visit
+  state.seenThisVisit.clear()
 }
 
 /**

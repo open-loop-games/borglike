@@ -48,6 +48,7 @@ function createMinimalBotState(): BotState {
     blacklistedTargets: new Map(),
     // Farming loop state
     farmingMode: false,
+    farmBlockedDepth: 0,
     farmGoldTarget: 0,
     farmStartTurn: 0,
     // Tethered exploration
@@ -55,6 +56,7 @@ function createMinimalBotState(): BotState {
     tetheredRadius: 0,
     tetheredFlipCount: 0,
     lastFlipTurn: 0,
+    seenThisVisit: new Set(),
   }
 }
 

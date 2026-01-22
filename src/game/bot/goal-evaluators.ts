@@ -6,6 +6,7 @@
  */
 
 import type { GroundItem, Point } from '../types'
+import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext, DangerMap } from './types'
 import { getTile } from '../dungeon'
 import { getLocalDanger } from './danger'
@@ -14,6 +15,8 @@ import { selectTarget, shouldEngage, findAdjacentMonster, hasRangedWeapon, findB
 import { getBowRange, canRangedAttack } from '../combat'
 import { shouldRetreat, findBestEscapeRoute } from './survival'
 import { computeSafetyFlow } from './safety-flow'
+import { computeFlow, getFlowCost } from './flow'
+import { MAX_FLOW_COST } from './types'
 import { evaluateItem, shouldPickup } from './items'
 import { countHealingPotions } from './merchant'
 import {
@@ -40,6 +43,9 @@ import { monsters as MONSTERS } from '../data/monsters'
 
 /** Toggle to disable exploration module for A/B testing */
 const USE_EXPLORATION_MODULE = true
+
+/** Tethered exploration radii: 5x5 → 9x9 → 21x21 */
+const TETHER_RADII = [2, 4, 10]
 
 // ============================================================================
 // FLEE EVALUATOR
@@ -445,37 +451,151 @@ export function evaluateTake(
  * Evaluate DESCEND goal - go to next level
  *
  * Gates descent on:
- * 1. Known stairs location
+ * 1. Consumable readiness (healing, escapes, town portals) - checked FIRST for proactive farming
  * 2. Unique blockers (2+ living uniques in depth range)
- * 3. Consumable readiness (healing, escapes, town portals)
+ * 3. Known stairs location
  * 4. Exploration threshold or patience exceeded
+ *
+ * IMPORTANT: Readiness is checked BEFORE requiring known stairs, so farming can trigger
+ * proactively even while exploring. This prevents bots from dying while looking for stairs
+ * when they don't have the consumables needed for the next depth.
  *
  * Uses lower exploration threshold for labyrinths (dead ends aren't worth exploring)
  */
 export function evaluateDescend(context: BotContext, botState: BotState): BotGoal | null {
   const { game, config, effectiveConfig } = context
   const character = game.character
-
-  // Need to know where stairs are
-  if (!botState.knownStairsDown) return null
-
   const nextDepth = character.depth + 1
 
-  // Check unique blockers (2+ living uniques blocks descent)
-  const uniqueBlocker = getUniqueBlocker(
-    character.depth,
-    nextDepth,
-    game.uniqueState,
-    MONSTERS
-  )
-  if (uniqueBlocker) {
-    // Don't descend - should hunt unique instead
-    return null
+  // ============================================================================
+  // PROACTIVE READINESS CHECK - Must happen BEFORE requiring known stairs
+  // This lets farming trigger even while exploring for stairs
+  // ============================================================================
+
+  // If in farming mode, check if ready for blocked depth
+  // This prevents yo-yo: at depth 3, readiness for 4 passes but we're blocked at 5
+  if (botState.farmingMode && botState.farmBlockedDepth > 0) {
+    const blockedReadiness = getDepthReadiness(
+      character,
+      character.inventory,
+      botState.farmBlockedDepth,
+      effectiveConfig.caution
+    )
+    if (blockedReadiness) {
+      // Still not ready for blocked depth - continue farming loop
+      // Priority: TOWN_TRIP > ASCEND_TO_FARM > FARM
+      const goldTarget = getGoldTarget(botState.farmBlockedDepth, effectiveConfig.caution)
+
+      // 1. If ready for town trip, use portal (unless at depth 1 - just walk)
+      const townTrip = evaluateTownTrip(context)
+      if (townTrip) return townTrip
+
+      // 1b. At depth 1 and ready for town? Walk up stairs instead of using TP
+      if (character.depth === 1) {
+        const townGoldTarget = getGoldTarget(character.depth + 1, effectiveConfig.caution)
+        const hasGold = getEffectiveGold(character) >= townGoldTarget
+        const hasLevel = character.level >= character.depth
+        if (hasGold && hasLevel && botState.knownStairsUp) {
+          // Clear farming mode - heading to town
+          botState.farmingMode = false
+          botState.farmGoldTarget = 0
+          botState.tetheredOrigin = null
+          botState.tetheredRadius = 0
+          botState.tetheredFlipCount = 0
+          return {
+            type: 'ASCEND_TO_FARM', // Reuse this goal type - it ascends
+            target: botState.knownStairsUp,
+            targetId: null,
+            reason: `Walking to town (${character.gold}g, L${character.level})`,
+            startTurn: game.turn,
+          }
+        }
+      }
+
+      // 2. If under-leveled, ascend to farm easier content
+      const ascend = evaluateAscendToFarm(context)
+      if (ascend) return ascend
+
+      // 3. Farm on current level (monsters/items within tether)
+      const farm = evaluateFarm(context, goldTarget)
+      if (farm) return farm
+
+      // 4. Tether sweep - actively walk to unseen tiles within tether radius
+      // This is the key farming exploration: walk around stairs to find spawns
+      // Uses FARM goal to indicate "explore this area for farming purposes"
+      if (botState.tetheredOrigin) {
+        // Try current radius, advance if FOV already covers it
+        let radius = botState.tetheredRadius || TETHER_RADII[0]!
+        let flipCount = botState.tetheredFlipCount
+
+        // Keep advancing radius until we find unseen tiles or exhaust all radii
+        while (flipCount < TETHER_RADII.length) {
+          radius = TETHER_RADII[flipCount]!
+          const unseenTarget = findUnseenTileInTether(context, botState.tetheredOrigin, radius)
+
+          if (unseenTarget) {
+            // Found unseen tiles - update state and return sweep goal
+            botState.tetheredRadius = radius
+            botState.tetheredFlipCount = flipCount
+            const size = radius * 2 + 1
+            return {
+              type: 'FARM',
+              target: unseenTarget,
+              targetId: null,
+              reason: `Sweeping tether ${size}x${size} (${character.gold}/${goldTarget}g)`,
+              startTurn: game.turn,
+            }
+          }
+
+          // This radius is fully seen, try next larger radius
+          flipCount++
+        }
+
+        // All radii exhausted - tether cycle complete, clear for descent
+        botState.tetheredRadius = 0
+        botState.tetheredFlipCount = 0
+        botState.tetheredOrigin = null
+        // Fall through to allow descent
+      }
+
+      // 5. At farming floor, can't ascend further - check if tether is complete
+      // If tether is complete, advance to next radius and allow descent
+      // Farming floor = blockedDepth - 2 (e.g., depth 3 for blocked at 5)
+      const farmingFloor = Math.max(1, botState.farmBlockedDepth - 2)
+      if (character.depth <= farmingFloor && botState.tetheredOrigin) {
+        if (isTetheredExplorationComplete(context, botState.tetheredOrigin, botState.tetheredRadius)) {
+          // Tether complete - advance to next radius for after descent
+          botState.tetheredFlipCount++
+          if (botState.tetheredFlipCount < TETHER_RADII.length) {
+            // Set next radius (e.g., 5x5 → 9x9), origin will be set by tick.ts after descent
+            botState.tetheredRadius = TETHER_RADII[botState.tetheredFlipCount]!
+            botState.tetheredOrigin = null // Will be set by tick.ts
+          } else {
+            // Done with tether cycle, reset for next cycle
+            botState.tetheredRadius = 0
+            botState.tetheredFlipCount = 0
+            botState.tetheredOrigin = null
+          }
+          // Fall through to DESCEND
+        }
+      }
+
+      // 5. Nothing to farm visible - return null to let EXPLORE find content
+      // (or fall through to DESCEND if tether was cleared above)
+      if (botState.tetheredOrigin) {
+        return null // Still tethered, need to explore
+      }
+      // Tether cleared or no tether - fall through to normal descent check
+    } else {
+      // Ready for blocked depth - clear farming mode and continue normally
+      botState.farmingMode = false
+      botState.farmBlockedDepth = 0
+      botState.farmGoldTarget = 0
+    }
   }
 
-  // Check consumable readiness (scaled by personality caution)
-  // Aggressive bots (low caution) can descend under-prepared
-  // Cautious bots need more supplies before going deeper
+  // Check consumable readiness for NEXT depth PROACTIVELY
+  // This triggers farming even before we find the stairs, preventing death from attrition
   const readinessIssue = getDepthReadiness(
     character,
     character.inventory,
@@ -483,10 +603,18 @@ export function evaluateDescend(context: BotContext, botState: BotState): BotGoa
     effectiveConfig.caution
   )
   if (readinessIssue) {
-    // Descent blocked - initiate farming loop
+    // Descent will be blocked - initiate farming loop NOW (even without known stairs)
     // Priority: TOWN_TRIP > ASCEND_TO_FARM > FARM > (fall through to EXPLORE)
 
     const goldTarget = getGoldTarget(nextDepth, effectiveConfig.caution)
+
+    // Track that we're farming for this depth (prevents repeated checks)
+    if (!botState.farmingMode) {
+      botState.farmingMode = true
+      botState.farmBlockedDepth = nextDepth
+      botState.farmGoldTarget = goldTarget
+      botState.farmStartTurn = game.turn
+    }
 
     // 1. If ready for town trip (gold + level), use portal
     const townTrip = evaluateTownTrip(context)
@@ -501,6 +629,26 @@ export function evaluateDescend(context: BotContext, botState: BotState): BotGoa
     if (farm) return farm
 
     // 4. Fall through - EXPLORE will find more monsters/items
+    // Don't return null here - we still want to explore while farming
+    // The farming mode flag will ensure we keep checking readiness
+  }
+
+  // ============================================================================
+  // STANDARD DESCENT CHECKS - Only proceed if ready for next depth
+  // ============================================================================
+
+  // Need to know where stairs are to actually descend
+  if (!botState.knownStairsDown) return null
+
+  // Check unique blockers (2+ living uniques blocks descent)
+  const uniqueBlocker = getUniqueBlocker(
+    character.depth,
+    nextDepth,
+    game.uniqueState,
+    MONSTERS
+  )
+  if (uniqueBlocker) {
+    // Don't descend - should hunt unique instead
     return null
   }
 
@@ -895,10 +1043,15 @@ export function evaluateVisitMerchant(
  * FARM is activated when descent is blocked by consumable requirements.
  * Bot kills monsters and collects items to accumulate gold for a town trip.
  *
+ * When tethered (after level flip during farming loop):
+ * - Prioritize targets WITHIN tether radius
+ * - If no monsters/items, walk to unseen tiles within tether to trigger spawns
+ *
  * Target selection:
- * 1. Nearest visible monster (gold from kills)
- * 2. Nearest valuable item (sell value)
- * 3. Falls through to EXPLORE if nothing visible
+ * 1. Nearest monster (within tether if tethered)
+ * 2. Nearest valuable item (within tether if tethered)
+ * 3. If tethered: nearest unseen tile within tether radius
+ * 4. Falls through to let other goals handle
  */
 export function evaluateFarm(
   context: BotContext,
@@ -911,8 +1064,10 @@ export function evaluateFarm(
   // Already have enough effective gold (gold + equipment sell value)? Don't need to farm
   if (getEffectiveGold(character) >= goldTarget) return null
 
-  // Under-leveled for this depth? Should ascend, not farm here
-  if (isUnderLeveled(character.level, character.depth)) return null
+  // Under-leveled check: only matters if NOT already in farming mode
+  // When farming (yo-yoing between depths), being under-leveled for current depth is expected
+  // The goal is to farm until ready for farmBlockedDepth, not until level >= current depth
+  if (!botState.farmingMode && isUnderLeveled(character.level, character.depth, character.classId)) return null
 
   // Set farming state
   botState.farmingMode = true
@@ -921,13 +1076,26 @@ export function evaluateFarm(
     botState.farmStartTurn = game.turn
   }
 
-  // Priority 1: Nearest visible monster (gold from kills)
-  if (visibleMonsters.length > 0) {
-    let closest = visibleMonsters[0]!
+  // Check if we're in tethered mode (after a level flip)
+  const isTethered = botState.tetheredOrigin !== null && botState.tetheredRadius > 0
+  const tetherOrigin = botState.tetheredOrigin
+  const tetherRadius = botState.tetheredRadius
+
+  // Helper to check if a position is within tether radius
+  const isWithinTether = (p: Point): boolean => {
+    if (!isTethered || !tetherOrigin) return true // Not tethered = all positions OK
+    const dx = Math.abs(p.x - tetherOrigin.x)
+    const dy = Math.abs(p.y - tetherOrigin.y)
+    return Math.max(dx, dy) <= tetherRadius
+  }
+
+  // Priority 1: Nearest visible monster (within tether if tethered)
+  const tetheredMonsters = visibleMonsters.filter(m => m.hp > 0 && isWithinTether(m.position))
+  if (tetheredMonsters.length > 0) {
+    let closest = tetheredMonsters[0]!
     let closestDist = Infinity
 
-    for (const monster of visibleMonsters) {
-      if (monster.hp <= 0) continue
+    for (const monster of tetheredMonsters) {
       const dist = Math.abs(monster.position.x - pos.x) + Math.abs(monster.position.y - pos.y)
       if (dist < closestDist) {
         closestDist = dist
@@ -944,14 +1112,13 @@ export function evaluateFarm(
     }
   }
 
-  // Priority 2: Nearest valuable item (sell value)
-  // Use larger radius than normal TAKE - we want all loot
+  // Priority 2: Nearest valuable item (within tether if tethered)
   const farmableItems = visibleItems.filter(item => {
     // Skip consumables we want to keep
     if (item.template.type === 'potion' || item.template.type === 'scroll') {
       return false
     }
-    return true
+    return isWithinTether(item.position)
   })
 
   if (farmableItems.length > 0) {
@@ -975,21 +1142,89 @@ export function evaluateFarm(
     }
   }
 
-  // Nothing visible to farm - fall through to EXPLORE
-  // EXPLORE will find more monsters/items
+  // Priority 3: If tethered, walk to unseen tiles within tether radius
+  // This ensures we traverse the area to populate seenThisVisit and find new spawns
+  if (isTethered && tetherOrigin) {
+    const unseenTarget = findUnseenTileInTether(context, tetherOrigin, tetherRadius)
+    if (unseenTarget) {
+      return {
+        type: 'FARM',
+        target: unseenTarget,
+        targetId: null,
+        reason: `Sweeping tether area (${character.gold}/${goldTarget}g)`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // Nothing to farm in tether area - fall through
   return null
 }
 
 /**
- * Check if enough tiles are explored within a radius of a point.
- * Used for tethered exploration - must explore 80% of tiles in radius.
+ * Find nearest walkable tile within tether radius that hasn't been seen this visit.
+ * Uses actual path distance (flow-based) to avoid long detours around walls.
+ */
+function findUnseenTileInTether(
+  context: BotContext,
+  origin: Point,
+  radius: number
+): Point | null {
+  const { game, botState } = context
+  const level = game.currentLevel
+  const pos = game.character.position
+
+  // Compute flow from character position to get actual path distances
+  const flowCosts = computeFlow(level, pos)
+
+  // Cap path distance: don't walk further than 2x the tether radius
+  const maxPathDist = radius * 2
+
+  let bestTarget: Point | null = null
+  let bestDist = Infinity
+
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      const x = origin.x + dx
+      const y = origin.y + dy
+      if (x < 0 || x >= level.width || y < 0 || y >= level.height) continue
+
+      const tile = getTile(level, x, y)
+      if (!tile || tile.type === 'wall') continue
+
+      // Check if NOT seen this visit
+      const key = `${x},${y}`
+      if (botState.seenThisVisit.has(key)) continue
+
+      // Use actual path distance from flow field
+      const pathDist = getFlowCost(flowCosts, { x, y })
+      if (pathDist >= MAX_FLOW_COST) continue // Unreachable
+      if (pathDist > maxPathDist) continue // Too far to walk
+
+      if (pathDist < bestDist) {
+        bestDist = pathDist
+        bestTarget = { x, y }
+      }
+    }
+  }
+
+  return bestTarget
+}
+
+/**
+ * Check if enough tiles are SEEN THIS VISIT within a radius of a point.
+ * Used for tethered exploration - must see 80% of floor tiles in radius.
+ *
+ * Key insight: Uses seenThisVisit (tiles in FOV this level visit) rather than
+ * tile.explored (cached from all visits). This ensures the bot actually walks
+ * around to re-see the area on each level flip, finding new monster spawns.
  */
 function isTetheredExplorationComplete(context: BotContext, origin: Point, radius: number): boolean {
-  const { game } = context
+  const { game, botState } = context
   const level = game.currentLevel
 
   let totalFloor = 0
-  let exploredFloor = 0
+  let seenFloor = 0
 
   for (let dy = -radius; dy <= radius; dy++) {
     for (let dx = -radius; dx <= radius; dx++) {
@@ -1001,35 +1236,62 @@ function isTetheredExplorationComplete(context: BotContext, origin: Point, radiu
       if (!tile || tile.type === 'wall') continue
 
       totalFloor++
-      if (tile.explored) exploredFloor++
+      // Check seenThisVisit (FOV coverage this visit) instead of tile.explored
+      if (botState.seenThisVisit.has(`${x},${y}`)) seenFloor++
     }
   }
 
-  // Need 80% explored to be "done" with this tether
-  return totalFloor === 0 || (exploredFloor / totalFloor) >= 0.8
+  // Need 80% seen this visit to be "done" with this tether
+  return totalFloor === 0 || (seenFloor / totalFloor) >= 0.8
 }
-
-/** Tethered exploration radii: first flip = 2 (5x5), second = 4 (9x9) */
-const TETHER_RADII = [2, 4]
 
 /**
  * Evaluate ASCEND_TO_FARM goal - go up to easier levels when under-leveled
  *
- * Triggered when character level < depth (1:1 ratio).
+ * Triggered when character level < blocked depth (where readiness fails).
  * Going up means easier monsters = safer farming = faster gold/XP.
+ *
+ * Key insight: Check against the BLOCKED depth, not current depth.
+ * This prevents stair surfing between N and N-1 when blocked at N+1.
+ * Example: At depth 3 going to 4 (passes), but 4→5 fails (needs consumables).
+ * Old logic: isUnderLeveled(L3, D3)=FALSE → can't ascend → descend to 4 → loop
+ * New logic: isUnderLeveled(L3, D5)=TRUE → ascend to farm for depth 5
  *
  * Tethered exploration: After each flip, must explore around the stairs
  * before flipping again. Radius increases: 5x5 → 9x9 → allow flip.
  */
 export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
-  const { game, botState } = context
+  const { game, botState, effectiveConfig } = context
   const character = game.character
 
   // Can't ascend from depth 1
   if (character.depth <= 1) return null
 
-  // Only ascend if under-leveled (level < depth)
-  if (!isUnderLeveled(character.level, character.depth)) return null
+  // Find the "blocked depth" - scan forward until readiness fails
+  // This is the depth we're ultimately trying to reach but can't
+  let blockedDepth = character.depth + 1
+  while (blockedDepth <= MAX_DEPTH) {
+    const readinessIssue = getDepthReadiness(
+      character,
+      character.inventory,
+      blockedDepth,
+      effectiveConfig.caution
+    )
+    if (readinessIssue) break
+    blockedDepth++
+  }
+
+  // Only ascend if under-leveled for the BLOCKED depth
+  if (!isUnderLeveled(character.level, blockedDepth, character.classId)) return null
+
+  // If leveled enough for CURRENT depth, explore it fully before ascending
+  // This ensures the bot actually plays depth N when they reach level N
+  if (!isUnderLeveled(character.level, character.depth, character.classId)) return null
+
+  // Farming depth floor: only farm on depths (blockedDepth - 2) to (blockedDepth - 1)
+  // Don't ascend below the farming floor - that's too easy, wasting time
+  const farmingFloor = Math.max(1, blockedDepth - 2)
+  if (character.depth <= farmingFloor) return null
 
   // Need known stairs up (set when we descended to this level)
   const stairsUp = botState.knownStairsUp
@@ -1053,8 +1315,14 @@ export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
       botState.tetheredRadius = 0
       botState.tetheredFlipCount = 0
     }
-  } else if (botState.farmingMode && botState.tetheredRadius === 0) {
+  } else if (botState.tetheredRadius === 0) {
     // Starting a new tether cycle - set initial radius for after this flip
+    // Origin will be set by tick.ts after the level change
+    // Also ensure farming mode is on (we're ascending to farm)
+    botState.farmingMode = true
+    botState.farmBlockedDepth = blockedDepth
+    botState.farmGoldTarget = getGoldTarget(blockedDepth, effectiveConfig.caution)
+    botState.farmStartTurn = game.turn
     botState.tetheredRadius = TETHER_RADII[0]!
     botState.tetheredFlipCount = 0
   }
@@ -1071,7 +1339,7 @@ export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
     type: 'ASCEND_TO_FARM',
     target: stairsUp,
     targetId: null,
-    reason: `Under-leveled (L${character.level} at D${character.depth}), ascending to farm`,
+    reason: `Under-leveled for D${blockedDepth} (L${character.level}), ascending to farm`,
     startTurn: game.turn,
   }
 }
@@ -1091,6 +1359,9 @@ export function evaluateTownTrip(context: BotContext): BotGoal | null {
 
   // Already in town? Don't need this goal
   if (character.depth === 0) return null
+
+  // At depth 1, just walk up stairs - don't waste a TP scroll
+  if (character.depth === 1) return null
 
   // Don't use if portal already active (we should use RETURN_PORTAL instead)
   if (game.townPortal) return null
