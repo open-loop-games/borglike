@@ -30,9 +30,14 @@ const FILTER_PATTERNS = [
   /^The .* misses you\.$/,    // Misses are less interesting
   /^You miss the .*\.$/,
   /^You hit the .* for \d+ damage/,  // Regular hits are too noisy
+  /^You hit the .* \d+.*x for \d+.*damage/,  // Multi-hit melee
   /^Your arrow hits .* for \d+ damage/,  // Ranged hits also noisy
+  /^Your arrows? .* \d+.*x for \d+.*damage/,  // Multi-shot ranged
   /^The .* hits you for \d+ damage/, // Getting hit is also noisy
   /^You critically hit/,             // Even crits can be noisy
+  /^You cast .* for \d+ damage/,     // Spell damage is noisy
+  /^You cast .* hitting \d+ enemies/,  // AOE spells
+  /^Your .* beams through/,          // Beam spells
 ]
 
 /** Message patterns that should always show (even if type is 'info') */

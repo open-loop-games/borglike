@@ -15,6 +15,20 @@ const emit = defineEmits<{
   toggle: []
 }>()
 
+// Personality abbreviation mapping
+const personalityAbbrev: Record<string, string> = {
+  cautious: 'CAU',
+  aggressive: 'AGG',
+  greedy: 'GRD',
+  speedrunner: 'SPD',
+}
+
+const personalityDisplay = computed(() => {
+  if (!props.run.personality) return null
+  const abbrev = personalityAbbrev[props.run.personality] ?? props.run.personality.slice(0, 3).toUpperCase()
+  return abbrev
+})
+
 // Generate tooltip for equipment preview
 const equipmentTooltip = computed(() => {
   if (!props.run.equipment || props.run.equipment.length === 0) {
@@ -78,6 +92,7 @@ const duration = computed(() => {
       <span v-if="rank" class="rank">#{{ rank }}</span>
       <span class="time-ago">{{ timeAgo }}</span>
       <span class="character">{{ run.race }} {{ run.class }}</span>
+      <span v-if="personalityDisplay" class="personality">{{ personalityDisplay }}</span>
       <span class="depth">D:{{ run.maxDepth }}</span>
       <span class="kills">{{ run.kills }} kills</span>
       <span class="gold">{{ run.goldEarned }} gold</span>
@@ -110,7 +125,7 @@ const duration = computed(() => {
           </div>
           <div class="detail" v-if="run.personality">
             <span class="label">Personality:</span>
-            <span class="value">{{ run.personality }}</span>
+            <span class="value personality-value">{{ personalityDisplay }} <span class="personality-full">({{ run.personality }})</span></span>
           </div>
           <div class="detail" v-if="run.seed">
             <span class="label">Seed:</span>
@@ -193,6 +208,13 @@ const duration = computed(() => {
   flex: 1;
   min-width: 100px;
   color: var(--text-primary);
+}
+
+.personality {
+  width: 32px;
+  color: var(--cyan);
+  font-weight: bold;
+  font-size: 11px;
 }
 
 .depth {
@@ -286,6 +308,16 @@ const duration = computed(() => {
 .detail .value.seed {
   font-family: var(--font-mono);
   color: var(--indigo);
+}
+
+.detail .value.personality-value {
+  color: var(--cyan);
+  font-weight: bold;
+}
+
+.personality-full {
+  font-weight: normal;
+  color: var(--text-dim);
 }
 
 .equipment-grid {

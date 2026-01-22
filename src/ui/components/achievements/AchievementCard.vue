@@ -5,6 +5,7 @@ import type { Achievement } from '@/game/data/achievements'
 interface Props {
   achievement: Achievement
   isUnlocked: boolean
+  isCollected: boolean
   progress?: number // For cumulative achievements
 }
 
@@ -12,7 +13,11 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   click: []
+  claim: []
 }>()
+
+// Can claim if unlocked but not yet collected
+const canClaim = computed(() => props.isUnlocked && !props.isCollected)
 
 // For hidden achievements, show locked state until unlocked
 const isHidden = computed(() => props.achievement.hidden && !props.isUnlocked)
@@ -51,6 +56,8 @@ const categoryColor = computed(() => {
     class="achievement-card"
     :class="{
       unlocked: isUnlocked,
+      collected: isCollected,
+      claimable: canClaim,
       locked: !isUnlocked,
       hidden: isHidden
     }"
@@ -85,9 +92,12 @@ const categoryColor = computed(() => {
       {{ achievement.category }}
     </div>
 
-    <!-- Completed checkmark -->
-    <div v-if="isUnlocked" class="completed-badge">
-      <span>&#x2713;</span>
+    <!-- Claim button overlay for uncollected achievements -->
+    <div v-if="canClaim" class="claim-overlay" @click.stop="emit('claim')">
+      <button class="claim-btn">
+        <span class="claim-icon">&#x25C6;</span>
+        Claim {{ achievement.reward }}
+      </button>
     </div>
   </div>
 </template>
@@ -118,9 +128,20 @@ const categoryColor = computed(() => {
   opacity: 0.5;
 }
 
-.achievement-card.unlocked {
+.achievement-card.unlocked.collected {
   border-color: var(--green);
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+  opacity: 0.7;
+}
+
+.achievement-card.claimable {
+  border-color: var(--purple);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.3); }
+  50% { box-shadow: 0 0 16px rgba(139, 92, 246, 0.6); }
 }
 
 .card-content {
@@ -234,18 +255,42 @@ const categoryColor = computed(() => {
   opacity: 0.8;
 }
 
-.completed-badge {
+.claim-overlay {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  background: var(--green);
-  border-radius: 50%;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+  background: linear-gradient(90deg, transparent 40%, rgba(139, 92, 246, 0.15) 100%);
+}
+
+.claim-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--purple);
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-mono);
   font-size: 12px;
+  font-weight: bold;
   color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+}
+
+.claim-btn:hover {
+  background: #a78bfa;
+  transform: scale(1.05);
+}
+
+.claim-icon {
+  font-size: 14px;
 }
 </style>

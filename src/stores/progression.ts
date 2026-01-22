@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, type Ref } from 'vue'
 import type { Currency, UnlockState, GlobalStats, RunStats, RunLoadout, BestiaryEntry, SlotConfig, AchievementState, UnlockContext } from '../types'
 import { achievements, getAchievementById } from '@/game/data/achievements'
 import {
@@ -87,12 +87,19 @@ export const useProgressionStore = defineStore('progression', () => {
   const runHistory = ref<RunStats[]>([])
   const MAX_HISTORY = 100
 
+  // Independent top runs storage (persisted separately from recent runs)
+  const topRunsByDepth = ref<RunStats[]>([])
+  const topRunsByEssence = ref<RunStats[]>([])
+  const topRunsByKills = ref<RunStats[]>([])
+  const MAX_TOP_RUNS = 5
+
   // Bestiary - tracks monster kills across all runs
   const bestiary = ref<Record<string, BestiaryEntry>>({})
 
   // Achievements - tracks achievement progress and unlocks
   const achievementState = ref<AchievementState>({
     unlocked: new Set(),
+    collected: new Set(),
     progress: {},
     newUnlocks: new Set(),
   })
@@ -117,11 +124,19 @@ export const useProgressionStore = defineStore('progression', () => {
   // Achievement computed stats
   const achievementStats = computed(() => {
     const unlocked = achievementState.value.unlocked.size
+    const collected = achievementState.value.collected.size
+    const uncollected = unlocked - collected
     const total = achievements.length
-    const essenceEarned = Array.from(achievementState.value.unlocked)
+    // Only count essence from collected achievements
+    const essenceCollected = Array.from(achievementState.value.collected)
       .map((id) => getAchievementById(id)?.reward ?? 0)
       .reduce((sum, r) => sum + r, 0)
-    return { unlocked, total, essenceEarned }
+    // Essence available to claim
+    const essencePending = Array.from(achievementState.value.unlocked)
+      .filter((id) => !achievementState.value.collected.has(id))
+      .map((id) => getAchievementById(id)?.reward ?? 0)
+      .reduce((sum, r) => sum + r, 0)
+    return { unlocked, collected, uncollected, total, essenceCollected, essencePending }
   })
 
   const hasNewAchievements = computed(() => achievementState.value.newUnlocks.size > 0)
@@ -455,6 +470,11 @@ export const useProgressionStore = defineStore('progression', () => {
       runHistory.value.pop()
     }
 
+    // Update independent top runs lists
+    updateTopRuns(topRunsByDepth, stats, (a, b) => b.maxDepth - a.maxDepth)
+    updateTopRuns(topRunsByEssence, stats, (a, b) => b.essenceEarned - a.essenceEarned)
+    updateTopRuns(topRunsByKills, stats, (a, b) => b.kills - a.kills)
+
     // Update global stats
     globalStats.value.totalRuns++
     if (isVictory) {
@@ -476,6 +496,40 @@ export const useProgressionStore = defineStore('progression', () => {
     globalStats.value.totalFloorsVisited += stats.maxDepth
     if (stats.maxDepth > globalStats.value.maxDepthEver) {
       globalStats.value.maxDepthEver = stats.maxDepth
+    }
+  }
+
+  /**
+   * Update a top runs list with a new run if it qualifies
+   * New entries replace the worst entry if they qualify
+   */
+  function updateTopRuns(
+    topList: Ref<RunStats[]>,
+    newRun: RunStats,
+    compareFn: (a: RunStats, b: RunStats) => number
+  ) {
+    // Check if run already exists (by ID)
+    const existingIndex = topList.value.findIndex(r => r.id === newRun.id)
+    if (existingIndex >= 0) {
+      // Update existing entry
+      topList.value[existingIndex] = newRun
+      topList.value.sort(compareFn)
+      return
+    }
+
+    // If list isn't full, add and sort
+    if (topList.value.length < MAX_TOP_RUNS) {
+      topList.value.push(newRun)
+      topList.value.sort(compareFn)
+      return
+    }
+
+    // Check if new run beats the worst entry
+    const worstRun = topList.value[topList.value.length - 1]
+    if (worstRun && compareFn(newRun, worstRun) < 0) {
+      // New run is better than worst, replace it
+      topList.value[topList.value.length - 1] = newRun
+      topList.value.sort(compareFn)
     }
   }
 
@@ -522,6 +576,7 @@ export const useProgressionStore = defineStore('progression', () => {
 
   /**
    * Award an achievement if not already unlocked
+   * Does NOT grant essence - player must click to collect
    * @returns true if newly awarded, false if already unlocked
    */
   function awardAchievement(id: string): boolean {
@@ -533,11 +588,36 @@ export const useProgressionStore = defineStore('progression', () => {
     achievementState.value.unlocked.add(id)
     achievementState.value.newUnlocks.add(id)
 
-    // Add essence reward
+    console.log(`[Progression] Achievement unlocked: ${achievement.name} (click to claim ${achievement.reward} essence)`)
+    // Save immediately - achievement unlock is important
+    saveImmediately().catch((err) => console.error('[Progression] Failed to save after awardAchievement:', err))
+    return true
+  }
+
+  /**
+   * Check if an achievement's essence has been collected
+   */
+  function isAchievementCollected(id: string): boolean {
+    return achievementState.value.collected.has(id)
+  }
+
+  /**
+   * Collect essence reward for an unlocked achievement
+   * @returns true if essence was collected, false if not unlocked or already collected
+   */
+  function collectAchievement(id: string): boolean {
+    // Must be unlocked but not yet collected
+    if (!achievementState.value.unlocked.has(id)) return false
+    if (achievementState.value.collected.has(id)) return false
+
+    const achievement = getAchievementById(id)
+    if (!achievement) return false
+
+    achievementState.value.collected.add(id)
     addEssence(achievement.reward)
 
-    console.log(`[Progression] Achievement unlocked: ${achievement.name} (+${achievement.reward} essence)`)
-    // Save happens via addEssence, no need to duplicate
+    console.log(`[Progression] Achievement claimed: ${achievement.name} (+${achievement.reward} essence)`)
+    // Save happens via addEssence
     return true
   }
 
@@ -649,6 +729,9 @@ export const useProgressionStore = defineStore('progression', () => {
     unlocks,
     globalStats,
     runHistory,
+    topRunsByDepth,
+    topRunsByEssence,
+    topRunsByKills,
     upgradeLevels,
     prestigeLevel,
     lifetimeEssence,
@@ -722,8 +805,10 @@ export const useProgressionStore = defineStore('progression', () => {
 
     // Achievement getters and actions
     isAchievementUnlocked,
+    isAchievementCollected,
     getAchievementProgress,
     awardAchievement,
+    collectAchievement,
     updateAchievementProgress,
     clearNewAchievements,
   }

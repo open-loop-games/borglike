@@ -23,6 +23,44 @@ const searchQuery = ref('')
 // Categories for filter
 const categories = ['all', 'progress', 'challenge', 'cumulative'] as const
 
+// Category sort order
+const categoryOrder: Record<string, number> = {
+  progress: 0,
+  challenge: 1,
+  cumulative: 2,
+}
+
+// Icon groups for sorting related achievements together
+const iconGroupOrder: Record<string, number> = {
+  '!': 0,  // First blood
+  'v': 1,  // Depth achievements
+  '*': 2,  // Victory
+  'M': 3,  // Massacre
+  '>': 4,  // Speed demon
+  '$': 5,  // Gold achievements
+  'k': 6,  // Kill achievements (centurion)
+  'K': 7,  // Kill achievements (higher tiers)
+  '#': 8,  // Run completion
+  'x': 9,  // Death achievements
+}
+
+// Get status priority for sorting (lower = higher priority)
+function getStatusPriority(achievement: Achievement): number {
+  const unlocked = progression.isAchievementUnlocked(achievement.id)
+  const collected = progression.isAchievementCollected(achievement.id)
+
+  if (unlocked && !collected) return 0 // Uncollected first (needs attention)
+
+  // In-progress: cumulative with progress > 0
+  if (!unlocked && achievement.category === 'cumulative') {
+    const progress = getProgress(achievement)
+    if (progress && progress > 0) return 1
+  }
+
+  if (!unlocked) return 2 // Locked
+  return 3 // Collected (completed, no action)
+}
+
 // Filter and sort achievements
 const filteredAchievements = computed(() => {
   let result = [...achievements]
@@ -51,16 +89,31 @@ const filteredAchievements = computed(() => {
       result.sort((a, b) => b.reward - a.reward)
       break
     case 'status':
-      // Show unlocked first, then by category order
+      // Smart ordering: uncollected → in-progress → locked → collected
+      // Within each group, sort by category, then icon group, then target
       result.sort((a, b) => {
-        const aUnlocked = progression.isAchievementUnlocked(a.id) ? 0 : 1
-        const bUnlocked = progression.isAchievementUnlocked(b.id) ? 0 : 1
-        if (aUnlocked !== bUnlocked) return aUnlocked - bUnlocked
+        // First by status priority
+        const aPriority = getStatusPriority(a)
+        const bPriority = getStatusPriority(b)
+        if (aPriority !== bPriority) return aPriority - bPriority
+
         // Then by hidden status (non-hidden first)
         const aHidden = a.hidden ? 1 : 0
         const bHidden = b.hidden ? 1 : 0
         if (aHidden !== bHidden) return aHidden - bHidden
-        return a.name.localeCompare(b.name)
+
+        // Then by category
+        const aCat = categoryOrder[a.category] ?? 99
+        const bCat = categoryOrder[b.category] ?? 99
+        if (aCat !== bCat) return aCat - bCat
+
+        // Then by icon group (keeps related achievements together)
+        const aIcon = iconGroupOrder[a.icon] ?? 99
+        const bIcon = iconGroupOrder[b.icon] ?? 99
+        if (aIcon !== bIcon) return aIcon - bIcon
+
+        // Finally by target (lower targets first, shows progression)
+        return a.target - b.target
       })
       break
   }
@@ -92,7 +145,9 @@ function getProgress(achievement: Achievement): number | undefined {
 const stats = computed(() => ({
   unlocked: progression.achievementStats.unlocked,
   total: progression.achievementStats.total,
-  essenceEarned: progression.achievementStats.essenceEarned,
+  uncollected: progression.achievementStats.uncollected,
+  essenceCollected: progression.achievementStats.essenceCollected,
+  essencePending: progression.achievementStats.essencePending,
 }))
 
 // Selected achievement for detail view (future enhancement)
@@ -102,6 +157,10 @@ function selectAchievement(achievement: Achievement) {
   // For now, just toggle selection for potential detail view
   selectedAchievement.value =
     selectedAchievement.value?.id === achievement.id ? null : achievement
+}
+
+function claimAchievement(achievement: Achievement) {
+  progression.collectAchievement(achievement.id)
 }
 </script>
 
@@ -115,7 +174,11 @@ function selectAchievement(achievement: Achievement) {
         </span>
         <span class="essence-earned">
           <span class="essence-icon">&#x25C6;</span>
-          {{ stats.essenceEarned }} earned
+          {{ stats.essenceCollected }} earned
+        </span>
+        <span v-if="stats.essencePending > 0" class="essence-pending">
+          <span class="essence-icon">&#x25C6;</span>
+          {{ stats.essencePending }} to claim
         </span>
       </div>
       <button class="close-btn" @click="emit('close')">&times;</button>
@@ -147,8 +210,10 @@ function selectAchievement(achievement: Achievement) {
           :key="achievement.id"
           :achievement="achievement"
           :is-unlocked="progression.isAchievementUnlocked(achievement.id)"
+          :is-collected="progression.isAchievementCollected(achievement.id)"
           :progress="getProgress(achievement)"
           @click="selectAchievement(achievement)"
+          @claim="claimAchievement(achievement)"
         />
       </div>
 
@@ -208,6 +273,24 @@ function selectAchievement(achievement: Achievement) {
   padding: 4px 10px;
   background: rgba(139, 92, 246, 0.15);
   border-radius: 4px;
+}
+
+.essence-pending {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--gold);
+  padding: 4px 10px;
+  background: rgba(234, 179, 8, 0.15);
+  border-radius: 4px;
+  animation: pulse-pending 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-pending {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 .essence-icon {

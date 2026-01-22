@@ -22,17 +22,10 @@ function toggleExpanded(runId: string) {
 // Computed data
 const recentRuns = computed(() => progression.runHistory.slice(0, 50))
 
-const topByDepth = computed(() =>
-  [...progression.runHistory].sort((a, b) => b.maxDepth - a.maxDepth).slice(0, 5)
-)
-
-const topByEssence = computed(() =>
-  [...progression.runHistory].sort((a, b) => b.essenceEarned - a.essenceEarned).slice(0, 5)
-)
-
-const topByKills = computed(() =>
-  [...progression.runHistory].sort((a, b) => b.kills - a.kills).slice(0, 5)
-)
+// Use independent top runs storage (persisted separately from recent history)
+const topByDepth = computed(() => progression.topRunsByDepth)
+const topByEssence = computed(() => progression.topRunsByEssence)
+const topByKills = computed(() => progression.topRunsByKills)
 
 // Format time ago helper
 function formatTimeAgo(timestamp: number): string {

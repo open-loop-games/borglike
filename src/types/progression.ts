@@ -112,6 +112,7 @@ export interface UnlockContext {
 /** Achievement tracking state */
 export interface AchievementState {
   unlocked: Set<string> // Completed achievement IDs
+  collected: Set<string> // Achievements where essence has been claimed
   progress: Record<string, number> // Cumulative progress tracking
   newUnlocks: Set<string> // Recently unlocked (for notification dot)
 }
