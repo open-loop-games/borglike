@@ -8,7 +8,14 @@ import type { GameState, ActionResult, Item } from '../types'
 import { randomInt } from '../rng'
 import { calculateLightRadius } from '../lighting'
 import { getTile, isWalkable, findOpenPosition, computeFOV } from '../dungeon'
-import { addStatusEffect, addTempResistance, clearPoison } from '../status-effects'
+import {
+  addStatusEffect,
+  addTempResistance,
+  clearPoison,
+  removeStatusEffect,
+  removeAllDebuffs,
+  hasStatusEffect,
+} from '../status-effects'
 import { createTownPortal, enterTown, isInTown } from '../town'
 import { addMessage, BASE_ENERGY_COST, getHealAmount } from './helpers'
 import { handleDescend } from './movement'
@@ -37,13 +44,87 @@ const POTION_EFFECTS: Array<{
   match: (effect: string) => boolean
   apply: ConsumableEffect
 }> = [
-  // Healing potions
+  // Free Action - cure paralysis and slow
+  {
+    match: (e) => e.toLowerCase().includes('cure paralysis') || e.toLowerCase().includes('free action'),
+    apply: (game) => {
+      const curedParalyzed = hasStatusEffect(game.character, 'paralyzed')
+      const curedSlowed = hasStatusEffect(game.character, 'slowed')
+      removeStatusEffect(game.character, 'paralyzed')
+      removeStatusEffect(game.character, 'slowed')
+      let message = 'You feel free to move!'
+      if (curedParalyzed) message = 'The paralysis wears off! You feel free to move!'
+      if (curedSlowed) message = 'You feel quick again!'
+      return { success: true, message }
+    },
+  },
+  // Clarity - cure confusion and blind
+  {
+    match: (e) => e.toLowerCase().includes('cure confusion') || e.toLowerCase().includes('clarity'),
+    apply: (game) => {
+      const curedConfused = hasStatusEffect(game.character, 'confused')
+      const curedBlind = hasStatusEffect(game.character, 'blind')
+      removeStatusEffect(game.character, 'confused')
+      removeStatusEffect(game.character, 'blind')
+      let message = 'Your mind clears!'
+      if (curedBlind) message = 'Your sight returns!'
+      if (curedConfused) message = 'Your confusion fades!'
+      return { success: true, message }
+    },
+  },
+  // Restoration - cure drain, restore stats
+  {
+    match: (e) => e.toLowerCase().includes('cure drain') || e.toLowerCase().includes('restoration'),
+    apply: (game) => {
+      const curedDrained = hasStatusEffect(game.character, 'drained')
+      removeStatusEffect(game.character, 'drained')
+      const message = curedDrained
+        ? 'You feel your strength return!'
+        : 'You feel restored!'
+      return { success: true, message }
+    },
+  },
+  // Healing potions - cure status based on tier + heal
   {
     match: (e) => e.includes('Cure') || e.includes('Heal'),
     apply: (game, item) => {
       const effect = item.template.effect || ''
       const healAmount = getHealAmount(effect, game.character.level)
       game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
+
+      // Cure status effects based on potion type (from cure matrix)
+      // Cure Light: cure blind
+      // Cure Serious: cure blind, confusion
+      // Cure Critical / Healing: cure all status
+      if (effect.toLowerCase().includes('cure all status') || effect.toLowerCase().includes('healing')) {
+        // Full healing potions cure all debuffs
+        const removed = removeAllDebuffs(game.character)
+        clearPoison(game.character)
+        if (removed.length > 0) {
+          return {
+            success: true,
+            message: `You drink the ${item.template.name}. You feel much better!`,
+          }
+        }
+      } else if (effect.toLowerCase().includes('critical')) {
+        // Cure Critical cures all debuffs
+        const removed = removeAllDebuffs(game.character)
+        clearPoison(game.character)
+        if (removed.length > 0) {
+          return {
+            success: true,
+            message: `You drink the ${item.template.name}. Your ailments fade!`,
+          }
+        }
+      } else if (effect.toLowerCase().includes('serious')) {
+        // Cure Serious cures blind and confusion
+        removeStatusEffect(game.character, 'blind')
+        removeStatusEffect(game.character, 'confused')
+      } else if (effect.toLowerCase().includes('light')) {
+        // Cure Light only cures blind
+        removeStatusEffect(game.character, 'blind')
+      }
+
       return {
         success: true,
         message: `You drink the ${item.template.name}. You feel better!`,
@@ -73,13 +154,15 @@ const POTION_EFFECTS: Array<{
     },
   },
 
-  // Heroism potion (+12 to hit)
+  // Heroism potion (+12 to hit, cure fear)
   {
     match: (e) => e.includes('+12 to hit'),
     apply: (game, item) => {
       const effect = item.template.effect || ''
       const duration = randomInt(25, 49)
       addStatusEffect(game.character, { type: 'heroism', turnsRemaining: duration, value: 12 })
+      // Heroism cures fear/terrified
+      removeStatusEffect(game.character, 'terrified')
       // Small heal from heroism
       if (effect.includes('Heal 10')) {
         game.character.hp = Math.min(game.character.hp + 10, game.character.maxHp)
@@ -88,13 +171,15 @@ const POTION_EFFECTS: Array<{
     },
   },
 
-  // Berserk Strength potion
+  // Berserk Strength potion (cure fear)
   {
     match: (e) => e.includes('berserk'),
     apply: (game, item) => {
       const effect = item.template.effect || ''
       const duration = randomInt(25, 49)
       addStatusEffect(game.character, { type: 'berserk', turnsRemaining: duration, value: 24 })
+      // Berserk cures fear/terrified
+      removeStatusEffect(game.character, 'terrified')
       // Berserk also heals 30 HP
       if (effect.includes('Heal 30')) {
         game.character.hp = Math.min(game.character.hp + 30, game.character.maxHp)

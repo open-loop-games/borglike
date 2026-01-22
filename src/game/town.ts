@@ -462,12 +462,12 @@ function generateWeaponShopInventory(maxDepthEver: number): Item[] {
 }
 
 /**
- * Alchemy Shop: Healing potions, utility potions
+ * Alchemy Shop: Healing potions, utility potions, cure potions
  *
  * Inventory tiers scale with maxDepthEver:
- * - Tier 0 (depths 1-14): Cure Light/Serious
- * - Tier 1 (depths 15-29): + Cure Critical, more Speed potions
- * - Tier 2 (depths 30+): + Healing, Heroism potions
+ * - Tier 0 (depths 1-14): Cure Light/Serious, Neutralize Poison
+ * - Tier 1 (depths 15-29): + Cure Critical, Free Action, Clarity
+ * - Tier 2 (depths 30+): + Healing, Heroism, Restoration
  */
 function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
   const items: Item[] = []
@@ -497,9 +497,30 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
         items.push(item)
       }
     }
+
+    // Free Action and Clarity potions
+    const freeAction = POTIONS.find(p => p.name === 'Potion of Free Action')
+    if (freeAction) {
+      const count = randomInt(2, 3)
+      for (let i = 0; i < count; i++) {
+        const item = createItem(freeAction, 0)
+        item.shopPrice = Math.floor(freeAction.tier * 25 * 1.8)
+        items.push(item)
+      }
+    }
+
+    const clarity = POTIONS.find(p => p.name === 'Potion of Clarity')
+    if (clarity) {
+      const count = randomInt(2, 3)
+      for (let i = 0; i < count; i++) {
+        const item = createItem(clarity, 0)
+        item.shopPrice = Math.floor(clarity.tier * 25 * 1.8)
+        items.push(item)
+      }
+    }
   }
 
-  // Tier 2: Add Healing and Heroism potions
+  // Tier 2: Add Healing, Heroism, and Restoration potions
   if (tier >= 2) {
     const healingPotion = POTIONS.find(p => p.name === 'Potion of Healing')
     if (healingPotion) {
@@ -517,6 +538,17 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
       for (let i = 0; i < count; i++) {
         const item = createItem(heroismPotion, 0)
         item.shopPrice = Math.floor(heroismPotion.tier * 30 * 2.0)
+        items.push(item)
+      }
+    }
+
+    // Restoration potion
+    const restoration = POTIONS.find(p => p.name === 'Potion of Restoration')
+    if (restoration) {
+      const count = randomInt(1, 2)
+      for (let i = 0; i < count; i++) {
+        const item = createItem(restoration, 0)
+        item.shopPrice = Math.floor(restoration.tier * 35 * 1.8)
         items.push(item)
       }
     }

@@ -1004,6 +1004,31 @@ export const POTIONS: ItemTemplate[] = [
     effect: 'Cure poison',
     minDepth: 1,
   },
+  // Status cure potions
+  {
+    name: 'Potion of Free Action',
+    type: 'potion',
+    tier: 2,
+    weight: 4,
+    effect: 'Cure paralysis and slow',
+    minDepth: 8,
+  },
+  {
+    name: 'Potion of Clarity',
+    type: 'potion',
+    tier: 2,
+    weight: 4,
+    effect: 'Cure confusion and blind',
+    minDepth: 10,
+  },
+  {
+    name: 'Potion of Restoration',
+    type: 'potion',
+    tier: 3,
+    weight: 4,
+    effect: 'Cure drain, restore stats',
+    minDepth: 20,
+  },
   // Phase 4-5: Needs invisible system
   // {
   //   name: 'Potion of True Seeing',
