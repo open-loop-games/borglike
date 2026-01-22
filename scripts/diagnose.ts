@@ -79,6 +79,26 @@ interface Args {
   logOnly: boolean
   /** Number of worker threads for parallel batch runs */
   threads: number
+  /** Use max upgrade bonuses */
+  maxUpgrades: boolean
+  /** Randomize race/class/personality per run */
+  randomize: boolean
+  // Balance overrides (Tier 1)
+  monsterHp: number
+  monsterDamage: number
+  startPotions: number
+  potionRate: number
+  regen: number
+  armorPen: number
+  // Balance overrides (Tier 2)
+  enchantRate: number
+  itemRate: number
+  levelupHp: number
+  // Balance overrides (Tier 3)
+  xpRate: number
+  upgradePower: number
+  // Knowledge system
+  bestiary: number
 }
 
 const ALL_ANALYZERS: AnalyzerName[] = [
@@ -107,6 +127,21 @@ function parseArgs(): Args {
     fullMap: false,
     logOnly: false,
     threads: 8,
+    maxUpgrades: false,
+    randomize: false,
+    // Balance defaults (100 = normal)
+    monsterHp: 100,
+    monsterDamage: 100,
+    startPotions: 3,
+    potionRate: 100,
+    regen: 0,
+    armorPen: 0,
+    enchantRate: 100,
+    itemRate: 100,
+    levelupHp: 100,
+    xpRate: 100,
+    upgradePower: 100,
+    bestiary: 0,
   }
 
   // Parse mode (first positional arg)
@@ -163,6 +198,37 @@ function parseArgs(): Args {
       result.logOnly = true
     } else if (arg.startsWith('--threads=')) {
       result.threads = parseInt(arg.slice(10), 10)
+    } else if (arg === '--max-upgrades') {
+      result.maxUpgrades = true
+    } else if (arg === '--randomize') {
+      result.randomize = true
+    // Balance overrides (Tier 1)
+    } else if (arg.startsWith('--monster-hp=')) {
+      result.monsterHp = parseInt(arg.slice(13), 10)
+    } else if (arg.startsWith('--monster-damage=')) {
+      result.monsterDamage = parseInt(arg.slice(17), 10)
+    } else if (arg.startsWith('--start-potions=')) {
+      result.startPotions = parseInt(arg.slice(16), 10)
+    } else if (arg.startsWith('--potion-rate=')) {
+      result.potionRate = parseInt(arg.slice(14), 10)
+    } else if (arg.startsWith('--regen=')) {
+      result.regen = parseInt(arg.slice(8), 10)
+    } else if (arg.startsWith('--armor-pen=')) {
+      result.armorPen = parseInt(arg.slice(12), 10)
+    // Balance overrides (Tier 2)
+    } else if (arg.startsWith('--enchant-rate=')) {
+      result.enchantRate = parseInt(arg.slice(15), 10)
+    } else if (arg.startsWith('--item-rate=')) {
+      result.itemRate = parseInt(arg.slice(12), 10)
+    } else if (arg.startsWith('--levelup-hp=')) {
+      result.levelupHp = parseInt(arg.slice(13), 10)
+    // Balance overrides (Tier 3)
+    } else if (arg.startsWith('--xp-rate=')) {
+      result.xpRate = parseInt(arg.slice(10), 10)
+    } else if (arg.startsWith('--upgrade-power=')) {
+      result.upgradePower = parseInt(arg.slice(16), 10)
+    } else if (arg.startsWith('--bestiary=')) {
+      result.bestiary = parseInt(arg.slice(11), 10)
     }
   }
 
@@ -206,6 +272,8 @@ OPTIONS:
   --from=N        Start of turn range for output (deep mode only)
   --to=N          End of turn range for output (deep mode only)
   --log-only      Only show turn log, skip analyzer output (deep mode)
+  --max-upgrades  Apply all upgrades at max level
+  --randomize     Randomize race/class/personality per run (batch mode)
 
 EXAMPLES:
   # Deep dive on a specific problematic seed with explored map
@@ -276,12 +344,33 @@ function main(): void {
       ? createAllAnalyzers()
       : createAnalyzers(args.analyzers)
 
+  // Build balance overrides from args
+  // When --max-upgrades is used, default bestiary to 25% (hard cap) unless explicitly set
+  const effectiveBestiary = args.bestiary > 0 ? args.bestiary : (args.maxUpgrades ? 25 : 0)
+  const balance = {
+    monsterHpPercent: args.monsterHp,
+    monsterDamagePercent: args.monsterDamage,
+    startingPotions: args.startPotions,
+    potionRatePercent: args.potionRate,
+    regenPer10Turns: args.regen,
+    armorPenetration: args.armorPen,
+    enchantRatePercent: args.enchantRate,
+    itemRatePercent: args.itemRate,
+    levelupHpPercent: args.levelupHp,
+    xpRatePercent: args.xpRate,
+    upgradePowerPercent: args.upgradePower,
+    bestiaryBonusPercent: effectiveBestiary,
+  }
+
   const baseConfig = {
     raceId: args.race,
     classId: args.classId,
     personality: args.personality,
     maxTurns: args.turns,
     analyzers,
+    maxUpgrades: args.maxUpgrades,
+    randomize: args.randomize,
+    balance,
   }
 
   switch (args.mode) {

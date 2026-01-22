@@ -36,6 +36,8 @@ export type { GoalDistanceAnalyzerConfig } from './goal-distance'
 export { OscillationAnalyzer, createOscillationAnalyzer } from './oscillation'
 export type { OscillationAnalyzerConfig } from './oscillation'
 
+export { StatsAnalyzer, createStatsAnalyzer } from './stats'
+
 // Personality comparison (standalone utility)
 export { comparePersonalities, formatPersonalityComparison } from './personality'
 export type { PersonalityCompareConfig, PersonalityMetrics, PersonalityCompareResult } from './personality'
@@ -51,6 +53,7 @@ import { createGoalAnalyzer } from './goal'
 import { createJitterAnalyzer } from './jitter'
 import { createGoalDistanceAnalyzer } from './goal-distance'
 import { createOscillationAnalyzer } from './oscillation'
+import { createStatsAnalyzer } from './stats'
 
 /** All available analyzer names */
 export type AnalyzerName =
@@ -64,6 +67,7 @@ export type AnalyzerName =
   | 'jitter'
   | 'goal-distance'
   | 'oscillation'
+  | 'stats'
 
 /** Create all standard analyzers */
 export function createAllAnalyzers(): Analyzer[] {
@@ -77,6 +81,7 @@ export function createAllAnalyzers(): Analyzer[] {
     createJitterAnalyzer(),
     createGoalDistanceAnalyzer(),
     createOscillationAnalyzer(),
+    createStatsAnalyzer(),
     // Note: MapVisualizer not included by default (produces large output)
   ]
 }
@@ -112,6 +117,7 @@ export function createAnalyzers(names: AnalyzerName[]): Analyzer[] {
     jitter: createJitterAnalyzer,
     'goal-distance': createGoalDistanceAnalyzer,
     oscillation: createOscillationAnalyzer,
+    stats: createStatsAnalyzer,
   }
 
   return names.map((name) => factories[name]())

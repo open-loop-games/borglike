@@ -9,6 +9,8 @@ import { cpus } from 'os'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { createGame, processTurn } from '../../../src/game/game-loop'
+import { computeMaxUpgradeBonuses } from '../../../src/game/upgrade-effects'
+import { DEFAULT_BALANCE, type BalanceOverrides } from '../../../src/game/types'
 import { runBotTick, createBotState } from '../../../src/game/bot'
 import type { GameState } from '../../../src/game/types'
 import type { BotState } from '../../../src/game/bot/types'
@@ -38,6 +40,9 @@ const DEFAULT_CONFIG: Required<Omit<DiagnoseConfig, 'analyzers'>> = {
   maxTurns: 5000,
   circuitBreakerTurns: 1000,
   verbosity: 1,
+  maxUpgrades: false,
+  randomize: false,
+  balance: DEFAULT_BALANCE,
 }
 
 // ============================================================================
@@ -56,6 +61,8 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
     raceId: cfg.raceId,
     classId: cfg.classId,
     seed: cfg.seed,
+    upgradeBonuses: cfg.maxUpgrades ? computeMaxUpgradeBonuses(cfg.balance.upgradePowerPercent) : undefined,
+    balanceOverrides: cfg.balance,
   })
 
   const botState: BotState = createBotState()
@@ -187,6 +194,7 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
   // Aggregate metrics across runs
   const metricSums: Record<string, number[]> = {}
   const issueCounter = new Map<string, number>()
+  const deathCauses = new Map<string, number>()
 
   for (let i = 0; i < config.runs; i++) {
     const seed = startSeed + i
@@ -210,6 +218,9 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
             metricSums[fullKey] = []
           }
           metricSums[fullKey].push(value)
+        } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
+          const count = deathCauses.get(value) ?? 0
+          deathCauses.set(value, count + 1)
         }
       }
     }
@@ -238,6 +249,11 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
     .map(([message, count]) => ({ message, count }))
     .sort((a, b) => b.count - a.count)
 
+  // Sort death causes by frequency
+  const sortedDeathCauses = Array.from(deathCauses.entries())
+    .map(([monster, count]) => ({ monster, count }))
+    .sort((a, b) => b.count - a.count)
+
   return {
     config,
     totalRuns: config.runs,
@@ -245,6 +261,7 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
     problemRuns,
     aggregateMetrics,
     aggregateIssues,
+    deathCauses: sortedDeathCauses,
   }
 }
 
@@ -268,6 +285,9 @@ export interface WorkerInput {
     personality?: string
     maxTurns?: number
     circuitBreakerTurns?: number
+    maxUpgrades?: boolean
+    randomize?: boolean
+    balance?: Partial<BalanceOverrides>
   }
 }
 
@@ -285,6 +305,7 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
   // Aggregate metrics across runs
   const metricSums: Record<string, number[]> = {}
   const issueCounter = new Map<string, number>()
+  const deathCauses = new Map<string, number>() // Track what killed us
 
   // Build work items
   const baseConfig = {
@@ -293,6 +314,9 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     personality: config.personality,
     maxTurns: config.maxTurns,
     circuitBreakerTurns: config.circuitBreakerTurns,
+    maxUpgrades: config.maxUpgrades,
+    randomize: config.randomize,
+    balance: config.balance,
   }
 
   const workItems: WorkerInput[] = []
@@ -332,6 +356,10 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
               metricSums[fullKey] = []
             }
             metricSums[fullKey].push(value)
+          } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
+            // Track death causes
+            const count = deathCauses.get(value) ?? 0
+            deathCauses.set(value, count + 1)
           }
         }
       }
@@ -368,6 +396,11 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     .map(([message, count]) => ({ message, count }))
     .sort((a, b) => b.count - a.count)
 
+  // Sort death causes by frequency
+  const sortedDeathCauses = Array.from(deathCauses.entries())
+    .map(([monster, count]) => ({ monster, count }))
+    .sort((a, b) => b.count - a.count)
+
   return {
     config,
     totalRuns: config.runs,
@@ -375,6 +408,7 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     problemRuns,
     aggregateMetrics,
     aggregateIssues,
+    deathCauses: sortedDeathCauses,
   }
 }
 
@@ -409,6 +443,8 @@ export function runDeepDiagnosis(
     raceId: cfg.raceId,
     classId: cfg.classId,
     seed: cfg.seed,
+    upgradeBonuses: cfg.maxUpgrades ? computeMaxUpgradeBonuses(cfg.balance.upgradePowerPercent) : undefined,
+    balanceOverrides: cfg.balance,
   })
 
   const botState: BotState = createBotState()
@@ -520,7 +556,7 @@ export function runDeepDiagnosis(
     if (moved) flags.push('MOVED')
     if (previousDepth !== game.character.depth) flags.push('DESCENDED')
     if (previousHP > game.character.hp) flags.push('DAMAGE')
-    if (sameActionCount >= 5) flags.push(`STUCK:${sameActionCount}`)
+    if (sameActionCount >= 10) flags.push(`STUCK:${sameActionCount}`)  // Raised from 5 - corridors often have 10+ same-direction moves
 
     const goal = botState.currentGoal
     const goalStr = goal ? `${goal.type}@(${goal.target?.x},${goal.target?.y})` : null

@@ -32,7 +32,7 @@ export interface StuckAnalyzerConfig {
 }
 
 const DEFAULT_CONFIG: StuckAnalyzerConfig = {
-  repeatThreshold: 10,
+  repeatThreshold: 20,   // Increased from 10 - normal corridor traversal can be 15+ same-direction moves
   waitThreshold: 5,
   twitchThreshold: 15,
   noMoveThreshold: 20,

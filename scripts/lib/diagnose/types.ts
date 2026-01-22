@@ -4,7 +4,7 @@
  * Shared type definitions for the bot diagnostic framework.
  */
 
-import type { GameState, GameAction, Point, BotPersonality } from '../../../src/game/types'
+import type { GameState, GameAction, Point, BotPersonality, BalanceOverrides } from '../../../src/game/types'
 import type { BotState } from '../../../src/game/bot/types'
 
 // ============================================================================
@@ -95,6 +95,12 @@ export interface DiagnoseConfig {
   analyzers?: Analyzer[]
   /** Verbosity: 0=silent, 1=summary, 2=issues, 3=all turns */
   verbosity?: 0 | 1 | 2 | 3
+  /** Use max upgrade bonuses */
+  maxUpgrades?: boolean
+  /** Randomize race/class/personality per run (batch mode) */
+  randomize?: boolean
+  /** Balance overrides for A/B testing */
+  balance?: Partial<BalanceOverrides>
 }
 
 /** Result from a diagnostic run */
@@ -141,6 +147,8 @@ export interface BatchResult {
   problemRuns: DiagnoseResult[]
   aggregateMetrics: Record<string, { min: number; max: number; avg: number }>
   aggregateIssues: { message: string; count: number }[]
+  /** Death causes aggregated by monster name */
+  deathCauses: { monster: string; count: number }[]
 }
 
 // ============================================================================

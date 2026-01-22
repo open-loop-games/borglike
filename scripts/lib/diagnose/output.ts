@@ -192,11 +192,28 @@ export function formatBatchResult(result: BatchResult): string {
 
   lines.push(header('BATCH DIAGNOSTIC RESULT'))
 
-  // Summary
-  lines.push(section('Summary'))
-  lines.push(`  Total runs: ${result.totalRuns}`)
-  lines.push(`  Successful: ${result.successfulRuns}`)
-  lines.push(`  With issues: ${result.problemRuns.length}`)
+  // Key metrics summary (easy to compare)
+  const depth = result.aggregateMetrics['worker-metrics.maxDepth']
+  const kills = result.aggregateMetrics['worker-metrics.kills']
+  const turns = result.aggregateMetrics['worker-metrics.totalTurns']
+
+  // Count end reasons
+  const circuitBreakers = result.problemRuns.filter(r => r.endReason === 'circuit_breaker').length
+
+  lines.push(section('Key Metrics'))
+  lines.push(`  Depth:  avg=${depth?.avg.toFixed(1) ?? '?'}  max=${depth?.max.toFixed(0) ?? '?'}`)
+  lines.push(`  Kills:  avg=${kills?.avg.toFixed(1) ?? '?'}  max=${kills?.max.toFixed(0) ?? '?'}`)
+  lines.push(`  Turns:  avg=${turns?.avg.toFixed(0) ?? '?'}`)
+  lines.push(`  Runs:   ${result.totalRuns} total, ${circuitBreakers} circuit breakers (${(circuitBreakers/result.totalRuns*100).toFixed(0)}%)`)
+
+  // Death causes
+  if (result.deathCauses && result.deathCauses.length > 0) {
+    lines.push(section('Top Killers'))
+    for (const dc of result.deathCauses.slice(0, 10)) {
+      const pct = (dc.count / result.totalRuns * 100).toFixed(0)
+      lines.push(`  ${dc.count}x (${pct}%) ${dc.monster}`)
+    }
+  }
 
   // Aggregate metrics
   lines.push(section('Aggregate Metrics'))
