@@ -208,6 +208,120 @@ export function processPoison(
   }
 }
 
+// ============================================================================
+// DEBUFF STATUS EFFECTS
+// ============================================================================
+
+/** List of debuff status types */
+export const DEBUFF_TYPES: StatusEffect['type'][] = [
+  'blind', 'confused', 'paralyzed', 'slowed', 'terrified', 'drained'
+]
+
+/**
+ * Check if character has any debuff status effect
+ */
+export function hasAnyDebuff(character: Character): boolean {
+  return character.statusEffects.some(e => DEBUFF_TYPES.includes(e.type))
+}
+
+/**
+ * Remove a status effect if present and return true if it was removed
+ */
+export function removeStatusEffectIfPresent(
+  character: Character,
+  type: StatusEffect['type']
+): boolean {
+  const had = character.statusEffects.some(e => e.type === type)
+  character.statusEffects = character.statusEffects.filter(e => e.type !== type)
+  return had
+}
+
+/**
+ * Remove all debuff status effects
+ * Returns list of removed effect types
+ */
+export function removeAllDebuffs(character: Character): StatusEffect['type'][] {
+  const removed: StatusEffect['type'][] = []
+
+  character.statusEffects = character.statusEffects.filter(e => {
+    if (DEBUFF_TYPES.includes(e.type)) {
+      removed.push(e.type)
+      return false
+    }
+    return true
+  })
+
+  return removed
+}
+
+/**
+ * Check if character is paralyzed (cannot act)
+ */
+export function isParalyzed(character: Character): boolean {
+  return hasStatusEffect(character, 'paralyzed')
+}
+
+/**
+ * Check if character is confused (random movement 50%)
+ */
+export function isConfused(character: Character): boolean {
+  return hasStatusEffect(character, 'confused')
+}
+
+/**
+ * Check if character is blind (reduced FOV)
+ */
+export function isBlind(character: Character): boolean {
+  return hasStatusEffect(character, 'blind')
+}
+
+/**
+ * Check if character is terrified (cannot attack)
+ */
+export function isTerrified(character: Character): boolean {
+  return hasStatusEffect(character, 'terrified')
+}
+
+/**
+ * Check if character is slowed (-50% speed)
+ */
+export function isSlowed(character: Character): boolean {
+  return hasStatusEffect(character, 'slowed')
+}
+
+/**
+ * Check if character is drained (-20% all stats)
+ */
+export function isDrained(character: Character): boolean {
+  return hasStatusEffect(character, 'drained')
+}
+
+/**
+ * Get the speed modifier from slowed status
+ * Returns the percentage reduction (0-100)
+ */
+export function getSlowedSpeedReduction(character: Character): number {
+  const effect = getStatusEffect(character, 'slowed')
+  return effect?.value ?? 0
+}
+
+/**
+ * Get the stat modifier from drained status
+ * Returns the percentage reduction to apply to all stats (0-100)
+ */
+export function getDrainedStatReduction(character: Character): number {
+  const effect = getStatusEffect(character, 'drained')
+  return effect?.value ?? 0
+}
+
+/**
+ * Get the FOV reduction from blind status
+ * Returns reduced light radius (1 when blind)
+ */
+export function getBlindFovRadius(): number {
+  return 1 // Can only see adjacent tiles when blind
+}
+
 /**
  * Check and trigger Second Wind if applicable
  * Second Wind heals the character once when they drop to critical HP (≤20% max)

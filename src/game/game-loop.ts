@@ -224,10 +224,11 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     return events
   }
 
-  // Check if player is stunned - skip their action but still process turn
+  // Check if player is stunned or paralyzed - skip their action but still process turn
   const isStunned = game.character.statusEffects.some((e) => e.type === 'stun')
-  if (isStunned) {
-    addMessage(game, 'You are stunned and cannot act!', 'danger')
+  const isParalyzed = game.character.statusEffects.some((e) => e.type === 'paralyzed')
+  if (isStunned || isParalyzed) {
+    addMessage(game, isParalyzed ? 'You are paralyzed and cannot move!' : 'You are stunned and cannot act!', 'danger')
 
     // Update turn counter
     game.turn++
@@ -252,6 +253,26 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     }
 
     return events
+  }
+
+  // Check if terrified - cannot attack
+  const isTerrified = game.character.statusEffects.some((e) => e.type === 'terrified')
+  if (isTerrified && action.type === 'attack') {
+    addMessage(game, 'You are too terrified to attack!', 'danger')
+    // Convert attack to wait
+    action = { type: 'wait' }
+  }
+
+  // Check if confused - 50% chance of random movement
+  const isConfused = game.character.statusEffects.some((e) => e.type === 'confused')
+  if (isConfused && (action.type === 'move' || action.type === 'attack')) {
+    if (Math.random() < 0.5) {
+      // Random movement instead of intended action
+      const directions = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const
+      const randomDir = directions[Math.floor(Math.random() * 8)]!
+      addMessage(game, 'You stumble in confusion!', 'danger')
+      action = { type: 'move', direction: randomDir }
+    }
   }
 
   // Validate and execute player action
