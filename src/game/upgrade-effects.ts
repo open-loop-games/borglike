@@ -45,25 +45,29 @@ export interface UpgradeLevels {
  * Compute all upgrade bonuses from current upgrade levels
  *
  * @param levels - Current upgrade level state
+ * @param upgradePowerPercent - Power multiplier for upgrades (100 = normal)
  * @returns Computed bonuses ready to apply to gameplay
  */
-export function computeUpgradeBonuses(levels: UpgradeLevels): UpgradeBonuses {
+export function computeUpgradeBonuses(levels: UpgradeLevels, upgradePowerPercent = 100): UpgradeBonuses {
+  // Scale factor for upgrade power
+  const scale = upgradePowerPercent / 100
+
   return {
-    // Stat bonuses
-    maxHpBonus: getEffectValue(levels, 'vitality'),
-    damagePercent: getEffectValue(levels, 'might'),
-    armorBonus: getEffectValue(levels, 'resilience'),
-    dodgePercent: getEffectValue(levels, 'swiftness'),
-    accuracyBonus: getEffectValue(levels, 'precision'),
-    speedBonus: getEffectValue(levels, 'celerity'),
+    // Stat bonuses (scaled)
+    maxHpBonus: Math.floor(getEffectValue(levels, 'vitality') * scale),
+    damagePercent: Math.floor(getEffectValue(levels, 'might') * scale),
+    armorBonus: Math.floor(getEffectValue(levels, 'resilience') * scale),
+    dodgePercent: Math.floor(getEffectValue(levels, 'swiftness') * scale),
+    accuracyBonus: Math.floor(getEffectValue(levels, 'precision') * scale),
+    speedBonus: Math.floor(getEffectValue(levels, 'celerity') * scale),
 
-    // Meta bonuses
-    xpMultiplier: 1 + getEffectValue(levels, 'fast_learner') / 100,
-    goldMultiplier: 1 + getEffectValue(levels, 'gold_digger') / 100,
-    essenceMultiplier: 1 + getEffectValue(levels, 'essence_boost') / 100,
-    merchantDiscount: getEffectValue(levels, 'haggler'),
+    // Meta bonuses (scaled, but multiplier base of 1 is preserved)
+    xpMultiplier: 1 + (getEffectValue(levels, 'fast_learner') / 100) * scale,
+    goldMultiplier: 1 + (getEffectValue(levels, 'gold_digger') / 100) * scale,
+    essenceMultiplier: 1 + (getEffectValue(levels, 'essence_boost') / 100) * scale,
+    merchantDiscount: Math.floor(getEffectValue(levels, 'haggler') * scale),
 
-    // QoL bonuses
+    // QoL bonuses (not scaled - turbo speed and auto-restart are convenience features)
     turboSpeedPercent: getEffectValue(levels, 'turbo_mode'),
     hasAutoRestart: (levels['auto_restart'] || 0) > 0,
   }
@@ -103,6 +107,22 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   turboSpeedPercent: 0,
   hasAutoRestart: false,
 }
+
+/**
+ * Compute bonuses with all upgrades at max level
+ *
+ * @param upgradePowerPercent - Power multiplier for upgrades (100 = normal)
+ */
+export function computeMaxUpgradeBonuses(upgradePowerPercent = 100): UpgradeBonuses {
+  const maxLevels: UpgradeLevels = {}
+  for (const upgrade of allUpgrades) {
+    maxLevels[upgrade.id] = upgrade.maxLevel
+  }
+  return computeUpgradeBonuses(maxLevels, upgradePowerPercent)
+}
+
+// Import for computeMaxUpgradeBonuses
+import { upgrades as allUpgrades } from './data/upgrades'
 
 // ============================================================================
 // HELPERS

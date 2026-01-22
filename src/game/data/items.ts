@@ -1020,6 +1020,16 @@ export const POTIONS: ItemTemplate[] = [
 // ============================================================================
 
 export const SCROLLS: ItemTemplate[] = [
+  // Detection
+  {
+    name: 'Scroll of Detect Stairs',
+    type: 'scroll',
+    tier: 1,
+    weight: 5,
+    effect: 'Reveals stairs location on current level',
+    minDepth: 0,
+  },
+
   // Teleportation
   {
     name: 'Scroll of Phase Door',

@@ -77,12 +77,22 @@ export function getKnowledgeBonus(kills: number): number {
  *
  * @param monsterName - Name of the monster (used as bestiary key)
  * @param bestiary - Bestiary data mapping monster names to kill counts
+ * @param overrideBonusPercent - If >0, use this fixed bonus instead of computing from kills
  * @returns Combat bonuses to apply
  */
 export function getKnowledgeBonuses(
   monsterName: string,
-  bestiary: Record<string, BestiaryEntry> | undefined
+  bestiary: Record<string, BestiaryEntry> | undefined,
+  overrideBonusPercent = 0
 ): KnowledgeBonuses {
+  // If override is set, use it directly (for testing/balance tuning)
+  if (overrideBonusPercent > 0) {
+    return {
+      damagePercent: overrideBonusPercent,
+      reductionPercent: overrideBonusPercent,
+    }
+  }
+
   if (!bestiary) {
     return { damagePercent: 0, reductionPercent: 0 }
   }

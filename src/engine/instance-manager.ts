@@ -181,6 +181,9 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
   // Get bestiary data for knowledge bonuses
   const bestiary = progression.bestiary
 
+  // Get max depth ever for merchant scaling
+  const maxDepthEver = progression.globalStats.maxDepthEver
+
   // Create the actual game runner
   const runner = createGameRunner({
     raceId: RACE_IDS[raceName] || 'human',
@@ -189,6 +192,7 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     upgradeBonuses: bonuses,
     boosterBonuses,
     bestiary,
+    maxDepthEver,
     maxTurns: 0, // Unlimited
   })
 

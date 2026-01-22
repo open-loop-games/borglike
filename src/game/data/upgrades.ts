@@ -48,7 +48,7 @@ const vitality: UpgradeDefinition = {
 const might: UpgradeDefinition = {
   id: 'might',
   name: 'Might',
-  description: '+2% damage per level',
+  description: '+2% all damage per level',
   category: 'stats',
   maxLevel: 10,
   baseCost: 75,

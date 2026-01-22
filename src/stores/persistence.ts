@@ -28,6 +28,7 @@ interface SerializedUnlockState {
 /** Serializable version of AchievementState */
 interface SerializedAchievementState {
   unlocked: string[]
+  collected: string[]
   progress: Record<string, number>
   // Note: newUnlocks is intentionally NOT persisted - it's session-only state
   // The indicator should only show for achievements earned in the current session
@@ -52,6 +53,10 @@ interface ProgressionData {
   bestiary?: Record<string, BestiaryEntry>
   slotConfigs?: SlotConfig[]
   achievements?: SerializedAchievementState
+  // Independent top runs storage (persisted separately from recent history)
+  topRunsByDepth?: RunStats[]
+  topRunsByEssence?: RunStats[]
+  topRunsByKills?: RunStats[]
 }
 
 /** Database schema for type safety */
@@ -147,9 +152,10 @@ function deserializeUnlocks(data: SerializedUnlockState): UnlockState {
  * Convert AchievementState Sets to arrays for JSON serialization
  * Note: newUnlocks is intentionally NOT serialized - it's session-only state
  */
-function serializeAchievements(state: { unlocked: Set<string>; progress: Record<string, number>; newUnlocks: Set<string> }): SerializedAchievementState {
+function serializeAchievements(state: { unlocked: Set<string>; collected: Set<string>; progress: Record<string, number>; newUnlocks: Set<string> }): SerializedAchievementState {
   return {
     unlocked: Array.from(state.unlocked),
+    collected: Array.from(state.collected),
     progress: { ...state.progress },
   }
 }
@@ -158,9 +164,10 @@ function serializeAchievements(state: { unlocked: Set<string>; progress: Record<
  * Convert arrays back to Sets for AchievementState
  * Note: newUnlocks is always empty on restore - it's session-only state
  */
-function deserializeAchievements(data: SerializedAchievementState): { unlocked: Set<string>; progress: Record<string, number>; newUnlocks: Set<string> } {
+function deserializeAchievements(data: SerializedAchievementState): { unlocked: Set<string>; collected: Set<string>; progress: Record<string, number>; newUnlocks: Set<string> } {
   return {
     unlocked: new Set(data.unlocked),
+    collected: new Set(data.collected ?? []),
     progress: data.progress ?? {},
     newUnlocks: new Set(), // Always start fresh - indicator is session-only
   }
@@ -227,6 +234,10 @@ function serializeProgression(): ProgressionData {
     bestiary: serializedBestiary,
     slotConfigs: serializedSlotConfigs,
     achievements: serializeAchievements(progression.achievementState),
+    // Independent top runs (persisted separately from recent history)
+    topRunsByDepth: [...progression.topRunsByDepth],
+    topRunsByEssence: [...progression.topRunsByEssence],
+    topRunsByKills: [...progression.topRunsByKills],
   }
 }
 
@@ -280,8 +291,23 @@ function restoreProgressionFromData(data: ProgressionData): void {
   if (data.achievements) {
     const achievements = deserializeAchievements(data.achievements)
     progression.achievementState.unlocked = achievements.unlocked
+    progression.achievementState.collected = achievements.collected
     progression.achievementState.progress = achievements.progress
     progression.achievementState.newUnlocks = achievements.newUnlocks
+  }
+
+  // Restore independent top runs
+  if (data.topRunsByDepth) {
+    progression.topRunsByDepth.length = 0
+    progression.topRunsByDepth.push(...data.topRunsByDepth)
+  }
+  if (data.topRunsByEssence) {
+    progression.topRunsByEssence.length = 0
+    progression.topRunsByEssence.push(...data.topRunsByEssence)
+  }
+  if (data.topRunsByKills) {
+    progression.topRunsByKills.length = 0
+    progression.topRunsByKills.push(...data.topRunsByKills)
   }
 
   // Run migrations to ensure data integrity
@@ -536,6 +562,10 @@ export function setupAutoSave(): () => void {
       activeLoadout: JSON.stringify(progression.activeLoadout),
       // Track run history length (saves happen via saveRun, but this catches manual changes)
       runHistoryLength: progression.runHistory.length,
+      // Track independent top runs
+      topRunsByDepthLength: progression.topRunsByDepth.length,
+      topRunsByEssenceLength: progression.topRunsByEssence.length,
+      topRunsByKillsLength: progression.topRunsByKills.length,
       // Track achievements
       achievementsUnlocked: Array.from(progression.achievementState.unlocked).join(','),
       achievementsProgress: JSON.stringify(progression.achievementState.progress),
@@ -577,6 +607,9 @@ export async function exportDataAsJSON(): Promise<string> {
       bestiary: { ...progression.bestiary },
       slotConfigs: progression.slotConfigs.map((config) => ({ ...config })),
       achievements: serializeAchievements(progression.achievementState),
+      topRunsByDepth: [...progression.topRunsByDepth],
+      topRunsByEssence: [...progression.topRunsByEssence],
+      topRunsByKills: [...progression.topRunsByKills],
     },
     runHistory: runs,
   }
@@ -614,6 +647,9 @@ export async function importDataFromJSON(jsonString: string): Promise<boolean> {
       bestiary: prog.bestiary,
       slotConfigs: prog.slotConfigs,
       achievements: prog.achievements,
+      topRunsByDepth: prog.topRunsByDepth,
+      topRunsByEssence: prog.topRunsByEssence,
+      topRunsByKills: prog.topRunsByKills,
     }
 
     restoreProgressionFromData(progressionData)

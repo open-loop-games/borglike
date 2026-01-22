@@ -230,6 +230,22 @@ const SCROLL_EFFECTS: Array<{
     },
   },
 
+  // Detect Stairs - reveals only the stairs location
+  {
+    match: (e) => e.includes('Reveals stairs'),
+    apply: (game, item) => {
+      const stairs = game.currentLevel.stairsDown
+      if (stairs) {
+        const tile = getTile(game.currentLevel, stairs.x, stairs.y)
+        if (tile) tile.explored = true
+      }
+      return {
+        success: true,
+        message: `You read the ${item.template.name}. You sense the way down!`,
+      }
+    },
+  },
+
   // Magic Mapping
   {
     match: (e) => e.includes('Magic Mapping') || e.includes('reveal level'),

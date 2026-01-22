@@ -16,9 +16,10 @@ import type {
   Direction,
   ResistanceType,
   GameMessage,
+  UniqueState,
 } from './types'
 import { MAX_DEPTH, getDirectionFromDelta, DIRECTION_VECTORS } from './types'
-import { randomInt } from './rng'
+import { randomInt, random } from './rng'
 import { attack, applyDamage, formatAttackMessageFromEntities, getStatusSpeedBonus } from './combat'
 import { checkSecondWind } from './status-effects'
 import { getKnowledgeBonuses } from './knowledge-effects'
@@ -64,14 +65,16 @@ export function resetMonsterIdCounter(): void {
  *
  * @param template - The monster template to spawn from
  * @param position - The position to spawn the monster at
+ * @param hpPercent - HP modifier (100 = normal, 50 = half HP)
  * @returns A new Monster instance
  */
-export function spawnMonster(template: MonsterTemplate, position: Point): Monster {
+export function spawnMonster(template: MonsterTemplate, position: Point, hpPercent = 100): Monster {
+  const adjustedHp = Math.max(1, Math.floor(template.hp * hpPercent / 100))
   return {
     id: generateMonsterId(),
     template,
-    hp: template.hp,
-    maxHp: template.hp,
+    hp: adjustedHp,
+    maxHp: adjustedHp,
     position: { ...position },
     energy: 0,
     isAwake: false,
@@ -85,17 +88,36 @@ export function spawnMonster(template: MonsterTemplate, position: Point): Monste
  *
  * Monster count scales with depth: 5 + floor(depth / 2)
  * Monsters are placed at random open positions, avoiding stairs.
+ * Uniques that have already spawned this run are filtered out.
  *
  * @param level - The dungeon level to spawn monsters on
  * @param depth - The dungeon depth (affects monster count and types)
+ * @param hpPercent - HP modifier (100 = normal, 50 = half HP)
+ * @param uniqueState - Optional unique tracking state (filters already-spawned uniques)
  * @returns Array of spawned monsters
  */
-export function spawnMonstersForLevel(level: DungeonLevel, depth: number): Monster[] {
+export function spawnMonstersForLevel(
+  level: DungeonLevel,
+  depth: number,
+  hpPercent = 100,
+  uniqueState?: UniqueState
+): Monster[] {
   const monsters: Monster[] = []
   const monsterCount = 5 + Math.floor(depth / 2)
 
   // Get available monster templates for this depth
-  const templates = getSpawnableMonsters(depth)
+  let templates = getSpawnableMonsters(depth)
+
+  // Filter out uniques that have already spawned this run
+  if (uniqueState) {
+    templates = templates.filter(t => {
+      if (t.flags?.includes('UNIQUE') && uniqueState.spawned.has(t.name)) {
+        return false
+      }
+      return true
+    })
+  }
+
   if (templates.length === 0) {
     return monsters
   }
@@ -116,19 +138,30 @@ export function spawnMonstersForLevel(level: DungeonLevel, depth: number): Monst
     const template = pickRandomTemplate(templates)
     const pos = validPositions[i]
     if (template && pos) {
-      const monster = spawnMonster(template, pos)
+      const monster = spawnMonster(template, pos, hpPercent)
       monsters.push(monster)
+
+      // Track unique spawns
+      if (uniqueState && template.flags?.includes('UNIQUE')) {
+        uniqueState.spawned.add(template.name)
+      }
     }
   }
 
-  // Spawn boss on max depth
+  // Spawn boss on max depth (only if not already spawned)
   if (depth === MAX_DEPTH) {
-    const bossTemplate = getMonsterByName(VICTORY_BOSS_NAME)
-    if (bossTemplate) {
-      const bossPos = findOpenPositions(level, 1)[0]
-      if (bossPos) {
-        const boss = spawnMonster(bossTemplate, bossPos)
-        monsters.push(boss)
+    const bossAlreadySpawned = uniqueState?.spawned.has(VICTORY_BOSS_NAME)
+    if (!bossAlreadySpawned) {
+      const bossTemplate = getMonsterByName(VICTORY_BOSS_NAME)
+      if (bossTemplate) {
+        const bossPos = findOpenPositions(level, 1)[0]
+        if (bossPos) {
+          const boss = spawnMonster(bossTemplate, bossPos, hpPercent)
+          monsters.push(boss)
+          if (uniqueState) {
+            uniqueState.spawned.add(VICTORY_BOSS_NAME)
+          }
+        }
       }
     }
   }
@@ -155,7 +188,7 @@ function pickRandomTemplate(templates: MonsterTemplate[]): MonsterTemplate | nul
   }
 
   // Pick random value in weight range
-  let roll = Math.random() * totalWeight
+  let roll = random() * totalWeight
   for (const t of templates) {
     const weight = t.rarity ?? 1.0
     roll -= weight
@@ -664,9 +697,15 @@ function executeMonsterAction(
   if (action.type === 'attack') {
     // Monster attacks player - pass primary ability type for resistance calculation
     const primaryAbility = monster.template.abilities[0] as ResistanceType | undefined
-    // Compute knowledge bonuses for damage reduction (player knows this monster)
-    const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary)
+    // Compute knowledge bonuses for damage reduction (player knows this monster, or override for testing)
+    const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent)
     const attackResult = attack(monster, game.character, primaryAbility, knowledgeBonuses)
+
+    // Apply monster damage balance modifier
+    if (attackResult.hit && game.balance.monsterDamagePercent !== 100) {
+      attackResult.damage = Math.max(1, Math.floor(attackResult.damage * game.balance.monsterDamagePercent / 100))
+    }
+
     const message = formatAttackMessageFromEntities(monster, game.character, attackResult)
     addMessage(game, message, 'combat')
 

@@ -15,7 +15,7 @@ import { runBotTick, buildBotContext, getBotStatus, evaluateDanger, createBotSta
 // ============================================================================
 
 /** Turns on same level before forcing death (circuit breaker for stuck bots) */
-const STALE_LEVEL_THRESHOLD = 1000
+const STALE_LEVEL_THRESHOLD = 2000
 
 // ============================================================================
 // TYPES

@@ -17,7 +17,9 @@ import type {
   FountainState,
   AltarState,
   TrapState,
+  BalanceOverrides,
 } from './types'
+import { DEFAULT_BALANCE } from './types'
 import { seedRNG } from './rng'
 import { calculateLightRadius } from './lighting'
 import { createCharacter } from './character'
@@ -25,6 +27,7 @@ import { DEFAULT_BONUSES } from './upgrade-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { generateLevel, computeFOV, findOpenPosition } from './dungeon'
 import { spawnMonstersForLevel, processMonsterTurns } from './monster-ai'
+import { processMinionTurns } from './minion-ai'
 import { spawnItemsForLevel, createStartingEquipment, createRandomPotion } from './items'
 import { initializeFeaturesFromVault } from './features'
 import { generateMerchantInventory } from './items'
@@ -55,6 +58,8 @@ import {
   handleCast,
   handleReturnPortal,
   handleUseHealer,
+  handleSteal,
+  handleShapeshift,
 } from './actions'
 import { equipItem } from './character'
 
@@ -74,6 +79,7 @@ export function createGame(config: RunConfig): GameState {
   const runId = `run_${seed}_${Math.random().toString(36).substring(2, 9)}`
   const upgradeBonuses = config.upgradeBonuses ?? DEFAULT_BONUSES
   const boosterBonuses = config.boosterBonuses ?? DEFAULT_BOOSTER_BONUSES
+  const balance: BalanceOverrides = { ...DEFAULT_BALANCE, ...config.balanceOverrides }
 
   // Create character with upgrade bonuses and booster bonuses
   const character = createCharacter({
@@ -84,7 +90,7 @@ export function createGame(config: RunConfig): GameState {
   })
 
   // Give starting equipment based on class (with booster enchantment bonuses)
-  const startingItems = createStartingEquipment(config.classId, boosterBonuses)
+  const startingItems = createStartingEquipment(config.classId, boosterBonuses, balance.startingPotions)
   for (const item of startingItems) {
     if (item.template.slot) {
       // Auto-equip weapons and armor
@@ -115,11 +121,17 @@ export function createGame(config: RunConfig): GameState {
   const levelCache = new Map<number, typeof firstLevel>()
   levelCache.set(1, firstLevel)
 
-  // Spawn monsters for first level
-  const monsters = spawnMonstersForLevel(firstLevel, 1)
+  // Initialize unique tracking
+  const uniqueState = {
+    spawned: new Set<string>(),
+    killed: new Set<string>(),
+  }
+
+  // Spawn monsters for first level (pass uniqueState for unique tracking)
+  const monsters = spawnMonstersForLevel(firstLevel, 1, balance.monsterHpPercent, uniqueState)
 
   // Spawn items for first level
-  const items = spawnItemsForLevel(firstLevel, 1)
+  const items = spawnItemsForLevel(firstLevel, 1, balance.potionRatePercent, balance.enchantRatePercent, balance.itemRatePercent)
 
   // Initialize run stats
   const stats: RunStats = {
@@ -151,6 +163,7 @@ export function createGame(config: RunConfig): GameState {
     entityCache: new Map(),
     monsters,
     items,
+    minions: [], // Player's pets/summons
     fountains,
     altars,
     merchants,
@@ -167,6 +180,9 @@ export function createGame(config: RunConfig): GameState {
     boosterBonuses,
     usedSecondWind: false,
     bestiary: config.bestiary,
+    balance,
+    uniqueState,
+    maxDepthEver: config.maxDepthEver ?? 1,
   }
 
   // Initialize features from vault data (if vault was placed)
@@ -273,19 +289,30 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     tickPortalTimer(game)
   }
 
+  // Check if out of combat (no adjacent enemies)
+  const adjacentMonster = game.monsters.some((m) => {
+    const dx = Math.abs(m.position.x - game.character.position.x)
+    const dy = Math.abs(m.position.y - game.character.position.y)
+    return dx <= 1 && dy <= 1 && m.hp > 0
+  })
+
   // Mana regeneration (1 + WIS/10 MP per turn when not adjacent to enemies)
-  if (game.character.mp < game.character.maxMp) {
-    const adjacentMonster = game.monsters.some((m) => {
-      const dx = Math.abs(m.position.x - game.character.position.x)
-      const dy = Math.abs(m.position.y - game.character.position.y)
-      return dx <= 1 && dy <= 1 && m.hp > 0
-    })
-    if (!adjacentMonster) {
-      const wisBonus = Math.floor(game.character.stats.wis / 10)
-      const manaRegen = 1 + wisBonus
-      game.character.mp = Math.min(game.character.mp + manaRegen, game.character.maxMp)
+  if (game.character.mp < game.character.maxMp && !adjacentMonster) {
+    const wisBonus = Math.floor(game.character.stats.wis / 10)
+    const manaRegen = 1 + wisBonus
+    game.character.mp = Math.min(game.character.mp + manaRegen, game.character.maxMp)
+  }
+
+  // Passive HP regeneration (balance override: HP per 10 turns when out of combat)
+  if (game.balance.regenPer10Turns > 0 && !adjacentMonster && game.character.hp < game.character.maxHp) {
+    if (game.turn % 10 === 0) {
+      game.character.hp = Math.min(game.character.hp + game.balance.regenPer10Turns, game.character.maxHp)
     }
   }
+
+  // Process minion turns (player's pets/summons act before monsters)
+  const minionEvents = processMinionTurns(game)
+  events.push(...minionEvents)
 
   // Process monster turns
   const monsterEvents = processMonsterTurns(game)
@@ -361,6 +388,10 @@ function executeAction(game: GameState, action: GameAction): ActionResult {
       return handleReturnPortal(game)
     case 'use_healer':
       return handleUseHealer(game)
+    case 'steal':
+      return handleSteal(game, action.targetId)
+    case 'shapeshift':
+      return handleShapeshift(game, action.formId)
     default:
       return { success: false, message: 'Unknown action', energyCost: 0 }
   }

@@ -135,9 +135,10 @@ function getItemCountForLevel(depth: number): number {
  * @param depth - The dungeon depth (affects item types)
  * @returns Array of ground items
  */
-export function spawnItemsForLevel(level: DungeonLevel, depth: number): GroundItem[] {
+export function spawnItemsForLevel(level: DungeonLevel, depth: number, potionRatePercent = 100, enchantRatePercent = 100, itemRatePercent = 100): GroundItem[] {
   const items: GroundItem[] = []
-  const itemCount = getItemCountForLevel(depth)
+  const baseItemCount = getItemCountForLevel(depth)
+  const itemCount = Math.max(1, Math.floor(baseItemCount * itemRatePercent / 100))
 
   // Get available templates for this depth
   const availableItems = getItemsForDepth(depth)
@@ -161,10 +162,40 @@ export function spawnItemsForLevel(level: DungeonLevel, depth: number): GroundIt
 
     if (template && pos) {
       // Determine enchantment (deeper = higher chance of enchantment)
-      const enchantment = rollEnchantment(depth)
+      const enchantment = rollEnchantment(depth, enchantRatePercent)
       const item = createItem(template, enchantment)
       const groundItem = createGroundItem(item, pos)
       items.push(groundItem)
+    }
+  }
+
+  // Spawn bonus potions based on potion rate (100 = normal, 200 = double)
+  if (potionRatePercent !== 100 && POTIONS.length > 0) {
+    // Base: 1-2 potions per level, scale by rate
+    const basePotionCount = 1 + Math.floor(depth * 0.1)
+    const scaledCount = Math.floor(basePotionCount * potionRatePercent / 100)
+    const bonusPotions = scaledCount - basePotionCount
+
+    // Find more open positions if needed
+    const potionPositions = findOpenPositions(level, Math.abs(bonusPotions) + 5)
+    const validPotionPositions = potionPositions.filter((pos) => {
+      const tile = getTile(level, pos.x, pos.y)
+      if (!tile) return false
+      // Exclude stairs and positions already used
+      return tile.type !== 'stairs_up' && tile.type !== 'stairs_down' &&
+        !items.some((item) => item.position.x === pos.x && item.position.y === pos.y)
+    })
+
+    if (bonusPotions > 0) {
+      // Spawn extra potions
+      for (let i = 0; i < bonusPotions && i < validPotionPositions.length; i++) {
+        const potionTemplate = POTIONS[randomInt(0, POTIONS.length - 1)]
+        const pos = validPotionPositions[i]
+        if (potionTemplate && pos) {
+          const potion = createItem(potionTemplate, 0)
+          items.push(createGroundItem(potion, pos))
+        }
+      }
     }
   }
 
@@ -243,9 +274,10 @@ function pickRandomArtifact(depth: number): ArtifactTemplate | null {
  * @param depth - Current dungeon depth
  * @returns Enchantment bonus (0 to +3 typically)
  */
-function rollEnchantment(depth: number): number {
-  // 70% chance of no enchantment
-  if (random() > 0.3) {
+function rollEnchantment(depth: number, enchantRatePercent = 100): number {
+  // Base 30% chance of enchantment, scaled by enchantRatePercent
+  const enchantChance = 0.3 * enchantRatePercent / 100
+  if (random() > enchantChance) {
     return 0
   }
 
@@ -483,6 +515,23 @@ export function createTownPortalScrolls(count: number): Item[] {
 }
 
 /**
+ * Create Detect Stairs scrolls
+ *
+ * @param count - Number of scrolls to create
+ * @returns Array of Detect Stairs scroll items
+ */
+export function createDetectStairsScrolls(count: number): Item[] {
+  const detectStairsScroll = SCROLLS.find((s) => s.name === 'Scroll of Detect Stairs')
+  if (!detectStairsScroll) return []
+
+  const items: Item[] = []
+  for (let i = 0; i < count; i++) {
+    items.push(createItem(detectStairsScroll, 0))
+  }
+  return items
+}
+
+/**
  * Create starting equipment for a character based on class
  *
  * @param classId - The character's class ID
@@ -491,7 +540,8 @@ export function createTownPortalScrolls(count: number): Item[] {
  */
 export function createStartingEquipment(
   classId: string,
-  boosterBonuses?: BoosterBonuses
+  boosterBonuses?: BoosterBonuses,
+  startingPotions = 3
 ): Item[] {
   const items: Item[] = []
   const bonuses = boosterBonuses ?? DEFAULT_BOOSTER_BONUSES
@@ -530,11 +580,14 @@ export function createStartingEquipment(
   }
 
   // Some potions and scrolls
-  items.push(...createHealingPotions(3))
+  items.push(...createHealingPotions(startingPotions))
   items.push(...createTeleportScrolls(2))
 
   // Town Portal scroll (always start with 1)
   items.push(...createTownPortalScrolls(1))
+
+  // Detect Stairs scroll (always start with 1)
+  items.push(...createDetectStairsScrolls(1))
 
   return items
 }
