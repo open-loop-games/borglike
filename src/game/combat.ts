@@ -8,6 +8,9 @@
 import type { Character, Monster, ResistanceType, Point } from './types'
 import type { KnowledgeBonuses } from './knowledge-effects'
 import { random } from './rng'
+import { calculateAttackCount, calculateRangedAttackCount } from './character'
+import { getClassById } from './data/classes'
+import { getFormById, hasLifedrain } from './data/forms'
 
 // ============================================================================
 // TYPES
@@ -18,6 +21,22 @@ export interface AttackResult {
   damage: number
   critical: boolean
   killed: boolean
+}
+
+/** Result of a multi-attack melee action */
+export interface MultiAttackResult {
+  /** Number of attacks performed */
+  attackCount: number
+  /** Number of attacks that hit */
+  hits: number
+  /** Total damage dealt across all attacks */
+  totalDamage: number
+  /** Number of critical hits */
+  criticals: number
+  /** Whether the target was killed */
+  killed: boolean
+  /** Individual attack results for message formatting */
+  attacks: AttackResult[]
 }
 
 interface AttackerStats {
@@ -159,6 +178,189 @@ export function getTotalResistance(character: Character, type: ResistanceType): 
 }
 
 // ============================================================================
+// DEADLINESS TABLE
+// ============================================================================
+
+/**
+ * Deadliness lookup table
+ *
+ * Maps deadliness value to damage percentage multiplier.
+ * Based on Angband's non-linear scaling where higher deadliness
+ * gives increasingly better returns.
+ *
+ * Index = deadliness value (0-150)
+ * Value = damage percentage (100 = 1x, 200 = 2x, etc.)
+ */
+const DEADLINESS_TABLE: number[] = [
+  // 0-9: Minimal bonus
+  100, 102, 104, 106, 108, 110, 112, 114, 116, 118,
+  // 10-19: Small bonus
+  120, 123, 126, 129, 132, 135, 138, 141, 144, 147,
+  // 20-29: Moderate bonus
+  150, 154, 158, 162, 166, 170, 174, 178, 182, 186,
+  // 30-39: Good bonus
+  190, 195, 200, 205, 210, 215, 220, 225, 230, 235,
+  // 40-49: Strong bonus
+  240, 246, 252, 258, 264, 270, 276, 282, 288, 294,
+  // 50-59: Excellent bonus
+  300, 307, 314, 321, 328, 335, 342, 349, 356, 363,
+  // 60-69: Superior bonus
+  370, 378, 386, 394, 402, 410, 418, 426, 434, 442,
+  // 70-79: Exceptional bonus
+  450, 459, 468, 477, 486, 495, 504, 513, 522, 531,
+  // 80-89: Outstanding bonus
+  540, 550, 560, 570, 580, 590, 600, 610, 620, 630,
+  // 90-99: Legendary bonus
+  640, 651, 662, 673, 684, 695, 706, 717, 728, 739,
+  // 100+: Maximum
+  750, 762, 774, 786, 798, 810, 822, 834, 846, 858,
+  870, 883, 896, 909, 922, 935, 948, 961, 974, 987,
+  1000, // 120 = 10x damage
+  // 121-150: Diminishing returns past 10x
+  1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090,
+  1100, 1108, 1116, 1124, 1132, 1140, 1148, 1156, 1164, 1172,
+  1180, 1187, 1194, 1201, 1208, 1215, 1222, 1229, 1236, 1243,
+  1250, // 150 = 12.5x damage (theoretical max)
+]
+
+/**
+ * Calculate character's melee deadliness value
+ *
+ * Deadliness comes from:
+ * - Weapon enchantment (to-damage): +2 deadliness per point
+ * - STR bonus: +1 deadliness per point of STR above 10
+ * - Level bonus: +0.5 deadliness per level
+ *
+ * @param character - The character
+ * @returns Deadliness value (0-150)
+ */
+export function calculateDeadliness(character: Character): number {
+  let deadliness = 0
+
+  // Weapon enchantment bonus (each +1 enchant = +2 deadliness)
+  const weapon = character.equipment.weapon
+  if (weapon) {
+    deadliness += weapon.enchantment * 2
+  }
+
+  // STR bonus (each point above 10 = +1 deadliness)
+  const strBonus = Math.max(0, character.stats.str - 10)
+  deadliness += strBonus
+
+  // Level bonus (level / 2)
+  deadliness += Math.floor(character.level / 2)
+
+  // Cap at 150 (table maximum)
+  return Math.min(150, deadliness)
+}
+
+/**
+ * Calculate character's ranged deadliness value
+ *
+ * Similar to melee but uses:
+ * - Bow enchantment: +2 deadliness per point
+ * - DEX bonus: +1 deadliness per point of DEX above 10
+ * - Level bonus: +0.5 deadliness per level
+ *
+ * @param character - The character
+ * @returns Deadliness value (0-150)
+ */
+export function calculateRangedDeadliness(character: Character): number {
+  let deadliness = 0
+
+  // Bow enchantment bonus (each +1 enchant = +2 deadliness)
+  const bow = character.equipment.bow
+  if (bow) {
+    deadliness += bow.enchantment * 2
+  }
+
+  // DEX bonus for ranged (each point above 10 = +1 deadliness)
+  const dexBonus = Math.max(0, character.stats.dex - 10)
+  deadliness += dexBonus
+
+  // Level bonus (level / 2)
+  deadliness += Math.floor(character.level / 2)
+
+  // Cap at 150 (table maximum)
+  return Math.min(150, deadliness)
+}
+
+/**
+ * Apply deadliness damage multiplier
+ *
+ * @param baseDamage - Base damage before deadliness
+ * @param deadliness - Deadliness value (0-150)
+ * @returns Modified damage with deadliness applied
+ */
+export function applyDeadliness(baseDamage: number, deadliness: number): number {
+  const clampedDeadliness = Math.max(0, Math.min(150, deadliness))
+  const multiplier = DEADLINESS_TABLE[clampedDeadliness] ?? 100
+  return Math.floor(baseDamage * multiplier / 100)
+}
+
+// ============================================================================
+// SCALED CRITICAL SYSTEM
+// ============================================================================
+
+/**
+ * Critical hit result with damage multiplier tier
+ * Based on Angband's weight/level scaled criticals
+ */
+export interface CriticalResult {
+  /** Whether a critical hit occurred */
+  isCritical: boolean
+  /** Damage multiplier (1 = no crit, 2/3/4 = tiered crit) */
+  multiplier: number
+  /** Crit tier name for messaging */
+  tier: 'none' | 'good' | 'great' | 'superb'
+}
+
+/**
+ * Calculate scaled critical hit based on weapon weight and character level
+ *
+ * Angband-inspired formula:
+ * - Crit chance = (weight/10 + level * 3) / 100, capped at 50%
+ * - On crit, roll determines tier:
+ *   - 0-50%: good hit (2x damage)
+ *   - 50-85%: great hit (3x damage)
+ *   - 85-100%: superb hit (4x damage)
+ *
+ * @param weaponWeight - Weapon weight in 0.1 lbs (e.g., 120 = 12 lbs)
+ * @param characterLevel - Character level
+ * @returns CriticalResult with multiplier and tier
+ */
+export function calculateScaledCritical(weaponWeight: number, characterLevel: number): CriticalResult {
+  // Base crit chance from weight (heavier = more crits)
+  // Weight is in 0.1 lbs, so 120 = 12% base
+  const weightBonus = weaponWeight / 10
+
+  // Level bonus (3% per level)
+  const levelBonus = characterLevel * 3
+
+  // Total crit chance, capped at 50%
+  const critChance = Math.min(50, weightBonus + levelBonus)
+
+  // Roll for crit
+  const critRoll = random() * 100
+  if (critRoll >= critChance) {
+    return { isCritical: false, multiplier: 1, tier: 'none' }
+  }
+
+  // Critical hit! Roll for tier
+  const tierRoll = random() * 100
+  if (tierRoll < 50) {
+    // Good hit: 2x damage
+    return { isCritical: true, multiplier: 2, tier: 'good' }
+  } else if (tierRoll < 85) {
+    // Great hit: 3x damage
+    return { isCritical: true, multiplier: 3, tier: 'great' }
+  } else {
+    // Superb hit: 4x damage
+    return { isCritical: true, multiplier: 4, tier: 'superb' }
+  }
+}
+
+// ============================================================================
 // COMBAT RESOLUTION
 // ============================================================================
 
@@ -182,7 +384,8 @@ export function attack(
   attacker: Character | Monster,
   defender: Character | Monster,
   abilityType?: ResistanceType,
-  knowledgeBonuses?: KnowledgeBonuses
+  knowledgeBonuses?: KnowledgeBonuses,
+  armorPenetration = 0
 ): AttackResult {
   const attackerStats = getAttackerStats(attacker)
   const defenderStats = getDefenderStats(defender)
@@ -219,19 +422,46 @@ export function attack(
   }
 
   // Calculate base damage (minimum 1)
-  const effectiveArmor = defenderStats.armor + defenderACBonus
-  const baseDamage = Math.max(1, attackerStats.damage + damageBonus - effectiveArmor / 2)
+  // Apply armor penetration (flat reduction to defender armor)
+  const effectiveArmor = Math.max(0, defenderStats.armor + defenderACBonus - armorPenetration)
+  let baseDamage = Math.max(1, attackerStats.damage + damageBonus - effectiveArmor / 2)
+
+  // Apply deadliness multiplier for character melee attacks
+  if (isCharacter(attacker)) {
+    const deadliness = calculateDeadliness(attacker)
+    baseDamage = applyDeadliness(baseDamage, deadliness)
+  }
+
+  // SHIELD_BASH: Characters with shield and canShieldBash have 20% chance for +50% damage
+  if (isCharacter(attacker) && attacker.equipment.shield) {
+    const gameClass = getClassById(attacker.classId)
+    if (gameClass?.canShieldBash && random() < 0.20) {
+      baseDamage = Math.floor(baseDamage * 1.5)
+    }
+  }
 
   // Apply variance (+/- 20%)
   const variance = 0.8 + random() * 0.4
   let damage = Math.floor(baseDamage * variance)
 
-  // Check for critical hit (5% chance)
-  const critRoll = random() * 100
-  const critical = critRoll < 5
-
-  if (critical) {
-    damage *= 2
+  // Check for critical hit
+  // Characters use scaled criticals based on weapon weight and level
+  // Monsters use flat 5% chance with 2x damage
+  let critical = false
+  if (isCharacter(attacker)) {
+    const weaponWeight = attacker.equipment.weapon?.template.weight ?? 50 // Default to 5 lbs if unarmed
+    const critResult = calculateScaledCritical(weaponWeight, attacker.level)
+    critical = critResult.isCritical
+    if (critical) {
+      damage *= critResult.multiplier
+    }
+  } else {
+    // Monster attacks: flat 5% chance, 2x damage
+    const critRoll = random() * 100
+    critical = critRoll < 5
+    if (critical) {
+      damage *= 2
+    }
   }
 
   // Apply knowledge bonuses from bestiary
@@ -274,6 +504,108 @@ export function attack(
     critical,
     killed,
   }
+}
+
+/**
+ * Perform a full melee attack action with multiple attacks
+ *
+ * Number of attacks scales with level, STR, and class cap.
+ * Each attack is resolved independently, damage accumulates.
+ *
+ * @param attacker - The attacking character
+ * @param defender - The defending monster
+ * @param knowledgeBonuses - Optional bestiary bonuses
+ * @param armorPenetration - Flat armor penetration
+ * @returns MultiAttackResult with aggregated stats
+ */
+export function meleeAttack(
+  attacker: Character,
+  defender: Monster,
+  knowledgeBonuses?: KnowledgeBonuses,
+  armorPenetration = 0
+): MultiAttackResult {
+  const attackCount = calculateAttackCount(attacker)
+  const attacks: AttackResult[] = []
+  let hits = 0
+  let totalDamage = 0
+  let criticals = 0
+  let killed = false
+
+  // Track remaining HP for accurate kill detection
+  let remainingHp = defender.hp
+
+  for (let i = 0; i < attackCount; i++) {
+    // Skip if target already dead
+    if (remainingHp <= 0) break
+
+    // Create a temporary defender with remaining HP for kill detection
+    const tempDefender = { ...defender, hp: remainingHp }
+
+    const result = attack(attacker, tempDefender, undefined, knowledgeBonuses, armorPenetration)
+    attacks.push(result)
+
+    if (result.hit) {
+      hits++
+      totalDamage += result.damage
+      remainingHp -= result.damage
+
+      if (result.critical) {
+        criticals++
+      }
+
+      if (result.killed || remainingHp <= 0) {
+        killed = true
+      }
+    }
+  }
+
+  return {
+    attackCount,
+    hits,
+    totalDamage,
+    criticals,
+    killed,
+    attacks,
+  }
+}
+
+/**
+ * Format a multi-attack result into a single message
+ */
+export function formatMultiAttackMessage(
+  defenderName: string,
+  result: MultiAttackResult
+): string {
+  if (result.hits === 0) {
+    if (result.attackCount === 1) {
+      return `You miss ${defenderName}.`
+    }
+    return `You miss ${defenderName} ${result.attackCount} times.`
+  }
+
+  // Build message showing attack count and total damage
+  let message: string
+
+  if (result.killed) {
+    if (result.attackCount === 1) {
+      message = result.criticals > 0
+        ? `You critically hit ${defenderName} for ${result.totalDamage} damage and kill it!`
+        : `You hit ${defenderName} for ${result.totalDamage} damage and kill it!`
+    } else {
+      message = `You hit ${defenderName} ${result.hits}x for ${result.totalDamage} total damage and kill it!`
+    }
+  } else {
+    if (result.attackCount === 1) {
+      message = result.criticals > 0
+        ? `You critically hit ${defenderName} for ${result.totalDamage} damage!`
+        : `You hit ${defenderName} for ${result.totalDamage} damage.`
+    } else {
+      const critText = result.criticals > 0 ? ` (${result.criticals} crit)` : ''
+      message = `You hit ${defenderName} ${result.hits}/${result.attackCount}x for ${result.totalDamage} damage${critText}.`
+    }
+  }
+
+  return message
 }
 
 // ============================================================================
@@ -436,7 +768,8 @@ export function rangedAttack(
   attacker: Character,
   defender: Monster,
   distance: number,
-  knowledgeBonuses?: KnowledgeBonuses
+  knowledgeBonuses?: KnowledgeBonuses,
+  armorPenetration = 0
 ): AttackResult {
   // Get ranged stats
   let accuracy = attacker.combat.rangedAccuracy
@@ -471,18 +804,24 @@ export function rangedAttack(
   }
 
   // Calculate base damage (minimum 1)
-  const baseDamage = Math.max(1, damage - defenderStats.armor / 2)
+  // Apply armor penetration (flat reduction to defender armor)
+  const effectiveArmor = Math.max(0, defenderStats.armor - armorPenetration)
+  let baseDamage = Math.max(1, damage - effectiveArmor / 2)
+
+  // Apply ranged deadliness multiplier (from bow enchantment + DEX + level)
+  const deadliness = calculateRangedDeadliness(attacker)
+  baseDamage = applyDeadliness(baseDamage, deadliness)
 
   // Apply variance (+/- 20%)
   const variance = 0.8 + random() * 0.4
   let finalDamage = Math.floor(baseDamage * variance)
 
-  // Check for critical hit (5% chance)
-  const critRoll = random() * 100
-  const critical = critRoll < 5
-
+  // Check for critical hit using scaled system (bow weight + level)
+  const bowWeight = attacker.equipment.bow?.template.weight ?? 30 // Default to 3 lbs
+  const critResult = calculateScaledCritical(bowWeight, attacker.level)
+  const critical = critResult.isCritical
   if (critical) {
-    finalDamage *= 2
+    finalDamage *= critResult.multiplier
   }
 
   // Apply knowledge bonus from bestiary (player attacking monster)
@@ -524,4 +863,143 @@ export function formatRangedAttackMessage(
   }
 
   return `Your arrow hits ${defenderName} for ${result.damage} damage.`
+}
+
+/**
+ * Perform a full ranged attack action with multiple shots
+ *
+ * FAST_SHOT: Rangers get +1 shot per 3 levels
+ * Other classes: 1 shot
+ *
+ * @param attacker - The attacking character
+ * @param defender - The defending monster
+ * @param distance - Distance to target
+ * @param knowledgeBonuses - Optional bestiary bonuses
+ * @param armorPenetration - Flat armor penetration
+ * @returns MultiAttackResult with aggregated stats
+ */
+export function multiRangedAttack(
+  attacker: Character,
+  defender: Monster,
+  distance: number,
+  knowledgeBonuses?: KnowledgeBonuses,
+  armorPenetration = 0
+): MultiAttackResult {
+  const shotCount = calculateRangedAttackCount(attacker)
+  const attacks: AttackResult[] = []
+  let hits = 0
+  let totalDamage = 0
+  let criticals = 0
+  let killed = false
+
+  // Track remaining HP for accurate kill detection
+  let remainingHp = defender.hp
+
+  for (let i = 0; i < shotCount; i++) {
+    // Skip if target already dead
+    if (remainingHp <= 0) break
+
+    // Create a temporary defender with remaining HP for kill detection
+    const tempDefender = { ...defender, hp: remainingHp }
+
+    const result = rangedAttack(attacker, tempDefender, distance, knowledgeBonuses, armorPenetration)
+    attacks.push(result)
+
+    if (result.hit) {
+      hits++
+      totalDamage += result.damage
+      remainingHp -= result.damage
+
+      if (result.critical) {
+        criticals++
+      }
+
+      if (result.killed || remainingHp <= 0) {
+        killed = true
+      }
+    }
+  }
+
+  return {
+    attackCount: shotCount,
+    hits,
+    totalDamage,
+    criticals,
+    killed,
+    attacks,
+  }
+}
+
+/**
+ * Format a multi-shot ranged attack result into a single message
+ */
+export function formatMultiRangedAttackMessage(
+  defenderName: string,
+  result: MultiAttackResult
+): string {
+  if (result.hits === 0) {
+    if (result.attackCount === 1) {
+      return `Your arrow misses ${defenderName}.`
+    }
+    return `Your arrows miss ${defenderName} ${result.attackCount} times.`
+  }
+
+  let message: string
+
+  if (result.killed) {
+    if (result.attackCount === 1) {
+      message = result.criticals > 0
+        ? `Your arrow critically hits ${defenderName} for ${result.totalDamage} damage and kills it!`
+        : `Your arrow hits ${defenderName} for ${result.totalDamage} damage and kills it!`
+    } else {
+      message = `Your arrows hit ${defenderName} ${result.hits}x for ${result.totalDamage} total damage and kill it!`
+    }
+  } else {
+    if (result.attackCount === 1) {
+      message = result.criticals > 0
+        ? `Your arrow critically hits ${defenderName} for ${result.totalDamage} damage!`
+        : `Your arrow hits ${defenderName} for ${result.totalDamage} damage.`
+    } else {
+      const critText = result.criticals > 0 ? ` (${result.criticals} crit)` : ''
+      message = `Your arrows hit ${defenderName} ${result.hits}/${result.attackCount}x for ${result.totalDamage} damage${critText}.`
+    }
+  }
+
+  return message
+}
+
+// ============================================================================
+// COMBAT LIFESTEAL
+// ============================================================================
+
+/**
+ * Calculate lifesteal amount for a character based on damage dealt
+ *
+ * Sources of lifesteal:
+ * - COMBAT_REGEN: Blackguard heals 10% of melee damage dealt (class ability)
+ * - SHAPESHIFTING: Shadow Form grants 10% lifedrain (form ability)
+ *
+ * @param character - The attacking character
+ * @param damage - Damage dealt to the enemy
+ * @returns Amount of HP to heal (0 if no lifesteal source)
+ */
+export function calculateLifesteal(character: Character, damage: number): number {
+  let lifestealPercent = 0
+
+  // COMBAT_REGEN: Blackguard class ability
+  const gameClass = getClassById(character.classId)
+  if (gameClass?.combatLifesteal) {
+    lifestealPercent += gameClass.combatLifesteal
+  }
+
+  // SHAPESHIFTING: Shadow Form lifedrain
+  if (character.activeFormId) {
+    const form = getFormById(character.activeFormId)
+    if (form && hasLifedrain(form)) {
+      lifestealPercent += 10 // Shadow Form grants 10% lifedrain
+    }
+  }
+
+  if (lifestealPercent <= 0) return 0
+  return Math.floor(damage * lifestealPercent / 100)
 }

@@ -63,6 +63,7 @@ export interface SpellTemplate {
 
   // Special flags
   doubleVsEvil?: boolean // 2x damage vs evil monsters
+  canBeam?: boolean // Bolt spell that can become a beam at higher levels
 }
 
 // ============================================================================
@@ -80,6 +81,7 @@ const magic_missile: SpellTemplate = {
   baseDamage: '1d6',
   damageScaling: 1,
   damageType: 'arcane',
+  canBeam: true, // Can pierce multiple enemies as beam at higher levels
   description: 'A bolt of pure magical energy strikes your foe.',
 }
 
@@ -95,6 +97,7 @@ const frost_bolt: SpellTemplate = {
   damageScaling: 1,
   damageType: 'cold',
   debuff: { type: 'slow', value: 50, duration: 3 },
+  canBeam: true, // Can pierce multiple enemies as beam at higher levels
   description: 'A bolt of freezing cold slows your enemy.',
 }
 
@@ -121,6 +124,7 @@ const lightning_bolt: SpellTemplate = {
   baseDamage: '3d6',
   damageScaling: 2,
   damageType: 'lightning',
+  canBeam: true, // Can pierce multiple enemies as beam at higher levels
   description: 'A crackling bolt of lightning arcs to your target.',
 }
 
@@ -149,6 +153,18 @@ const teleport: SpellTemplate = {
   effectType: 'teleport',
   teleportRange: 0, // anywhere on level
   description: 'Teleport to a random location on the level.',
+}
+
+const mage_armor: SpellTemplate = {
+  id: 'mage_armor',
+  name: 'Mage Armor',
+  school: 'arcane',
+  level: 1,
+  manaCost: 5,
+  cooldown: 30,
+  effectType: 'buff',
+  buff: { type: 'protection', value: 8, duration: 50 },
+  description: 'A magical barrier grants +8 AC.',
 }
 
 // ============================================================================
@@ -307,6 +323,43 @@ const lightning_storm: SpellTemplate = {
   description: 'Call down lightning on multiple foes.',
 }
 
+const root_shot: SpellTemplate = {
+  id: 'root_shot',
+  name: 'Root Shot',
+  school: 'nature',
+  level: 1,
+  manaCost: 4,
+  cooldown: 5,
+  effectType: 'damage',
+  baseDamage: '1d4',
+  damageScaling: 0,
+  damageType: 'nature',
+  debuff: { type: 'slow', value: 100, duration: 3 }, // 100% slow = stun
+  description: 'An arrow wrapped in vines roots your target in place.',
+}
+
+const summon_wolf: SpellTemplate = {
+  id: 'summon_wolf',
+  name: 'Summon Wolf',
+  school: 'nature',
+  level: 1,
+  manaCost: 5,  // Lowered to match Ranger starting mana
+  cooldown: 20,
+  effectType: 'summon',
+  description: 'Call a loyal wolf companion to fight by your side.',
+}
+
+const summon_skeleton: SpellTemplate = {
+  id: 'summon_skeleton',
+  name: 'Raise Skeleton',
+  school: 'shadow',
+  level: 1,  // Lowered to match Necromancer class-spell level
+  manaCost: 5,  // Lowered to match Necromancer starting mana
+  cooldown: 15,
+  effectType: 'summon',
+  description: 'Raise a skeletal warrior from the bones of the fallen.',
+}
+
 // ============================================================================
 // SHADOW SPELLS (INT-based)
 // ============================================================================
@@ -337,6 +390,7 @@ const shadow_bolt: SpellTemplate = {
   baseDamage: '2d6',
   damageScaling: 1,
   damageType: 'dark',
+  canBeam: true, // Can pierce multiple enemies as beam at higher levels
   description: 'A bolt of darkness strikes your foe.',
 }
 
@@ -394,6 +448,7 @@ export const SPELLS: Record<string, SpellTemplate> = {
   lightning_bolt,
   fireball,
   teleport,
+  mage_armor,
   // Divine
   minor_heal,
   bless,
@@ -407,12 +462,15 @@ export const SPELLS: Record<string, SpellTemplate> = {
   thorn_strike,
   resist_elements,
   lightning_storm,
+  root_shot,
+  summon_wolf,
   // Shadow
   drain_life,
   shadow_bolt,
   weaken,
   dark_pact,
   soul_rend,
+  summon_skeleton,
 }
 
 /** All spells as an array */

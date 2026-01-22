@@ -6,12 +6,13 @@
 
 import type { GameState, ActionResult } from '../types'
 import {
-  attack,
+  meleeAttack,
   applyDamage,
-  formatAttackMessageFromEntities,
-  rangedAttack,
+  formatMultiAttackMessage,
+  multiRangedAttack,
   canRangedAttack,
-  formatRangedAttackMessage,
+  formatMultiRangedAttackMessage,
+  calculateLifesteal,
 } from '../combat'
 import { gainXP } from '../character'
 import { DEFAULT_BONUSES, applyXPBonus } from '../upgrade-effects'
@@ -42,18 +43,26 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     return { success: false, message: 'No target found.', energyCost: 0 }
   }
 
-  // Compute knowledge bonuses from bestiary
-  const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary)
+  // Compute knowledge bonuses from bestiary (or override for testing)
+  const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent)
 
-  // Resolve attack with knowledge bonuses
-  const attackResult = attack(game.character, monster, undefined, knowledgeBonuses)
-  const message = formatAttackMessageFromEntities(game.character, monster, attackResult)
+  // Resolve multi-attack with knowledge bonuses and armor penetration
+  // Number of attacks scales with level, STR, and class cap
+  const attackResult = meleeAttack(game.character, monster, knowledgeBonuses, game.balance.armorPenetration)
+  const message = formatMultiAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 
-  if (attackResult.hit) {
-    // Apply damage to monster
-    applyDamage(monster, attackResult.damage)
-    game.stats.damageDealt += attackResult.damage
+  if (attackResult.hits > 0) {
+    // Apply total damage to monster
+    applyDamage(monster, attackResult.totalDamage)
+    game.stats.damageDealt += attackResult.totalDamage
+
+    // COMBAT_REGEN: Lifesteal healing (Blackguard)
+    const lifesteal = calculateLifesteal(game.character, attackResult.totalDamage)
+    if (lifesteal > 0) {
+      game.character.hp = Math.min(game.character.hp + lifesteal, game.character.maxHp)
+      addMessage(game, `You drain ${lifesteal} HP!`, 'good')
+    }
 
     if (attackResult.killed) {
       handleMonsterKill(game, monster)
@@ -112,18 +121,19 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
   const dy = Math.abs(monster.position.y - game.character.position.y)
   const distance = Math.max(dx, dy)
 
-  // Compute knowledge bonuses from bestiary
-  const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary)
+  // Compute knowledge bonuses from bestiary (or override for testing)
+  const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent)
 
-  // Resolve ranged attack with knowledge bonuses
-  const attackResult = rangedAttack(game.character, monster, distance, knowledgeBonuses)
-  const message = formatRangedAttackMessage(`the ${monster.template.name}`, attackResult)
+  // Resolve multi-shot ranged attack with knowledge bonuses and armor penetration
+  // FAST_SHOT: Rangers get +1 shot per 3 levels
+  const attackResult = multiRangedAttack(game.character, monster, distance, knowledgeBonuses, game.balance.armorPenetration)
+  const message = formatMultiRangedAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 
-  if (attackResult.hit) {
-    // Apply damage to monster
-    applyDamage(monster, attackResult.damage)
-    game.stats.damageDealt += attackResult.damage
+  if (attackResult.hits > 0) {
+    // Apply total damage to monster
+    applyDamage(monster, attackResult.totalDamage)
+    game.stats.damageDealt += attackResult.totalDamage
 
     if (attackResult.killed) {
       handleMonsterKill(game, monster)
@@ -138,7 +148,7 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
 // ============================================================================
 
 /**
- * Handle monster death - award XP, gold, check victory
+ * Handle monster death - award XP, gold, check victory, track unique kills
  */
 function handleMonsterKill(
   game: GameState,
@@ -150,11 +160,17 @@ function handleMonsterKill(
     game.monsters.splice(monsterIndex, 1)
   }
 
-  // Award XP with upgrade bonus
+  // Track unique kills
+  if (monster.template.flags.includes('UNIQUE')) {
+    game.uniqueState.killed.add(monster.template.name)
+  }
+
+  // Award XP with upgrade bonus and balance rate
   const bonuses = game.upgradeBonuses ?? DEFAULT_BONUSES
   const baseXP = monster.template.experience
-  const xpToAward = applyXPBonus(baseXP, bonuses)
-  const { leveledUp, newLevel } = gainXP(game.character, xpToAward)
+  const upgradedXP = applyXPBonus(baseXP, bonuses)
+  const xpToAward = Math.floor(upgradedXP * game.balance.xpRatePercent / 100)
+  const { leveledUp, newLevel } = gainXP(game.character, xpToAward, game.balance.levelupHpPercent)
   game.stats.kills++
 
   // Track monster kill by name for bestiary

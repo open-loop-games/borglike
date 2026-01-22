@@ -12,13 +12,17 @@ import type {
   Point,
   StatusEffect,
   ActionResult,
+  Minion,
+  MinionType,
 } from './types'
-import { randomInt } from './rng'
+import { MINION_TEMPLATES } from './types'
+import { randomInt, random } from './rng'
 import { getSpellById, getSchoolStat, type SpellTemplate } from './data/spells'
 import { getSpellIdsForLevel } from './data/class-spells'
 import { applyDamage } from './combat'
 import { getTile, findOpenPosition, isWalkable } from './dungeon'
 import { addStatusEffect, addTempResistance } from './status-effects'
+import { DEFAULT_BONUSES } from './upgrade-effects'
 
 // SpellCastResult has been unified into ActionResult in types.ts
 
@@ -235,6 +239,90 @@ export function getNearestVisibleMonster(game: GameState): Monster | null {
 }
 
 // ============================================================================
+// BEAM MECHANICS
+// ============================================================================
+
+/**
+ * Calculate chance for a bolt spell to become a beam
+ *
+ * Angband-inspired formula:
+ * - Base chance: (caster_level - spell_level + 5) * 2%
+ * - Mages/Archmages get +20% bonus
+ * - Capped at 75%
+ *
+ * @param characterLevel - Caster's level
+ * @param spellLevel - Spell's required level
+ * @param classId - Caster's class
+ * @returns Beam chance as percentage (0-75)
+ */
+export function calculateBeamChance(
+  characterLevel: number,
+  spellLevel: number,
+  classId: string
+): number {
+  const levelDiff = characterLevel - spellLevel + 5
+  let chance = levelDiff * 2
+
+  // Mages and Archmages get bonus beam chance
+  if (classId === 'mage' || classId === 'archmage') {
+    chance += 20
+  }
+
+  return Math.min(75, Math.max(0, chance))
+}
+
+/**
+ * Find all monsters in a line from origin through target and beyond
+ * Uses Bresenham's line algorithm
+ *
+ * @param game - Game state
+ * @param origin - Starting point (caster position)
+ * @param target - Target point (primary target position)
+ * @returns Array of monsters hit by the beam, in order
+ */
+export function findMonstersInBeam(
+  game: GameState,
+  origin: Point,
+  target: Point
+): Monster[] {
+  const hitMonsters: Monster[] = []
+
+  // Calculate direction vector
+  const dx = target.x - origin.x
+  const dy = target.y - origin.y
+  const distance = Math.max(Math.abs(dx), Math.abs(dy))
+
+  if (distance === 0) return hitMonsters
+
+  // Normalize direction
+  const stepX = dx / distance
+  const stepY = dy / distance
+
+  // Trace beam for up to 12 tiles (typical spell range)
+  const maxRange = 12
+  for (let i = 1; i <= maxRange; i++) {
+    const checkX = Math.round(origin.x + stepX * i)
+    const checkY = Math.round(origin.y + stepY * i)
+
+    // Check for wall (stops beam)
+    const tile = getTile(game.currentLevel, checkX, checkY)
+    if (!tile || tile.type === 'wall' || tile.type === 'door_closed') {
+      break
+    }
+
+    // Check for monster at this position
+    const monster = game.monsters.find(
+      (m) => m.position.x === checkX && m.position.y === checkY && m.hp > 0
+    )
+    if (monster) {
+      hitMonsters.push(monster)
+    }
+  }
+
+  return hitMonsters
+}
+
+// ============================================================================
 // TELEPORTATION
 // ============================================================================
 
@@ -345,6 +433,9 @@ export function castSpell(
     case 'teleport':
       return castTeleportSpell(game, spell)
 
+    case 'summon':
+      return castSummonSpell(game, spell)
+
     default:
       return { success: false, message: 'Unknown spell effect.' }
   }
@@ -355,14 +446,14 @@ export function castSpell(
 // ============================================================================
 
 /**
- * Cast a single-target damage spell
+ * Cast a single-target damage spell (may become beam at higher levels)
  */
 function castDamageSpell(
   game: GameState,
   spell: SpellTemplate,
   targetId?: string
 ): ActionResult {
-  // Find target
+  // Find primary target
   let target: Monster | null = null
   if (targetId) {
     target = findTarget(game, targetId)
@@ -374,8 +465,36 @@ function castDamageSpell(
     return { success: true, message: `You cast ${spell.name}, but there are no targets.` }
   }
 
-  // Calculate damage
-  let damage = calculateSpellPower(game.character, spell, false)
+  // Check if spell becomes a beam
+  let isBeam = false
+  let beamTargets: Monster[] = []
+
+  if (spell.canBeam) {
+    const beamChance = calculateBeamChance(
+      game.character.level,
+      spell.level,
+      game.character.classId
+    )
+    if (random() * 100 < beamChance) {
+      isBeam = true
+      beamTargets = findMonstersInBeam(game, game.character.position, target.position)
+    }
+  }
+
+  // Calculate base damage
+  let baseDamage = calculateSpellPower(game.character, spell, false)
+
+  // Apply Might upgrade bonus to spell damage
+  const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
+  baseDamage = Math.floor(baseDamage * (1 + bonuses.damagePercent / 100))
+
+  if (isBeam && beamTargets.length > 1) {
+    // Beam hits multiple targets
+    return castBeamSpell(game, spell, baseDamage, beamTargets)
+  }
+
+  // Single target (normal bolt or beam that only hit one target)
+  let damage = baseDamage
 
   // Double vs evil if applicable
   if (spell.doubleVsEvil && target.template.flags.includes('EVIL')) {
@@ -421,6 +540,72 @@ function castDamageSpell(
 }
 
 /**
+ * Apply beam spell damage to multiple targets in a line
+ */
+function castBeamSpell(
+  game: GameState,
+  spell: SpellTemplate,
+  baseDamage: number,
+  targets: Monster[]
+): ActionResult {
+  let totalDamage = 0
+  let killedCount = 0
+  const targetIds: string[] = []
+  const targetNames: string[] = []
+  const events: ActionResult['events'] = []
+
+  for (const target of targets) {
+    let damage = baseDamage
+
+    // Double vs evil if applicable
+    if (spell.doubleVsEvil && target.template.flags.includes('EVIL')) {
+      damage *= 2
+    }
+
+    // Apply debuff if spell has one
+    if (spell.debuff) {
+      applyMonsterDebuff(target, spell.debuff.type, spell.debuff.value, spell.debuff.duration)
+    }
+
+    // Apply damage
+    const killed = applyDamage(target, damage)
+    totalDamage += damage
+    targetIds.push(target.id)
+    targetNames.push(target.template.name)
+
+    events.push({
+      type: 'attack',
+      attackerId: game.character.id,
+      defenderId: target.id,
+      damage,
+      killed,
+    })
+
+    if (killed) {
+      const idx = game.monsters.indexOf(target)
+      if (idx >= 0) game.monsters.splice(idx, 1)
+      killedCount++
+      game.stats.kills++
+
+      // Track monster kill by name for bestiary
+      const monsterName = target.template.name
+      game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
+    }
+  }
+
+  game.stats.damageDealt += totalDamage
+
+  const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
+  return {
+    success: true,
+    message: `Your ${spell.name} beams through ${targets.length} enemies for ${totalDamage} total damage!${killedStr}`,
+    damage: totalDamage,
+    targets: targetIds,
+    events,
+  }
+}
+
+/**
  * Cast an AOE damage spell
  */
 function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult {
@@ -438,7 +623,11 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
   const events: ActionResult['events'] = []
 
   // Calculate base damage (same for all targets)
-  const baseDamage = calculateSpellPower(game.character, spell, false)
+  let baseDamage = calculateSpellPower(game.character, spell, false)
+
+  // Apply Might upgrade bonus to spell damage
+  const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
+  baseDamage = Math.floor(baseDamage * (1 + bonuses.damagePercent / 100))
 
   for (const target of targets) {
     let damage = baseDamage
@@ -603,7 +792,11 @@ function castLifedrainSpell(
   }
 
   // Calculate damage
-  const damage = calculateSpellPower(game.character, spell, false)
+  let damage = calculateSpellPower(game.character, spell, false)
+
+  // Apply Might upgrade bonus to spell damage
+  const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
+  damage = Math.floor(damage * (1 + bonuses.damagePercent / 100))
 
   // Apply damage
   const killed = applyDamage(target, damage)
@@ -657,6 +850,118 @@ function castTeleportSpell(game: GameState, spell: SpellTemplate): ActionResult 
     success: true,
     message: `You cast ${spell.name} and teleport${rangeStr}!`,
   }
+}
+
+/**
+ * Cast a summon spell to create a minion
+ */
+function castSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
+  // Determine minion type from spell
+  let minionType: MinionType
+  if (spell.id === 'summon_wolf') {
+    minionType = 'wolf'
+  } else if (spell.id === 'summon_skeleton') {
+    minionType = 'skeleton'
+  } else {
+    return { success: false, message: 'Unknown summon spell.' }
+  }
+
+  const template = MINION_TEMPLATES[minionType]
+
+  // Calculate scaled HP for minions that scale with level
+  // Wolf: 30 base + 2 per level (32 at L1, 70 at L20)
+  // Skeleton: 20 base + 2 per level (22 at L1, 60 at L20)
+  const scaledMaxHp = (minionType === 'wolf' || minionType === 'skeleton')
+    ? template.maxHp + game.character.level * 2
+    : template.maxHp
+
+  // For permanent pets (wolf), check if one already exists
+  if (template.permanent) {
+    const existingPet = game.minions.find(m => m.type === minionType)
+    if (existingPet && existingPet.hp > 0) {
+      // Update maxHp in case character leveled up, then heal to full
+      existingPet.maxHp = scaledMaxHp
+      const oldHp = existingPet.hp
+      existingPet.hp = existingPet.maxHp
+      const healed = existingPet.hp - oldHp
+      return {
+        success: true,
+        message: `Your ${template.name} is restored to full health! (+${healed} HP)`,
+      }
+    }
+  }
+
+  // For temporary summons, check limit (max 2)
+  if (!template.permanent) {
+    const existingSummons = game.minions.filter(m => !MINION_TEMPLATES[m.type].permanent)
+    if (existingSummons.length >= 2) {
+      // Replace oldest summon
+      const oldest = existingSummons[0]
+      if (oldest) {
+        const idx = game.minions.indexOf(oldest)
+        if (idx >= 0) game.minions.splice(idx, 1)
+      }
+    }
+  }
+
+  // Find spawn position (adjacent to player)
+  const spawnPos = findMinionSpawnPosition(game)
+  if (!spawnPos) {
+    return { success: false, message: 'No room to summon!' }
+  }
+
+  // Create the minion with scaled HP
+  const minion: Minion = {
+    id: `minion_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+    type: minionType,
+    name: template.name,
+    hp: scaledMaxHp,
+    maxHp: scaledMaxHp,
+    position: spawnPos,
+    damage: template.damage,
+    energy: 0,
+    permanent: template.permanent,
+    turnsRemaining: template.duration,
+  }
+
+  game.minions.push(minion)
+
+  const durationStr = template.permanent ? '' : ` (${template.duration} turns)`
+  return {
+    success: true,
+    message: `You summon a ${template.name}!${durationStr}`,
+  }
+}
+
+/**
+ * Find a valid spawn position for a minion (adjacent to player)
+ */
+function findMinionSpawnPosition(game: GameState): Point | null {
+  const charPos = game.character.position
+  const directions = [
+    { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+    { dx: 1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: -1, dy: -1 },
+  ]
+
+  for (const dir of directions) {
+    const x = charPos.x + dir.dx
+    const y = charPos.y + dir.dy
+
+    const tile = getTile(game.currentLevel, x, y)
+    if (!tile || !isWalkable(tile)) continue
+
+    // Check no monster at position
+    const hasMonster = game.monsters.some(m => m.position.x === x && m.position.y === y)
+    if (hasMonster) continue
+
+    // Check no minion at position
+    const hasMinion = game.minions.some(m => m.position.x === x && m.position.y === y)
+    if (hasMinion) continue
+
+    return { x, y }
+  }
+
+  return null
 }
 
 // ============================================================================
