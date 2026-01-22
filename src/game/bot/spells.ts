@@ -6,6 +6,7 @@
  */
 
 import type { GameState, GameAction, Monster } from '../types'
+import { MINION_TEMPLATES } from '../types'
 import type { PersonalityConfig, DangerMap } from './types'
 import type { SpellTemplate } from '../data/spells'
 import {
@@ -295,6 +296,12 @@ export function getBuffSpellAction(
   if (visibleMonsters.length > 0) {
     // Enemies nearby but not adjacent - good time for buffs
 
+    // Mage Armor for mages (protection buff)
+    const mageArmor = buffSpells.find((entry) => entry.spell.id === 'mage_armor')
+    if (mageArmor && !existingBuffTypes.includes('protection')) {
+      return { type: 'cast', spellId: 'mage_armor' }
+    }
+
     // Bless for combat
     const bless = buffSpells.find((entry) => entry.spell.id === 'bless')
     if (bless && !existingBuffTypes.includes('blessing')) {
@@ -385,6 +392,33 @@ export function getEscapeSpellAction(
   }
 
   // Use any teleport
+  if (teleportSpells[0]) {
+    return { type: 'cast', spellId: teleportSpells[0].spell.id }
+  }
+
+  return null
+}
+
+/**
+ * Get a teleport/phase door spell without emergency checks
+ * Used for proactive escape when entering DANGER tier with adjacent enemies
+ */
+export function getTeleportSpellAction(game: GameState): GameAction | null {
+  const character = game.character
+  const available = getAvailableSpells(character, game.turn)
+  const teleportSpells = available.filter(
+    (entry) => entry.canCast && entry.spell.effectType === 'teleport'
+  )
+
+  if (teleportSpells.length === 0) return null
+
+  // Prefer phase door (shorter range) for tactical repositioning
+  const phaseDoor = teleportSpells.find((entry) => (entry.spell.teleportRange ?? 0) > 0)
+  if (phaseDoor) {
+    return { type: 'cast', spellId: phaseDoor.spell.id }
+  }
+
+  // Fall back to full teleport
   if (teleportSpells[0]) {
     return { type: 'cast', spellId: teleportSpells[0].spell.id }
   }
@@ -516,4 +550,119 @@ export function hasCastableSpells(game: GameState): boolean {
 export function canCastAnySpell(game: GameState): boolean {
   const available = getAvailableSpells(game.character, game.turn)
   return available.some((entry) => entry.canCast)
+}
+
+// ============================================================================
+// ROOT/STUN SPELLS (for kiting)
+// ============================================================================
+
+/**
+ * Check if we should cast root_shot to stun an enemy for kiting
+ *
+ * Used by Rangers to root enemies and back off
+ */
+export function getRootShotAction(
+  game: GameState,
+  adjacentMonster: Monster
+): GameAction | null {
+  const character = game.character
+
+  // Get available spells
+  const available = getAvailableSpells(character, game.turn)
+
+  // Look for root_shot specifically (damage spell with 100% slow = stun)
+  const rootShot = available.find(
+    (entry) => entry.canCast && entry.spell.id === 'root_shot'
+  )
+
+  if (rootShot) {
+    // Check if monster is already rooted/slowed
+    const isAlreadySlowed = adjacentMonster.debuffs.some(d => d.type === 'slow' && d.turnsRemaining > 1)
+    if (!isAlreadySlowed) {
+      return { type: 'cast', spellId: 'root_shot', targetId: adjacentMonster.id }
+    }
+  }
+
+  return null
+}
+
+// ============================================================================
+// SUMMON SPELLS
+// ============================================================================
+
+/**
+ * Check if we should cast a summon spell
+ *
+ * Priorities:
+ * - Ranger: Summon wolf immediately if no wolf companion (proactive)
+ * - Necromancer: Summon skeleton proactively or when enemies visible
+ *
+ * @returns GameAction to cast summon spell, or null
+ */
+export function getSummonSpellAction(
+  game: GameState,
+  _config: PersonalityConfig,
+  visibleMonsters: Monster[]
+): GameAction | null {
+  const character = game.character
+
+  // Get available summon spells
+  const available = getAvailableSpells(character, game.turn)
+  const summonSpells = available.filter(
+    (entry) => entry.canCast && entry.spell.effectType === 'summon'
+  )
+
+  if (summonSpells.length === 0) return null
+
+  // Check existing minions
+  const existingMinions = game.minions.filter(m => m.hp > 0)
+
+  // For permanent pets (wolf): summon IMMEDIATELY if missing, heal if damaged
+  // This is high priority - we want the wolf out at all times
+  const wolfSpell = summonSpells.find((entry) => entry.spell.id === 'summon_wolf')
+  if (wolfSpell) {
+    const wolf = existingMinions.find(m => m.type === 'wolf')
+    if (!wolf) {
+      // No wolf - summon one immediately (even without enemies)
+      return { type: 'cast', spellId: 'summon_wolf' }
+    }
+    // Wolf exists but damaged - heal it when below 50%
+    if (wolf.hp < wolf.maxHp * 0.5 && character.mp >= character.maxMp * 0.3) {
+      return { type: 'cast', spellId: 'summon_wolf' }
+    }
+  }
+
+  // For temporary summons (skeleton): summon proactively when we have mana
+  // Necromancer should always try to have a skeleton out
+  const skeletonSpell = summonSpells.find((entry) => entry.spell.id === 'summon_skeleton')
+  if (skeletonSpell) {
+    // Count non-permanent summons
+    const tempSummons = existingMinions.filter(m => !MINION_TEMPLATES[m.type].permanent)
+
+    // Summon if we have no summons and decent mana
+    if (tempSummons.length === 0 && character.mp >= character.maxMp * 0.4) {
+      return { type: 'cast', spellId: 'summon_skeleton' }
+    }
+
+    // Summon second skeleton if enemies are visible and we have good mana
+    if (tempSummons.length < 2 && visibleMonsters.length > 0 && character.mp >= character.maxMp * 0.5) {
+      return { type: 'cast', spellId: 'summon_skeleton' }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Check if bot has any active minions
+ */
+export function hasActiveMinions(game: GameState): boolean {
+  return game.minions.some(m => m.hp > 0)
+}
+
+/**
+ * Check if bot should use summons based on class
+ */
+export function classShouldSummon(classId: string): boolean {
+  return classId === 'ranger' || classId === 'necromancer' || classId === 'druid'
 }

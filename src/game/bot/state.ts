@@ -20,6 +20,7 @@ export function createBotState(): BotState {
     turnsOnLevel: 0,
     currentDepth: 1,
     knownStairsDown: null,
+    knownStairsUp: null,
     cachedFlow: null,
     cachedDanger: null,
     cachedSafetyFlow: null,
@@ -38,6 +39,15 @@ export function createBotState(): BotState {
     corridorFacing: null,
     // Exploration blacklist
     blacklistedTargets: new Map(),
+    // Farming loop state
+    farmingMode: false,
+    farmGoldTarget: 0,
+    farmStartTurn: 0,
+    // Tethered exploration
+    tetheredOrigin: null,
+    tetheredRadius: 0,
+    tetheredFlipCount: 0,
+    lastFlipTurn: 0,
   }
 }
 

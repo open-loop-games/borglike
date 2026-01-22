@@ -100,12 +100,24 @@ export function shouldEngage(
 
 /**
  * Evaluate a potential combat encounter
+ *
+ * @param character - The player character
+ * @param monster - The monster to evaluate
+ * @param classProfile - Optional class profile for ranged damage calculation
+ * @param distance - Distance to monster (default 1 for adjacent)
  */
-export function evaluateCombat(character: Character, monster: Monster): CombatEvaluation {
+export function evaluateCombat(
+  character: Character,
+  monster: Monster,
+  classProfile?: ClassBehaviorProfile,
+  distance: number = 1
+): CombatEvaluation {
   const template = monster.template
 
-  // Calculate turns to kill
-  const playerDamage = Math.max(character.combat.meleeDamage, 1)
+  // Calculate turns to kill - use effective damage if class profile provided
+  const playerDamage = classProfile
+    ? getEffectiveDamage(character, classProfile, distance)
+    : Math.max(character.combat.meleeDamage, 1)
   const turnsToKill = Math.ceil(monster.hp / playerDamage)
 
   // Calculate expected damage we'll take
@@ -234,6 +246,122 @@ export function selectTarget(
 }
 
 /**
+ * Select target with class-aware scoring
+ *
+ * For ranged classes: bonus for optimal range (3-4), penalty for adjacent (-30)
+ * For melee classes: keep current adjacent bonus (+50)
+ */
+export function selectTargetForClass(
+  context: BotContext,
+  classProfile: ClassBehaviorProfile,
+  adjacentOnly: boolean = false
+): TargetSelection | null {
+  const { game, config } = context
+  const character = game.character
+  const pos = character.position
+
+  // Get candidate monsters
+  let candidates = context.visibleMonsters.filter(m => m.hp > 0)
+
+  if (adjacentOnly) {
+    candidates = candidates.filter(m => isAdjacent(pos, m.position))
+  }
+
+  if (candidates.length === 0) {
+    return null
+  }
+
+  const optimalRange = classProfile.engageDistance || 3
+  const bowRange = getBowRange(character)
+
+  let bestTarget: Monster | null = null
+  let bestScore = -Infinity
+  let bestReason = ''
+
+  for (const monster of candidates) {
+    const distance = chebyshevDistance(pos, monster.position)
+    const evaluation = evaluateCombat(character, monster, classProfile, distance)
+
+    // Base score from ease of kill (lower turns = higher score)
+    let score = 100 - evaluation.turnsToKill * 10
+
+    // Class-aware distance scoring
+    if (classProfile.prefersRanged && character.equipment.bow) {
+      // Ranged class scoring
+      if (distance >= optimalRange && distance <= bowRange) {
+        // At optimal shooting range
+        score += 40
+      } else if (distance >= 2 && distance <= bowRange) {
+        // Can shoot but not optimal
+        score += 20
+      } else if (distance === 1) {
+        // Adjacent - bad for ranged classes
+        score -= 30
+      }
+    } else {
+      // Melee class scoring - prefer adjacent
+      if (distance === 1) {
+        score += 50
+      }
+    }
+
+    // Bonus for awake monsters (they're coming for us anyway)
+    if (monster.isAwake) {
+      score += 20
+    }
+
+    // Bonus for low HP (secure the kill)
+    const hpPercent = monster.hp / monster.maxHp
+    score += (1 - hpPercent) * 30
+
+    // Penalty for high threat (unless aggressive)
+    const threatPenalty = evaluation.threatLevel * (1 - config.aggression / 100)
+    score -= threatPenalty
+
+    // Penalty for distance (reduced for ranged classes at good range)
+    if (classProfile.prefersRanged && distance >= 2 && distance <= bowRange) {
+      score -= distance * 2 // Reduced penalty when can shoot
+    } else {
+      score -= distance * 5
+    }
+
+    // Bonus if we can definitely win
+    if (evaluation.canWin) {
+      score += 25
+    }
+
+    let reason = ''
+    if (classProfile.prefersRanged && distance >= 2 && distance <= bowRange) {
+      reason = 'in range'
+    } else if (distance === 1) {
+      reason = 'adjacent'
+    } else if (hpPercent < 0.3) {
+      reason = 'low HP'
+    } else if (monster.isAwake) {
+      reason = 'awake'
+    } else {
+      reason = 'hunting'
+    }
+
+    if (score > bestScore) {
+      bestScore = score
+      bestTarget = monster
+      bestReason = reason
+    }
+  }
+
+  if (!bestTarget) {
+    return null
+  }
+
+  return {
+    target: bestTarget,
+    score: bestScore,
+    reason: bestReason,
+  }
+}
+
+/**
  * Find adjacent monster to attack (quick check)
  */
 export function findAdjacentMonster(game: GameState): Monster | null {
@@ -274,6 +402,27 @@ export function countAdjacentMonsters(game: GameState, pos: Point): number {
 export function isOutnumbered(game: GameState): boolean {
   const adjacentCount = countAdjacentMonsters(game, game.character.position)
   return adjacentCount >= 2
+}
+
+// ============================================================================
+// EFFECTIVE DAMAGE CALCULATION
+// ============================================================================
+
+/**
+ * Get effective damage based on class profile and distance
+ *
+ * For ranged classes with a bow at distance >= 2, use ranged damage.
+ * Otherwise fall back to melee damage.
+ */
+export function getEffectiveDamage(
+  character: Character,
+  classProfile: ClassBehaviorProfile,
+  distance: number = 1
+): number {
+  if (classProfile.prefersRanged && character.equipment.bow && distance >= 2) {
+    return Math.max(character.combat.rangedDamage, 1)
+  }
+  return Math.max(character.combat.meleeDamage, 1)
 }
 
 // ============================================================================

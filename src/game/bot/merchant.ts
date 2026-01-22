@@ -7,6 +7,43 @@
 import type { GameState } from '../types'
 import { findAdjacentMerchant, sellToMerchant, buyFromMerchant } from '../features'
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Get slot priority multiplier for gear buying decisions
+ * Higher priority slots = more willing to spend gold
+ */
+function getSlotPriority(slot: string): number {
+  switch (slot) {
+    case 'weapon': return 1.0   // Weapons are highest priority
+    case 'armor': return 0.95   // Body armor second
+    case 'shield': return 0.85  // Shield important for defense
+    case 'helm': return 0.8
+    case 'gloves': return 0.75
+    case 'boots': return 0.75
+    case 'ring': return 0.7
+    case 'amulet': return 0.7
+    default: return 0.6
+  }
+}
+
+/**
+ * Count healing potions in character's inventory
+ */
+export function countHealingPotions(character: { inventory: Array<{ template: { type: string; effect?: string } }> }): number {
+  return character.inventory.filter(item => {
+    if (item.template.type !== 'potion') return false
+    const effect = item.template.effect || ''
+    return effect.includes('Cure') || effect.includes('Heal')
+  }).length
+}
+
+// ============================================================================
+// BOT MERCHANT ACTIONS
+// ============================================================================
+
 /**
  * Bot sells all sellable items to adjacent merchant
  *
@@ -86,10 +123,15 @@ export function botBuySupplies(game: GameState): number {
     }
   }
 
-  // Define desired amounts
-  const wantedTP = Math.max(0, 2 - tpScrollCount)
-  const wantedHealing = Math.max(0, 3 - healingPotionCount)
-  const wantedEscape = Math.max(0, 3 - escapeScrollCount)
+  // Dynamic consumable targets - scale with gold but cap to avoid inventory bloat
+  const baseTP = 2
+  const baseHealing = 3
+  const baseEscape = 2
+  const goldBonus = Math.min(2, Math.floor(char.gold / 3000))
+
+  const wantedTP = Math.max(0, (baseTP + goldBonus) - tpScrollCount)              // max 4
+  const wantedHealing = Math.max(0, (baseHealing + goldBonus) - healingPotionCount) // max 5
+  const wantedEscape = Math.max(0, (baseEscape + Math.floor(goldBonus / 2)) - escapeScrollCount) // max 3
 
   // Build priority buy list
   interface BuyCandidate {
@@ -118,9 +160,11 @@ export function botBuySupplies(game: GameState): number {
       }
     }
     // Healing potions - second priority
+    // Higher tier = lower priority number = bought FIRST (T4 Healing > T1 Cure Light)
     else if (template.type === 'potion' && (effect.includes('Cure') || effect.includes('Heal'))) {
       if (wantedHealing > 0) {
-        const tierBonus = template.tier * 0.05
+        // T4 gets priority 1.4, T1 gets 1.85 - prefer high-tier potions
+        const tierBonus = template.tier * 0.15
         candidates.push({ index: i, category: 'healing', priority: 2 - tierBonus, price, name })
       }
     }
@@ -131,7 +175,7 @@ export function botBuySupplies(game: GameState): number {
         candidates.push({ index: i, category: 'escape', priority: 3 - phaseDoorBonus, price, name })
       }
     }
-    // Gear upgrades
+    // Gear upgrades - aggressive buying at 60% threshold with slot priority
     else if (template.slot) {
       const slotKey = template.slot as keyof typeof char.equipment
       const currentGear = char.equipment[slotKey]
@@ -140,12 +184,17 @@ export function botBuySupplies(game: GameState): number {
         : 0
       const newValue = template.tier * 10 + item.enchantment * 5
 
-      if (newValue > currentValue && price <= char.gold * 0.4) {
+      // Slot priority: weapon/armor most important
+      const slotPriority = getSlotPriority(template.slot)
+      const gearBudget = char.gold * 0.6 * slotPriority
+
+      if (newValue > currentValue && price <= gearBudget) {
         const upgradeValue = newValue - currentValue
+        // Lower priority = bought sooner; better upgrades and better slots get lower priority
         candidates.push({
           index: i,
           category: 'gear',
-          priority: 4 - (upgradeValue * 0.1),
+          priority: 4 - (upgradeValue * 0.1) - ((1 - slotPriority) * 0.5),
           price,
           name,
         })

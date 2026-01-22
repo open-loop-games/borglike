@@ -18,10 +18,12 @@ import { isSamePoint, manhattanDistance } from '../types'
 
 /** Turns without progress before twitch level increases */
 export const TWITCH_THRESHOLDS = {
-  LEVEL_1: 5, // Start wall following quickly
-  LEVEL_2: 12, // Clear history and retry
-  LEVEL_3: 25, // Force descent if stairs known
-  LEVEL_4: 50, // Give up, just wait
+  LEVEL_1: 5,   // Start wall following quickly
+  LEVEL_2: 12,  // Clear history and retry
+  LEVEL_3: 25,  // Force descent if stairs known
+  LEVEL_4: 50,  // Wait briefly
+  LEVEL_5: 100, // Clear goals - forget current objective
+  LEVEL_6: 200, // Clear blacklist - try previously unreachable targets
 }
 
 /** Number of recent positions to check for oscillation */
@@ -35,7 +37,9 @@ export type StuckResponse =
   | 'force_combat' // Attack nearest monster
   | 'force_descent' // Head to stairs ignoring exploration
   | 'stop_fleeing' // Stop fleeing and switch to combat/explore
-  | 'wait' // Give up
+  | 'wait' // Brief pause
+  | 'clear_goals' // Forget current objective, re-evaluate from scratch
+  | 'clear_blacklist' // Clear exploration blacklist, retry unreachable targets
 
 // ============================================================================
 // DETECTION
@@ -44,7 +48,7 @@ export type StuckResponse =
 /**
  * Detect stuck level based on bot state
  *
- * @returns Twitch level 0-4 (0 = not stuck, 4 = severely stuck)
+ * @returns Twitch level 0-6 (0 = not stuck, 6 = severely stuck)
  */
 export function detectStuckLevel(state: BotState, game: GameState): number {
   const turnsSinceProgress = game.turn - state.lastProgressTurn
@@ -62,6 +66,8 @@ export function detectStuckLevel(state: BotState, game: GameState): number {
  * Get twitch level from turns since progress
  */
 function getTwitchLevel(turnsSinceProgress: number): number {
+  if (turnsSinceProgress >= TWITCH_THRESHOLDS.LEVEL_6) return 6
+  if (turnsSinceProgress >= TWITCH_THRESHOLDS.LEVEL_5) return 5
   if (turnsSinceProgress >= TWITCH_THRESHOLDS.LEVEL_4) return 4
   if (turnsSinceProgress >= TWITCH_THRESHOLDS.LEVEL_3) return 3
   if (turnsSinceProgress >= TWITCH_THRESHOLDS.LEVEL_2) return 2
@@ -166,9 +172,17 @@ export function getStuckResponse(
       return 'clear_history'
 
     case 4:
-    default:
-      // Severely stuck - just wait and hope something changes
+      // Brief pause - wait and hope something changes
       return 'wait'
+
+    case 5:
+      // Clear goals - forget what we were doing and re-evaluate
+      return 'clear_goals'
+
+    case 6:
+    default:
+      // Clear blacklist - try targets we previously couldn't reach
+      return 'clear_blacklist'
   }
 }
 
@@ -423,6 +437,42 @@ export function handleStopFleeingStrategy(
   }
 
   return null
+}
+
+/**
+ * Handle clear_goals strategy - forget current objective and re-evaluate
+ * At ~100 turns stuck, clear goals to allow fresh evaluation
+ */
+export function handleClearGoalsStrategy(
+  botState: BotState,
+  turn: number
+): void {
+  // Clear current goal but preserve blacklist and stairs knowledge
+  botState.currentGoal = null
+  botState.goalTarget = null
+  botState.cachedFlow = null
+  clearPositionHistory(botState)
+  // Partial progress reset - give it some room to try new approaches
+  botState.lastProgressTurn = turn - TWITCH_THRESHOLDS.LEVEL_4 // Back to level 4 threshold
+}
+
+/**
+ * Handle clear_blacklist strategy - clear exploration blacklist
+ * At ~200 turns stuck, forget unreachable targets and retry them
+ */
+export function handleClearBlacklistStrategy(
+  botState: BotState,
+  turn: number
+): void {
+  // Clear everything - full reset
+  botState.blacklistedTargets.clear()
+  botState.currentGoal = null
+  botState.goalTarget = null
+  botState.cachedFlow = null
+  botState.cachedSafetyFlow = null
+  clearPositionHistory(botState)
+  // Reset progress to level 5 threshold - give substantial room to retry
+  botState.lastProgressTurn = turn - TWITCH_THRESHOLDS.LEVEL_5
 }
 
 // ============================================================================

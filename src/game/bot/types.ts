@@ -4,7 +4,7 @@
  * All bot-specific types in one place for easy importing.
  */
 
-import type { Point, GameState, Monster, GroundItem, BotPersonality, Direction } from '../types'
+import type { Point, GameState, Monster, GroundItem, BotPersonality, Direction, AltarState, MerchantState } from '../types'
 import type { ClassBehaviorProfile } from './class-profiles'
 
 // ============================================================================
@@ -21,12 +21,19 @@ export type GoalType =
   | 'RECOVER'
   | 'WAIT'
   | 'KITE'
+  | 'HUNT_UNIQUE'      // Hunt unique monsters blocking descent
+  | 'USE_ALTAR'        // Use dungeon altars (gold sink)
+  | 'VISIT_MERCHANT'   // Visit dungeon merchants
   // Town-related goals (order: sell → heal → buy)
   | 'SELL_TO_MERCHANT' // Sell loot first to get gold
   | 'VISIT_HEALER'     // Heal with gold from selling
   | 'BUY_FROM_MERCHANT' // Buy consumables after healing
   | 'RETURN_PORTAL'    // Return through portal
   | 'EXIT_TOWN'        // Use dungeon entrance (fallback)
+  // Farming loop goals (when descent blocked by consumable requirements)
+  | 'FARM'             // Farm current level for gold/XP
+  | 'ASCEND_TO_FARM'   // Go up to easier levels when under-leveled
+  | 'TOWN_TRIP'        // Use town portal when ready for shopping
 
 /** A bot's current goal */
 export interface BotGoal {
@@ -108,6 +115,7 @@ export interface BotState {
 
   // Knowledge cache
   knownStairsDown: Point | null
+  knownStairsUp: Point | null
 
   // Cached flow (invalidated on goal change)
   cachedFlow: FlowResult | null
@@ -143,6 +151,24 @@ export interface BotState {
   // Exploration blacklist (unreachable targets)
   /** Targets that couldn't be reached - blacklisted until turn expires */
   blacklistedTargets: Map<string, number> // "x,y" -> expiry turn
+
+  // Farming loop state (depth preparation system)
+  /** Whether bot is in farming mode (blocked from descent, farming for gold/XP) */
+  farmingMode: boolean
+  /** Gold target to reach before town trip */
+  farmGoldTarget: number
+  /** Turn when farming started (for timeout detection) */
+  farmStartTurn: number
+
+  // Tethered exploration (prevents yo-yo stairs without exploring)
+  /** Position we're tethered to (stairs we just used) */
+  tetheredOrigin: Point | null
+  /** Exploration radius required before next flip (2=5x5, 4=9x9, 0=can flip) */
+  tetheredRadius: number
+  /** How many flips in current farming cycle (0→2→4→flip→reset) */
+  tetheredFlipCount: number
+  /** Turn when last level flip occurred (for minimum interval enforcement) */
+  lastFlipTurn: number
 }
 
 // ============================================================================
@@ -163,6 +189,8 @@ export interface BotContext {
   // Derived data
   visibleMonsters: Monster[]
   visibleItems: GroundItem[]
+  visibleAltars: AltarState[]
+  visibleMerchants: MerchantState[]
   knownStairs: Point | null
   unexploredTiles: Point[]
 

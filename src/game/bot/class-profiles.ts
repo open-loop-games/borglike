@@ -27,6 +27,8 @@ export interface ClassBehaviorProfile {
   cautionMod: number
   /** Preferred engagement distance: 1=melee, 3-4=ranged, 0=no preference */
   engageDistance: number
+  /** STEAL: Can attempt to steal gold from adjacent monsters (Rogue) */
+  canSteal?: boolean
 }
 
 // ============================================================================
@@ -67,6 +69,7 @@ const rogue: ClassBehaviorProfile = {
   aggressionMod: 5,
   cautionMod: 5,
   engageDistance: 1,
+  canSteal: true,
 }
 
 const priest: ClassBehaviorProfile = {

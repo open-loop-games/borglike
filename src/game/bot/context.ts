@@ -4,7 +4,7 @@
  * Functions to build BotContext and provide status/danger queries.
  */
 
-import type { GameState, BotPersonality, Point, DungeonLevel } from '../types'
+import type { GameState, BotPersonality, Point, DungeonLevel, AltarState } from '../types'
 import { manhattanDistance } from '../types'
 import type { BotContext, BotState, PersonalityConfig } from './types'
 import { getTile, getAdjacentPositions } from '../dungeon'
@@ -27,6 +27,7 @@ function createMinimalBotState(): BotState {
     turnsOnLevel: 0,
     currentDepth: 1,
     knownStairsDown: null,
+    knownStairsUp: null,
     cachedFlow: null,
     cachedDanger: null,
     cachedSafetyFlow: null,
@@ -45,6 +46,15 @@ function createMinimalBotState(): BotState {
     corridorFacing: null,
     // Exploration blacklist
     blacklistedTargets: new Map(),
+    // Farming loop state
+    farmingMode: false,
+    farmGoldTarget: 0,
+    farmStartTurn: 0,
+    // Tethered exploration
+    tetheredOrigin: null,
+    tetheredRadius: 0,
+    tetheredFlipCount: 0,
+    lastFlipTurn: 0,
   }
 }
 
@@ -75,6 +85,21 @@ export function buildBotContext(
     return tile?.visible ?? false
   })
 
+  // Find visible altars (from Map values)
+  const visibleAltars: AltarState[] = []
+  for (const altar of game.altars.values()) {
+    const tile = getTile(game.currentLevel, altar.position.x, altar.position.y)
+    if (tile?.visible) {
+      visibleAltars.push(altar)
+    }
+  }
+
+  // Find visible merchants
+  const visibleMerchants = game.merchants.filter((merchant) => {
+    const tile = getTile(game.currentLevel, merchant.position.x, merchant.position.y)
+    return tile?.visible ?? false
+  })
+
   // Find known stairs
   const knownStairs = findKnownStairs(game)
 
@@ -90,6 +115,8 @@ export function buildBotContext(
     effectiveConfig,
     visibleMonsters,
     visibleItems,
+    visibleAltars,
+    visibleMerchants,
     knownStairs,
     unexploredTiles,
     botState: botState ?? createMinimalBotState(),

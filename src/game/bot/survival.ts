@@ -47,4 +47,6 @@ export {
   getCombatBuffAction,
   // Utility consumables
   getUtilityConsumableAction,
+  // Stuck exploration (detect stairs, mapping, teleport level)
+  getStuckExplorationAction,
 } from './survival-consumables'

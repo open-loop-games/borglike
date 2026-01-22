@@ -1,0 +1,472 @@
+/**
+ * Depth Preparation System
+ *
+ * Angband borg-inspired depth preparation mechanics:
+ * - Consumable requirements by depth bracket
+ * - Unique-based descent gating
+ * - Bot readiness evaluation
+ */
+
+import type { Character, Item, UniqueState, MonsterTemplate } from '../types'
+import { getLivingUniques } from '../types'
+import { POTIONS, SCROLLS } from '../data/items'
+
+// ============================================================================
+// DEPTH REQUIREMENTS
+// ============================================================================
+
+/** Requirements for safely exploring a depth bracket */
+export interface DepthRequirement {
+  healingPotions: number
+  escapeScrolls: number
+  townPortals: number
+  minHpPercent: number
+}
+
+/**
+ * Consumable requirements by depth bracket.
+ * Core survival items only - buffs are nice-to-have, not gates.
+ */
+export const DEPTH_REQUIREMENTS: Record<number, DepthRequirement> = {
+  1:  { healingPotions: 0, escapeScrolls: 0, townPortals: 0, minHpPercent: 30 },
+  5:  { healingPotions: 1, escapeScrolls: 1, townPortals: 1, minHpPercent: 50 },
+  10: { healingPotions: 2, escapeScrolls: 2, townPortals: 1, minHpPercent: 60 },
+  15: { healingPotions: 3, escapeScrolls: 2, townPortals: 1, minHpPercent: 65 },
+  20: { healingPotions: 3, escapeScrolls: 3, townPortals: 2, minHpPercent: 70 },
+  30: { healingPotions: 4, escapeScrolls: 3, townPortals: 2, minHpPercent: 75 },
+  40: { healingPotions: 5, escapeScrolls: 4, townPortals: 2, minHpPercent: 80 },
+  50: { healingPotions: 6, escapeScrolls: 4, townPortals: 3, minHpPercent: 90 },
+}
+
+// ============================================================================
+// CONSUMABLE COUNTING
+// ============================================================================
+
+/**
+ * Count healing potions in inventory.
+ * Includes Cure Light, Cure Serious, Cure Critical, and Healing potions.
+ */
+export function countHealingPotions(inventory: Item[]): number {
+  return inventory.filter(item =>
+    item.template.type === 'potion' && (
+      item.template.name.includes('Cure') ||
+      item.template.name.includes('Healing')
+    )
+  ).length
+}
+
+/**
+ * Count healing potions at or above a minimum tier.
+ * Used for tier-based requirements (e.g., "need at least 1 T3+ potion").
+ */
+export function countHealingPotionsByTier(inventory: Item[], minTier: number): number {
+  return inventory.filter(item =>
+    item.template.type === 'potion' &&
+    (item.template.name.includes('Cure') || item.template.name.includes('Healing')) &&
+    item.template.tier >= minTier
+  ).length
+}
+
+/**
+ * Count escape scrolls in inventory.
+ * Includes Phase Door, Teleportation, and Teleport Level scrolls.
+ */
+export function countEscapeScrolls(inventory: Item[]): number {
+  return inventory.filter(item =>
+    item.template.type === 'scroll' && (
+      item.template.name.includes('Phase Door') ||
+      item.template.name.includes('Teleportation') ||
+      item.template.name.includes('Teleport Level')
+    )
+  ).length
+}
+
+/**
+ * Count Town Portal scrolls in inventory.
+ */
+export function countTownPortals(inventory: Item[]): number {
+  return inventory.filter(item =>
+    item.template.name === 'Scroll of Town Portal'
+  ).length
+}
+
+// ============================================================================
+// HEALING TIER REQUIREMENTS
+// ============================================================================
+
+/**
+ * Healing potion tiers and their minDepth thresholds.
+ * Derived from POTIONS data in items.ts.
+ */
+const HEALING_POTION_TIERS = POTIONS
+  .filter(p => p.name.includes('Cure') || p.name.includes('Healing'))
+  .map(p => ({ tier: p.tier, minDepth: p.minDepth ?? 0, name: p.name }))
+  .sort((a, b) => a.minDepth - b.minDepth)
+
+/**
+ * Get the required healing potion tier for a depth.
+ * Returns the highest tier that's available at or before this depth.
+ *
+ * - Depth 1-4:  T1 (Cure Light, minDepth 1)
+ * - Depth 5-11: T2 (Cure Serious, minDepth 5)
+ * - Depth 12-29: T3 (Cure Critical, minDepth 12)
+ * - Depth 30+:  T4 (Healing, minDepth 30)
+ */
+export function getRequiredHealingTier(depth: number): number {
+  let requiredTier = 1
+  for (const potion of HEALING_POTION_TIERS) {
+    if (potion.minDepth <= depth) {
+      requiredTier = Math.max(requiredTier, potion.tier)
+    }
+  }
+  return requiredTier
+}
+
+// ============================================================================
+// PERSONALITY SCALING
+// ============================================================================
+
+/**
+ * Get preparation requirement multiplier based on personality caution.
+ *
+ * Caution 50 (cautious) = 1.0x requirements (baseline)
+ * Caution 20 (aggressive) = 0.4x requirements (yolo)
+ * Caution 80 (very cautious) = 1.6x requirements (over-prepared)
+ *
+ * This lets aggressive bots descend under-prepared (and die more),
+ * while cautious bots will trigger town visits earlier.
+ */
+export function getPrepMultiplier(caution: number): number {
+  return caution / 50
+}
+
+/**
+ * Scale a depth requirement by personality caution.
+ */
+export function scaleRequirement(req: DepthRequirement, caution: number): DepthRequirement {
+  const mult = getPrepMultiplier(caution)
+  return {
+    healingPotions: Math.floor(req.healingPotions * mult),
+    escapeScrolls: Math.floor(req.escapeScrolls * mult),
+    townPortals: Math.floor(req.townPortals * mult),
+    minHpPercent: Math.floor(req.minHpPercent * mult),
+  }
+}
+
+// ============================================================================
+// READINESS EVALUATION
+// ============================================================================
+
+/**
+ * Get the depth requirement bracket for a given depth.
+ * Returns the highest bracket that is <= the target depth.
+ */
+export function getDepthBracket(depth: number): DepthRequirement {
+  const brackets = Object.keys(DEPTH_REQUIREMENTS)
+    .map(Number)
+    .filter(d => d <= depth)
+    .sort((a, b) => b - a)
+
+  const bracketDepth = brackets[0] ?? 1
+  return DEPTH_REQUIREMENTS[bracketDepth]!
+}
+
+/**
+ * Check if the character is ready for a target depth.
+ *
+ * @param caution - Personality caution level (0-100). Default 50 for baseline.
+ *                  Lower caution = lower requirements (aggressive can yolo).
+ *                  Higher caution = stricter requirements (cautious over-prepares).
+ * @returns null if ready, or a string describing the missing requirement
+ */
+export function getDepthReadiness(
+  character: Character,
+  inventory: Item[],
+  targetDepth: number,
+  caution: number = 50
+): string | null {
+  const baseReq = getDepthBracket(targetDepth)
+  const req = scaleRequirement(baseReq, caution)
+
+  // Count consumables
+  const healing = countHealingPotions(inventory)
+  const escapes = countEscapeScrolls(inventory)
+  const portals = countTownPortals(inventory)
+  const hpPercent = (character.hp / character.maxHp) * 100
+
+  // Check requirements (scaled by personality)
+  if (healing < req.healingPotions) {
+    return `Need ${req.healingPotions} healing potions (have ${healing})`
+  }
+
+  // Tier requirement: if we need potions, at least 1 must be the appropriate tier
+  const requiredTier = getRequiredHealingTier(targetDepth)
+  if (req.healingPotions > 0 && requiredTier > 1) {
+    const highTierCount = countHealingPotionsByTier(inventory, requiredTier)
+    if (highTierCount < 1) {
+      const tierNames: Record<number, string> = { 2: 'Cure Serious+', 3: 'Cure Critical+', 4: 'Healing' }
+      return `Need 1+ ${tierNames[requiredTier] ?? `T${requiredTier}`} potion (have ${highTierCount})`
+    }
+  }
+
+  if (escapes < req.escapeScrolls) {
+    return `Need ${req.escapeScrolls} escape scrolls (have ${escapes})`
+  }
+  if (portals < req.townPortals) {
+    return `Need ${req.townPortals} town portals (have ${portals})`
+  }
+  if (hpPercent < req.minHpPercent) {
+    return `Need ${req.minHpPercent}% HP (have ${Math.floor(hpPercent)}%)`
+  }
+
+  return null
+}
+
+/**
+ * Check if character is under-prepared for current depth.
+ * Uses personality caution to scale the threshold.
+ *
+ * This triggers town portal usage when supplies run low.
+ * Aggressive bots (low caution) tolerate running on empty.
+ * Cautious bots trigger town visits earlier.
+ *
+ * @param caution - Personality caution level (0-100). Default 50.
+ */
+export function isUnderPrepared(
+  _character: Character,
+  inventory: Item[],
+  currentDepth: number,
+  caution: number = 50
+): string | null {
+  const baseReq = getDepthBracket(currentDepth)
+  // Scale requirements by caution, then take 50% as "under-prepared" threshold
+  const scaledReq = scaleRequirement(baseReq, caution)
+
+  // Count consumables
+  const healing = countHealingPotions(inventory)
+  const escapes = countEscapeScrolls(inventory)
+  const portals = countTownPortals(inventory)
+
+  // Under-prepared threshold: 50% of scaled requirements
+  // For aggressive (caution=20): 50% of 0.4x = effectively 20% of base
+  // For cautious (caution=50): 50% of 1.0x = 50% of base
+  const minHealing = Math.floor(scaledReq.healingPotions * 0.5)
+  const minEscapes = Math.floor(scaledReq.escapeScrolls * 0.5)
+  const minPortals = Math.floor(scaledReq.townPortals * 0.5)
+
+  if (healing < minHealing) {
+    return `Low on healing potions (have ${healing}, want ${minHealing}+)`
+  }
+  if (escapes < minEscapes) {
+    return `Low on escape scrolls (have ${escapes}, want ${minEscapes}+)`
+  }
+  if (portals < minPortals) {
+    return `Low on town portals (have ${portals}, want ${minPortals}+)`
+  }
+
+  return null
+}
+
+// ============================================================================
+// FARMING TARGETS - Data-Driven Pricing
+// ============================================================================
+
+/** Shop price multipliers from merchants.ts */
+const SHOP_MULTIPLIERS = {
+  potion: 1.8,   // town_alchemy priceMultiplier
+  scroll: 2.2,  // town_magic priceMultiplier
+}
+
+/** Buffer for HP restoration at healer */
+const HEALER_BUFFER = 100
+
+/**
+ * Calculate shop buy price for an item by tier.
+ * Price = (tier * 50) * shopMultiplier
+ */
+function getShopPrice(tier: number, type: 'potion' | 'scroll'): number {
+  const baseValue = tier * 50
+  return Math.floor(baseValue * SHOP_MULTIPLIERS[type])
+}
+
+/**
+ * Get Phase Door scroll from data (T1 escape scroll).
+ * Used for escape scroll pricing - no tier scaling per user requirement.
+ */
+const PHASE_DOOR = SCROLLS.find(s => s.name.includes('Phase Door'))
+const PHASE_DOOR_PRICE = PHASE_DOOR ? getShopPrice(PHASE_DOOR.tier, 'scroll') : 110
+
+/**
+ * Get Town Portal scroll from data.
+ */
+const TOWN_PORTAL = SCROLLS.find(s => s.name.includes('Town Portal'))
+const TOWN_PORTAL_PRICE = TOWN_PORTAL ? getShopPrice(TOWN_PORTAL.tier, 'scroll') : 220
+
+/**
+ * Calculate gold needed to buy consumables for a target depth.
+ * Uses actual item data for pricing:
+ * - Healing potions: 1 of required tier + rest as T1 (cheapest)
+ * - Escape scrolls: All at T1 price (Phase Door) - no tier scaling
+ * - Town portals: Actual T2 price from data
+ *
+ * @param targetDepth - The depth we want to descend to
+ * @param caution - Personality caution level (scales requirements)
+ * @returns Gold amount needed to buy required consumables
+ */
+export function getGoldTarget(targetDepth: number, caution: number): number {
+  const baseReq = getDepthBracket(targetDepth)
+  const req = scaleRequirement(baseReq, caution)
+
+  // Healing potions: 1 of required tier, rest as cheap T1
+  const requiredHealingTier = getRequiredHealingTier(targetDepth)
+  const t1HealingPrice = getShopPrice(1, 'potion')
+  const topTierHealingPrice = getShopPrice(requiredHealingTier, 'potion')
+
+  let healingCost = 0
+  if (req.healingPotions > 0) {
+    // 1 of required tier + remaining as T1
+    healingCost = topTierHealingPrice + (req.healingPotions - 1) * t1HealingPrice
+  }
+
+  // Escape scrolls: No tier scaling, all priced as Phase Door (T1)
+  const escapeCost = req.escapeScrolls * PHASE_DOOR_PRICE
+
+  // Town portals: Actual price from data
+  const portalCost = req.townPortals * TOWN_PORTAL_PRICE
+
+  return healingCost + escapeCost + portalCost + HEALER_BUFFER
+}
+
+// ============================================================================
+// EQUIPMENT SELL VALUE ESTIMATION
+// ============================================================================
+
+/**
+ * Conservative sell multiplier - underestimate to leave room for gear purchases.
+ * Town shops pay 0.35-0.40, we use 0.25 to be safe.
+ */
+const CONSERVATIVE_SELL_MULTIPLIER = 0.25
+
+/**
+ * Estimate the sell value of a single item.
+ * Mirrors getItemValue from features.ts but with conservative multiplier.
+ */
+function estimateItemSellValue(item: Item): number {
+  const template = item.template
+
+  // Only equipment has meaningful sell value
+  const sellableTypes = ['weapon', 'bow', 'armor', 'shield', 'helm', 'gloves', 'boots', 'ring', 'amulet']
+  if (!sellableTypes.includes(template.type)) return 0
+
+  // Base value = tier * 50
+  let value = template.tier * 50
+
+  // Weapons and armor worth more
+  if (template.type === 'weapon' || template.type === 'bow') {
+    value *= 2
+  } else if (template.type === 'armor') {
+    value *= 1.5
+  }
+
+  // Enchantment adds value
+  value += (item.enchantment ?? 0) * 20
+
+  // Apply conservative sell multiplier
+  return Math.floor(value * CONSERVATIVE_SELL_MULTIPLIER)
+}
+
+/**
+ * Estimate total sell value of non-equipped inventory items.
+ * Excludes consumables (potions/scrolls) we might need.
+ */
+export function estimateInventorySellValue(inventory: Item[]): number {
+  return inventory.reduce((total, item) => total + estimateItemSellValue(item), 0)
+}
+
+/**
+ * Get effective gold for farming readiness checks.
+ * = current gold + estimated sell value of inventory equipment
+ *
+ * This allows the bot to recognize it has enough "wealth" to go to town
+ * and sell equipment to afford consumables.
+ */
+export function getEffectiveGold(character: Character): number {
+  return character.gold + estimateInventorySellValue(character.inventory)
+}
+
+/**
+ * Get minimum character level for a depth.
+ * Simple 1:1 ratio - character should be at least level N for depth N.
+ *
+ * This is used to determine if bot should ascend to farm easier content.
+ */
+export function getMinLevel(depth: number): number {
+  return Math.max(1, depth)
+}
+
+/**
+ * Check if character is under-leveled for current depth.
+ * Returns true if character level < depth (1:1 ratio).
+ */
+export function isUnderLeveled(characterLevel: number, depth: number): boolean {
+  return characterLevel < getMinLevel(depth)
+}
+
+// ============================================================================
+// UNIQUE DESCENT GATING
+// ============================================================================
+
+/**
+ * Check if living uniques block descent to a target depth.
+ *
+ * Angband-style rule: If 2+ uniques exist between current and target depth,
+ * descent is blocked until at least one is killed.
+ *
+ * @param currentDepth - The player's current depth
+ * @param targetDepth - The depth the player wants to descend to
+ * @param uniqueState - Tracking state for unique spawns/kills
+ * @param monsterTemplates - All monster templates (to look up minDepth)
+ * @returns The name of a blocking unique, or null if descent is allowed
+ */
+export function getUniqueBlocker(
+  currentDepth: number,
+  targetDepth: number,
+  uniqueState: UniqueState,
+  monsterTemplates: MonsterTemplate[]
+): string | null {
+  const livingUniques = getLivingUniques(uniqueState)
+
+  // Find uniques whose minDepth is between current and target (inclusive of target)
+  // These are uniques the player "should" encounter before going deeper
+  const blockingUniques = livingUniques.filter(name => {
+    const template = monsterTemplates.find(m => m.name === name)
+    if (!template) return false
+    // Unique is "blocking" if its natural depth is at or above current,
+    // but the player encountered it and let it live
+    return template.minDepth >= currentDepth && template.minDepth <= targetDepth
+  })
+
+  // 2+ living uniques in range blocks descent
+  if (blockingUniques.length >= 2) {
+    return blockingUniques[0]!
+  }
+
+  return null
+}
+
+/**
+ * Find uniques that are alive and native to depths <= targetDepth.
+ * Used for hunting priority decisions.
+ */
+export function getRelevantLivingUniques(
+  targetDepth: number,
+  uniqueState: UniqueState,
+  monsterTemplates: MonsterTemplate[]
+): string[] {
+  const livingUniques = getLivingUniques(uniqueState)
+
+  return livingUniques.filter(name => {
+    const template = monsterTemplates.find(m => m.name === name)
+    return template && template.minDepth <= targetDepth
+  })
+}

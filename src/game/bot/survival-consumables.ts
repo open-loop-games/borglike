@@ -30,6 +30,8 @@ import {
   findMappingScroll,
   findEnchantScroll,
   findTownPortalScroll,
+  findDetectStairsScroll,
+  findTeleportLevelScroll,
   hasStatusEffect,
   hasTempResistance,
 } from './items'
@@ -287,6 +289,17 @@ export function getPreCombatBuffAction(
   // Check if already buffed
   const hasBlessing = hasStatusEffect(character, 'blessing')
   const hasProtection = hasStatusEffect(character, 'protection')
+  const hasSpeed = hasStatusEffect(character, 'speed')
+
+  // For ranged classes with bow: speed is highest priority pre-combat buff
+  // Speed gives huge kiting advantage - more actions to shoot and reposition
+  const hasBow = character.equipment.bow !== null
+  if (hasBow && !hasSpeed) {
+    const speedPotion = findSpeedPotion(character)
+    if (speedPotion) {
+      return { type: 'use', itemId: speedPotion.id }
+    }
+  }
 
   // Use blessing scroll before engaging dangerous enemy
   if (!hasBlessing) {
@@ -436,6 +449,26 @@ export function getUtilityConsumableAction(
   }
 
   // Use mapping scroll if exploration is low (< 30%)
+  const explorationRatio = calculateExplorationRatio(game)
+
+  if (explorationRatio < 0.3) {
+    const mappingScroll = findMappingScroll(character)
+    if (mappingScroll) {
+      return { type: 'use', itemId: mappingScroll.id }
+    }
+  }
+
+  return null
+}
+
+// ============================================================================
+// STUCK EXPLORATION CONSUMABLES
+// ============================================================================
+
+/**
+ * Calculate the exploration ratio for the current level
+ */
+function calculateExplorationRatio(game: GameState): number {
   const totalTiles = game.currentLevel.width * game.currentLevel.height
   let exploredCount = 0
   for (const row of game.currentLevel.tiles) {
@@ -445,12 +478,65 @@ export function getUtilityConsumableAction(
       }
     }
   }
-  const explorationRatio = exploredCount / totalTiles
+  return exploredCount / totalTiles
+}
 
-  if (explorationRatio < 0.3) {
-    const mappingScroll = findMappingScroll(character)
-    if (mappingScroll) {
-      return { type: 'use', itemId: mappingScroll.id }
+/**
+ * Thresholds for stuck exploration actions (turns on level)
+ * Working backwards from 1000-turn circuit breaker
+ */
+const STUCK_THRESHOLDS = {
+  DETECT_STAIRS: 300,   // First intervention: just find the stairs
+  MAGIC_MAPPING: 500,   // Second intervention: reveal whole map
+  TELEPORT_LEVEL: 700,  // Last resort: skip the floor entirely
+} as const
+
+/**
+ * Check if we should use a scroll to help with stuck exploration
+ *
+ * Tiered system based on turns-on-level:
+ * - 300+ turns: Use Detect Stairs if stairs not known
+ * - 500+ turns: Use Magic Mapping if exploration < 60%
+ * - 700+ turns: Use Teleport Level to skip floor
+ *
+ * This provides 3 escalating interventions before the 2000-turn circuit breaker.
+ */
+export function getStuckExplorationAction(
+  game: GameState,
+  botState: BotState
+): GameAction | null {
+  const character = game.character
+
+  // Don't use these scrolls while in combat
+  if (countAdjacentMonsters(game, character.position) > 0) return null
+
+  const turnsOnLevel = botState.turnsOnLevel
+  const stairsKnown = botState.knownStairsDown !== null
+
+  // Tier 1: Use Detect Stairs after 300 turns if stairs not found
+  if (turnsOnLevel >= STUCK_THRESHOLDS.DETECT_STAIRS && !stairsKnown) {
+    const detectStairs = findDetectStairsScroll(character)
+    if (detectStairs) {
+      return { type: 'use', itemId: detectStairs.id }
+    }
+  }
+
+  // Tier 2: Use Magic Mapping after 500 turns if exploration is low
+  if (turnsOnLevel >= STUCK_THRESHOLDS.MAGIC_MAPPING) {
+    const explorationRatio = calculateExplorationRatio(game)
+    if (explorationRatio < 0.6) {
+      const mappingScroll = findMappingScroll(character)
+      if (mappingScroll) {
+        return { type: 'use', itemId: mappingScroll.id }
+      }
+    }
+  }
+
+  // Tier 3: Use Teleport Level after 700 turns (skip the floor)
+  if (turnsOnLevel >= STUCK_THRESHOLDS.TELEPORT_LEVEL) {
+    const teleportLevel = findTeleportLevelScroll(character)
+    if (teleportLevel) {
+      return { type: 'use', itemId: teleportLevel.id }
     }
   }
 

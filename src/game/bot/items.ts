@@ -626,6 +626,28 @@ export function findMappingScroll(character: Character): Item | null {
 }
 
 /**
+ * Find a Detect Stairs scroll in inventory
+ */
+export function findDetectStairsScroll(character: Character): Item | null {
+  return character.inventory.find(item => {
+    if (item.template.type !== 'scroll') return false
+    const name = item.template.name.toLowerCase()
+    return name.includes('detect stairs')
+  }) ?? null
+}
+
+/**
+ * Find a Teleport Level scroll in inventory
+ */
+export function findTeleportLevelScroll(character: Character): Item | null {
+  return character.inventory.find(item => {
+    if (item.template.type !== 'scroll') return false
+    const name = item.template.name.toLowerCase()
+    return name.includes('teleport level')
+  }) ?? null
+}
+
+/**
  * Find a Town Portal scroll in inventory
  */
 export function findTownPortalScroll(character: Character): Item | null {

@@ -13,6 +13,7 @@ import { getLocalDanger, getTileDanger } from './danger'
 import { isInCombat, countAdjacentMonsters, getCombatAdvantage } from './combat'
 import { findHealingPotion, findEscapeScroll, findTownPortalScroll } from './items'
 import { isInTown } from '../town'
+import { isUnderPrepared } from './preparation'
 
 // ============================================================================
 // TYPES
@@ -380,7 +381,7 @@ export function shouldClassRetreat(
  */
 export function shouldUseTownPortal(
   game: GameState,
-  _config: PersonalityConfig,
+  config: PersonalityConfig,
   personality: string
 ): TownPortalDecision {
   // Never use in town (can't use there anyway)
@@ -403,6 +404,17 @@ export function shouldUseTownPortal(
   const hpRatio = character.hp / character.maxHp
   const hasHealing = findHealingPotion(character) !== null
   const hasEscape = findEscapeScroll(character) !== null
+
+  // Check depth preparation - if under-prepared, consider returning to town
+  // Scaled by personality caution: aggressive bots tolerate running on empty,
+  // cautious bots trigger town visits earlier
+  const adjacentCount = countAdjacentMonsters(game, character.position)
+  if (adjacentCount === 0) {
+    const underPrepared = isUnderPrepared(character, character.inventory, character.depth, config.caution)
+    if (underPrepared) {
+      return { shouldUse: true, reason: `Under-prepared: ${underPrepared}` }
+    }
+  }
 
   // Count sellable items (non-equipped equipment in inventory)
   const sellableItems = character.inventory.filter(item =>

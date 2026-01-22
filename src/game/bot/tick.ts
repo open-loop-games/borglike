@@ -49,7 +49,8 @@ import {
 } from './stuck'
 import { selectGoal } from './goals'
 import { invalidateFrontierCache, getFrontierPositions } from './exploration'
-import { findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition } from './combat'
+import { findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition, shouldAvoidMelee } from './combat'
+import { getBowRange } from '../combat'
 import { findEquipmentUpgrades } from './items'
 import { getSurvivalConsumableAction, getCombatBuffAction, getPreCombatBuffAction, getUtilityConsumableAction } from './survival'
 import {
@@ -76,8 +77,38 @@ export function runBotTick(
 
   // Check for level change
   if (game.character.depth !== botState.currentDepth) {
+    const prevDepth = botState.currentDepth
+    const wasInFarmingMode = botState.farmingMode
     resetLevelState(botState, game.character.depth, game.turn)
     invalidateFrontierCache()
+
+    // Set knownStairsUp based on how we entered the level
+    if (game.character.depth > 0) {
+      if (prevDepth === 0) {
+        // Returned from town via portal: current position is portal, not stairs
+        // Get stairsUp from level data
+        const stairsUp = game.currentLevel.stairsUp
+        if (stairsUp) {
+          botState.knownStairsUp = { x: stairsUp.x, y: stairsUp.y }
+        }
+      } else if (game.character.depth > prevDepth) {
+        // Descended normally: current position is stairs_up
+        botState.knownStairsUp = { x: game.character.position.x, y: game.character.position.y }
+      } else if (game.character.depth < prevDepth) {
+        // Ascended: use cached level's stairsUp (we visited this level before)
+        const stairsUp = game.currentLevel.stairsUp
+        if (stairsUp) {
+          botState.knownStairsUp = { x: stairsUp.x, y: stairsUp.y }
+        }
+      }
+    }
+
+    // Set tethered origin after level change if in farming mode (for tethered exploration)
+    // Origin = stairsUp position (not portal position if returning from town)
+    if (wasInFarmingMode && game.character.depth !== 0) {
+      const origin = botState.knownStairsUp ?? { x: game.character.position.x, y: game.character.position.y }
+      botState.tetheredOrigin = origin
+    }
   }
 
   // Increment turn counter
@@ -150,7 +181,7 @@ function selectActionByTier(
 /**
  * CRITICAL tier: Might die this turn
  *
- * Priority: escape > heal > desperate attack (if cornered)
+ * Priority: escape > heal > ranged attack (if ranged class) > desperate melee
  */
 function handleCriticalTier(
   game: GameState,
@@ -159,9 +190,10 @@ function handleCriticalTier(
   dangerResult: DangerResult,
   personality: BotPersonality
 ): GameAction | null {
-  const { config } = context
+  const { config, classProfile, visibleMonsters } = context
   const pos = game.character.position
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
+  const adjacentMonster = findAdjacentMonster(game)
 
   // 1. Try escape spell first (renewable resource)
   const escapeSpell = getEscapeSpellAction(game, config, dangerResult.dangers)
@@ -186,22 +218,43 @@ function handleCriticalTier(
     return healSpell
   }
 
-  // 4. Desperate attack if cornered (no escape, no heal)
-  const adjacentMonster = findAdjacentMonster(game)
+  // 4. For ranged classes: try to kite away or shoot from distance
+  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
+    // Try to kite away if adjacent
+    if (adjacentMonster) {
+      const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+      if (kiteDir) {
+        recordProgress(botState, game.turn)
+        return { type: 'move', direction: kiteDir }
+      }
+    }
+
+    // Ranged attack if not adjacent and have targets
+    if (!adjacentMonster) {
+      const rangedTarget = findBestRangedTarget(game, visibleMonsters)
+      if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
+        recordProgress(botState, game.turn)
+        return { type: 'ranged_attack', targetId: rangedTarget.id }
+      }
+    }
+  }
+
+  // 5. Desperate melee attack if cornered (no escape, no heal, can't kite)
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Desperate attack')
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
   }
 
-  // 5. Try to move away from danger
+  // 6. Try to move away from danger
   return null // Let fallback handle movement
 }
 
 /**
  * DANGER tier: Can take maybe 1 hit
  *
- * Priority: heal > attack > escape (strategic retreat)
+ * Priority for ranged classes: kite > ranged attack > heal > melee fallback
+ * Priority for melee classes: heal > attack > escape
  */
 function handleDangerTier(
   game: GameState,
@@ -210,19 +263,40 @@ function handleDangerTier(
   dangerResult: DangerResult,
   personality: BotPersonality
 ): GameAction | null {
-  const { config, classProfile } = context
+  const { config, classProfile, visibleMonsters } = context
   const pos = game.character.position
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const adjacentMonster = findAdjacentMonster(game)
 
-  // 1. Healing spell (priority for casters)
+  // For ranged classes: prioritize repositioning and shooting
+  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
+    // 1. Kite away if adjacent (highest priority for ranged)
+    if (adjacentMonster) {
+      const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+      if (kiteDir) {
+        recordProgress(botState, game.turn)
+        return { type: 'move', direction: kiteDir }
+      }
+    }
+
+    // 2. Ranged attack if at safe distance
+    if (!adjacentMonster) {
+      const rangedTarget = findBestRangedTarget(game, visibleMonsters)
+      if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
+        recordProgress(botState, game.turn)
+        return { type: 'ranged_attack', targetId: rangedTarget.id }
+      }
+    }
+  }
+
+  // 3. Healing spell
   const healSpell = getHealingSpellAction(game, config, localDanger)
   if (healSpell) {
     recordProgress(botState, game.turn)
     return healSpell
   }
 
-  // 2. Survival consumables (healing potion, antidote)
+  // 4. Survival consumables (healing potion, antidote)
   const survivalAction = getSurvivalConsumableAction(
     game, config, dangerResult.dangers, botState, personality
   )
@@ -231,25 +305,7 @@ function handleDangerTier(
     return survivalAction
   }
 
-  // 3. Ranged attack if we have distance (avoid melee when hurt)
-  if (classProfile.prefersRanged && hasRangedWeapon(game) && !adjacentMonster) {
-    const rangedTarget = findBestRangedTarget(game, context.visibleMonsters)
-    if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
-      recordProgress(botState, game.turn)
-      return { type: 'ranged_attack', targetId: rangedTarget.id }
-    }
-  }
-
-  // 4. Kite away if adjacent and ranged class
-  if (adjacentMonster && classProfile.prefersRanged && hasRangedWeapon(game)) {
-    const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
-    if (kiteDir) {
-      recordProgress(botState, game.turn)
-      return { type: 'move', direction: kiteDir }
-    }
-  }
-
-  // 5. Melee attack if we must
+  // 5. Melee attack if we must (or if melee class)
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Melee attack (danger)')
     recordProgress(botState, game.turn)
@@ -269,7 +325,8 @@ function handleDangerTier(
 /**
  * CAUTION tier: Can take 2+ hits, but should be careful
  *
- * Priority: attack > proactive heal > buffs
+ * Priority for ranged classes: kite > ranged attack > melee fallback > proactive heal
+ * Priority for melee classes: buffs > melee > proactive heal
  */
 function handleCautionTier(
   game: GameState,
@@ -284,7 +341,26 @@ function handleCautionTier(
   const adjacentMonster = findAdjacentMonster(game)
   const hpRatio = game.character.hp / game.character.maxHp
 
-  // 1. Combat buffs only for bosses/uniques when approaching
+  // 1. For ranged classes: prioritize repositioning and shooting FIRST
+  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
+    if (adjacentMonster) {
+      // Try to kite away - highest priority
+      const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+      if (kiteDir) {
+        recordProgress(botState, game.turn)
+        return { type: 'move', direction: kiteDir }
+      }
+    } else if (visibleMonsters.length > 0) {
+      // Ranged attack from distance
+      const rangedTarget = findBestRangedTarget(game, visibleMonsters)
+      if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
+        recordProgress(botState, game.turn)
+        return { type: 'ranged_attack', targetId: rangedTarget.id }
+      }
+    }
+  }
+
+  // 2. Combat buffs only for bosses/uniques when approaching
   if (visibleMonsters.length > 0 && !adjacentMonster) {
     // Only buff for dangerous targets (uniques/bosses)
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
@@ -308,30 +384,9 @@ function handleCautionTier(
         return buffSpell
       }
     }
-
-    // No buffs - let goal system handle movement toward monsters (creates KILL goal)
   }
 
-  // 2. Ranged combat for ranged classes
-  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
-    if (adjacentMonster) {
-      // Try to kite away
-      const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
-      if (kiteDir) {
-        recordProgress(botState, game.turn)
-        return { type: 'move', direction: kiteDir }
-      }
-    } else {
-      // Ranged attack from distance
-      const rangedTarget = findBestRangedTarget(game, visibleMonsters)
-      if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
-        recordProgress(botState, game.turn)
-        return { type: 'ranged_attack', targetId: rangedTarget.id }
-      }
-    }
-  }
-
-  // 3. Melee combat
+  // 3. Melee combat (fallback for ranged classes, primary for melee)
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Melee combat')
     recordProgress(botState, game.turn)
@@ -388,7 +443,7 @@ function handleSafeTier(
   dangerResult: DangerResult,
   personality: BotPersonality
 ): GameAction | null {
-  const { config, effectiveConfig, visibleMonsters } = context
+  const { config, effectiveConfig, visibleMonsters, classProfile } = context
   const pos = game.character.position
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const dangerThreshold = getDangerThreshold(effectiveConfig.aggression, effectiveConfig.caution)
@@ -457,7 +512,14 @@ function handleSafeTier(
       return damageSpell
     }
 
-    // No spells - let goal system handle movement toward monsters (creates KILL goal)
+    // Ranged weapon attacks for ranged classes (rangers, etc.)
+    if (classProfile.prefersRanged && hasRangedWeapon(game)) {
+      const rangedTarget = findBestRangedTarget(game, visibleMonsters)
+      if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
+        recordProgress(botState, game.turn)
+        return { type: 'ranged_attack', targetId: rangedTarget.id }
+      }
+    }
   }
 
   // 5. Utility consumables (enchants, mapping)
@@ -642,19 +704,46 @@ function handleGoalMovement(
     }
   }
 
-  // Check for buffs when approaching dangerous KILL target
-  // This catches bosses like Wormtongue before we enter melee range
+  // For KILL goals with ranged classes: check if we should shoot instead of approaching
   if (goal.type === 'KILL' && goal.targetId) {
+    const { classProfile } = context
     const targetMonster = game.monsters.find(m => m.id === goal.targetId && m.hp > 0)
+
+    if (targetMonster && classProfile.prefersRanged && hasRangedWeapon(game)) {
+      const dx = Math.abs(targetMonster.position.x - pos.x)
+      const dy = Math.abs(targetMonster.position.y - pos.y)
+      const distance = Math.max(dx, dy)
+      const bowRange = getBowRange(game.character)
+
+      // If at shooting range (>= 2 and <= bowRange), shoot instead of approaching
+      if (distance >= 2 && distance <= bowRange) {
+        if (canRangedAttack(game.character, targetMonster.position)) {
+          recordProgress(botState, game.turn)
+          return { type: 'ranged_attack', targetId: targetMonster.id }
+        }
+      }
+
+      // If adjacent, check shouldAvoidMelee - try to kite away
+      if (shouldAvoidMelee(classProfile, distance)) {
+        const kiteDir = findKitePosition(game, targetMonster, classProfile)
+        if (kiteDir) {
+          recordProgress(botState, game.turn)
+          return { type: 'move', direction: kiteDir }
+        }
+      }
+    }
+
+    // Check for buffs when approaching dangerous KILL target
+    // This catches bosses like Wormtongue before we enter melee range
     if (targetMonster) {
       const threat = getMonsterThreat(targetMonster, game.character)
       // Use same threshold as getPreCombatBuffAction (100 = roughly 10-damage awake monster)
       // But also check for unique/boss monsters which may have lower threat but deserve buffs
       const BUFF_THREAT_THRESHOLD = 100
       const isUnique = targetMonster.template.flags.includes('UNIQUE')
-      const shouldBuff = threat >= BUFF_THREAT_THRESHOLD || isUnique
+      const shouldBuffTarget = threat >= BUFF_THREAT_THRESHOLD || isUnique
 
-      if (shouldBuff) {
+      if (shouldBuffTarget) {
         // Try combat buff potions (heroism/berserk) for dangerous fights
         const combatBuff = getCombatBuffAction(game, context.config, dangerResult.dangers)
         if (combatBuff) {

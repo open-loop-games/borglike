@@ -16,7 +16,7 @@ import { findAdjacentMonster, hasRangedWeapon } from './combat'
 import { isInTown, HEALER_POSITION, DUNGEON_ENTRANCE_POSITION, TOWN_SHOP_POSITIONS } from '../town'
 import { type TownShopId } from '../data/town'
 
-// Import evaluators from separate module
+// Import evaluators from separate module (only ones used locally)
 import {
   evaluateFlee,
   evaluateKite,
@@ -25,7 +25,11 @@ import {
   evaluateTake,
   evaluateDescend,
   evaluateExplore,
+  evaluateUseAltar,
+  evaluateVisitMerchant,
+  evaluateHuntUnique,
 } from './goal-evaluators'
+import { getEffectiveGold } from './preparation'
 
 // Re-export evaluators for external use
 export {
@@ -36,6 +40,12 @@ export {
   evaluateTake,
   evaluateDescend,
   evaluateExplore,
+  evaluateUseAltar,
+  evaluateVisitMerchant,
+  evaluateHuntUnique,
+  evaluateFarm,
+  evaluateAscendToFarm,
+  evaluateTownTrip,
   findBestItem,
 } from './goal-evaluators'
 
@@ -61,7 +71,14 @@ const GOAL_PRIORITY: Record<GoalType, number> = {
   RETURN_PORTAL: 70,    // Return through portal
   EXIT_TOWN: 65,        // Fallback if no portal
   RECOVER: 80,
+  HUNT_UNIQUE: 75,      // Below RECOVER, above KILL - hunt uniques blocking descent
+  // Farming loop goals (when descent blocked by consumable requirements)
+  FARM: 72,             // Below RECOVER, above KILL - farm when safe
   KILL: 70,
+  TOWN_TRIP: 68,        // Below KILL - finish fights first, then town
+  ASCEND_TO_FARM: 66,   // Below KILL/FARM - try current level first
+  USE_ALTAR: 55,        // Use altars when safe (gold sink)
+  VISIT_MERCHANT: 52,   // Visit dungeon merchants when safe
   TAKE: 50,
   DESCEND: 40,
   EXPLORE: 30,
@@ -152,6 +169,10 @@ export function selectGoal(
   const recoverGoal = evaluateRecover(context, dangerThreshold, localDanger, hpRatio)
   if (recoverGoal) return recoverGoal
 
+  // 2.5 HUNT_UNIQUE - Hunt uniques blocking descent (priority over regular KILL)
+  const huntUniqueGoal = evaluateHuntUnique(context)
+  if (huntUniqueGoal) return huntUniqueGoal
+
   // 3. KILL - Adjacent monster or hunting
   const killGoal = evaluateKill(context, hpRatio)
   if (killGoal) return killGoal
@@ -160,7 +181,15 @@ export function selectGoal(
   const takeGoal = evaluateTake(context, dangers, dangerThreshold)
   if (takeGoal) return takeGoal
 
-  // 5. DESCEND - Ready to go down
+  // 4.5 USE_ALTAR - Use dungeon altars when safe (gold sink)
+  const altarGoal = evaluateUseAltar(context, dangerThreshold, localDanger)
+  if (altarGoal) return altarGoal
+
+  // 4.6 VISIT_MERCHANT - Visit dungeon merchants when safe
+  const merchantGoal = evaluateVisitMerchant(context, dangerThreshold, localDanger)
+  if (merchantGoal) return merchantGoal
+
+  // 5. DESCEND - Ready to go down (may trigger FARM, ASCEND_TO_FARM, TOWN_TRIP)
   const descendGoal = evaluateDescend(context, botState)
   if (descendGoal) return descendGoal
 
@@ -284,6 +313,66 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
     case 'EXIT_TOWN':
       // Valid while in town (fallback when no portal)
       return isInTown(game)
+
+    case 'HUNT_UNIQUE': {
+      // Hunt unique is valid if target unique still exists and is alive
+      if (!goal.targetId) return false
+      const targetUnique = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
+      if (!targetUnique) return false
+      // Update target position if monster moved
+      if (goal.target &&
+          (goal.target.x !== targetUnique.position.x || goal.target.y !== targetUnique.position.y)) {
+        goal.target = { ...targetUnique.position }
+      }
+      return true
+    }
+
+    case 'USE_ALTAR':
+      // Altar goals are short-lived - always re-evaluate
+      return false
+
+    case 'VISIT_MERCHANT':
+      // Merchant goals are short-lived - always re-evaluate
+      return false
+
+    case 'FARM': {
+      // Farm is valid while we need gold and there are targets
+      if (!botState.farmingMode) return false
+      const character = game.character
+      // Check if we've reached gold target (including equipment sell value)
+      if (getEffectiveGold(character) >= botState.farmGoldTarget) {
+        botState.farmingMode = false
+        return false
+      }
+      // Check if target still exists (monster or item)
+      if (goal.targetId) {
+        const monsterExists = game.monsters.some(m => m.id === goal.targetId && m.hp > 0)
+        const itemExists = game.items.some(i => i.id === goal.targetId)
+        if (!monsterExists && !itemExists) return false
+      }
+      return true
+    }
+
+    case 'ASCEND_TO_FARM': {
+      // Ascend is valid until we reach known stairs up
+      if (game.character.depth <= 1) return false
+      const stairsUp = botState.knownStairsUp
+      if (!stairsUp) return false
+      // Goal is stale if target doesn't match current knownStairsUp
+      if (goal.target &&
+          (goal.target.x !== stairsUp.x || goal.target.y !== stairsUp.y)) {
+        return false
+      }
+      // If at stairs, goal complete
+      const atStairs = game.character.position.x === stairsUp.x &&
+                       game.character.position.y === stairsUp.y
+      if (atStairs) return false
+      return true
+    }
+
+    case 'TOWN_TRIP':
+      // Town trip is valid until we use the portal (enter town)
+      return game.character.depth > 0 && !game.townPortal
 
     default:
       return false

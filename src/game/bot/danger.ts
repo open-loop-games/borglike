@@ -8,7 +8,9 @@
 import type { Point, GameState, Monster, Character } from '../types'
 import { getAdjacentPositions } from '../dungeon'
 import type { DangerMap, DangerResult, DangerTier, PersonalityConfig } from './types'
+import type { ClassBehaviorProfile } from './class-profiles'
 import { findHealingPotion, findEscapeScroll } from './items'
+import { getEffectiveDamage } from './combat'
 
 // Re-export types for convenience
 export type { DangerMap, DangerResult, DangerTier }
@@ -68,8 +70,18 @@ export function computeDangerGrid(game: GameState): DangerResult {
  * - Speed advantage over player
  * - Whether monster is aware of player
  * - Monster HP relative to player damage
+ *
+ * @param monster - The monster to evaluate
+ * @param character - The player character
+ * @param classProfile - Optional class profile for effective damage calculation
+ * @param distance - Optional distance to monster (defaults to engageDistance or 1)
  */
-export function getMonsterThreat(monster: Monster, character: Character): number {
+export function getMonsterThreat(
+  monster: Monster,
+  character: Character,
+  classProfile?: ClassBehaviorProfile,
+  distance?: number
+): number {
   const template = monster.template
 
   // Base threat from damage
@@ -91,8 +103,14 @@ export function getMonsterThreat(monster: Monster, character: Character): number
   }
 
   // Higher HP monsters are harder to kill = more dangerous
-  // A monster with 50 HP vs player doing 10 damage = 5 turns to kill
-  const playerDamage = Math.max(character.combat.meleeDamage, 5)
+  // Use effective damage based on class profile and distance
+  let playerDamage: number
+  if (classProfile) {
+    const effectiveDistance = distance ?? classProfile.engageDistance ?? 1
+    playerDamage = getEffectiveDamage(character, classProfile, effectiveDistance)
+  } else {
+    playerDamage = Math.max(character.combat.meleeDamage, 5)
+  }
   const turnsToKill = Math.ceil(monster.hp / playerDamage)
   threat *= Math.min(turnsToKill / 2, 3) // Cap at 3x for very tanky monsters
 

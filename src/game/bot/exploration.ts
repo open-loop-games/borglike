@@ -78,6 +78,18 @@ const NEAR_TARGET_DISTANCE = 8
 /** Hysteresis threshold: only switch targets if new one is this much better */
 const TARGET_SWITCH_THRESHOLD = 30
 
+/** Penalty for dead-end frontiers when better options exist */
+const DEAD_END_PENALTY = 50
+
+/** Minimum unexplored neighbors for "good" frontier */
+const GOOD_FRONTIER_THRESHOLD = 2
+
+/** Distance threshold below which short-distance penalty applies */
+const SHORT_DISTANCE_THRESHOLD = 5
+
+/** Penalty multiplier for short-distance targets (applied as (threshold - dist) * multiplier) */
+const SHORT_DISTANCE_PENALTY_MULTIPLIER = 12
+
 // ============================================================================
 // FRONTIER CACHING
 // ============================================================================
@@ -243,6 +255,10 @@ export function findExplorationTarget(
   // We compute once and reuse for all candidates
   const reachabilityFlow = computeFlow(level, pos)
 
+  // Check if good alternatives exist (for dead-end penalty logic)
+  // Only penalize dead ends when there are better options available
+  const hasGoodAlternatives = frontier.some(f => f.unexploredNeighbors >= GOOD_FRONTIER_THRESHOLD)
+
   for (const f of frontier) {
     // Find the explored entry point for this frontier tile
     const entryPoint = findNearestWalkableExplored(level, f.position)
@@ -298,9 +314,20 @@ export function findExplorationTarget(
       }
     }
 
-    // Score: frontier potential + persistence + direction - distance - visit penalty
-    // Note: f.score already includes unexploredNeighbors * 10, no need for distance bonus
-    const finalScore = f.unexploredNeighbors * 15 + persistenceBonus + directionalBonus - distance - visitPenalty
+    // Dead-end penalty: penalize terminal frontiers in corridors when better options exist
+    let deadEndPenalty = 0
+    if (hasGoodAlternatives && isLikelyDeadEnd(level, f.position, entryPoint, f.unexploredNeighbors)) {
+      deadEndPenalty = DEAD_END_PENALTY
+    }
+
+    // Short-distance penalty: discourage very close targets to reduce goal thrashing
+    // Penalties: dist 1 = -48, dist 2 = -36, dist 3 = -24, dist 4 = -12
+    const shortDistancePenalty = distance < SHORT_DISTANCE_THRESHOLD
+      ? (SHORT_DISTANCE_THRESHOLD - distance) * SHORT_DISTANCE_PENALTY_MULTIPLIER
+      : 0
+
+    // Score: frontier potential + persistence + direction - distance - penalties
+    const finalScore = f.unexploredNeighbors * 15 + persistenceBonus + directionalBonus - distance - visitPenalty - deadEndPenalty - shortDistancePenalty
 
     // Track current target's score for hysteresis
     if (currentGoalTarget && entryPoint.x === currentGoalTarget.x && entryPoint.y === currentGoalTarget.y) {
@@ -617,6 +644,35 @@ function isWalkableOrDoor(tile: Tile): boolean {
  */
 function isExplorableTile(tile: Tile): boolean {
   return tile.type === 'floor' || tile.type === 'door_open' || tile.type === 'door_closed'
+}
+
+/**
+ * Check if a frontier is likely a dead end.
+ * Dead ends have low exploration potential (1 unexplored neighbor)
+ * and are accessed through narrow corridors.
+ */
+function isLikelyDeadEnd(
+  level: DungeonLevel,
+  _frontierPos: Point,
+  entryPoint: Point,
+  unexploredNeighbors: number
+): boolean {
+  // Terminal frontiers (only 1 unexplored neighbor) are dead-end candidates
+  if (unexploredNeighbors > 1) return false
+
+  // Check if entry point is in a narrow passage (corridor)
+  // Count walkable neighbors of entry point
+  let walkableCount = 0
+  for (const adj of getAdjacentPositions(entryPoint)) {
+    const tile = getTile(level, adj.x, adj.y)
+    if (tile && isWalkableOrDoor(tile)) {
+      walkableCount++
+    }
+  }
+
+  // Narrow passage = 2-3 walkable neighbors (corridor or L-bend)
+  // Wide area = 4+ neighbors (room, intersection)
+  return walkableCount <= 3
 }
 
 // ============================================================================
