@@ -715,6 +715,11 @@ function executeMonsterAction(
           // Check for Second Wind
           checkSecondWind(game, addMessage)
 
+          // Add death message if player was killed
+          if (game.character.isDead) {
+            addMessage(game, `The ${monster.template.name} kills you!`, 'danger')
+          }
+
           events.push({
             type: 'attack',
             attackerId: monster.id,
@@ -753,6 +758,11 @@ function executeMonsterAction(
 
       // Check for Second Wind booster (auto-heal when critical)
       checkSecondWind(game, addMessage)
+
+      // Add death message if player was killed
+      if (game.character.isDead) {
+        addMessage(game, `The ${monster.template.name} kills you!`, 'danger')
+      }
 
       events.push({
         type: 'attack',
