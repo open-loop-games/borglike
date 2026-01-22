@@ -31,8 +31,6 @@ import {
   touchLevelCache,
   evictOldLevels,
   LEVEL_CACHE_MAX_SIZE,
-  saveLevelEntities,
-  loadLevelEntities,
 } from '../level-cache'
 import { isInTown } from '../town'
 import { addMessage } from './helpers'
@@ -148,8 +146,8 @@ export function handleDescend(game: GameState): ActionResult {
     return { success: false, message: 'You cannot go any deeper.', energyCost: 0 }
   }
 
-  // Save current level state (monsters and items)
-  saveLevelState(game)
+  // NOTE: Entity caching removed - entities regenerate on level entry (Angband-style)
+  // Layout is cached in levelCache, but monsters/items are freshly spawned
 
   // Get or generate new level
   let newLevel = game.levelCache.get(newDepth)
@@ -175,38 +173,28 @@ export function handleDescend(game: GameState): ActionResult {
     game.character.position = findOpenPosition(newLevel)
   }
 
-  // Load entities from cache, or spawn fresh if not cached
-  const cachedEntities = loadLevelEntities(game.entityCache, newDepth)
-  if (cachedEntities) {
-    // Restore cached entities
-    game.monsters = cachedEntities.monsters
-    game.items = cachedEntities.items
-    game.fountains = cachedEntities.fountains
-    game.altars = cachedEntities.altars
-    game.merchants = cachedEntities.merchants
-    game.traps = cachedEntities.traps
-  } else {
-    // Spawn fresh entities for new level
-    game.monsters = spawnMonstersForLevel(newLevel, newDepth)
-    game.items = spawnItemsForLevel(newLevel, newDepth)
+  // ENTITY REGENERATION: Always spawn fresh entities on level entry
+  // Layout is cached, but monsters/items regenerate (Angband-style)
+  // UniqueState ensures unique monsters don't respawn
+  game.monsters = spawnMonstersForLevel(newLevel, newDepth, game.balance.monsterHpPercent, game.uniqueState)
+  game.items = spawnItemsForLevel(newLevel, newDepth, game.balance.potionRatePercent, game.balance.enchantRatePercent, game.balance.itemRatePercent)
 
-    // Reset features for new level
-    game.fountains = new Map<string, FountainState>()
-    game.altars = new Map<string, AltarState>()
-    game.merchants = []
-    game.traps = new Map<string, TrapState>()
+  // Reset features for level entry
+  game.fountains = new Map<string, FountainState>()
+  game.altars = new Map<string, AltarState>()
+  game.merchants = []
+  game.traps = new Map<string, TrapState>()
 
-    // Initialize features from vault data (if vault was placed on this level)
-    initializeFeaturesFromVault(
-      newLevel,
-      newDepth,
-      game.fountains,
-      game.altars,
-      game.merchants,
-      game.traps,
-      generateMerchantInventory
-    )
-  }
+  // Initialize features from vault data (if vault was placed on this level)
+  initializeFeaturesFromVault(
+    newLevel,
+    newDepth,
+    game.fountains,
+    game.altars,
+    game.merchants,
+    game.traps,
+    generateMerchantInventory
+  )
 
   // Update stats
   if (newDepth > game.stats.deepestDepth) {
@@ -253,8 +241,7 @@ export function handleAscend(game: GameState): ActionResult {
 
   const newDepth = game.character.depth - 1
 
-  // Save current level state
-  saveLevelState(game)
+  // NOTE: Entity caching removed - entities regenerate on level entry (Angband-style)
 
   // Load previous level
   const previousLevel = game.levelCache.get(newDepth)
@@ -277,38 +264,28 @@ export function handleAscend(game: GameState): ActionResult {
     game.character.position = findOpenPosition(previousLevel)
   }
 
-  // Load entities from cache, or spawn fresh if not cached
-  const cachedEntities = loadLevelEntities(game.entityCache, newDepth)
-  if (cachedEntities) {
-    // Restore cached entities
-    game.monsters = cachedEntities.monsters
-    game.items = cachedEntities.items
-    game.fountains = cachedEntities.fountains
-    game.altars = cachedEntities.altars
-    game.merchants = cachedEntities.merchants
-    game.traps = cachedEntities.traps
-  } else {
-    // Spawn fresh entities (shouldn't happen normally for ascend)
-    game.monsters = spawnMonstersForLevel(previousLevel, newDepth)
-    game.items = spawnItemsForLevel(previousLevel, newDepth)
+  // ENTITY REGENERATION: Always spawn fresh entities on level entry
+  // Layout is cached, but monsters/items regenerate (Angband-style)
+  // UniqueState ensures unique monsters don't respawn
+  game.monsters = spawnMonstersForLevel(previousLevel, newDepth, game.balance.monsterHpPercent, game.uniqueState)
+  game.items = spawnItemsForLevel(previousLevel, newDepth, game.balance.potionRatePercent, game.balance.enchantRatePercent, game.balance.itemRatePercent)
 
-    // Reset features for level
-    game.fountains = new Map<string, FountainState>()
-    game.altars = new Map<string, AltarState>()
-    game.merchants = []
-    game.traps = new Map<string, TrapState>()
+  // Reset features for level entry
+  game.fountains = new Map<string, FountainState>()
+  game.altars = new Map<string, AltarState>()
+  game.merchants = []
+  game.traps = new Map<string, TrapState>()
 
-    // Initialize features from vault data (if vault was placed on this level)
-    initializeFeaturesFromVault(
-      previousLevel,
-      newDepth,
-      game.fountains,
-      game.altars,
-      game.merchants,
-      game.traps,
-      generateMerchantInventory
-    )
-  }
+  // Initialize features from vault data (if vault was placed on this level)
+  initializeFeaturesFromVault(
+    previousLevel,
+    newDepth,
+    game.fountains,
+    game.altars,
+    game.merchants,
+    game.traps,
+    generateMerchantInventory
+  )
 
   // Update FOV (dynamic light radius)
   const lightRadius = calculateLightRadius(game.character, newDepth)
@@ -319,16 +296,3 @@ export function handleAscend(game: GameState): ActionResult {
   return { success: true, energyCost: BASE_ENERGY_COST }
 }
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-/**
- * Save current level state (for returning to it later)
- *
- * Persists monster, item, and feature state to the entity cache
- * so they can be restored when the player returns to this level.
- */
-function saveLevelState(game: GameState): void {
-  saveLevelEntities(game)
-}

@@ -82,77 +82,108 @@ export function generateCavern(
 }
 
 /**
- * Find large open areas in the cavern for stair/item placement
- * Uses flood fill to find connected regions, returns largest ones
+ * Find open areas in each quadrant for stair placement
+ *
+ * Instead of finding one giant connected region, we identify the best
+ * floor cluster in each map quadrant. This ensures stair placement has
+ * candidates spread across the map even when the cavern is fully connected.
  */
 function findOpenAreas(
   tiles: Tile[][],
   width: number,
   height: number
 ): RoomData[] {
-  const visited = new Set<string>()
-  const areas: { tiles: { x: number; y: number }[] }[] = []
+  const midX = Math.floor(width / 2)
+  const midY = Math.floor(height / 2)
 
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const key = `${x},${y}`
-      const tile = tiles[y]?.[x]
+  // Define quadrant bounds
+  const quadrants = [
+    { name: 'top-left', x1: 1, y1: 1, x2: midX, y2: midY },
+    { name: 'top-right', x1: midX, y1: 1, x2: width - 1, y2: midY },
+    { name: 'bottom-left', x1: 1, y1: midY, x2: midX, y2: height - 1 },
+    { name: 'bottom-right', x1: midX, y1: midY, x2: width - 1, y2: height - 1 },
+  ]
 
-      if (tile?.type === 'floor' && !visited.has(key)) {
-        // Flood fill to find connected area
-        const area: { x: number; y: number }[] = []
-        const queue = [{ x, y }]
+  const rooms: RoomData[] = []
 
-        while (queue.length > 0) {
-          const pos = queue.shift()!
-          const posKey = `${pos.x},${pos.y}`
+  // Find best floor cluster in each quadrant
+  for (const quad of quadrants) {
+    const room = findBestClusterInRegion(tiles, quad.x1, quad.y1, quad.x2, quad.y2)
+    if (room) {
+      rooms.push(room)
+    }
+  }
 
-          if (visited.has(posKey)) continue
-          const posTile = tiles[pos.y]?.[pos.x]
-          if (!posTile || posTile.type !== 'floor') continue
+  return rooms
+}
 
-          visited.add(posKey)
-          area.push(pos)
+/**
+ * Find the floor tile with most floor neighbors in a region (most "open" spot)
+ * Returns a small room centered on that spot
+ */
+function findBestClusterInRegion(
+  tiles: Tile[][],
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+): RoomData | null {
+  let bestX = 0
+  let bestY = 0
+  let bestScore = -1
 
-          // Check 4 cardinal neighbors
-          queue.push({ x: pos.x - 1, y: pos.y })
-          queue.push({ x: pos.x + 1, y: pos.y })
-          queue.push({ x: pos.x, y: pos.y - 1 })
-          queue.push({ x: pos.x, y: pos.y + 1 })
+  // Find the floor tile with the most floor neighbors (openness score)
+  for (let y = y1; y < y2; y++) {
+    for (let x = x1; x < x2; x++) {
+      if (tiles[y]?.[x]?.type !== 'floor') continue
+
+      // Count floor neighbors in a 5x5 area
+      let score = 0
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          if (tiles[y + dy]?.[x + dx]?.type === 'floor') {
+            score++
+          }
         }
+      }
 
-        if (area.length >= 20) {
-          areas.push({ tiles: area })
-        }
+      if (score > bestScore) {
+        bestScore = score
+        bestX = x
+        bestY = y
       }
     }
   }
 
-  // Convert areas to RoomData (using bounding box)
-  const rooms: RoomData[] = areas.slice(0, 5).map((area) => {
-    let minX = Infinity,
-      maxX = -Infinity
-    let minY = Infinity,
-      maxY = -Infinity
+  // Need at least some open space (score of 9 = 3x3 area of floor minimum)
+  if (bestScore < 9) {
+    return null
+  }
 
-    for (const pos of area.tiles) {
-      minX = Math.min(minX, pos.x)
-      maxX = Math.max(maxX, pos.x)
-      minY = Math.min(minY, pos.y)
-      maxY = Math.max(maxY, pos.y)
+  // Create a small room around this point
+  // Find actual bounds of floor around the best point
+  let minX = bestX, maxX = bestX
+  let minY = bestY, maxY = bestY
+
+  // Expand bounds to find connected floor extent (limited to ~6 tiles each direction)
+  for (let dy = -6; dy <= 6; dy++) {
+    for (let dx = -6; dx <= 6; dx++) {
+      const nx = bestX + dx
+      const ny = bestY + dy
+      if (tiles[ny]?.[nx]?.type === 'floor') {
+        minX = Math.min(minX, nx)
+        maxX = Math.max(maxX, nx)
+        minY = Math.min(minY, ny)
+        maxY = Math.max(maxY, ny)
+      }
     }
+  }
 
-    return {
-      x: minX,
-      y: minY,
-      width: maxX - minX + 1,
-      height: maxY - minY + 1,
-      center: {
-        x: Math.floor((minX + maxX) / 2),
-        y: Math.floor((minY + maxY) / 2),
-      },
-    }
-  })
-
-  return rooms
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+    center: { x: bestX, y: bestY },
+  }
 }

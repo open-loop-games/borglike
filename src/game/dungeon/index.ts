@@ -113,8 +113,8 @@ export function generateLevelWithInfo(
   const doorCandidates = findDoorCandidates(tiles, width, height, rooms)
   const placedDoors = placeDoors(tiles, doorCandidates, effectiveDoorChance)
 
-  // Place stairs
-  const { stairsUp, stairsDown } = placeStairs(tiles, width, height, depth)
+  // Place stairs (prefer room centers in different map quadrants)
+  const { stairsUp, stairsDown } = placeStairs(tiles, rooms, width, height, depth)
 
   const level: DungeonLevel = {
     depth,
@@ -137,52 +137,120 @@ export function generateLevelWithInfo(
 
 /**
  * Place stairs up and down on the level
+ *
+ * Prefers placing stairs in room centers in different map halves (left/right).
+ * This ensures stairs are in accessible open areas rather than random corridors,
+ * and encourages level traversal by spacing them apart.
  */
 function placeStairs(
   tiles: Tile[][],
+  rooms: RoomData[],
   width: number,
   height: number,
   depth: number
 ): { stairsUp: Point | null; stairsDown: Point | null } {
-  // Collect floor positions for stair placement
-  const floorPositions: Point[] = []
+  let stairsUp: Point | null = null
+  let stairsDown: Point | null = null
 
+  const needsUp = depth > 1
+  const needsDown = depth < MAX_DEPTH
+
+  // Try room-based placement first (preferred)
+  if (rooms.length >= 2) {
+    // Sort rooms by x position to find left/right halves
+    const sortedByX = [...rooms].sort((a, b) => a.center.x - b.center.x)
+    const leftRoom = sortedByX[0]!
+    const rightRoom = sortedByX[sortedByX.length - 1]!
+
+    // Place up stairs in left room, down stairs in right room
+    // This creates a natural west-to-east flow through the dungeon
+    if (needsUp && leftRoom) {
+      stairsUp = placeStairInRoom(tiles, leftRoom, 'stairs_up')
+    }
+    if (needsDown && rightRoom) {
+      stairsDown = placeStairInRoom(tiles, rightRoom, 'stairs_down')
+    }
+  } else if (rooms.length === 1) {
+    // Single room: place both stairs in it (different positions)
+    const room = rooms[0]!
+    if (needsUp) {
+      stairsUp = placeStairInRoom(tiles, room, 'stairs_up')
+    }
+    if (needsDown) {
+      stairsDown = placeStairInRoom(tiles, room, 'stairs_down')
+    }
+  }
+
+  // Fallback to random floor placement if room-based failed
+  if ((needsUp && !stairsUp) || (needsDown && !stairsDown)) {
+    const floorPositions = collectFloorPositions(tiles, width, height)
+    shuffleArray(floorPositions)
+
+    if (needsUp && !stairsUp && floorPositions.length > 0) {
+      const pos = floorPositions.pop()!
+      stairsUp = pos
+      const tile = tiles[pos.y]?.[pos.x]
+      if (tile) tile.type = 'stairs_up'
+    }
+
+    if (needsDown && !stairsDown && floorPositions.length > 0) {
+      const pos = floorPositions.pop()!
+      stairsDown = pos
+      const tile = tiles[pos.y]?.[pos.x]
+      if (tile) tile.type = 'stairs_down'
+    }
+  }
+
+  return { stairsUp, stairsDown }
+}
+
+/**
+ * Place a stair in a room, preferring the center but falling back to any floor tile
+ */
+function placeStairInRoom(
+  tiles: Tile[][],
+  room: RoomData,
+  stairType: 'stairs_up' | 'stairs_down'
+): Point | null {
+  // Try room center first
+  const centerTile = tiles[room.center.y]?.[room.center.x]
+  if (centerTile && centerTile.type === 'floor') {
+    centerTile.type = stairType
+    return room.center
+  }
+
+  // Center occupied/invalid - find any floor tile in the room
+  for (let dy = 0; dy < room.height; dy++) {
+    for (let dx = 0; dx < room.width; dx++) {
+      const x = room.x + dx
+      const y = room.y + dy
+      const tile = tiles[y]?.[x]
+      if (tile && tile.type === 'floor') {
+        tile.type = stairType
+        return { x, y }
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Collect all floor positions for fallback stair placement
+ */
+function collectFloorPositions(tiles: Tile[][], width: number, height: number): Point[] {
+  const positions: Point[] = []
   for (let y = 0; y < height; y++) {
     const row = tiles[y]
     if (!row) continue
     for (let x = 0; x < width; x++) {
       const tile = row[x]
       if (tile && tile.type === 'floor') {
-        floorPositions.push({ x, y })
+        positions.push({ x, y })
       }
     }
   }
-
-  // Shuffle for random placement
-  shuffleArray(floorPositions)
-
-  let stairsUp: Point | null = null
-  let stairsDown: Point | null = null
-
-  if (floorPositions.length > 0) {
-    // Place stairs up (except on depth 1)
-    if (depth > 1 && floorPositions.length > 0) {
-      const upPos = floorPositions.pop()!
-      stairsUp = upPos
-      const upTile = tiles[upPos.y]?.[upPos.x]
-      if (upTile) upTile.type = 'stairs_up'
-    }
-
-    // Place stairs down (except on max depth)
-    if (depth < MAX_DEPTH && floorPositions.length > 0) {
-      const downPos = floorPositions.pop()!
-      stairsDown = downPos
-      const downTile = tiles[downPos.y]?.[downPos.x]
-      if (downTile) downTile.type = 'stairs_down'
-    }
-  }
-
-  return { stairsUp, stairsDown }
+  return positions
 }
 
 /**
