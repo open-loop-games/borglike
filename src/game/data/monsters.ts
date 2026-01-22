@@ -95,7 +95,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 100,
     armor: 36,
     damage: 2, // 1d1 + 1d1
-    experience: 2,
+    experience: 3,
     flags: ['ANIMAL'],
     abilities: [],
   },
@@ -108,7 +108,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 24,
     damage: 3, // 1d5
-    experience: 5,
+    experience: 8,
     flags: [],
     abilities: [],
   },
@@ -121,7 +121,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 7,
     damage: 0, // Gaze only
-    experience: 1,
+    experience: 22,
     flags: [],
     abilities: ['PARALYZE'],
   },
@@ -134,7 +134,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 3,
     damage: 1, // 1d1
-    experience: 1,
+    experience: 2,
     flags: ['ANIMAL'],
     abilities: [],
   },
@@ -149,7 +149,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 24,
     damage: 5, // 1d8
-    experience: 5,
+    experience: 7,
     flags: [],
     abilities: [],
   },
@@ -162,7 +162,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 19,
     damage: 3, // 1d4
-    experience: 7,
+    experience: 9,
     flags: ['ANIMAL'],
     abilities: [],
   },
@@ -175,7 +175,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 1,
     damage: 2, // Poison touch
-    experience: 10,
+    experience: 12,
     flags: [],
     abilities: ['POISON'],
   },
@@ -190,7 +190,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 15,
     damage: 2, // 1d3
-    experience: 3,
+    experience: 5,
     flags: ['ANIMAL'],
     abilities: [],
   },
@@ -203,7 +203,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 130,
     armor: 20,
     damage: 3, // 1d4 + poison
-    experience: 5,
+    experience: 7,
     flags: ['ANIMAL'],
     abilities: ['POISON'],
   },
@@ -218,7 +218,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 130,
     armor: 18,
     damage: 3, // 1d4
-    experience: 6,
+    experience: 8,
     flags: ['ANIMAL'],
     abilities: [],
   },
@@ -231,7 +231,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 30,
     damage: 4, // 1d6
-    experience: 8,
+    experience: 12,
     flags: ['ORC'],
     abilities: [],
   },
