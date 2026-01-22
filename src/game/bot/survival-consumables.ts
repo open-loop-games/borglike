@@ -5,7 +5,7 @@
  * buff potions, resistance potions, and utility items.
  */
 
-import type { GameState, GameAction, Point } from '../types'
+import type { GameState, GameAction, Monster } from '../types'
 import type { PersonalityConfig, DangerMap, BotState } from './types'
 import {
   getLocalDanger,
@@ -34,8 +34,10 @@ import {
   findTeleportLevelScroll,
   hasStatusEffect,
   hasTempResistance,
+  findCureFor,
 } from './items'
 import { shouldUseTownPortal, evaluatePhaseDoorSafety, shouldEscapeOverHeal } from './survival-retreat'
+import { hasAbility } from '../data/monsters'
 
 // ============================================================================
 // SURVIVAL CONSUMABLES
@@ -73,7 +75,18 @@ export function getSurvivalConsumableAction(
   const inCombat = isInCombat(game)
   const hasHealing = findHealingPotion(character) !== null
 
-  // 1. Cure poison immediately if poisoned (unchanged - always priority)
+  // 1. Cure status effects by priority (highest priority first)
+  // Priority: PARALYZED > POISON > CONFUSED > BLIND > SLOWED > TERRIFIED > DRAINED
+
+  // 1a. Cure paralysis immediately - can't act at all!
+  if (hasStatusEffect(character, 'paralyzed')) {
+    const cure = findCureFor(character, 'paralyzed')
+    if (cure) {
+      return { type: 'use', itemId: cure.id }
+    }
+  }
+
+  // 1b. Cure poison - ongoing damage
   if (character.poison) {
     const antidote = findNeutralizePoison(character)
     if (antidote) {
@@ -83,6 +96,46 @@ export function getSurvivalConsumableAction(
     const resistPotion = findResistancePotion(character, 'poison')
     if (resistPotion) {
       return { type: 'use', itemId: resistPotion.id }
+    }
+  }
+
+  // 1c. Cure confusion - random actions are dangerous
+  if (hasStatusEffect(character, 'confused')) {
+    const cure = findCureFor(character, 'confused')
+    if (cure) {
+      return { type: 'use', itemId: cure.id }
+    }
+  }
+
+  // 1d. Cure blind - can't see threats
+  if (hasStatusEffect(character, 'blind')) {
+    const cure = findCureFor(character, 'blind')
+    if (cure) {
+      return { type: 'use', itemId: cure.id }
+    }
+  }
+
+  // 1e. Cure slow - combat disadvantage (only cure if in combat)
+  if (hasStatusEffect(character, 'slowed') && inCombat) {
+    const cure = findCureFor(character, 'slowed')
+    if (cure) {
+      return { type: 'use', itemId: cure.id }
+    }
+  }
+
+  // 1f. Cure terrified - can't fight back (only cure if in combat)
+  if (hasStatusEffect(character, 'terrified') && inCombat) {
+    const cure = findCureFor(character, 'terrified')
+    if (cure) {
+      return { type: 'use', itemId: cure.id }
+    }
+  }
+
+  // 1g. Cure drained - stat reduction (lower priority, cure when safe)
+  if (hasStatusEffect(character, 'drained') && !inCombat) {
+    const cure = findCureFor(character, 'drained')
+    if (cure) {
+      return { type: 'use', itemId: cure.id }
     }
   }
 
@@ -266,7 +319,7 @@ export function getSurvivalConsumableAction(
 export function getPreCombatBuffAction(
   game: GameState,
   _config: PersonalityConfig,
-  visibleMonsters: { position: Point; hp: number; template: { damage: number; speed: number }; isAwake: boolean }[]
+  visibleMonsters: Monster[]
 ): GameAction | null {
   const character = game.character
   const adjacentCount = countAdjacentMonsters(game, character.position)
@@ -281,8 +334,7 @@ export function getPreCombatBuffAction(
   // Threshold: 100 threat = roughly a 10-damage monster that's awake
   const THREAT_THRESHOLD = 100
   const hasDangerousMonster = visibleMonsters.some(m => {
-    // Use partial monster info for threat calculation
-    const threat = getMonsterThreat(m as Parameters<typeof getMonsterThreat>[0], character)
+    const threat = getMonsterThreat(m, character)
     return threat >= THREAT_THRESHOLD
   })
 
@@ -369,10 +421,8 @@ export function getCombatBuffAction(
   })
 
   for (const monster of nearbyMonsters) {
-    const abilities = monster.template.abilities || []
-
     // Fire resistance for fire-breathing monsters
-    if (abilities.some(a => a.toLowerCase().includes('fire')) && !hasTempResistance(character, 'FIRE')) {
+    if (hasAbility(monster.template, 'FIRE') && !hasTempResistance(character, 'FIRE')) {
       const firePotion = findResistancePotion(character, 'fire')
       if (firePotion) {
         return { type: 'use', itemId: firePotion.id }
@@ -380,7 +430,7 @@ export function getCombatBuffAction(
     }
 
     // Cold resistance for frost monsters
-    if (abilities.some(a => a.toLowerCase().includes('cold') || a.toLowerCase().includes('frost')) && !hasTempResistance(character, 'COLD')) {
+    if (hasAbility(monster.template, 'COLD') && !hasTempResistance(character, 'COLD')) {
       const coldPotion = findResistancePotion(character, 'cold')
       if (coldPotion) {
         return { type: 'use', itemId: coldPotion.id }
@@ -388,7 +438,7 @@ export function getCombatBuffAction(
     }
 
     // Poison resistance for venomous monsters
-    if (abilities.some(a => a.toLowerCase().includes('poison') || a.toLowerCase().includes('venom')) && !hasTempResistance(character, 'POISON')) {
+    if (hasAbility(monster.template, 'POISON') && !hasTempResistance(character, 'POISON')) {
       const poisonPotion = findResistancePotion(character, 'poison')
       if (poisonPotion) {
         return { type: 'use', itemId: poisonPotion.id }

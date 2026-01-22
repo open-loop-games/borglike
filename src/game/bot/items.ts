@@ -684,3 +684,82 @@ export function hasStatusEffect(character: Character, type: string): boolean {
 export function hasTempResistance(character: Character, type: string): boolean {
   return character.tempResistances.some(r => r.type === type)
 }
+
+// ============================================================================
+// CURE POTION FINDERS
+// ============================================================================
+
+/**
+ * Find a Free Action potion (cures paralysis and slow)
+ */
+export function findFreeActionPotion(character: Character): Item | null {
+  return character.inventory.find(item => {
+    if (item.template.type !== 'potion') return false
+    const name = item.template.name.toLowerCase()
+    return name.includes('free action')
+  }) ?? null
+}
+
+/**
+ * Find a Clarity potion (cures confusion and blind)
+ */
+export function findClarityPotion(character: Character): Item | null {
+  return character.inventory.find(item => {
+    if (item.template.type !== 'potion') return false
+    const name = item.template.name.toLowerCase()
+    return name.includes('clarity')
+  }) ?? null
+}
+
+/**
+ * Find a Restoration potion (cures drain)
+ */
+export function findRestorationPotion(character: Character): Item | null {
+  return character.inventory.find(item => {
+    if (item.template.type !== 'potion') return false
+    const name = item.template.name.toLowerCase()
+    return name.includes('restoration')
+  }) ?? null
+}
+
+/**
+ * Find any potion that can cure a specific status effect
+ * Checks cure potions first, then general healing potions
+ */
+export function findCureFor(character: Character, status: string): Item | null {
+  switch (status) {
+    case 'paralyzed':
+    case 'slowed':
+      // Free Action potion, or Cure Critical/Healing
+      return findFreeActionPotion(character)
+        ?? findHealingPotion(character, 3) // Cure Critical or better
+        ?? null
+
+    case 'confused':
+    case 'blind':
+      // Clarity potion, or Cure Serious/Critical/Healing
+      return findClarityPotion(character)
+        ?? findHealingPotion(character, 2) // Cure Serious or better
+        ?? null
+
+    case 'terrified':
+      // Heroism or Berserk potions cure fear
+      return findBuffPotion(character)
+        ?? findHealingPotion(character, 3) // Cure Critical or better
+        ?? null
+
+    case 'drained':
+      // Restoration potion, or Cure Critical/Healing
+      return findRestorationPotion(character)
+        ?? findHealingPotion(character, 3)
+        ?? null
+
+    case 'poison':
+      return findNeutralizePoison(character)
+        ?? findResistancePotion(character, 'poison')
+        ?? null
+
+    default:
+      return null
+  }
+}
