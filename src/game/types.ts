@@ -191,8 +191,60 @@ export type Resistances = Partial<Record<ResistanceType, number>>
 // STATUS EFFECTS
 // ============================================================================
 
-/** Types of temporary status effects */
-export type StatusEffectType = 'speed' | 'heroism' | 'berserk' | 'blessing' | 'protection' | 'stun' | 'immunity_fear' | 'active_form'
+/** Types of temporary status effects (buffs and debuffs) */
+export type StatusEffectType =
+  | 'speed' | 'heroism' | 'berserk' | 'blessing' | 'protection' | 'stun' | 'immunity_fear' | 'active_form'
+  // Debuffs (from monster attacks)
+  | 'blind' | 'confused' | 'paralyzed' | 'slowed' | 'terrified' | 'drained'
+
+// ============================================================================
+// MONSTER ATTACK TYPES
+// ============================================================================
+
+/** How the monster delivers the attack */
+export type MonsterAttackMethod = 'HIT' | 'BITE' | 'CLAW' | 'TOUCH' | 'STING' | 'CRUSH' | 'GAZE' | 'ENGULF'
+
+/** Elemental damage types */
+export type Element = 'FIRE' | 'COLD' | 'ELEC' | 'ACID' | 'POISON' | 'DARK'
+
+/** Effect of a monster attack */
+export type AttackEffect =
+  | { type: 'HURT' }
+  | { type: 'ELEMENTAL'; element: Element }
+  | { type: 'PARALYZE' } | { type: 'BLIND' } | { type: 'CONFUSE' }
+  | { type: 'TERRIFY' } | { type: 'SLOW' } | { type: 'DRAIN' }
+
+/** A single monster attack definition */
+export interface MonsterAttack {
+  method: MonsterAttackMethod
+  dice: string  // "2d6", "1d8+2"
+  effect: AttackEffect
+}
+
+/** Monster spell types (for casters, breathers) */
+export type MonsterSpell =
+  | 'BR_FIRE' | 'BR_COLD' | 'BR_ELEC' | 'BR_ACID' | 'BR_POISON' | 'BR_DARK'
+  | 'BO_FIRE' | 'BO_COLD' | 'BO_ELEC' | 'BO_ACID'
+  | 'HEAL' | 'BLINK' | 'HASTE' | 'SUMMON'
+  | 'BLIND' | 'SLOW' | 'CONFUSE' | 'SCARE' | 'HOLD' | 'BRAIN_SMASH'
+
+/** Monster spellcasting capability */
+export interface MonsterSpells {
+  freq: number  // 1-in-N chance each turn
+  list: MonsterSpell[]
+}
+
+/** Fixed durations for debuff status effects (in turns) */
+export const STATUS_DURATIONS: Record<string, number> = {
+  blind: 3,
+  confused: 3,
+  paralyzed: 2,
+  slowed: 4,
+  terrified: 3,
+  drained: 10,
+}
+
+/** POISONED status: 2% max HP per turn for 5 turns (handled via PoisonStatus) */
 
 /** A temporary status effect on the character */
 export interface StatusEffect {
