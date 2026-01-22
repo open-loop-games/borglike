@@ -17,6 +17,7 @@ import {
 import { getLocalDanger } from './danger'
 import { countAdjacentMonsters } from './combat'
 import { hasStatusEffect } from './items'
+import { hasAbility, getAverageDamage } from '../data/monsters'
 
 // ============================================================================
 // HEALING SPELLS
@@ -318,7 +319,7 @@ export function getBuffSpellAction(
 
     // Resist elements (check if visible monsters use fire/cold)
     const hasElementalEnemy = visibleMonsters.some((m) =>
-      m.template.abilities.some((a) => a === 'FIRE' || a === 'COLD')
+      hasAbility(m.template, 'FIRE') || hasAbility(m.template, 'COLD')
     )
     if (hasElementalEnemy) {
       const resistElements = buffSpells.find((entry) => entry.spell.id === 'resist_elements')
@@ -456,13 +457,15 @@ export function getDebuffSpellAction(
   if (character.mp < character.maxMp * 0.4) return null
 
   // Find strongest visible monster
-  const sortedByThreat = [...visibleMonsters].sort((a, b) => b.template.damage - a.template.damage)
+  const sortedByThreat = [...visibleMonsters].sort((a, b) => getAverageDamage(b.template) - getAverageDamage(a.template))
   const strongestMonster = sortedByThreat[0]
 
   if (!strongestMonster) return null
 
+  const strongestDamage = getAverageDamage(strongestMonster.template)
+
   // Check if monster is worth debuffing (strong enough)
-  if (strongestMonster.template.damage < 10) return null // Too weak to bother
+  if (strongestDamage < 10) return null // Too weak to bother
 
   // Prefer entangle/slow for fast monsters
   const isFastMonster = strongestMonster.template.speed > 110
@@ -474,7 +477,7 @@ export function getDebuffSpellAction(
   }
 
   // Weaken for high-damage monsters
-  const isHighDamage = strongestMonster.template.damage >= 20
+  const isHighDamage = strongestDamage >= 20
   if (isHighDamage) {
     const weakenSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'weaken')
     if (weakenSpell) {

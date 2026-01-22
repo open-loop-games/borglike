@@ -14,13 +14,12 @@ import type {
   GameEvent,
   MonsterTemplate,
   Direction,
-  ResistanceType,
   GameMessage,
   UniqueState,
 } from './types'
 import { MAX_DEPTH, getDirectionFromDelta, DIRECTION_VECTORS } from './types'
 import { randomInt, random } from './rng'
-import { attack, applyDamage, formatAttackMessageFromEntities, getStatusSpeedBonus } from './combat'
+import { applyDamage, getStatusSpeedBonus } from './combat'
 import { checkSecondWind } from './status-effects'
 import { getKnowledgeBonuses } from './knowledge-effects'
 import { getSpawnableMonsters, getMonsterByName } from './data/index'
@@ -32,6 +31,8 @@ import {
   getAdjacentPositions,
   distance,
 } from './dungeon'
+import { resolveMonsterAttacks, formatMonsterAttackMessage } from './monster-combat'
+import { shouldCastSpell, executeMonsterSpell } from './monster-spells'
 
 /** Victory boss name */
 const VICTORY_BOSS_NAME = 'Morgoth, Lord of Darkness'
@@ -695,23 +696,60 @@ function executeMonsterAction(
   const events: GameEvent[] = []
 
   if (action.type === 'attack') {
-    // Monster attacks player - pass primary ability type for resistance calculation
-    const primaryAbility = monster.template.abilities[0] as ResistanceType | undefined
-    // Compute knowledge bonuses for damage reduction (player knows this monster, or override for testing)
-    const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent)
-    const attackResult = attack(monster, game.character, primaryAbility, knowledgeBonuses)
+    // Check if monster should cast a spell instead of melee
+    if (shouldCastSpell(monster)) {
+      const spellResult = executeMonsterSpell(game, monster)
+      if (spellResult.success) {
+        if (spellResult.message) {
+          addMessage(game, spellResult.message, 'combat')
+        }
+        if (spellResult.damage > 0) {
+          // Apply monster damage balance modifier
+          let damage = spellResult.damage
+          if (game.balance.monsterDamagePercent !== 100) {
+            damage = Math.max(1, Math.floor(damage * game.balance.monsterDamagePercent / 100))
+          }
+          applyDamage(game.character, damage)
+          game.stats.damageTaken += damage
 
-    // Apply monster damage balance modifier
-    if (attackResult.hit && game.balance.monsterDamagePercent !== 100) {
-      attackResult.damage = Math.max(1, Math.floor(attackResult.damage * game.balance.monsterDamagePercent / 100))
+          // Check for Second Wind
+          checkSecondWind(game, addMessage)
+
+          events.push({
+            type: 'attack',
+            attackerId: monster.id,
+            defenderId: game.character.id,
+            damage,
+            killed: game.character.isDead,
+          })
+        }
+        return events
+      }
+      // If spell failed, fall through to melee
     }
 
-    const message = formatAttackMessageFromEntities(monster, game.character, attackResult)
+    // Resolve monster melee attacks using the new system
+    const attackResult = resolveMonsterAttacks(monster, game.character)
+
+    // Apply monster damage balance modifier
+    let totalDamage = attackResult.totalDamage
+    if (totalDamage > 0 && game.balance.monsterDamagePercent !== 100) {
+      totalDamage = Math.max(1, Math.floor(totalDamage * game.balance.monsterDamagePercent / 100))
+    }
+
+    // Apply knowledge bonuses (bestiary damage reduction)
+    const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent)
+    if (knowledgeBonuses.reductionPercent > 0 && totalDamage > 0) {
+      totalDamage = Math.max(1, Math.floor(totalDamage * (100 - knowledgeBonuses.reductionPercent) / 100))
+    }
+
+    // Format and display message
+    const message = formatMonsterAttackMessage(monster.template.name, attackResult)
     addMessage(game, message, 'combat')
 
-    if (attackResult.hit) {
-      applyDamage(game.character, attackResult.damage)
-      game.stats.damageTaken += attackResult.damage
+    if (totalDamage > 0) {
+      applyDamage(game.character, totalDamage)
+      game.stats.damageTaken += totalDamage
 
       // Check for Second Wind booster (auto-heal when critical)
       checkSecondWind(game, addMessage)
@@ -720,8 +758,8 @@ function executeMonsterAction(
         type: 'attack',
         attackerId: monster.id,
         defenderId: game.character.id,
-        damage: attackResult.damage,
-        killed: attackResult.killed,
+        damage: totalDamage,
+        killed: game.character.isDead,
       })
     }
   } else if (action.type === 'move') {

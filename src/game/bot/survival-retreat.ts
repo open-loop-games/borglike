@@ -14,6 +14,7 @@ import { isInCombat, countAdjacentMonsters, getCombatAdvantage } from './combat'
 import { findHealingPotion, findEscapeScroll, findTownPortalScroll } from './items'
 import { isInTown } from '../town'
 import { isUnderPrepared } from './preparation'
+import { getAverageDamage } from '../data/monsters'
 
 // ============================================================================
 // TYPES
@@ -315,7 +316,7 @@ export function getHitsTillDeath(game: GameState): number {
 
   // Average damage from nearby monsters
   const avgDamage = nearbyMonsters.reduce((sum, m) => {
-    const rawDamage = m.template.damage
+    const rawDamage = getAverageDamage(m.template)
     return sum + Math.max(rawDamage - character.combat.armor, 1)
   }, 0) / nearbyMonsters.length
 

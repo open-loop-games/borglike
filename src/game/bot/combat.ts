@@ -11,6 +11,7 @@ import type { BotContext, PersonalityConfig } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
+import { getAverageDamage } from '../data/monsters'
 
 // ============================================================================
 // TYPES
@@ -121,7 +122,7 @@ export function evaluateCombat(
   const turnsToKill = Math.ceil(monster.hp / playerDamage)
 
   // Calculate expected damage we'll take
-  const monsterDamage = Math.max(template.damage - character.combat.armor, 1)
+  const monsterDamage = Math.max(getAverageDamage(template) - character.combat.armor, 1)
   const expectedDamage = monsterDamage * turnsToKill
 
   // Can we win?

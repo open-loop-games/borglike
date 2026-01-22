@@ -11,6 +11,7 @@ import type { DangerMap, DangerResult, DangerTier, PersonalityConfig } from './t
 import type { ClassBehaviorProfile } from './class-profiles'
 import { findHealingPotion, findEscapeScroll } from './items'
 import { getEffectiveDamage } from './combat'
+import { getMonsterAverageDamage } from '../monster-combat'
 
 // Re-export types for convenience
 export type { DangerMap, DangerResult, DangerTier }
@@ -66,10 +67,11 @@ export function computeDangerGrid(game: GameState): DangerResult {
  * Calculate threat level of a monster
  *
  * Threat is based on:
- * - Damage potential (primary factor)
+ * - Damage potential (primary factor, uses new attack system)
  * - Speed advantage over player
  * - Whether monster is aware of player
  * - Monster HP relative to player damage
+ * - Status-inflicting abilities add extra threat
  *
  * @param monster - The monster to evaluate
  * @param character - The player character
@@ -84,10 +86,34 @@ export function getMonsterThreat(
 ): number {
   const template = monster.template
 
-  // Base threat from damage
+  // Base threat from damage (uses new dice-based attack system)
+  // getMonsterAverageDamage handles both new attacks[] and legacy damage
+  const avgDamage = getMonsterAverageDamage(monster)
+
   // Scale: a monster doing 10 damage/turn = 20 threat
   // (was 10x, reduced to 2x so single weak monsters don't trigger CRITICAL)
-  let threat = template.damage * 2
+  let threat = avgDamage * 2
+
+  // Add threat for status-inflicting abilities
+  const attacks = template.attacks ?? []
+  for (const attack of attacks) {
+    if (attack.effect.type !== 'HURT' && attack.effect.type !== 'ELEMENTAL') {
+      // Status attacks are dangerous - add extra threat
+      threat += 5
+      // Paralyze is especially dangerous
+      if (attack.effect.type === 'PARALYZE') threat += 10
+    }
+  }
+
+  // Add threat for spell capabilities
+  if (template.spells && template.spells.list.length > 0) {
+    // Spellcasters are more dangerous
+    threat += template.spells.list.length * 3
+    // Breath weapons are especially dangerous
+    if (template.spells.list.some(s => s.startsWith('BR_'))) {
+      threat += 15
+    }
+  }
 
   // Speed modifier: faster monsters are more dangerous
   // Base speed is 110, player is typically 100

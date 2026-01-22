@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { MonsterTemplate } from '@/game/data/monsters'
+import { getAverageDamage, getAbilities } from '@/game/data/monsters'
 import type { BestiaryEntry } from '@/types/progression'
 import { getKnowledgeBonus } from '@/game/knowledge-effects'
 
@@ -132,7 +133,7 @@ const nextUnlock = computed(() => {
             <span class="stat-label">HP</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value">{{ monster.damage }}</span>
+            <span class="stat-value">{{ Math.round(getAverageDamage(monster)) }}</span>
             <span class="stat-label">Damage</span>
           </div>
           <div class="stat-item">
@@ -145,8 +146,8 @@ const nextUnlock = computed(() => {
       <!-- Abilities and flags (tier 3+) -->
       <div v-if="tier >= 3" class="abilities-section">
         <h3>Abilities</h3>
-        <div v-if="monster.abilities.length > 0" class="ability-list">
-          <span v-for="ability in monster.abilities" :key="ability" class="ability-tag">
+        <div v-if="getAbilities(monster).length > 0" class="ability-list">
+          <span v-for="ability in getAbilities(monster)" :key="ability" class="ability-tag">
             {{ ability }}
           </span>
         </div>

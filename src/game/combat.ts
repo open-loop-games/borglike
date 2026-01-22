@@ -11,6 +11,7 @@ import { random } from './rng'
 import { calculateAttackCount, calculateRangedAttackCount } from './character'
 import { getClassById } from './data/classes'
 import { getFormById, hasLifedrain } from './data/forms'
+import { getAverageDamage } from './data/monsters'
 
 // ============================================================================
 // TYPES
@@ -87,7 +88,7 @@ export function getAttackerStats(entity: Character | Monster): AttackerStats {
     // Base accuracy of 50, modified by speed (110 is normal)
     const speedBonus = Math.floor((entity.template.speed - 110) / 2)
     let accuracy = 50 + speedBonus
-    let damage = entity.template.damage
+    let damage = getAverageDamage(entity.template)
 
     // Apply weaken debuff (reduces damage)
     const weakenDebuff = entity.debuffs?.find(d => d.type === 'weaken')
@@ -161,11 +162,19 @@ export function getStatusACBonus(character: Character): number {
 }
 
 /**
- * Get speed bonus from status effects (speed/haste)
+ * Get speed bonus from status effects (speed/haste - slowed)
+ * Returns net bonus (can be negative if slowed)
  */
 export function getStatusSpeedBonus(character: Character): number {
   const speed = character.statusEffects.find((e) => e.type === 'speed')
-  return speed?.value ?? 0
+  const speedBonus = speed?.value ?? 0
+
+  const slowed = character.statusEffects.find((e) => e.type === 'slowed')
+  // Slowed value is percentage reduction (e.g., 50 = -50% speed)
+  // Convert to speed penalty: 50% reduction = -50 speed points
+  const slowPenalty = slowed ? Math.floor((slowed.value ?? 50) / 2) : 0
+
+  return speedBonus - slowPenalty
 }
 
 /**
