@@ -16,8 +16,11 @@ Borglike is an idle/incremental game featuring an auto-playing roguelike. Watch 
 ```bash
 npm run dev          # Dev server with HMR
 npm run build        # Production build
-npx tsx scripts/test-bot.ts  # Run bot test
 ```
+
+## Skills
+
+- **`/diagnose`** - Bot diagnostic toolkit for investigating behavior issues. Modes: `deep`, `quick`, `batch`, `find`, `compare`. See `.claude/skills/diagnose/`.
 
 ## Path Aliases
 
