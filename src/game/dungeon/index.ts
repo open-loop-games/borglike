@@ -152,7 +152,7 @@ function placeStairs(
   let stairsUp: Point | null = null
   let stairsDown: Point | null = null
 
-  const needsUp = depth > 1
+  const needsUp = depth >= 1  // Depth 1 needs stairs to town
   const needsDown = depth < MAX_DEPTH
 
   // Try room-based placement first (preferred)

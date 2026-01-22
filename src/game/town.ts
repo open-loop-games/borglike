@@ -259,9 +259,10 @@ function destroyPortal(game: GameState): void {
   const portal = game.townPortal
 
   // Remove portal tile from dungeon (if level is in cache)
+  // Restore original tile type (e.g., stairs_down) instead of hardcoding floor
   const dungeonLevel = game.levelCache.get(portal.dungeonDepth)
   if (dungeonLevel) {
-    setTile(dungeonLevel, portal.dungeonPosition.x, portal.dungeonPosition.y, 'floor')
+    setTile(dungeonLevel, portal.dungeonPosition.x, portal.dungeonPosition.y, portal.originalTileType)
   }
 
   // Remove portal tile from town (if level is in cache)

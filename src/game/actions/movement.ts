@@ -11,6 +11,8 @@ import type {
   FountainState,
   AltarState,
   TrapState,
+  DungeonLevel,
+  Point,
 } from '../types'
 import {
   DIRECTION_VECTORS as DirectionVectors,
@@ -42,6 +44,27 @@ import { handleAttack } from './combat'
 
 /** Base energy cost for actions (100 = 1 turn) */
 export const BASE_ENERGY_COST = 100
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Find the dungeon entrance tile in a level (used for town)
+ */
+function findDungeonEntrance(level: DungeonLevel): Point | null {
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+    for (let x = 0; x < level.width; x++) {
+      const tile = row[x]
+      if (tile?.type === 'dungeon_entrance') {
+        return { x, y }
+      }
+    }
+  }
+  return null
+}
 
 // ============================================================================
 // MOVEMENT
@@ -235,16 +258,22 @@ export function handleAscend(game: GameState): ActionResult {
     return { success: false, message: 'There are no stairs here.', energyCost: 0 }
   }
 
-  if (game.character.depth <= 1) {
-    return { success: false, message: 'You cannot leave the dungeon.', energyCost: 0 }
+  if (game.character.depth < 1) {
+    return { success: false, message: 'You are already in town.', energyCost: 0 }
   }
 
   const newDepth = game.character.depth - 1
 
   // NOTE: Entity caching removed - entities regenerate on level entry (Angband-style)
 
-  // Load previous level
-  const previousLevel = game.levelCache.get(newDepth)
+  // Load previous level (or town at depth 0)
+  let previousLevel = game.levelCache.get(newDepth)
+
+  // Town (depth 0) might not be in cache if evicted - regenerate it
+  if (!previousLevel && newDepth === 0) {
+    previousLevel = generateLevel(0)
+    game.levelCache.set(0, previousLevel)
+  }
 
   if (!previousLevel) {
     return { success: false, message: 'Previous level not found.', energyCost: 0 }
@@ -257,8 +286,16 @@ export function handleAscend(game: GameState): ActionResult {
   game.currentLevel = previousLevel
   game.character.depth = newDepth
 
-  // Place character at stairs down
-  if (previousLevel.stairsDown) {
+  // Place character: at dungeon entrance for town, at stairs down otherwise
+  if (newDepth === 0) {
+    // Find dungeon entrance tile in town
+    const entrance = findDungeonEntrance(previousLevel)
+    if (entrance) {
+      game.character.position = { ...entrance }
+    } else {
+      game.character.position = findOpenPosition(previousLevel)
+    }
+  } else if (previousLevel.stairsDown) {
     game.character.position = { ...previousLevel.stairsDown }
   } else {
     game.character.position = findOpenPosition(previousLevel)
