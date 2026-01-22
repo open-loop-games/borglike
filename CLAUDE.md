@@ -60,12 +60,14 @@ src/
 - Block main thread (use requestAnimationFrame for heavy work)
 - Store full game state in Pinia (only extracted stats)
 - Over-engineer the roguelike
+- Git revert without checking last commit time and diff for other work
 
 ## File Size Guidelines
 **Based on this philosophy:**
-- ✅ 300-600 lines - Sweet spot for domain module
-- ⚠️ 600-900 lines - Getting large, but OK if well-organized
-- ❌ 900+ lines - Time to split by subdomain
+- ❌ 50-150 lines - Too small, ok for index
+- ✅ 300-900 lines - Sweet spot for domain module
+- ⚠️ 900-1200 lines - Getting large, but OK if well-organized
+- ❌ 1200+ lines - Time to split by subdomain
 - Organization matters more than size
 - For AI codebases, fewer, larger files makes it easier to grasp the codebase and style quickly
 

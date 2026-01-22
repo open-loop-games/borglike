@@ -7,9 +7,43 @@ description: This skill should be used when the user asks to "diagnose bot behav
 
 Unified CLI for investigating bot behavior issues in Borglike. Replaces 35+ individual diagnostic scripts with a single entry point.
 
+## Seeds and Determinism
+
+**The game engine is fully deterministic.** Given identical inputs (seed, race, class, personality, upgrades, balance), a run produces identical output every time. This enables:
+
+- **Reproducibility**: Re-run the exact scenario that caused a bug, turn by turn
+- **A/B testing**: Compare code changes on identical seed sets
+- **Regression detection**: Known-good seeds that break indicate regressions
+
+### Seed Generation in Batch Modes
+
+Batch modes (`batch`, `find`, `compare`) generate sequential seeds from a starting point:
+
+```
+--seed=1000 --runs=5  →  seeds: 1000, 1001, 1002, 1003, 1004
+```
+
+Without `--seed`, the start is `Date.now()` — different each run. For reproducible A/B testing, always specify `--seed`:
+
+```bash
+# Before code change
+npx tsx scripts/diagnose.ts batch --seed=1000 --runs=100 > before.txt
+
+# After code change
+npx tsx scripts/diagnose.ts batch --seed=1000 --runs=100 > after.txt
+
+# Compare results on identical seeds
+diff before.txt after.txt
+```
+
+### Workflow
+
+1. **`find`** discovers problematic seeds from batch runs
+2. **`deep`** analyzes a specific seed turn-by-turn
+3. Fix code, then re-run **`deep`** on same seed to verify
+
 ## Quick Reference
 
-Run diagnostics via:
 ```bash
 npx tsx scripts/diagnose.ts [mode] [options]
 ```
@@ -18,11 +52,24 @@ npx tsx scripts/diagnose.ts [mode] [options]
 
 | Mode | Purpose | Example |
 |------|---------|---------|
-| `deep [seed]` | Full turn-by-turn log, all metrics, optional map | `deep 1768965560201 --map` |
-| `quick [seed]` | Summary metrics only | `quick --seed=12345` |
-| `batch` | Run N seeds, aggregate statistics | `batch --runs=100` |
-| `find` | Search for seeds with issues | `find --runs=500` |
-| `compare` | Compare behavior across personalities | `compare --runs=20` |
+| `deep` | Full turn-by-turn analysis | `deep --seed=1768965560201 --map` |
+| `quick` | Summary metrics only | `quick --seed=1768965560201` |
+| `batch` | Aggregate statistics across runs | `batch --runs=100 --seed=1000` |
+| `find` | Search for problematic seeds | `find --runs=500 --seed=1000` |
+| `compare` | Compare across personalities | `compare --runs=20 --seed=1000` |
+
+### Seed Syntax
+
+**Always use `--seed=N` flag syntax** (not positional arguments):
+
+```bash
+# Correct
+npx tsx scripts/diagnose.ts deep --seed=1768965560201 --map
+npx tsx scripts/diagnose.ts batch --seed=1000 --runs=100
+
+# Wrong - don't use positional seeds
+npx tsx scripts/diagnose.ts deep 1768965560201 --map
+```
 
 ### Common Options
 
