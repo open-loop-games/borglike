@@ -23,6 +23,18 @@ export { handleMove, handleWait, handleDescend, handleAscend } from './movement'
 export { handleAttack, handleRangedAttack } from './combat'
 
 // ============================================================================
+// STEAL (Rogue ability)
+// ============================================================================
+
+export { handleSteal, canSteal } from './steal'
+
+// ============================================================================
+// SHAPESHIFT (Druid/Necromancer ability)
+// ============================================================================
+
+export { handleShapeshift, canTransform, getActiveForm, getUsableForms } from './shapeshift'
+
+// ============================================================================
 // INVENTORY
 // ============================================================================
 

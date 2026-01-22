@@ -13,6 +13,8 @@ import { DEFAULT_BONUSES } from './upgrade-effects'
 import type { BoosterBonuses } from './booster-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { getSpellIdsForLevel, getNewSpellsAtLevel } from './data/class-spells'
+import { addStatusEffect, hasStatusEffect } from './status-effects'
+import { getFormById } from './data/forms'
 
 // ============================================================================
 // CONSTANTS
@@ -238,6 +240,9 @@ export function createCharacter(config: {
     // Spells - initialize with starting spells for class
     knownSpells: getSpellIdsForLevel(config.classId, 1),
     spellCooldowns: {},
+
+    // SHAPESHIFTING: No active form at start
+    activeFormId: null,
   }
 
   return character
@@ -353,6 +358,17 @@ export function calculateCombatStats(character: Character): CombatStats {
     throw new Error('Invalid character race or class')
   }
 
+  // SHAPESHIFTING: Apply form stat modifiers
+  const activeForm = character.activeFormId ? getFormById(character.activeFormId) : null
+  if (activeForm?.statMods) {
+    const mods = activeForm.statMods
+    if (mods.strMod) stats.str += mods.strMod
+    if (mods.dexMod) stats.dex += mods.dexMod
+    if (mods.conMod) stats.con += mods.conMod
+    if (mods.intMod) stats.int += mods.intMod
+    if (mods.wisMod) stats.wis += mods.wisMod
+  }
+
   // Calculate hitdie
   const hitdie = calculateHitdie(race.hitdie, gameClass.hitdie)
 
@@ -386,6 +402,10 @@ export function calculateCombatStats(character: Character): CombatStats {
       }
     }
   }
+  // SHAPESHIFTING: Apply form armor modifier
+  if (activeForm?.statMods.armorMod) {
+    armor += activeForm.statMods.armorMod
+  }
 
   // Melee damage: weapon damage + STR/3, with might bonus
   // ItemTemplate uses dice notation for damage (e.g., "2d5")
@@ -404,6 +424,10 @@ export function calculateCombatStats(character: Character): CombatStats {
   }
   // Apply might upgrade (damage percent)
   meleeDamage = Math.floor(meleeDamage * (1 + bonuses.damagePercent / 100))
+  // SHAPESHIFTING: Apply form melee damage modifier (percent)
+  if (activeForm?.statMods.meleeDamageMod) {
+    meleeDamage = Math.floor(meleeDamage * (1 + activeForm.statMods.meleeDamageMod / 100))
+  }
 
   // Accuracy: 50 + DEX + level + artifact toHit bonuses + precision upgrade
   let accuracy = 50 + stats.dex + character.level + bonuses.accuracyBonus
@@ -415,6 +439,10 @@ export function calculateCombatStats(character: Character): CombatStats {
   // Note: current ItemTemplate doesn't have evasion field, but artifacts might
   let evasion = Math.floor(stats.dex / 2)
   evasion += bonuses.dodgePercent // Apply swiftness upgrade
+  // SHAPESHIFTING: Apply form evasion modifier
+  if (activeForm?.statMods.evasionMod) {
+    evasion += activeForm.statMods.evasionMod
+  }
 
   // Speed: base 100 + celerity upgrade + equipment modifiers
   // Artifacts use 'SPEED' in bonuses Record
@@ -423,6 +451,10 @@ export function calculateCombatStats(character: Character): CombatStats {
     if (item?.artifact?.bonuses?.SPEED) {
       speed += item.artifact.bonuses.SPEED
     }
+  }
+  // SHAPESHIFTING: Apply form speed modifier
+  if (activeForm?.statMods.speedMod) {
+    speed += activeForm.statMods.speedMod
   }
 
   // Ranged combat stats (DEX-based)
@@ -466,6 +498,27 @@ export function calculateCombatStats(character: Character): CombatStats {
   }
 }
 
+/**
+ * Recalculate and update a character's combat stats in place
+ *
+ * Used after equipment changes, form changes, or other stat modifications.
+ *
+ * @param character - The character to update (mutated in place)
+ */
+export function recalculateCombatStats(character: Character): void {
+  const newCombat = calculateCombatStats(character)
+  character.combat = newCombat
+
+  // Also update current stats
+  character.stats = calculateStats(character)
+
+  // Cap HP/MP at new maximums
+  character.maxHp = newCombat.maxHp
+  character.maxMp = newCombat.maxMp
+  if (character.hp > character.maxHp) character.hp = character.maxHp
+  if (character.mp > character.maxMp) character.mp = character.maxMp
+}
+
 // ============================================================================
 // LEVELING
 // ============================================================================
@@ -479,7 +532,8 @@ export function calculateCombatStats(character: Character): CombatStats {
  */
 export function gainXP(
   character: Character,
-  amount: number
+  amount: number,
+  levelupHpPercent = 100
 ): { leveledUp: boolean; newLevel?: number } {
   if (amount <= 0 || character.isDead) {
     return { leveledUp: false }
@@ -499,7 +553,7 @@ export function gainXP(
     character.xpToNextLevel = xpForLevel(character.level + 1)
 
     // Recalculate stats on level up
-    applyLevelUp(character)
+    applyLevelUp(character, levelupHpPercent)
   }
 
   return { leveledUp, newLevel }
@@ -509,8 +563,9 @@ export function gainXP(
  * Apply level up bonuses to a character
  *
  * @param character - The character that leveled up (mutated in place)
+ * @param levelupHpPercent - HP gain multiplier (100 = normal)
  */
-function applyLevelUp(character: Character): void {
+function applyLevelUp(character: Character, levelupHpPercent = 100): void {
   const gameClass = getClassById(character.classId)
   if (!gameClass) return
 
@@ -529,7 +584,8 @@ function applyLevelUp(character: Character): void {
   if (race) {
     const hitdie = calculateHitdie(race.hitdie, gameClass.hitdie)
     const conMod = getConModifier(character.stats.con)
-    const hpGain = Math.max(1, hitdie + conMod)
+    const baseHpGain = hitdie + conMod
+    const hpGain = Math.max(1, Math.floor(baseHpGain * levelupHpPercent / 100))
 
     // Heal the HP gained (don't lose current HP on level up)
     character.hp = Math.min(character.hp + hpGain, newCombat.maxHp)
@@ -548,6 +604,13 @@ function applyLevelUp(character: Character): void {
   for (const spell of newSpells) {
     if (!character.knownSpells.includes(spell.id)) {
       character.knownSpells.push(spell.id)
+    }
+  }
+
+  // BRAVERY_30: Warriors gain permanent fear immunity at level 30
+  if (character.classId === 'warrior' && character.level >= 30) {
+    if (!hasStatusEffect(character, 'immunity_fear')) {
+      addStatusEffect(character, { type: 'immunity_fear', turnsRemaining: 999999, value: 100 })
     }
   }
 }
@@ -675,6 +738,62 @@ export function getEquippedItem(character: Character, slot: EquipSlot): Item | n
 // ============================================================================
 // UTILITY EXPORTS
 // ============================================================================
+
+/**
+ * Calculate number of attacks per melee action
+ *
+ * Angband-inspired scaling with class differentiation:
+ * - Base: 1 attack
+ * - Class bonus: melee classes start with more attacks
+ * - +1 per 3 STR above 12 (STR matters more)
+ * - +1 per 3 levels (faster scaling)
+ * - Capped by class maxAttacks
+ *
+ * @param character - The character to calculate attacks for
+ * @returns Number of attacks per melee action (1 to class max)
+ */
+export function calculateAttackCount(character: Character): number {
+  const gameClass = getClassById(character.classId)
+  if (!gameClass) return 1
+
+  // Class base bonus: melee classes start with more attacks
+  // Warrior/Berserker/Monk: +1, others: 0
+  const classBonus = gameClass.maxAttacks >= 6 ? 1 : 0
+
+  // STR bonus: +1 attack per 3 STR above 12
+  const strBonus = Math.max(0, Math.floor((character.stats.str - 12) / 3))
+
+  // Level bonus: +1 attack per 3 levels
+  const levelBonus = Math.floor(character.level / 3)
+
+  // Total attacks: base 1 + bonuses, capped at class max
+  const totalAttacks = 1 + classBonus + strBonus + levelBonus
+
+  return Math.min(totalAttacks, gameClass.maxAttacks)
+}
+
+/**
+ * Calculate number of ranged attacks (shots) per action
+ *
+ * FAST_SHOT mechanic (Ranger): +1 shot per 3 levels
+ * Other classes: 1 shot always
+ *
+ * @param character - The character to calculate shots for
+ * @returns Number of shots per ranged action
+ */
+export function calculateRangedAttackCount(character: Character): number {
+  const gameClass = getClassById(character.classId)
+  if (!gameClass) return 1
+
+  // FAST_SHOT: Rangers get +1 shot per 3 levels
+  if (character.classId === 'ranger') {
+    const levelBonus = Math.floor(character.level / 3)
+    return 1 + levelBonus
+  }
+
+  // Other classes: 1 shot
+  return 1
+}
 
 /**
  * Check if a character can level up with their current XP

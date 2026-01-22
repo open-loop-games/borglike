@@ -27,15 +27,16 @@ export interface ClassSpellList {
 // ============================================================================
 
 /**
- * Mage - Full arcane caster (6 spells)
- * Learns spells at levels 1, 5, 10, 15, 20, 25
+ * Mage - Full arcane caster (7 spells)
+ * Gets Phase Door and Mage Armor at level 1 for early survival
  */
 const mageSpells: ClassSpellList = {
   classId: 'mage',
   spells: [
     { spellId: 'magic_missile', learnLevel: 1 },
+    { spellId: 'phase_door', learnLevel: 1 }, // Early escape spell
+    { spellId: 'mage_armor', learnLevel: 1 }, // Early defense buff
     { spellId: 'frost_bolt', learnLevel: 5 },
-    { spellId: 'phase_door', learnLevel: 10 },
     { spellId: 'lightning_bolt', learnLevel: 15 },
     { spellId: 'fireball', learnLevel: 20 },
     { spellId: 'teleport', learnLevel: 25 },
@@ -63,11 +64,11 @@ const archmageSpells: ClassSpellList = {
   classId: 'archmage',
   spells: [
     { spellId: 'magic_missile', learnLevel: 1 },
+    { spellId: 'phase_door', learnLevel: 1 }, // Early escape like Mage - essential for glass cannon
+    { spellId: 'frost_bolt', learnLevel: 1 }, // Extra damage spell at L1
     { spellId: 'lightning_bolt', learnLevel: 5 },
-    { spellId: 'phase_door', learnLevel: 8 },
     { spellId: 'fireball', learnLevel: 12 },
     { spellId: 'teleport', learnLevel: 18 },
-    { spellId: 'frost_bolt', learnLevel: 1 }, // Gets frost bolt at level 1 too
   ],
 }
 
@@ -117,27 +118,30 @@ const druidSpells: ClassSpellList = {
 }
 
 /**
- * Ranger - Limited nature magic (4 spells)
- * Utility-focused nature spells
+ * Ranger - Nature magic with companion (6 spells)
+ * Gets wolf companion and root shot early for survival
  */
 const rangerSpells: ClassSpellList = {
   classId: 'ranger',
   spells: [
-    { spellId: 'entangle', learnLevel: 5 },
-    { spellId: 'natures_balm', learnLevel: 10 },
+    { spellId: 'summon_wolf', learnLevel: 1 }, // Wolf companion from start
+    { spellId: 'root_shot', learnLevel: 1 }, // Stun shot for kiting
+    { spellId: 'natures_balm', learnLevel: 5 }, // Early heal for sustain
+    { spellId: 'entangle', learnLevel: 10 },
     { spellId: 'thorn_strike', learnLevel: 15 },
     { spellId: 'resist_elements', learnLevel: 25 },
   ],
 }
 
 /**
- * Necromancer - Shadow caster (5 spells)
- * Dark magic with life drain
+ * Necromancer - Shadow caster with minions (6 spells)
+ * Dark magic with life drain and skeleton summon from L1
  */
 const necromancerSpells: ClassSpellList = {
   classId: 'necromancer',
   spells: [
     { spellId: 'drain_life', learnLevel: 1 },
+    { spellId: 'summon_skeleton', learnLevel: 1 }, // Skeleton from start for early survival
     { spellId: 'shadow_bolt', learnLevel: 5 },
     { spellId: 'weaken', learnLevel: 12 },
     { spellId: 'dark_pact', learnLevel: 18 },

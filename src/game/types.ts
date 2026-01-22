@@ -192,7 +192,7 @@ export type Resistances = Partial<Record<ResistanceType, number>>
 // ============================================================================
 
 /** Types of temporary status effects */
-export type StatusEffectType = 'speed' | 'heroism' | 'berserk' | 'blessing' | 'protection' | 'stun'
+export type StatusEffectType = 'speed' | 'heroism' | 'berserk' | 'blessing' | 'protection' | 'stun' | 'immunity_fear' | 'active_form'
 
 /** A temporary status effect on the character */
 export interface StatusEffect {
@@ -340,6 +340,9 @@ export interface Character {
   // Spells
   knownSpells: string[]
   spellCooldowns: Record<string, number> // spellId -> turn when spell becomes available
+
+  // SHAPESHIFTING: Active form ID for Druid/Necromancer (null = normal form)
+  activeFormId: string | null
 }
 
 // ============================================================================
@@ -373,6 +376,85 @@ export interface Monster {
 /** Check if monster is a boss or unique (dangerous target) */
 export function isBossOrUnique(m: Monster): boolean {
   return m.template.flags?.includes('UNIQUE') || m.template.flags?.includes('BOSS') || false
+}
+
+// ============================================================================
+// MINIONS (Player Pets/Summons)
+// ============================================================================
+
+/** Minion type (determines behavior and appearance) */
+export type MinionType = 'wolf' | 'skeleton'
+
+/** A minion/pet instance controlled by the player */
+export interface Minion {
+  id: string
+  type: MinionType
+  name: string
+  hp: number
+  maxHp: number
+  position: Point
+  /** Base damage dealt by this minion */
+  damage: number
+  /** Turns until minion acts (for speed system) */
+  energy: number
+  /** Is this a permanent pet (wolf) or temporary summon (skeleton)? */
+  permanent: boolean
+  /** For temporary summons, turns remaining before it expires */
+  turnsRemaining?: number
+}
+
+/** Minion template for spawning */
+export interface MinionTemplate {
+  type: MinionType
+  name: string
+  maxHp: number
+  damage: number
+  speed: number // Energy cost per action (100 = normal)
+  permanent: boolean
+  duration?: number // Turns for temporary summons
+}
+
+/** Default minion templates */
+export const MINION_TEMPLATES: Record<MinionType, MinionTemplate> = {
+  wolf: {
+    type: 'wolf',
+    name: 'Wolf Companion',
+    maxHp: 30,
+    damage: 6,
+    speed: 110, // Fast
+    permanent: true,
+  },
+  skeleton: {
+    type: 'skeleton',
+    name: 'Skeletal Warrior',
+    maxHp: 20,
+    damage: 4,
+    speed: 100,
+    permanent: false,
+    duration: 100, // 100 turns
+  },
+}
+
+// ============================================================================
+// UNIQUE TRACKING
+// ============================================================================
+
+/** State for tracking unique monster spawns and kills within a run */
+export interface UniqueState {
+  /** Unique names that have spawned this run (spawn once per run) */
+  spawned: Set<string>
+  /** Unique names killed this run */
+  killed: Set<string>
+}
+
+/** Get list of unique names that are spawned but not yet killed */
+export function getLivingUniques(state: UniqueState): string[] {
+  return [...state.spawned].filter(name => !state.killed.has(name))
+}
+
+/** Check if a specific unique is alive (spawned and not killed) */
+export function isUniqueAlive(state: UniqueState, name: string): boolean {
+  return state.spawned.has(name) && !state.killed.has(name)
 }
 
 // ============================================================================
@@ -450,6 +532,8 @@ export interface TownPortalState {
   turnsRemaining: number
   /** Position of portal in town */
   townPosition: Point
+  /** Original tile type at dungeon position (to restore when portal closes) */
+  originalTileType: TileType
 }
 
 /** Healer NPC state in town */
@@ -479,6 +563,7 @@ export interface GameState {
   // Entities on current level
   monsters: Monster[]
   items: GroundItem[] // Items on the ground
+  minions: Minion[] // Player's pets/summons
 
   // Features on current level (keyed by "x,y")
   fountains: Map<string, FountainState>
@@ -511,8 +596,18 @@ export interface GameState {
   // Second Wind tracking (auto-heal once when critical)
   usedSecondWind?: boolean
 
+  // Unique monster tracking (spawn once per run)
+  uniqueState: UniqueState
+
+  // Permanent progression metric for merchant scaling
+  // This is the deepest level the player has EVER reached across all runs
+  maxDepthEver: number
+
   // Bestiary data (injected from progression store for knowledge bonuses)
   bestiary?: Record<string, BestiaryEntry>
+
+  // Balance overrides for A/B testing (merged with defaults)
+  balance: BalanceOverrides
 }
 
 /** A message in the game log */
@@ -538,6 +633,7 @@ export type SpellEffectType =
   | 'debuff'
   | 'lifedrain'
   | 'teleport'
+  | 'summon'
 
 /** Damage types for spells */
 export type SpellDamageType = 'fire' | 'cold' | 'lightning' | 'holy' | 'dark' | 'nature' | 'arcane'
@@ -570,6 +666,10 @@ export type GameAction =
   // Town portal interactions
   | { type: 'use_return_portal' }
   | { type: 'use_healer' }
+  // Rogue ability
+  | { type: 'steal'; targetId: string }
+  // Druid/Necromancer shapeshifting
+  | { type: 'shapeshift'; formId: string }
 
 /** Result of processing an action (unified type for all game actions including spells) */
 export interface ActionResult {
@@ -630,6 +730,49 @@ export interface BotContext {
 }
 
 // ============================================================================
+// BALANCE OVERRIDES (for A/B testing)
+// ============================================================================
+
+/** Balance tuning overrides for diagnostic testing */
+export interface BalanceOverrides {
+  // Tier 1: High Impact
+  monsterHpPercent: number       // 100 = normal, 50 = half HP
+  monsterDamagePercent: number   // 100 = normal
+  startingPotions: number        // default 3
+  potionRatePercent: number      // 100 = normal spawn rate
+  regenPer10Turns: number        // 0 = disabled, 1+ = HP per 10 turns OOC
+  armorPenetration: number       // 0 = none, flat pen for player
+
+  // Tier 2: Medium Impact
+  enchantRatePercent: number     // 100 = normal enchant chances
+  itemRatePercent: number        // 100 = normal items per level
+  levelupHpPercent: number       // 100 = normal HP gains
+
+  // Tier 3: Tuning
+  xpRatePercent: number          // 100 = normal XP gains
+  upgradePowerPercent: number    // 100 = normal upgrade effects
+
+  // Knowledge/Bestiary
+  bestiaryBonusPercent: number   // 0 = use actual kills, 1-25 = fixed bonus %
+}
+
+/** Default balance (no overrides) */
+export const DEFAULT_BALANCE: BalanceOverrides = {
+  monsterHpPercent: 100,
+  monsterDamagePercent: 100,
+  startingPotions: 3,
+  potionRatePercent: 100,
+  regenPer10Turns: 0,
+  armorPenetration: 0,
+  enchantRatePercent: 100,
+  itemRatePercent: 100,
+  levelupHpPercent: 100,
+  xpRatePercent: 100,
+  upgradePowerPercent: 100,
+  bestiaryBonusPercent: 0,
+}
+
+// ============================================================================
 // RUN CONFIGURATION
 // ============================================================================
 
@@ -642,6 +785,8 @@ export interface RunConfig {
   upgradeBonuses?: UpgradeBonuses // Meta-progression bonuses
   boosterBonuses?: BoosterBonuses // Per-run booster bonuses
   bestiary?: Record<string, BestiaryEntry> // Lifetime kill data for knowledge bonuses
+  balanceOverrides?: Partial<BalanceOverrides> // A/B testing overrides
+  maxDepthEver?: number // Permanent progression: deepest level ever reached (for merchant scaling)
 }
 
 // ============================================================================

@@ -37,6 +37,10 @@ export interface GameClass {
   description: string
   /** Bot behavior hint for auto-player AI */
   botBehavior: string
+  /** SHIELD_BASH: Can perform shield bash for bonus damage when shield equipped (Warrior/Paladin) */
+  canShieldBash?: boolean
+  /** COMBAT_REGEN: Percentage of melee damage dealt that heals the character (Blackguard) */
+  combatLifesteal?: number
 }
 
 // =============================================================================
@@ -66,6 +70,7 @@ const warrior: GameClass = {
   starting: true,
   description: 'Masters of combat who rely on strength and endurance over magic.',
   botBehavior: 'Aggressive: charges enemies, uses melee primarily, relies on potions for healing',
+  canShieldBash: true,
 }
 
 const mage: GameClass = {
@@ -198,6 +203,7 @@ const paladin: GameClass = {
   unlockCondition: 'Win a run with both Warrior and Priest',
   description: 'Holy warriors who combine martial prowess with divine power.',
   botBehavior: 'Adaptive: switches between melee and healing, balanced approach',
+  canShieldBash: true,
 }
 
 // =============================================================================
@@ -343,6 +349,7 @@ const blackguard: GameClass = {
   unlockCondition: 'Kill 1000 monsters total',
   description: 'Dark knights who regenerate health through combat.',
   botBehavior: 'Bloodthirsty: aggressive melee, heals by dealing damage, fears nothing',
+  combatLifesteal: 10, // Heals 10% of melee damage dealt
 }
 
 const monk: GameClass = {
