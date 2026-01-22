@@ -120,14 +120,16 @@ export function getSurvivalConsumableAction(
   // 4. Healing decision based on IMMEDIATE danger and HP ratio
   // Don't heal at full HP just because distant monsters exist
   // Following Angband borg: heal when HP missing AND threat is REAL (adjacent)
+  // NOTE: threat is scaled 10x (damage*10), so threshold must also be scaled
   const shouldHeal =
     // Must have taken some damage (not at 100% HP)
     hpRatio < 0.95 &&
     (
       // Actual adjacent monster AND HP below 75%
       (adjacentCount > 0 && hpRatio < 0.75) ||
-      // OR immediate danger could kill us (danger > 70% of current HP)
-      immediateDanger > character.hp * 0.7 ||
+      // OR immediate danger could kill us (threat > 70% of current HP)
+      // Threat is damage*2, so compare against hp*1.4 (70% threshold)
+      immediateDanger > character.hp * 1.4 ||
       // OR we're in local CRITICAL with HP below 65% (retreat situation)
       (localTier === 'CRITICAL' && hpRatio < 0.65)
     )

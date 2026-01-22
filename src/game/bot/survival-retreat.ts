@@ -421,6 +421,28 @@ export function shouldUseTownPortal(
     item.template.slot !== undefined && item.template.type !== 'potion' && item.template.type !== 'scroll'
   ).length
 
+  // Count total TP scrolls (to check if we can spare one)
+  const tpScrollCount = character.inventory.filter(item =>
+    item.template.name === 'Scroll of Town Portal'
+  ).length
+
+  // At early depths (1-4), preserve the ONLY TP scroll for planned trips
+  // Don't waste it on emergency survival unless:
+  // 1. We have 2+ TP scrolls (can afford to use one)
+  // 2. OR we have enough gold to buy useful items (TP=75g, potions=27g min)
+  // 3. OR we have sellable items worth visiting town for
+  // 4. OR HP is critically low (< 10% - absolute emergency, about to die)
+  const isEarlyDepth = character.depth >= 1 && character.depth <= 4
+  const minUsefulGold = 75 // Enough to buy a replacement TP scroll
+  const hasTownValue = character.gold >= minUsefulGold || sellableItems >= 3
+  const canSpareTP = tpScrollCount >= 2
+  const absoluteEmergency = hpRatio < 0.10 // Only 10% HP = 1-2 hits from death
+
+  if (isEarlyDepth && !canSpareTP && !hasTownValue && !absoluteEmergency) {
+    // Preserve TP scroll at early depths - use other survival options instead
+    return { shouldUse: false, reason: 'Preserving TP for planned trip' }
+  }
+
   // Personality-specific thresholds
   switch (personality) {
     case 'cautious':

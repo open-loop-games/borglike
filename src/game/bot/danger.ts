@@ -85,8 +85,9 @@ export function getMonsterThreat(
   const template = monster.template
 
   // Base threat from damage
-  // Scale: a monster doing 10 damage/turn = 100 threat
-  let threat = template.damage * 10
+  // Scale: a monster doing 10 damage/turn = 20 threat
+  // (was 10x, reduced to 2x so single weak monsters don't trigger CRITICAL)
+  let threat = template.damage * 2
 
   // Speed modifier: faster monsters are more dangerous
   // Base speed is 110, player is typically 100
