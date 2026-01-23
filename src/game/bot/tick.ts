@@ -444,16 +444,19 @@ function handleCautionTier(
       }
     } else if (visibleMonsters.length > 0) {
       // Check if we need to proactively reposition (monster very close and pursuing)
-      const nearest = findClosestMonster(visibleMonsters, pos)
-      if (nearest) {
-        const dist = nearest.distance
-        // Only reposition when at distance 2 AND monster is awake
-        // This prevents oscillation while still avoiding getting cornered
-        if (dist === 2 && nearest.monster.isAwake) {
-          const kiteDir = findKitePosition(game, nearest.monster, classProfile)
-          if (kiteDir) {
-            recordProgress(botState, game.turn)
-            return { type: 'move', direction: kiteDir }
+      // Only for casters - bow users should shoot at dist 2, not kite
+      if (!hasRangedWeapon(game)) {
+        const nearest = findClosestMonster(visibleMonsters, pos)
+        if (nearest) {
+          const dist = nearest.distance
+          // Only reposition when at distance 2 AND monster is awake
+          // This prevents oscillation while still avoiding getting cornered
+          if (dist === 2 && nearest.monster.isAwake) {
+            const kiteDir = findKitePosition(game, nearest.monster, classProfile)
+            if (kiteDir) {
+              recordProgress(botState, game.turn)
+              return { type: 'move', direction: kiteDir }
+            }
           }
         }
       }
@@ -623,10 +626,10 @@ function handleSafeTier(
     }
   }
 
-  // 4. Proactive repositioning for ranged classes
-  // Only kite when very close (distance 2) and monster is awake (closing in)
-  // Don't try to achieve perfect optimal distance - that causes oscillation
-  if (classProfile.prefersRanged && visibleMonsters.length > 0) {
+  // 4. Proactive repositioning for casters only (no bow)
+  // Bow users (rangers) should shoot at dist 2, not kite - kiting causes oscillation
+  // Casters benefit from distance to cast multiple spells before melee
+  if (classProfile.prefersRanged && !hasRangedWeapon(game) && visibleMonsters.length > 0) {
     const nearest = findClosestMonster(visibleMonsters, pos)
     if (nearest) {
       const dist = nearest.distance
