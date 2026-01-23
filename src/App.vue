@@ -7,6 +7,7 @@ import RunArea from './ui/components/RunArea.vue'
 import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
 import RunHistoryModal from './ui/components/history/RunHistoryModal.vue'
 import BestiaryModal from './ui/components/bestiary/BestiaryModal.vue'
+import ItemArmoryModal from './ui/components/armory/ItemArmoryModal.vue'
 import AchievementsModal from './ui/components/achievements/AchievementsModal.vue'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
@@ -32,6 +33,7 @@ onMounted(async () => {
 const showSettings = ref(false)
 const showRunHistory = ref(false)
 const showBestiary = ref(false)
+const showArmory = ref(false)
 const showAchievements = ref(false)
 
 function handleOpenSettings() {
@@ -56,6 +58,14 @@ function handleOpenBestiary() {
 
 function handleCloseBestiary() {
   showBestiary.value = false
+}
+
+function handleOpenArmory() {
+  showArmory.value = true
+}
+
+function handleCloseArmory() {
+  showArmory.value = false
 }
 
 function handleOpenAchievements() {
@@ -89,6 +99,7 @@ function handleOpenHelp() {
       @open-help="handleOpenHelp"
       @open-run-history="handleOpenRunHistory"
       @open-bestiary="handleOpenBestiary"
+      @open-catalog="handleOpenArmory"
       @open-achievements="handleOpenAchievements"
     />
     <main class="game">
@@ -122,6 +133,15 @@ function handleOpenHelp() {
       <div v-if="showBestiary" class="modal-overlay" @click="handleCloseBestiary">
         <div class="modal-container modal-lg" @click.stop>
           <BestiaryModal @close="handleCloseBestiary" />
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Item Armory Modal -->
+    <Teleport to="body">
+      <div v-if="showArmory" class="modal-overlay" @click="handleCloseArmory">
+        <div class="modal-container modal-lg" @click.stop>
+          <ItemArmoryModal @close="handleCloseArmory" />
         </div>
       </div>
     </Teleport>

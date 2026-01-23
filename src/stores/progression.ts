@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed, type Ref } from 'vue'
-import type { Currency, UnlockState, GlobalStats, RunStats, RunLoadout, BestiaryEntry, SlotConfig, AchievementState, UnlockContext } from '../types'
+import type {
+  Currency,
+  UnlockState,
+  GlobalStats,
+  RunStats,
+  RunLoadout,
+  BestiaryEntry,
+  ArmoryEntry,
+  SlotConfig,
+  AchievementState,
+  UnlockContext,
+} from '../types'
 import { achievements, getAchievementById } from '@/game/data/achievements'
 import {
   unlockableRaces,
@@ -96,6 +107,9 @@ export const useProgressionStore = defineStore('progression', () => {
   // Bestiary - tracks monster kills across all runs
   const bestiary = ref<Record<string, BestiaryEntry>>({})
 
+  // Item armory - tracks discovered items across all runs
+  const itemArmory = ref<Record<string, ArmoryEntry>>({})
+
   // Achievements - tracks achievement progress and unlocks
   const achievementState = ref<AchievementState>({
     unlocked: new Set(),
@@ -107,9 +121,7 @@ export const useProgressionStore = defineStore('progression', () => {
   // Cached best run by depth (computed once, updates only when history changes)
   const bestRunByDepth = computed(() => {
     if (runHistory.value.length === 0) return null
-    return runHistory.value.reduce((best, run) =>
-      run.maxDepth > best.maxDepth ? run : best
-    )
+    return runHistory.value.reduce((best, run) => (run.maxDepth > best.maxDepth ? run : best))
   })
 
   // Bestiary computed stats
@@ -118,6 +130,15 @@ export const useProgressionStore = defineStore('progression', () => {
     return {
       discovered: Object.keys(bestiary.value).length,
       fullyUnlocked: entries.filter((e) => e.kills >= 30).length,
+    }
+  })
+
+  // Item armory computed stats
+  const armoryStats = computed(() => {
+    const entries = Object.values(itemArmory.value)
+    return {
+      discovered: entries.length,
+      artifacts: entries.filter((e) => e.isArtifact).length,
     }
   })
 
@@ -325,13 +346,10 @@ export const useProgressionStore = defineStore('progression', () => {
 
   const allBoosters = computed(() => boosterData.value.all)
   const boostersByCategory = computed(() => boosterData.value.byCategory)
-  const unlockedBoosters = computed(() =>
-    boosters.filter((b) => unlocks.value.boosters.has(b.id))
-  )
+  const unlockedBoosters = computed(() => boosters.filter((b) => unlocks.value.boosters.has(b.id)))
   const availableBoosters = computed(() =>
     unlockedBoosters.value.filter(
-      (b) =>
-        b.id !== activeLoadout.value.boosters[0] && b.id !== activeLoadout.value.boosters[1]
+      (b) => b.id !== activeLoadout.value.boosters[0] && b.id !== activeLoadout.value.boosters[1]
     )
   )
 
@@ -341,7 +359,9 @@ export const useProgressionStore = defineStore('progression', () => {
     globalStats.value.totalEssence += amount
     lifetimeEssence.value += amount // Lifetime never resets
     // Save immediately - essence is critical data
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after addEssence:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after addEssence:', err)
+    )
   }
 
   function spendEssence(amount: number): boolean {
@@ -368,7 +388,9 @@ export const useProgressionStore = defineStore('progression', () => {
 
     unlocks.value.upgrades.add(upgradeId)
     // Save immediately - upgrade purchases are critical
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after purchaseUpgrade:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after purchaseUpgrade:', err)
+    )
     return true
   }
 
@@ -377,7 +399,9 @@ export const useProgressionStore = defineStore('progression', () => {
     if (cost > 0 && !spendEssence(cost)) return false
     unlocks.value.races.add(race)
     // Save immediately - unlocks are critical
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after unlockRace:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after unlockRace:', err)
+    )
     return true
   }
 
@@ -386,7 +410,9 @@ export const useProgressionStore = defineStore('progression', () => {
     if (cost > 0 && !spendEssence(cost)) return false
     unlocks.value.classes.add(cls)
     // Save immediately - unlocks are critical
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after unlockClass:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after unlockClass:', err)
+    )
     return true
   }
 
@@ -405,7 +431,9 @@ export const useProgressionStore = defineStore('progression', () => {
 
     unlocks.value.boosters.add(boosterId)
     // Save immediately - unlocks are critical
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after unlockBooster:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after unlockBooster:', err)
+    )
     return true
   }
 
@@ -444,12 +472,18 @@ export const useProgressionStore = defineStore('progression', () => {
     if (saved) {
       // Validate saved config - fallback if race/class no longer unlocked
       return {
-        race: unlocks.value.races.has(saved.race) ? saved.race : (availableRaces.value[0] || 'Human'),
-        class: unlocks.value.classes.has(saved.class) ? saved.class : (availableClasses.value[0] || 'Warrior'),
+        race: unlocks.value.races.has(saved.race) ? saved.race : availableRaces.value[0] || 'Human',
+        class: unlocks.value.classes.has(saved.class)
+          ? saved.class
+          : availableClasses.value[0] || 'Warrior',
         personality: saved.personality,
         boosters: [
-          saved.boosters[0] && unlocks.value.boosters.has(saved.boosters[0]) ? saved.boosters[0] : null,
-          saved.boosters[1] && unlocks.value.boosters.has(saved.boosters[1]) ? saved.boosters[1] : null,
+          saved.boosters[0] && unlocks.value.boosters.has(saved.boosters[0])
+            ? saved.boosters[0]
+            : null,
+          saved.boosters[1] && unlocks.value.boosters.has(saved.boosters[1])
+            ? saved.boosters[1]
+            : null,
         ],
       }
     }
@@ -486,8 +520,10 @@ export const useProgressionStore = defineStore('progression', () => {
       if (!globalStats.value.victoriesPerClass) {
         globalStats.value.victoriesPerClass = {}
       }
-      globalStats.value.victoriesPerRace[stats.race] = (globalStats.value.victoriesPerRace[stats.race] ?? 0) + 1
-      globalStats.value.victoriesPerClass[stats.class] = (globalStats.value.victoriesPerClass[stats.class] ?? 0) + 1
+      globalStats.value.victoriesPerRace[stats.race] =
+        (globalStats.value.victoriesPerRace[stats.race] ?? 0) + 1
+      globalStats.value.victoriesPerClass[stats.class] =
+        (globalStats.value.victoriesPerClass[stats.class] ?? 0) + 1
     } else {
       globalStats.value.totalDeaths++
     }
@@ -509,7 +545,7 @@ export const useProgressionStore = defineStore('progression', () => {
     compareFn: (a: RunStats, b: RunStats) => number
   ) {
     // Check if run already exists (by ID)
-    const existingIndex = topList.value.findIndex(r => r.id === newRun.id)
+    const existingIndex = topList.value.findIndex((r) => r.id === newRun.id)
     if (existingIndex >= 0) {
       // Update existing entry
       topList.value[existingIndex] = newRun
@@ -545,7 +581,9 @@ export const useProgressionStore = defineStore('progression', () => {
       bestiary.value[name].kills += count
     }
     // Save immediately - bestiary data is important
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after recordMonsterKills:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after recordMonsterKills:', err)
+    )
   }
 
   /**
@@ -562,7 +600,35 @@ export const useProgressionStore = defineStore('progression', () => {
       entry.firstDeathTime = now
     }
     // Save immediately
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after recordMonsterDeath:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after recordMonsterDeath:', err)
+    )
+  }
+
+  /**
+   * Record item discoveries from a completed run into the catalog
+   */
+  function recordItemDiscoveries(
+    itemsDiscovered: Record<string, { depth: number; isArtifact: boolean }>
+  ) {
+    const now = Date.now()
+    let hasNewDiscoveries = false
+    for (const [name, info] of Object.entries(itemsDiscovered)) {
+      if (!itemArmory.value[name]) {
+        itemArmory.value[name] = {
+          firstFoundTime: now,
+          firstFoundDepth: info.depth,
+          isArtifact: info.isArtifact,
+        }
+        hasNewDiscoveries = true
+      }
+    }
+    // Only save if we found new items
+    if (hasNewDiscoveries) {
+      saveImmediately().catch((err) =>
+        console.error('[Progression] Failed to save after recordItemDiscoveries:', err)
+      )
+    }
   }
 
   // Achievement getters
@@ -588,9 +654,13 @@ export const useProgressionStore = defineStore('progression', () => {
     achievementState.value.unlocked.add(id)
     achievementState.value.newUnlocks.add(id)
 
-    console.log(`[Progression] Achievement unlocked: ${achievement.name} (click to claim ${achievement.reward} essence)`)
+    console.log(
+      `[Progression] Achievement unlocked: ${achievement.name} (click to claim ${achievement.reward} essence)`
+    )
     // Save immediately - achievement unlock is important
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after awardAchievement:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after awardAchievement:', err)
+    )
     return true
   }
 
@@ -616,7 +686,9 @@ export const useProgressionStore = defineStore('progression', () => {
     achievementState.value.collected.add(id)
     addEssence(achievement.reward)
 
-    console.log(`[Progression] Achievement claimed: ${achievement.name} (+${achievement.reward} essence)`)
+    console.log(
+      `[Progression] Achievement claimed: ${achievement.name} (+${achievement.reward} essence)`
+    )
     // Save happens via addEssence
     return true
   }
@@ -701,7 +773,9 @@ export const useProgressionStore = defineStore('progression', () => {
     // - totalVictories
 
     // Save immediately - prestige is a critical action
-    saveImmediately().catch((err) => console.error('[Progression] Failed to save after prestige:', err))
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after prestige:', err)
+    )
     return true
   }
 
@@ -738,6 +812,7 @@ export const useProgressionStore = defineStore('progression', () => {
     totalVictories,
     activeLoadout,
     bestiary,
+    itemArmory,
 
     // Computed
     availableRaces,
@@ -752,6 +827,7 @@ export const useProgressionStore = defineStore('progression', () => {
     currentPrestigeMultiplier,
     bestRunByDepth,
     bestiaryStats,
+    armoryStats,
 
     // Achievement state and computed
     achievementState,
@@ -788,6 +864,7 @@ export const useProgressionStore = defineStore('progression', () => {
     recordRun,
     recordMonsterKills,
     recordMonsterDeath,
+    recordItemDiscoveries,
     calculateEssenceReward,
     debugAddEssence,
     prestige,

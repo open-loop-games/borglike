@@ -32,11 +32,7 @@ import { spawnItemsForLevel, createStartingEquipment, createRandomPotion } from 
 import { initializeFeaturesFromVault } from './features'
 import { generateMerchantInventory } from './items'
 import { tickPortalTimer } from './town'
-import {
-  tickStatusEffects,
-  tickTempResistances,
-  processPoison,
-} from './status-effects'
+import { tickStatusEffects, tickTempResistances, processPoison } from './status-effects'
 import {
   addMessage,
   BASE_ENERGY_COST,
@@ -90,7 +86,11 @@ export function createGame(config: RunConfig): GameState {
   })
 
   // Give starting equipment based on class (with booster enchantment bonuses)
-  const startingItems = createStartingEquipment(config.classId, boosterBonuses, balance.startingPotions)
+  const startingItems = createStartingEquipment(
+    config.classId,
+    boosterBonuses,
+    balance.startingPotions
+  )
   for (const item of startingItems) {
     if (item.template.slot) {
       // Auto-equip weapons and armor
@@ -131,7 +131,13 @@ export function createGame(config: RunConfig): GameState {
   const monsters = spawnMonstersForLevel(firstLevel, 1, balance.monsterHpPercent, uniqueState)
 
   // Spawn items for first level
-  const items = spawnItemsForLevel(firstLevel, 1, balance.potionRatePercent, balance.enchantRatePercent, balance.itemRatePercent)
+  const items = spawnItemsForLevel(
+    firstLevel,
+    1,
+    balance.potionRatePercent,
+    balance.enchantRatePercent,
+    balance.itemRatePercent
+  )
 
   // Initialize run stats
   const stats: RunStats = {
@@ -145,6 +151,7 @@ export function createGame(config: RunConfig): GameState {
     startTime: Date.now(),
     endTime: null,
     monsterKills: {},
+    itemsDiscovered: {},
   }
 
   // Initialize features for first level
@@ -228,7 +235,11 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
   const isStunned = game.character.statusEffects.some((e) => e.type === 'stun')
   const isParalyzed = game.character.statusEffects.some((e) => e.type === 'paralyzed')
   if (isStunned || isParalyzed) {
-    addMessage(game, isParalyzed ? 'You are paralyzed and cannot move!' : 'You are stunned and cannot act!', 'danger')
+    addMessage(
+      game,
+      isParalyzed ? 'You are paralyzed and cannot move!' : 'You are stunned and cannot act!',
+      'danger'
+    )
 
     // Update turn counter
     game.turn++
@@ -325,9 +336,16 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
   }
 
   // Passive HP regeneration (balance override: HP per 10 turns when out of combat)
-  if (game.balance.regenPer10Turns > 0 && !adjacentMonster && game.character.hp < game.character.maxHp) {
+  if (
+    game.balance.regenPer10Turns > 0 &&
+    !adjacentMonster &&
+    game.character.hp < game.character.maxHp
+  ) {
     if (game.turn % 10 === 0) {
-      game.character.hp = Math.min(game.character.hp + game.balance.regenPer10Turns, game.character.maxHp)
+      game.character.hp = Math.min(
+        game.character.hp + game.balance.regenPer10Turns,
+        game.character.maxHp
+      )
     }
   }
 

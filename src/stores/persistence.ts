@@ -8,7 +8,15 @@
 import { openDB, type IDBPDatabase, type DBSchema } from 'idb'
 import { useProgressionStore, type UpgradeState } from './progression'
 import { watch } from 'vue'
-import type { Currency, UnlockState, GlobalStats, RunStats, BestiaryEntry, SlotConfig } from '@/types/progression'
+import type {
+  Currency,
+  UnlockState,
+  GlobalStats,
+  RunStats,
+  BestiaryEntry,
+  ArmoryEntry,
+  SlotConfig,
+} from '@/types/progression'
 import { startingRaces } from '@/game/data/races'
 import { startingClasses } from '@/game/data/classes'
 
@@ -51,6 +59,7 @@ interface ProgressionData {
   totalVictories: number
   activeLoadout?: SerializedRunLoadout
   bestiary?: Record<string, BestiaryEntry>
+  itemArmory?: Record<string, ArmoryEntry>
   slotConfigs?: SlotConfig[]
   achievements?: SerializedAchievementState
   // Independent top runs storage (persisted separately from recent history)
@@ -152,7 +161,12 @@ function deserializeUnlocks(data: SerializedUnlockState): UnlockState {
  * Convert AchievementState Sets to arrays for JSON serialization
  * Note: newUnlocks is intentionally NOT serialized - it's session-only state
  */
-function serializeAchievements(state: { unlocked: Set<string>; collected: Set<string>; progress: Record<string, number>; newUnlocks: Set<string> }): SerializedAchievementState {
+function serializeAchievements(state: {
+  unlocked: Set<string>
+  collected: Set<string>
+  progress: Record<string, number>
+  newUnlocks: Set<string>
+}): SerializedAchievementState {
   return {
     unlocked: Array.from(state.unlocked),
     collected: Array.from(state.collected),
@@ -164,7 +178,12 @@ function serializeAchievements(state: { unlocked: Set<string>; collected: Set<st
  * Convert arrays back to Sets for AchievementState
  * Note: newUnlocks is always empty on restore - it's session-only state
  */
-function deserializeAchievements(data: SerializedAchievementState): { unlocked: Set<string>; collected: Set<string>; progress: Record<string, number>; newUnlocks: Set<string> } {
+function deserializeAchievements(data: SerializedAchievementState): {
+  unlocked: Set<string>
+  collected: Set<string>
+  progress: Record<string, number>
+  newUnlocks: Set<string>
+} {
   return {
     unlocked: new Set(data.unlocked),
     collected: new Set(data.collected ?? []),
@@ -221,6 +240,16 @@ function serializeProgression(): ProgressionData {
     }
   }
 
+  // Deep clone item catalog to strip reactivity
+  const serializedItemCatalog: Record<string, ArmoryEntry> = {}
+  for (const [key, entry] of Object.entries(progression.itemArmory)) {
+    serializedItemCatalog[key] = {
+      firstFoundTime: entry.firstFoundTime,
+      firstFoundDepth: entry.firstFoundDepth,
+      isArtifact: entry.isArtifact,
+    }
+  }
+
   return {
     version: 1,
     currency: { essence: progression.currency.essence, artifacts: progression.currency.artifacts },
@@ -230,8 +259,11 @@ function serializeProgression(): ProgressionData {
     prestigeLevel: progression.prestigeLevel,
     lifetimeEssence: progression.lifetimeEssence,
     totalVictories: progression.totalVictories,
-    activeLoadout: { boosters: [progression.activeLoadout.boosters[0], progression.activeLoadout.boosters[1]] },
+    activeLoadout: {
+      boosters: [progression.activeLoadout.boosters[0], progression.activeLoadout.boosters[1]],
+    },
     bestiary: serializedBestiary,
+    itemArmory: serializedItemCatalog,
     slotConfigs: serializedSlotConfigs,
     achievements: serializeAchievements(progression.achievementState),
     // Independent top runs (persisted separately from recent history)
@@ -279,6 +311,11 @@ function restoreProgressionFromData(data: ProgressionData): void {
   // Restore bestiary (never resets, survives prestige)
   if (data.bestiary) {
     Object.assign(progression.bestiary, data.bestiary)
+  }
+
+  // Restore item catalog (never resets, survives prestige)
+  if (data.itemArmory) {
+    Object.assign(progression.itemArmory, data.itemArmory)
   }
 
   // Restore slot configs
@@ -552,6 +589,7 @@ export function setupAutoSave(): () => void {
       // JSON.stringify captures both keys and values for complex state
       upgrades: JSON.stringify(progression.upgradeLevels),
       bestiary: JSON.stringify(progression.bestiary),
+      itemArmory: JSON.stringify(progression.itemArmory),
       slotConfigs: JSON.stringify(progression.slotConfigs),
       // Track unlocks (races, classes, boosters, runSlots)
       races: Array.from(progression.unlocks.races).join(','),
@@ -605,6 +643,7 @@ export async function exportDataAsJSON(): Promise<string> {
       totalVictories: progression.totalVictories,
       activeLoadout: { boosters: [...progression.activeLoadout.boosters] },
       bestiary: { ...progression.bestiary },
+      itemArmory: { ...progression.itemArmory },
       slotConfigs: progression.slotConfigs.map((config) => ({ ...config })),
       achievements: serializeAchievements(progression.achievementState),
       topRunsByDepth: [...progression.topRunsByDepth],
@@ -645,6 +684,7 @@ export async function importDataFromJSON(jsonString: string): Promise<boolean> {
       totalVictories: prog.totalVictories,
       activeLoadout: prog.activeLoadout,
       bestiary: prog.bestiary,
+      itemArmory: prog.itemArmory,
       slotConfigs: prog.slotConfigs,
       achievements: prog.achievements,
       topRunsByDepth: prog.topRunsByDepth,

@@ -68,6 +68,13 @@ export interface BestiaryEntry {
   firstDeathTime?: number
 }
 
+/** Item armory entry tracking item discovery */
+export interface ArmoryEntry {
+  firstFoundTime: number
+  firstFoundDepth: number
+  isArtifact: boolean
+}
+
 export interface RunStats {
   id: string
   startTime: number

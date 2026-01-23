@@ -39,6 +39,7 @@ const emit = defineEmits<{
   openHelp: []
   openRunHistory: []
   openBestiary: []
+  openArmory: []
   openAchievements: []
 }>()
 
@@ -73,9 +74,15 @@ function debugAddEssence() {
         class="auto-run-toggle"
         :class="{
           active: settings.settings.autoRestart,
-          locked: !hasAutoRestartUpgrade
+          locked: !hasAutoRestartUpgrade,
         }"
-        :title="hasAutoRestartUpgrade ? (settings.settings.autoRestart ? 'Auto-Run: ON' : 'Auto-Run: OFF') : 'Requires Auto Restart upgrade'"
+        :title="
+          hasAutoRestartUpgrade
+            ? settings.settings.autoRestart
+              ? 'Auto-Run: ON'
+              : 'Auto-Run: OFF'
+            : 'Requires Auto Restart upgrade'
+        "
         @click="toggleAutoRestart"
       >
         <span class="toggle-icon">&#x21BB;</span>
@@ -95,6 +102,9 @@ function debugAddEssence() {
       </button>
       <button class="header-btn" title="Bestiary" @click="emit('openBestiary')">
         <span>&#x1F4D6;</span>
+      </button>
+      <button class="header-btn" title="Armory" @click="emit('openArmory')">
+        <span>&#x1F4E6;</span>
       </button>
       <button class="header-btn" title="Settings" @click="emit('openSettings')">
         <span>&#x2699;</span>

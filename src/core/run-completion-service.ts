@@ -70,6 +70,11 @@ export async function handleRunCompletion(result: RunResult): Promise<RunComplet
     progression.recordMonsterKills(result.game.stats.monsterKills)
   }
 
+  // Record item discoveries to catalog
+  if (result.game.stats.itemsDiscovered) {
+    progression.recordItemDiscoveries(result.game.stats.itemsDiscovered)
+  }
+
   // Record monster death (which monster killed the player)
   if (!isVictory && runStats.deathCause) {
     const killerMonster = extractKillerMonster(runStats.deathCause)
@@ -121,9 +126,7 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
   }
 
   // Extract inventory item names
-  const inventory = char.inventory.map(
-    (item) => item.artifact?.name ?? item.template.name
-  )
+  const inventory = char.inventory.map((item) => item.artifact?.name ?? item.template.name)
 
   return {
     id: game.runId,

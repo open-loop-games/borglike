@@ -28,8 +28,7 @@ export function handlePickup(game: GameState, itemId: string): ActionResult {
     // Check if any item is at current position
     const itemAtPosition = game.items.find(
       (i) =>
-        i.position.x === game.character.position.x &&
-        i.position.y === game.character.position.y
+        i.position.x === game.character.position.x && i.position.y === game.character.position.y
     )
 
     if (itemAtPosition) {
@@ -54,6 +53,15 @@ export function handlePickup(game: GameState, itemId: string): ActionResult {
   // Add to inventory (strip position data)
   game.character.inventory.push(item)
   game.stats.itemsFound++
+
+  // Track item discovery for catalog
+  const itemName = item.artifact?.name ?? item.template.name
+  if (!game.stats.itemsDiscovered[itemName]) {
+    game.stats.itemsDiscovered[itemName] = {
+      depth: game.character.depth,
+      isArtifact: !!item.artifact,
+    }
+  }
 
   addMessage(game, `You pick up ${item.template.name}.`, 'item')
 

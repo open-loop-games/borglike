@@ -88,7 +88,7 @@ export function isSamePoint(a: Point, b: Point): boolean {
 export function isAdjacent(a: Point, b: Point): boolean {
   const dx = Math.abs(a.x - b.x)
   const dy = Math.abs(a.y - b.y)
-  return dx <= 1 && dy <= 1 && (dx + dy) > 0
+  return dx <= 1 && dy <= 1 && dx + dy > 0
 }
 
 // ============================================================================
@@ -141,14 +141,14 @@ export type TileType =
   | 'fountain'
   | 'fountain_empty'
   | 'altar'
-  | 'portal'           // Active town portal
+  | 'portal' // Active town portal
   | 'dungeon_entrance' // Town stairs to depth 1
-  | 'healer'           // Healer NPC tile
+  | 'healer' // Healer NPC tile
   // Town decorative tiles
-  | 'cobblestone'      // Town floor with visual variety
-  | 'town_door'        // Shop entrance (visual marker)
-  | 'rubble'           // Decorative debris
-  | 'town_fountain'    // Town fountain (decorative)
+  | 'cobblestone' // Town floor with visual variety
+  | 'town_door' // Shop entrance (visual marker)
+  | 'rubble' // Decorative debris
+  | 'town_fountain' // Town fountain (decorative)
 
 /** A single tile in the dungeon */
 export interface Tile {
@@ -198,16 +198,36 @@ export type Resistances = Partial<Record<ResistanceType, number>>
 
 /** Types of temporary status effects (buffs and debuffs) */
 export type StatusEffectType =
-  | 'speed' | 'heroism' | 'berserk' | 'blessing' | 'protection' | 'stun' | 'immunity_fear' | 'active_form'
+  | 'speed'
+  | 'heroism'
+  | 'berserk'
+  | 'blessing'
+  | 'protection'
+  | 'stun'
+  | 'immunity_fear'
+  | 'active_form'
   // Debuffs (from monster attacks)
-  | 'blind' | 'confused' | 'paralyzed' | 'slowed' | 'terrified' | 'drained'
+  | 'blind'
+  | 'confused'
+  | 'paralyzed'
+  | 'slowed'
+  | 'terrified'
+  | 'drained'
 
 // ============================================================================
 // MONSTER ATTACK TYPES
 // ============================================================================
 
 /** How the monster delivers the attack */
-export type MonsterAttackMethod = 'HIT' | 'BITE' | 'CLAW' | 'TOUCH' | 'STING' | 'CRUSH' | 'GAZE' | 'ENGULF'
+export type MonsterAttackMethod =
+  | 'HIT'
+  | 'BITE'
+  | 'CLAW'
+  | 'TOUCH'
+  | 'STING'
+  | 'CRUSH'
+  | 'GAZE'
+  | 'ENGULF'
 
 /** Elemental damage types */
 export type Element = 'FIRE' | 'COLD' | 'ELEC' | 'ACID' | 'POISON' | 'DARK'
@@ -216,26 +236,46 @@ export type Element = 'FIRE' | 'COLD' | 'ELEC' | 'ACID' | 'POISON' | 'DARK'
 export type AttackEffect =
   | { type: 'HURT' }
   | { type: 'ELEMENTAL'; element: Element }
-  | { type: 'PARALYZE' } | { type: 'BLIND' } | { type: 'CONFUSE' }
-  | { type: 'TERRIFY' } | { type: 'SLOW' } | { type: 'DRAIN' }
+  | { type: 'PARALYZE' }
+  | { type: 'BLIND' }
+  | { type: 'CONFUSE' }
+  | { type: 'TERRIFY' }
+  | { type: 'SLOW' }
+  | { type: 'DRAIN' }
 
 /** A single monster attack definition */
 export interface MonsterAttack {
   method: MonsterAttackMethod
-  dice: string  // "2d6", "1d8+2"
+  dice: string // "2d6", "1d8+2"
   effect: AttackEffect
 }
 
 /** Monster spell types (for casters, breathers) */
 export type MonsterSpell =
-  | 'BR_FIRE' | 'BR_COLD' | 'BR_ELEC' | 'BR_ACID' | 'BR_POISON' | 'BR_DARK'
-  | 'BO_FIRE' | 'BO_COLD' | 'BO_ELEC' | 'BO_ACID'
-  | 'HEAL' | 'BLINK' | 'HASTE' | 'SUMMON'
-  | 'BLIND' | 'SLOW' | 'CONFUSE' | 'SCARE' | 'HOLD' | 'BRAIN_SMASH'
+  | 'BR_FIRE'
+  | 'BR_COLD'
+  | 'BR_ELEC'
+  | 'BR_ACID'
+  | 'BR_POISON'
+  | 'BR_DARK'
+  | 'BO_FIRE'
+  | 'BO_COLD'
+  | 'BO_ELEC'
+  | 'BO_ACID'
+  | 'HEAL'
+  | 'BLINK'
+  | 'HASTE'
+  | 'SUMMON'
+  | 'BLIND'
+  | 'SLOW'
+  | 'CONFUSE'
+  | 'SCARE'
+  | 'HOLD'
+  | 'BRAIN_SMASH'
 
 /** Monster spellcasting capability */
 export interface MonsterSpells {
-  freq: number  // 1-in-N chance each turn
+  freq: number // 1-in-N chance each turn
   list: MonsterSpell[]
 }
 
@@ -514,7 +554,7 @@ export interface UniqueState {
 
 /** Get list of unique names that are spawned but not yet killed */
 export function getLivingUniques(state: UniqueState): string[] {
-  return [...state.spawned].filter(name => !state.killed.has(name))
+  return [...state.spawned].filter((name) => !state.killed.has(name))
 }
 
 /** Check if a specific unique is alive (spawned and not killed) */
@@ -538,6 +578,7 @@ export interface RunStats {
   startTime: number
   endTime: number | null
   monsterKills: Record<string, number> // monster name → kill count
+  itemsDiscovered: Record<string, { depth: number; isArtifact: boolean }> // item name → discovery info
 }
 
 /** Active fountain state */
@@ -801,24 +842,24 @@ export interface BotContext {
 /** Balance tuning overrides for diagnostic testing */
 export interface BalanceOverrides {
   // Tier 1: High Impact
-  monsterHpPercent: number       // 100 = normal, 50 = half HP
-  monsterDamagePercent: number   // 100 = normal
-  startingPotions: number        // default 3
-  potionRatePercent: number      // 100 = normal spawn rate
-  regenPer10Turns: number        // 0 = disabled, 1+ = HP per 10 turns OOC
-  armorPenetration: number       // 0 = none, flat pen for player
+  monsterHpPercent: number // 100 = normal, 50 = half HP
+  monsterDamagePercent: number // 100 = normal
+  startingPotions: number // default 3
+  potionRatePercent: number // 100 = normal spawn rate
+  regenPer10Turns: number // 0 = disabled, 1+ = HP per 10 turns OOC
+  armorPenetration: number // 0 = none, flat pen for player
 
   // Tier 2: Medium Impact
-  enchantRatePercent: number     // 100 = normal enchant chances
-  itemRatePercent: number        // 100 = normal items per level
-  levelupHpPercent: number       // 100 = normal HP gains
+  enchantRatePercent: number // 100 = normal enchant chances
+  itemRatePercent: number // 100 = normal items per level
+  levelupHpPercent: number // 100 = normal HP gains
 
   // Tier 3: Tuning
-  xpRatePercent: number          // 100 = normal XP gains
-  upgradePowerPercent: number    // 100 = normal upgrade effects
+  xpRatePercent: number // 100 = normal XP gains
+  upgradePowerPercent: number // 100 = normal upgrade effects
 
   // Knowledge/Bestiary
-  bestiaryBonusPercent: number   // 0 = use actual kills, 1-25 = fixed bonus %
+  bestiaryBonusPercent: number // 0 = use actual kills, 1-25 = fixed bonus %
 }
 
 /** Default balance (no overrides) */
