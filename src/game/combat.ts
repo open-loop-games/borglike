@@ -8,6 +8,7 @@
 import type { Character, Monster, ResistanceType, Point } from './types'
 import type { KnowledgeBonuses } from './knowledge-effects'
 import { random } from './rng'
+import { rollDice } from './dice'
 import { calculateAttackCount, calculateRangedAttackCount } from './character'
 import { getClassById } from './data/classes'
 import { getFormById, hasLifedrain } from './data/forms'
@@ -430,28 +431,54 @@ export function attack(
     }
   }
 
-  // Calculate base damage (minimum 1)
-  // Apply armor penetration (flat reduction to defender armor)
-  const effectiveArmor = Math.max(0, defenderStats.armor + defenderACBonus - armorPenetration)
-  let baseDamage = Math.max(1, attackerStats.damage + damageBonus - effectiveArmor / 2)
+  // Calculate base damage
+  // For characters: roll weapon dice + STR/3 + enchantment
+  // For monsters: use pre-calculated damage from template
+  let baseDamage: number
 
-  // Apply deadliness multiplier for character melee attacks
   if (isCharacter(attacker)) {
+    // Roll actual weapon dice for character attacks
+    const weapon = attacker.equipment.weapon
+    const weaponDice = weapon?.template.damage
+    const weaponDamage = weaponDice ? rollDice(weaponDice) : 0
+    const enchantBonus = weapon?.enchantment ?? 0
+
+    // Add artifact damage if present
+    let artifactDamage = 0
+    if (weapon?.artifact?.damage) {
+      artifactDamage = rollDice(weapon.artifact.damage)
+    }
+    if (weapon?.artifact?.bonuses?.toDam) {
+      artifactDamage += weapon.artifact.bonuses.toDam
+    }
+
+    // Base damage: STR/3 + weapon dice + enchantment + artifact + status bonus
+    baseDamage = Math.floor(attacker.stats.str / 3) + weaponDamage + enchantBonus + artifactDamage + damageBonus
+
+    // Apply deadliness multiplier
     const deadliness = calculateDeadliness(attacker)
     baseDamage = applyDeadliness(baseDamage, deadliness)
-  }
 
-  // SHIELD_BASH: Characters with shield and canShieldBash have 20% chance for +50% damage
-  if (isCharacter(attacker) && attacker.equipment.shield) {
-    const gameClass = getClassById(attacker.classId)
-    if (gameClass?.canShieldBash && random() < 0.20) {
-      baseDamage = Math.floor(baseDamage * 1.5)
+    // SHIELD_BASH: 20% chance for +50% damage with shield
+    if (attacker.equipment.shield) {
+      const gameClass = getClassById(attacker.classId)
+      if (gameClass?.canShieldBash && random() < 0.20) {
+        baseDamage = Math.floor(baseDamage * 1.5)
+      }
     }
+  } else {
+    // Monster attacks use pre-calculated average (actual dice rolled in monster-combat.ts)
+    baseDamage = attackerStats.damage + damageBonus
+    // Apply variance for monsters using legacy attack() path (+/- 20%)
+    const variance = 0.8 + random() * 0.4
+    baseDamage = Math.floor(baseDamage * variance)
   }
 
-  // Apply variance (+/- 20%)
-  const variance = 0.8 + random() * 0.4
-  let damage = Math.floor(baseDamage * variance)
+  // Apply armor reduction (percentage-based, max 50% reduction)
+  // This matches monster-combat.ts armor calculation
+  const effectiveArmor = Math.max(0, defenderStats.armor + defenderACBonus - armorPenetration)
+  const armorReduction = Math.min(effectiveArmor / 2, 50) // Max 50% reduction
+  let damage = Math.floor(baseDamage * (100 - armorReduction) / 100)
 
   // Check for critical hit
   // Characters use scaled criticals based on weapon weight and level
@@ -780,13 +807,12 @@ export function rangedAttack(
   knowledgeBonuses?: KnowledgeBonuses,
   armorPenetration = 0
 ): AttackResult {
-  // Get ranged stats
+  // Get ranged accuracy
   let accuracy = attacker.combat.rangedAccuracy
-  let damage = attacker.combat.rangedDamage
 
-  // Apply status effect bonuses
+  // Apply status effect bonuses to accuracy
   accuracy += getStatusHitBonus(attacker)
-  damage += getStatusDamageBonus(attacker)
+  const statusDamageBonus = getStatusDamageBonus(attacker)
 
   // Distance penalty: -5% hit chance per tile beyond 2
   const distancePenalty = Math.max(0, distance - 2) * 5
@@ -812,18 +838,32 @@ export function rangedAttack(
     }
   }
 
-  // Calculate base damage (minimum 1)
-  // Apply armor penetration (flat reduction to defender armor)
-  const effectiveArmor = Math.max(0, defenderStats.armor - armorPenetration)
-  let baseDamage = Math.max(1, damage - effectiveArmor / 2)
+  // Roll actual bow dice for damage
+  const bow = attacker.equipment.bow
+  const bowDice = bow?.template.damage
+  const bowDamage = bowDice ? rollDice(bowDice) : 0
+  const enchantBonus = bow?.enchantment ?? 0
+
+  // Add artifact damage if present
+  let artifactDamage = 0
+  if (bow?.artifact?.damage) {
+    artifactDamage = rollDice(bow.artifact.damage)
+  }
+  if (bow?.artifact?.bonuses?.toDam) {
+    artifactDamage += bow.artifact.bonuses.toDam
+  }
+
+  // Base damage: DEX/3 + bow dice + enchantment + artifact + status bonus
+  let baseDamage = Math.floor(attacker.stats.dex / 3) + bowDamage + enchantBonus + artifactDamage + statusDamageBonus
 
   // Apply ranged deadliness multiplier (from bow enchantment + DEX + level)
   const deadliness = calculateRangedDeadliness(attacker)
   baseDamage = applyDeadliness(baseDamage, deadliness)
 
-  // Apply variance (+/- 20%)
-  const variance = 0.8 + random() * 0.4
-  let finalDamage = Math.floor(baseDamage * variance)
+  // Apply armor reduction (percentage-based, max 50% reduction)
+  const effectiveArmor = Math.max(0, defenderStats.armor - armorPenetration)
+  const armorReduction = Math.min(effectiveArmor / 2, 50) // Max 50% reduction
+  let finalDamage = Math.floor(baseDamage * (100 - armorReduction) / 100)
 
   // Check for critical hit using scaled system (bow weight + level)
   const bowWeight = attacker.equipment.bow?.template.weight ?? 30 // Default to 3 lbs
