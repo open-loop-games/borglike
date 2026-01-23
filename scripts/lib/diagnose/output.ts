@@ -163,11 +163,12 @@ export function formatTurnLog(
 
     const flagStr = entry.flags.length > 0 ? ` [${entry.flags.join(', ')}]` : ''
     const goalStr = entry.goal ? ` goal=${entry.goal}` : ''
+    const mpStr = entry.maxMp > 0 ? ` MP=${entry.mp}/${entry.maxMp}` : ''
 
     lines.push(
       `  Turn ${String(entry.turn).padStart(4)}: ` +
         `pos=(${entry.position.x},${entry.position.y}) ` +
-        `HP=${entry.hp} ` +
+        `HP=${entry.hp}${mpStr} ` +
         `depth=${entry.depth} ` +
         `action=${entry.action}${goalStr}${flagStr}`
     )

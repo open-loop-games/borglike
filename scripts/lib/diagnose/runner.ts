@@ -459,6 +459,8 @@ export interface TurnLogEntry {
   turn: number
   position: { x: number; y: number }
   hp: number
+  mp: number
+  maxMp: number
   depth: number
   goal: string | null
   action: string
@@ -603,6 +605,8 @@ export function runDeepDiagnosis(
       turn,
       position: { ...game.character.position },
       hp: game.character.hp,
+      mp: game.character.mp,
+      maxMp: game.character.maxMp,
       depth: game.character.depth,
       goal: goalStr,
       action: actionType,
