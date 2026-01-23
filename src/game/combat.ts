@@ -841,19 +841,23 @@ export function rangedAttack(
   // Roll actual bow dice for damage
   const bow = attacker.equipment.bow
   const bowDice = bow?.template.damage
-  const bowDamage = bowDice ? rollDice(bowDice) : 0
+  let bowDamage = bowDice ? rollDice(bowDice) : 0
   const enchantBonus = bow?.enchantment ?? 0
+
+  // Apply launcher multiplier (Angband-style: multiplies dice damage)
+  const launcherMult = bow?.template.multiplier ?? 1
+  bowDamage *= launcherMult
 
   // Add artifact damage if present
   let artifactDamage = 0
   if (bow?.artifact?.damage) {
-    artifactDamage = rollDice(bow.artifact.damage)
+    artifactDamage = rollDice(bow.artifact.damage) * launcherMult
   }
   if (bow?.artifact?.bonuses?.toDam) {
     artifactDamage += bow.artifact.bonuses.toDam
   }
 
-  // Base damage: DEX/3 + bow dice + enchantment + artifact + status bonus
+  // Base damage: DEX/3 + (bow dice × multiplier) + enchantment + artifact + status bonus
   let baseDamage = Math.floor(attacker.stats.dex / 3) + bowDamage + enchantBonus + artifactDamage + statusDamageBonus
 
   // Apply ranged deadliness multiplier (from bow enchantment + DEX + level)

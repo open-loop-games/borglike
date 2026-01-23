@@ -13,6 +13,7 @@ import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 import { getAverageDamage } from '../data/monsters'
 import { resetCorridorFollowing } from './exploration'
+import { calculateLightRadius } from '../lighting'
 
 // ============================================================================
 // TYPES
@@ -536,7 +537,7 @@ function countEscapeRoutes(game: GameState, pos: Point): number {
  * Check if character has a ranged weapon equipped
  */
 export function hasRangedWeapon(game: GameState): boolean {
-  return game.character.equipment.bow !== null
+  return game.character.equipment.bow != null  // Handles both null and undefined
 }
 
 /**
@@ -601,9 +602,11 @@ export function findBestRangedTarget(
 }
 
 /**
- * Find best position to kite from (maintain distance while able to shoot)
+ * Find best position to kite from (maintain distance while able to attack)
  *
- * Returns a direction to move to maintain optimal range from enemies
+ * Returns a direction to move to maintain optimal range from enemies.
+ * For bow users: uses bow range as max attack distance.
+ * For casters: uses vision range (can cast at anything visible).
  */
 export function findKitePosition(
   game: GameState,
@@ -619,10 +622,18 @@ export function findKitePosition(
   const currentDist = Math.max(Math.abs(currentDx), Math.abs(currentDy))
 
   const optimalRange = classProfile.engageDistance || 3
-  const bowRange = getBowRange(character)
 
-  // If we're at optimal range or better, no need to move
-  if (currentDist >= optimalRange && currentDist <= bowRange) {
+  // Calculate effective max range: bow range for archers, light radius for casters
+  const bowRange = getBowRange(character)
+  const effectiveMaxRange = bowRange > 0
+    ? bowRange
+    : calculateLightRadius(character, game.character.depth)
+
+  // If engageDistance > what we can see, cap it at what we can actually hit
+  const actualOptimal = Math.min(optimalRange, effectiveMaxRange)
+
+  // If we're at good range (>= desired optimal, within attack range), no need to move
+  if (currentDist >= actualOptimal && currentDist <= effectiveMaxRange) {
     return null
   }
 
@@ -654,8 +665,8 @@ export function findKitePosition(
     const distFromOptimal = Math.abs(newDist - optimalRange)
     score = 100 - distFromOptimal * 20
 
-    // Bonus if we can still shoot from this position
-    if (newDist >= 2 && newDist <= bowRange) {
+    // Bonus if we can still attack from this position
+    if (newDist >= 2 && newDist <= effectiveMaxRange) {
       score += 50
     }
 
@@ -713,14 +724,17 @@ export function getKiteGoal(
   const character = game.character
   const pos = character.position
 
-  // Only for ranged classes
+  // Only for ranged classes (bow users or ranged casters)
   if (!classProfile.prefersRanged) return null
-
-  // Need ranged weapon and visible targets
-  if (!hasRangedWeapon(game)) return null
   if (visibleMonsters.length === 0) return null
 
-  const bowRange = getBowRange(character)
+  // Determine if bow user or ranged caster
+  const hasBow = hasRangedWeapon(game)
+  const isRangedCaster = !hasBow // prefersRanged but no bow = caster
+
+  // Determine effective range: bow range for archers, or use engageDistance for casters
+  // Spells have effectively infinite range, but we use engageDistance as "preferred" range
+  const effectiveRange = hasBow ? getBowRange(character) : 10 // Casters can hit anything visible
   const optimalRange = classProfile.engageDistance || 3
 
   // Find closest visible monster to evaluate positioning
@@ -730,12 +744,13 @@ export function getKiteGoal(
   const closestMonster = closest.monster
   const closestDist = closest.distance
 
-  // Case 1: Too far to shoot - let KILL goal handle approach
-  if (closestDist > bowRange) {
+  // Case 1: Too far - let KILL goal handle approach (only for bow users)
+  // Casters can always cast if they can see the target
+  if (hasBow && closestDist > effectiveRange) {
     return null
   }
 
-  // Case 2: Too close - need to kite away
+  // Case 2: Too close - need to kite away (same for bow and casters)
   if (closestDist < optimalRange) {
     const kiteDirection = findKitePosition(game, closestMonster, classProfile)
 
@@ -756,14 +771,17 @@ export function getKiteGoal(
       }
     }
 
-    // Can't kite away - if we can still shoot (dist >= 2), shoot
-    if (closestDist >= 2 && canRangedAttack(character, closestMonster.position)) {
-      return {
-        type: 'KITE',
-        target: closestMonster.position,
-        targetId: closestMonster.id,
-        reason: `Shooting ${closestMonster.template.name} (can't kite)`,
-        startTurn: game.turn,
+    // Can't kite away - if not adjacent, attack from current position
+    if (closestDist >= 2) {
+      // For bow users, check canRangedAttack; for casters, any visible target is valid
+      if (hasBow ? canRangedAttack(character, closestMonster.position) : true) {
+        return {
+          type: 'KITE',
+          target: closestMonster.position,
+          targetId: closestMonster.id,
+          reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${closestMonster.template.name} (can't kite)`,
+          startTurn: game.turn,
+        }
       }
     }
 
@@ -771,16 +789,19 @@ export function getKiteGoal(
     return null
   }
 
-  // Case 3: At or beyond optimal range but within bow range - shoot!
-  // Find best target to shoot at (might be different from closest)
+  // Case 3: At or beyond optimal range - attack!
+  // Find best target (might be different from closest)
   const target = findBestRangedTarget(game, visibleMonsters)
-  if (target && canRangedAttack(character, target.position)) {
-    return {
-      type: 'KITE',
-      target: target.position,
-      targetId: target.id,
-      reason: `Shooting ${target.template.name} at range`,
-      startTurn: game.turn,
+  if (target) {
+    // For bow users, verify line of sight; for casters, any visible target works
+    if (hasBow ? canRangedAttack(character, target.position) : true) {
+      return {
+        type: 'KITE',
+        target: target.position,
+        targetId: target.id,
+        reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${target.template.name} at range`,
+        startTurn: game.turn,
+      }
     }
   }
 

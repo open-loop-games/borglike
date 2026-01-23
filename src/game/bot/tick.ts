@@ -16,7 +16,7 @@ import { isBossOrUnique } from '../types'
 import { getTile } from '../dungeon'
 import { canRangedAttack } from '../combat'
 
-import type { BotState, BotGoal, BotContext, FlowMap, DangerResult, DangerTier } from './types'
+import type { BotState, BotGoal, BotContext, FlowMap, DangerResult, DangerTier, PersonalityConfig } from './types'
 import { MAX_FLOW_COST, SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from './types'
 import {
   createBotState,
@@ -52,7 +52,7 @@ import { selectGoal } from './goals'
 import { invalidateFrontierCache, getFrontierPositions } from './exploration'
 import { initializeSweepDirection } from './progression'
 import { recordVisibleTiles } from './progression'
-import { findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition, shouldAvoidMelee } from './combat'
+import { findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition, shouldAvoidMelee, findClosestMonster } from './combat'
 import { getBowRange } from '../combat'
 import { findEquipmentUpgrades } from './items'
 import { getSurvivalConsumableAction, getCombatBuffAction, getPreCombatBuffAction, getUtilityConsumableAction } from './survival'
@@ -62,9 +62,12 @@ import {
   getBuffSpellAction,
   getEscapeSpellAction,
   getDebuffSpellAction,
+  getSummonSpellAction,
+  getRootShotAction,
+  classShouldSummon,
 } from './spells'
 import { botSellItems, botBuySupplies } from './merchant'
-import { profile, profileStart, profileEnd } from './profiler'
+import { profile } from './profiler'
 import type { DungeonLevel } from '../types'
 
 /**
@@ -169,7 +172,9 @@ export function runBotTick(
   const action = profile('selectActionByTier', () =>
     selectActionByTier(game, context, botState, dangerResult, personality, immediateTier)
   )
-  if (action) return action
+  if (action) {
+    return action
+  }
 
   // Fallback: stuck recovery and movement
   return profile('handleFallback', () => handleFallback(game, context, botState, dangerResult))
@@ -248,9 +253,9 @@ function handleCriticalTier(
     return healSpell
   }
 
-  // 4. For ranged classes: try to kite away or shoot from distance
-  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
-    // Try to kite away if adjacent
+  // 4. For ranged classes: try to kite away or attack from distance
+  if (classProfile.prefersRanged) {
+    // Try to kite away if adjacent (physical movement works for all ranged classes)
     if (adjacentMonster) {
       const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
       if (kiteDir) {
@@ -261,10 +266,20 @@ function handleCriticalTier(
 
     // Ranged attack if not adjacent and have targets
     if (!adjacentMonster) {
-      const rangedTarget = findBestRangedTarget(game, visibleMonsters)
-      if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
-        recordProgress(botState, game.turn)
-        return { type: 'ranged_attack', targetId: rangedTarget.id }
+      if (hasRangedWeapon(game)) {
+        // Bow attack for rangers
+        const rangedTarget = findBestRangedTarget(game, visibleMonsters)
+        if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
+          recordProgress(botState, game.turn)
+          return { type: 'ranged_attack', targetId: rangedTarget.id }
+        }
+      } else {
+        // Damage spell for casters (mage, archmage, necromancer)
+        const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
+        if (damageSpell) {
+          recordProgress(botState, game.turn)
+          return damageSpell
+        }
       }
     }
   }
@@ -298,10 +313,20 @@ function handleDangerTier(
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const adjacentMonster = findAdjacentMonster(game)
 
-  // For ranged classes: prioritize repositioning and shooting
-  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
-    // 1. Kite away if adjacent (highest priority for ranged)
+  // For ranged classes: prioritize repositioning and attacking from distance
+  if (classProfile.prefersRanged) {
+    // 1. If adjacent, try root_shot (rangers only) then kite away
     if (adjacentMonster) {
+      // Root shot only for rangers who have it
+      if (hasRangedWeapon(game)) {
+        const rootAction = getRootShotAction(game, adjacentMonster)
+        if (rootAction) {
+          recordProgress(botState, game.turn)
+          return rootAction
+        }
+      }
+
+      // 2. Kite away if adjacent (physical movement works for all ranged classes)
       const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
       if (kiteDir) {
         recordProgress(botState, game.turn)
@@ -309,12 +334,22 @@ function handleDangerTier(
       }
     }
 
-    // 2. Ranged attack if at safe distance
+    // 3. Ranged attack if at safe distance
     if (!adjacentMonster) {
-      const rangedTarget = findBestRangedTarget(game, visibleMonsters)
-      if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
-        recordProgress(botState, game.turn)
-        return { type: 'ranged_attack', targetId: rangedTarget.id }
+      if (hasRangedWeapon(game)) {
+        // Bow attack for rangers
+        const rangedTarget = findBestRangedTarget(game, visibleMonsters)
+        if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
+          recordProgress(botState, game.turn)
+          return { type: 'ranged_attack', targetId: rangedTarget.id }
+        }
+      } else {
+        // Damage spell for casters (mage, archmage, necromancer)
+        const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
+        if (damageSpell) {
+          recordProgress(botState, game.turn)
+          return damageSpell
+        }
       }
     }
   }
@@ -335,14 +370,23 @@ function handleDangerTier(
     return survivalAction
   }
 
-  // 5. Melee attack if we must (or if melee class)
+  // 5. Summon minion if missing (tanking help)
+  if (classShouldSummon(game.character.classId)) {
+    const summonAction = getSummonSpellAction(game, config, visibleMonsters)
+    if (summonAction) {
+      recordProgress(botState, game.turn)
+      return summonAction
+    }
+  }
+
+  // 6. Melee attack if we must (or if melee class)
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Melee attack (danger)')
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
   }
 
-  // 6. Escape spell as fallback
+  // 7. Escape spell as fallback
   const escapeSpell = getEscapeSpellAction(game, config, dangerResult.dangers)
   if (escapeSpell) {
     recordProgress(botState, game.turn)
@@ -371,21 +415,64 @@ function handleCautionTier(
   const adjacentMonster = findAdjacentMonster(game)
   const hpRatio = game.character.hp / game.character.maxHp
 
-  // 1. For ranged classes: prioritize repositioning and shooting FIRST
-  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
+  // 1. For ranged classes: prioritize repositioning and attacking from distance FIRST
+  if (classProfile.prefersRanged) {
     if (adjacentMonster) {
-      // Try to kite away - highest priority
-      const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
-      if (kiteDir) {
-        recordProgress(botState, game.turn)
-        return { type: 'move', direction: kiteDir }
+      // Try root_shot first (rangers only) to stun before kiting
+      if (hasRangedWeapon(game)) {
+        const rootAction = getRootShotAction(game, adjacentMonster)
+        if (rootAction) {
+          recordProgress(botState, game.turn)
+          return rootAction
+        }
+
+        // Bow users: kite away
+        const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+        if (kiteDir) {
+          recordProgress(botState, game.turn)
+          return { type: 'move', direction: kiteDir }
+        }
+      } else {
+        // Casters: finish the kill with damage spell instead of futile kiting
+        // With low visibility, kiting just delays - better to deal damage
+        // If HP gets critical, DANGER tier will use phase door to escape
+        const damageSpell = getDamageSpellAction(game, config, [adjacentMonster])
+        if (damageSpell) {
+          recordProgress(botState, game.turn)
+          return damageSpell
+        }
       }
     } else if (visibleMonsters.length > 0) {
+      // Check if we need to proactively reposition (monster very close and pursuing)
+      const nearest = findClosestMonster(visibleMonsters, pos)
+      if (nearest) {
+        const dist = nearest.distance
+        // Only reposition when at distance 2 AND monster is awake
+        // This prevents oscillation while still avoiding getting cornered
+        if (dist === 2 && nearest.monster.isAwake) {
+          const kiteDir = findKitePosition(game, nearest.monster, classProfile)
+          if (kiteDir) {
+            recordProgress(botState, game.turn)
+            return { type: 'move', direction: kiteDir }
+          }
+        }
+      }
+
       // Ranged attack from distance
-      const rangedTarget = findBestRangedTarget(game, visibleMonsters)
-      if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
-        recordProgress(botState, game.turn)
-        return { type: 'ranged_attack', targetId: rangedTarget.id }
+      if (hasRangedWeapon(game)) {
+        // Bow attack for rangers
+        const rangedTarget = findBestRangedTarget(game, visibleMonsters)
+        if (rangedTarget && canRangedAttack(game.character, rangedTarget.position)) {
+          recordProgress(botState, game.turn)
+          return { type: 'ranged_attack', targetId: rangedTarget.id }
+        }
+      } else {
+        // Damage spell for casters (mage, archmage, necromancer)
+        const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
+        if (damageSpell) {
+          recordProgress(botState, game.turn)
+          return damageSpell
+        }
       }
     }
   }
@@ -443,7 +530,16 @@ function handleCautionTier(
     }
   }
 
-  // 5. Damage/debuff spells for visible enemies
+  // 5. Summon minion if missing (tanking help)
+  if (classShouldSummon(game.character.classId)) {
+    const summonAction = getSummonSpellAction(game, config, visibleMonsters)
+    if (summonAction) {
+      recordProgress(botState, game.turn)
+      return summonAction
+    }
+  }
+
+  // 6. Damage/debuff spells for visible enemies
   if (visibleMonsters.length > 0) {
     const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
     if (damageSpell) {
@@ -464,7 +560,7 @@ function handleCautionTier(
 /**
  * SAFE tier: No immediate threats
  *
- * Priority: items > utility > movement/exploration
+ * Priority: summons > items > utility > movement/exploration
  */
 function handleSafeTier(
   game: GameState,
@@ -478,6 +574,16 @@ function handleSafeTier(
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const dangerThreshold = getDangerThreshold(effectiveConfig.aggression, effectiveConfig.caution)
   const hpRatio = game.character.hp / game.character.maxHp
+
+  // 0. Proactive summons (wolf for ranger, skeleton for necromancer)
+  // These are high priority - we want minions out even when safe
+  if (classShouldSummon(game.character.classId)) {
+    const summonAction = getSummonSpellAction(game, config, visibleMonsters)
+    if (summonAction) {
+      recordProgress(botState, game.turn)
+      return summonAction
+    }
+  }
 
   // 1. Pick up items at current position
   const itemHere = game.items.find((item) =>
@@ -517,7 +623,26 @@ function handleSafeTier(
     }
   }
 
-  // 4. Pre-combat buffs only for bosses/uniques
+  // 4. Proactive repositioning for ranged classes
+  // Only kite when very close (distance 2) and monster is awake (closing in)
+  // Don't try to achieve perfect optimal distance - that causes oscillation
+  if (classProfile.prefersRanged && visibleMonsters.length > 0) {
+    const nearest = findClosestMonster(visibleMonsters, pos)
+    if (nearest) {
+      const dist = nearest.distance
+      // Only reposition when at distance 2 AND monster is awake (actively pursuing)
+      // Distance 3+ is fine for casting - no need to create oscillation
+      if (dist === 2 && nearest.monster.isAwake) {
+        const kiteDir = findKitePosition(game, nearest.monster, classProfile)
+        if (kiteDir) {
+          recordProgress(botState, game.turn)
+          return { type: 'move', direction: kiteDir }
+        }
+      }
+    }
+  }
+
+  // 5. Pre-combat buffs only for bosses/uniques
   if (visibleMonsters.length > 0) {
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 
@@ -668,7 +793,7 @@ function handleGoalMovement(
   if (isSamePosition(pos, goal.target)) {
     recordProgress(botState, game.turn)
     updateTownState(botState, goal, game)
-    return profile('fallback.executeGoal', () => executeGoalAction(goal, game, botState))
+    return profile('fallback.executeGoal', () => executeGoalAction(goal, game, botState, context.config))
   }
 
   // Build avoid set (skip when fleeing)
@@ -851,7 +976,7 @@ function updateTownState(botState: BotState, goal: BotGoal, _game: GameState): v
   }
 }
 
-function executeGoalAction(goal: BotGoal, game: GameState, botState: BotState): GameAction {
+function executeGoalAction(goal: BotGoal, game: GameState, botState: BotState, config: PersonalityConfig): GameAction {
   switch (goal.type) {
     case 'DESCEND':
       // Goal system already verified readiness during goal selection
@@ -883,8 +1008,16 @@ function executeGoalAction(goal: BotGoal, game: GameState, botState: BotState): 
     case 'KITE': {
       if (goal.targetId) {
         const monster = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
-        if (monster && canRangedAttack(game.character, monster.position)) {
-          return { type: 'ranged_attack', targetId: monster.id }
+        if (monster) {
+          // For bow users, use ranged attack
+          if (canRangedAttack(game.character, monster.position)) {
+            return { type: 'ranged_attack', targetId: monster.id }
+          }
+          // For casters without bow, cast damage spell
+          const damageSpell = getDamageSpellAction(game, config, [monster])
+          if (damageSpell) {
+            return damageSpell
+          }
         }
       }
       return { type: 'wait' }

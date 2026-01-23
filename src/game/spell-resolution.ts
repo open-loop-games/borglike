@@ -838,6 +838,8 @@ function castSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
     minionType = 'wolf'
   } else if (spell.id === 'summon_skeleton') {
     minionType = 'skeleton'
+  } else if (spell.id === 'summon_bear') {
+    minionType = 'bear'
   } else {
     return { success: false, message: 'Unknown summon spell.' }
   }
@@ -847,9 +849,12 @@ function castSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
   // Calculate scaled HP for minions that scale with level
   // Wolf: 30 base + 2 per level (32 at L1, 70 at L20)
   // Skeleton: 20 base + 2 per level (22 at L1, 60 at L20)
+  // Bear: 60 base + 3 per level (63 at L1, 120 at L20)
   const scaledMaxHp = (minionType === 'wolf' || minionType === 'skeleton')
     ? template.maxHp + game.character.level * 2
-    : template.maxHp
+    : minionType === 'bear'
+      ? template.maxHp + game.character.level * 3
+      : template.maxHp
 
   // For permanent pets (wolf), check if one already exists
   if (template.permanent) {

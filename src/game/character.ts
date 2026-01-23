@@ -464,11 +464,13 @@ export function calculateCombatStats(character: Character): CombatStats {
   // Apply bow bonuses if equipped
   const bow = character.equipment.bow
   if (bow) {
-    // Parse dice notation for bow damage
-    rangedDamage += parseDiceAverage(bow.template.damage) + bow.enchantment
-    // Artifact bow bonuses
+    // Launcher multiplier (Angband-style: multiplies dice damage)
+    const launcherMult = bow.template.multiplier ?? 1
+    // Parse dice notation for bow damage and apply multiplier
+    rangedDamage += parseDiceAverage(bow.template.damage) * launcherMult + bow.enchantment
+    // Artifact bow bonuses (also multiplied)
     if (bow.artifact?.damage) {
-      rangedDamage += parseDiceAverage(bow.artifact.damage)
+      rangedDamage += parseDiceAverage(bow.artifact.damage) * launcherMult
     }
     if (bow.artifact?.bonuses?.toDam) {
       rangedDamage += bow.artifact.bonuses.toDam

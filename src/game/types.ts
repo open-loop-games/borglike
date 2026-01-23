@@ -440,7 +440,7 @@ export function isBossOrUnique(m: Monster): boolean {
 // ============================================================================
 
 /** Minion type (determines behavior and appearance) */
-export type MinionType = 'wolf' | 'skeleton'
+export type MinionType = 'wolf' | 'skeleton' | 'bear'
 
 /** A minion/pet instance controlled by the player */
 export interface Minion {
@@ -489,6 +489,14 @@ export const MINION_TEMPLATES: Record<MinionType, MinionTemplate> = {
     speed: 100,
     permanent: false,
     duration: 100, // 100 turns
+  },
+  bear: {
+    type: 'bear',
+    name: 'Bear Companion',
+    maxHp: 60,
+    damage: 12,
+    speed: 90, // Slower but tanky
+    permanent: true,
   },
 }
 

@@ -21,6 +21,8 @@ export interface ItemTemplate {
   slot?: 'weapon' | 'bow' | 'body' | 'shield' | 'helm' | 'gloves' | 'boots' | 'ring' | 'amulet' | 'light'
   /** Ranged weapon range (tiles) - only for bows */
   range?: number
+  /** Launcher multiplier for bows (damage × multiplier) */
+  multiplier?: number
   /** Hit bonus for ranged weapons */
   hitBonus?: number
   tier: number // 1-4 based on power level and alloc-depth
@@ -223,6 +225,7 @@ export const BOWS: ItemTemplate[] = [
     slot: 'bow',
     tier: 1,
     damage: '1d6',
+    multiplier: 2,
     weight: 30,
     range: 8,
     minDepth: 0,
@@ -235,6 +238,7 @@ export const BOWS: ItemTemplate[] = [
     slot: 'bow',
     tier: 2,
     damage: '2d4',
+    multiplier: 2,
     weight: 40,
     range: 8,
     minDepth: 10,
@@ -245,6 +249,7 @@ export const BOWS: ItemTemplate[] = [
     slot: 'bow',
     tier: 2,
     damage: '2d5',
+    multiplier: 3,
     weight: 45,
     range: 8,
     minDepth: 15,
@@ -257,10 +262,22 @@ export const BOWS: ItemTemplate[] = [
     slot: 'bow',
     tier: 3,
     damage: '2d6',
+    multiplier: 3,
     weight: 35,
     range: 8,
     hitBonus: 2,
     minDepth: 25,
+  },
+  {
+    name: 'War Bow',
+    type: 'bow',
+    slot: 'bow',
+    tier: 3,
+    damage: '2d7',
+    multiplier: 3,
+    weight: 50,
+    range: 8,
+    minDepth: 35,
   },
 
   // Tier 4 - Endgame (depth 40+)
@@ -270,10 +287,24 @@ export const BOWS: ItemTemplate[] = [
     slot: 'bow',
     tier: 4,
     damage: '3d5',
+    multiplier: 3,
     weight: 40,
     range: 8,
     hitBonus: 5,
     minDepth: 45,
+  },
+  {
+    name: 'Bow of the Serpent',
+    type: 'bow',
+    slot: 'bow',
+    tier: 4,
+    damage: '2d6',
+    multiplier: 3,
+    weight: 35,
+    range: 8,
+    hitBonus: 3,
+    effect: 'Poison',
+    minDepth: 50,
   },
 ]
 

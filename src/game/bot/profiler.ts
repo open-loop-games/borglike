@@ -52,7 +52,7 @@ export function profile<T>(name: string, fn: () => T): T {
 /**
  * Start a named timer (for async or multi-statement blocks)
  */
-export function profileStart(name: string): number {
+export function profileStart(_name: string): number {
   if (!enabled) return 0
   return performance.now()
 }

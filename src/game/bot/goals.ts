@@ -175,8 +175,9 @@ export function selectGoal(
     if (fleeGoal) return fleeGoal
   }
 
-  // 1.5 KITE - Ranged classes maintain distance and shoot
-  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
+  // 1.5 KITE - Ranged classes maintain distance and attack from range
+  // Works for bow users (rangers) AND ranged casters (mage, archmage, necromancer)
+  if (classProfile.prefersRanged) {
     const kiteGoal = evaluateKite(context, dangers, dangerThreshold)
     if (kiteGoal) return kiteGoal
   }
@@ -425,6 +426,16 @@ function checkHighPriorityOverride(
   if (currentPriority < GOAL_PRIORITY.FLEE) {
     const fleeGoal = evaluateFlee(context, dangers, dangerThreshold, localDanger, hpRatio)
     if (fleeGoal) return fleeGoal
+  }
+
+  // Check KITE for ranged classes (priority 90)
+  // Critical for ranged classes to engage at range instead of facechecking
+  if (currentPriority < GOAL_PRIORITY.KITE) {
+    const { classProfile } = context
+    if (classProfile.prefersRanged) {
+      const kiteGoal = evaluateKite(context, dangers, dangerThreshold)
+      if (kiteGoal) return kiteGoal
+    }
   }
 
   // Check RECOVER (priority 80)

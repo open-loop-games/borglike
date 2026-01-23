@@ -349,6 +349,41 @@ const summon_wolf: SpellTemplate = {
   description: 'Call a loyal wolf companion to fight by your side.',
 }
 
+const hunters_mark: SpellTemplate = {
+  id: 'hunters_mark',
+  name: "Hunter's Mark",
+  school: 'nature',
+  level: 8,
+  manaCost: 5,
+  cooldown: 0,
+  effectType: 'buff',
+  buff: { type: 'damage_bonus', value: 25, duration: 15 },
+  description: 'Mark your prey. All attacks deal +25% damage.',
+}
+
+const camouflage: SpellTemplate = {
+  id: 'camouflage',
+  name: 'Camouflage',
+  school: 'nature',
+  level: 18,
+  manaCost: 12,
+  cooldown: 30,
+  effectType: 'buff',
+  buff: { type: 'protection', value: 50, duration: 8 },
+  description: 'Blend into your surroundings, taking 50% less damage.',
+}
+
+const summon_bear: SpellTemplate = {
+  id: 'summon_bear',
+  name: 'Summon Bear',
+  school: 'nature',
+  level: 22,
+  manaCost: 15,
+  cooldown: 25,
+  effectType: 'summon',
+  description: 'Call a powerful bear to maul your enemies.',
+}
+
 const summon_skeleton: SpellTemplate = {
   id: 'summon_skeleton',
   name: 'Raise Skeleton',
@@ -464,6 +499,9 @@ export const SPELLS: Record<string, SpellTemplate> = {
   lightning_storm,
   root_shot,
   summon_wolf,
+  hunters_mark,
+  camouflage,
+  summon_bear,
   // Shadow
   drain_life,
   shadow_bolt,

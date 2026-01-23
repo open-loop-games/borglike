@@ -118,8 +118,10 @@ const druidSpells: ClassSpellList = {
 }
 
 /**
- * Ranger - Nature magic with companion (6 spells)
+ * Ranger - Nature magic with companion (9 spells)
  * Gets wolf companion and root shot early for survival
+ * Mid-game: Hunter's Mark for damage, Camouflage for escape
+ * Late-game: Summon Bear for tanking
  */
 const rangerSpells: ClassSpellList = {
   classId: 'ranger',
@@ -127,8 +129,11 @@ const rangerSpells: ClassSpellList = {
     { spellId: 'summon_wolf', learnLevel: 1 }, // Wolf companion from start
     { spellId: 'root_shot', learnLevel: 1 }, // Stun shot for kiting
     { spellId: 'natures_balm', learnLevel: 5 }, // Early heal for sustain
+    { spellId: 'hunters_mark', learnLevel: 8 }, // +25% damage buff
     { spellId: 'entangle', learnLevel: 10 },
     { spellId: 'thorn_strike', learnLevel: 15 },
+    { spellId: 'camouflage', learnLevel: 18 }, // Escape/protection
+    { spellId: 'summon_bear', learnLevel: 22 }, // Stronger summon
     { spellId: 'resist_elements', learnLevel: 25 },
   ],
 }

@@ -844,6 +844,8 @@ export function getFleeGoal(
 /**
  * Get RECOVER goal - rest to heal when safe.
  * Returns a recover goal if healing is needed and safe, null otherwise.
+ *
+ * Smart recovery: Skip long recovers (>30 turns) when town trip is available.
  */
 export function getRecoverGoal(
   context: BotContext,
@@ -851,8 +853,9 @@ export function getRecoverGoal(
   localDanger: number,
   hpRatio: number
 ): BotGoal | null {
-  const { game } = context
-  const pos = game.character.position
+  const { game, config } = context
+  const character = game.character
+  const pos = character.position
 
   // Recover if: HP < 50% AND safe AND no visible monsters
   const shouldRecoverNow =
@@ -862,12 +865,37 @@ export function getRecoverGoal(
 
   if (!shouldRecoverNow) return null
 
-  // Stay in place to recover
+  // Calculate turns to heal to 50% threshold
+  const regenPerTurn = Math.max(1, Math.floor(character.maxHp * 0.01))
+  const targetHp = Math.ceil(character.maxHp * 0.5)
+  const hpToHeal = targetHp - character.hp
+  const turnsToHeal = Math.ceil(hpToHeal / regenPerTurn)
+
+  // Quick heal - just RECOVER
+  const QUICK_HEAL_THRESHOLD = 30
+  if (turnsToHeal <= QUICK_HEAL_THRESHOLD) {
+    return {
+      type: 'RECOVER',
+      target: pos,
+      targetId: null,
+      reason: `Recovering (${turnsToHeal}t to 50%)`,
+      startTurn: game.turn,
+    }
+  }
+
+  // Slow heal - check if town trip is better option
+  const tpDecision = shouldUseTownPortal(game, config, context.personality)
+  if (tpDecision.shouldUse) {
+    // Skip RECOVER - let town trip goal handle it
+    return null
+  }
+
+  // No better option - RECOVER anyway
   return {
     type: 'RECOVER',
     target: pos,
     targetId: null,
-    reason: `Recovering (HP: ${Math.round(hpRatio * 100)}%)`,
+    reason: `Recovering (${turnsToHeal}t, no TP)`,
     startTurn: game.turn,
   }
 }

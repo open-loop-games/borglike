@@ -154,7 +154,9 @@ export function getDamageSpellAction(
 ): GameAction | null {
   const character = game.character
 
-  if (visibleMonsters.length === 0) return null
+  if (visibleMonsters.length === 0) {
+    return null
+  }
 
   // Get available damage spells
   const available = getAvailableSpells(character, game.turn)
@@ -166,7 +168,9 @@ export function getDamageSpellAction(
         entry.spell.effectType === 'lifedrain')
   )
 
-  if (damageSpells.length === 0) return null
+  if (damageSpells.length === 0) {
+    return null
+  }
 
   // Check mana - don't cast if we're very low on mana
   const mpRatio = character.mp / character.maxMp
@@ -553,6 +557,21 @@ export function hasCastableSpells(game: GameState): boolean {
 export function canCastAnySpell(game: GameState): boolean {
   const available = getAvailableSpells(game.character, game.turn)
   return available.some((entry) => entry.canCast)
+}
+
+/**
+ * Check if character can cast any damage spell right now
+ * Used to determine if casters should get KITE goals
+ */
+export function hasCastableDamageSpell(game: GameState): boolean {
+  const available = getAvailableSpells(game.character, game.turn)
+  return available.some(
+    (entry) =>
+      entry.canCast &&
+      (entry.spell.effectType === 'damage' ||
+        entry.spell.effectType === 'aoe_damage' ||
+        entry.spell.effectType === 'lifedrain')
+  )
 }
 
 // ============================================================================
