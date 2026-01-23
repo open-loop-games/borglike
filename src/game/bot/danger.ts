@@ -9,8 +9,8 @@ import type { Point, GameState, Monster, Character } from '../types'
 import { getAdjacentPositions } from '../dungeon'
 import type { DangerMap, DangerResult, DangerTier, PersonalityConfig } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
-import { findHealingPotion, findEscapeScroll } from './items'
-import { getEffectiveDamage } from './combat'
+import { findHealingPotion, findEscapeScroll, findNeutralizePoison, findResistancePotion } from './items'
+import { getEffectiveDamage, countAdjacentMonsters } from './combat'
 import { getMonsterAverageDamage } from '../monster-combat'
 
 // Re-export types for convenience
@@ -56,11 +56,113 @@ export function computeDangerGrid(game: GameState): DangerResult {
     }
   }
 
+  // Add status effect danger to character's position
+  const adjacentCount = countAdjacentMonsters(game, character.position)
+  const hasPoisonCure = findNeutralizePoison(character) !== null ||
+                        findResistancePotion(character, 'poison') !== null
+  const statusDanger = getStatusEffectDanger(character, adjacentCount, hasPoisonCure)
+
+  if (statusDanger > 0) {
+    const posKey = `${character.position.x},${character.position.y}`
+    const existingDanger = dangers.get(posKey) ?? 0
+    dangers.set(posKey, existingDanger + statusDanger)
+    if (existingDanger + statusDanger > maxDanger) {
+      maxDanger = existingDanger + statusDanger
+    }
+  }
+
   return {
     dangers,
     maxDanger,
     computedAt: game.turn,
   }
+}
+
+/**
+ * Calculate danger contribution from active status effects
+ *
+ * Status effects amplify danger based on severity and context:
+ * - paralyzed + adjacent monsters = extreme (150+ danger)
+ * - confused + low HP = high (80+ danger)
+ * - poison DOT = medium-high (scales with damage)
+ * - blind/slowed = medium (40-60 danger)
+ * - terrified/drained = low (15-20 danger)
+ */
+export function getStatusEffectDanger(
+  character: Character,
+  adjacentMonsterCount: number,
+  hasPoisonCure: boolean = false
+): number {
+  let totalDanger = 0
+  const hpRatio = character.hp / character.maxHp
+
+  // Check status effects
+  for (const effect of character.statusEffects) {
+    // Skip buffs
+    if (['speed', 'heroism', 'berserk', 'blessing', 'protection', 'immunity_fear', 'active_form'].includes(effect.type)) {
+      continue
+    }
+
+    let danger = 0
+    const turnsLeft = effect.turnsRemaining
+
+    switch (effect.type) {
+      case 'paralyzed':
+        // Can't act = death sentence if monsters adjacent
+        danger = 150 + (adjacentMonsterCount * 50)
+        if (turnsLeft === 1) danger *= 0.5
+        break
+
+      case 'confused':
+        // Random movement = can't retreat reliably
+        danger = 80
+        if (hpRatio < 0.3) danger += 40
+        if (adjacentMonsterCount > 0) danger += 30
+        danger *= Math.min(turnsLeft / 3, 1.5)
+        break
+
+      case 'blind':
+        // Can't see threats
+        danger = 40
+        if (adjacentMonsterCount > 0) danger += 30
+        break
+
+      case 'slowed':
+        // Enemies get more actions
+        danger = 30 + (adjacentMonsterCount * 15)
+        break
+
+      case 'terrified':
+        // Can't fight, must flee
+        danger = 20
+        if (adjacentMonsterCount >= 2) danger += 40
+        break
+
+      case 'drained':
+        // Stat reduction
+        danger = 15
+        break
+    }
+
+    totalDanger += Math.floor(danger)
+  }
+
+  // Check poison (stored separately)
+  if (character.poison) {
+    const poisonTurns = character.poison.turnsRemaining
+    const poisonDamage = character.poison.damagePerTurn
+    const totalPoisonDamage = poisonDamage * poisonTurns
+
+    // Danger = potential damage * 2
+    let poisonDanger = totalPoisonDamage * 2
+
+    if (hpRatio < 0.3) poisonDanger *= 1.5
+    if (hasPoisonCure) poisonDanger *= 0.3
+
+    totalDanger += Math.floor(poisonDanger)
+  }
+
+  return Math.floor(totalDanger)
 }
 
 /**

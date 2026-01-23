@@ -12,7 +12,7 @@ import type { ClassBehaviorProfile } from './class-profiles'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
 import { getLocalDanger, getTileDanger } from './danger'
 import { isInCombat, countAdjacentMonsters, getCombatAdvantage } from './combat'
-import { findHealingPotion, findEscapeScroll, findTownPortalScroll } from './items'
+import { findHealingPotion, findEscapeScroll, findTownPortalScroll, findNeutralizePoison, findResistancePotion } from './items'
 import { isInTown } from '../town'
 import { isUnderPrepared } from './preparation'
 import { getAverageDamage } from '../data/monsters'
@@ -51,9 +51,91 @@ export interface TownPortalDecision {
 // ============================================================================
 
 /**
+ * Check if status effects make retreat urgent
+ *
+ * Deadly combinations:
+ * - paralyzed + adjacent monsters = instant death
+ * - confused + low HP = random walk into danger
+ * - poison + no cure + HP dropping = eventual death
+ */
+export function getStatusRetreatUrgency(
+  game: GameState,
+  adjacentCount: number,
+  hpRate: number
+): RetreatEvaluation {
+  const character = game.character
+  const hpRatio = character.hp / character.maxHp
+
+  // Paralyzed + adjacent monsters (CRITICAL)
+  const isParalyzed = character.statusEffects.some(e => e.type === 'paralyzed')
+  if (isParalyzed && adjacentCount > 0) {
+    return {
+      shouldRetreat: true,
+      urgency: 100,
+      reason: 'Paralyzed with adjacent enemies',
+    }
+  }
+
+  // Confused + low HP (HIGH)
+  const isConfused = character.statusEffects.some(e => e.type === 'confused')
+  if (isConfused && hpRatio < 0.4) {
+    return {
+      shouldRetreat: true,
+      urgency: 85,
+      reason: 'Confused with low HP',
+    }
+  }
+
+  // Poison + no cure + HP dropping (HIGH)
+  if (character.poison) {
+    const hasCure = findNeutralizePoison(character) !== null ||
+                    findResistancePotion(character, 'poison') !== null
+    const hpDropping = hpRate < 0
+
+    if (!hasCure && hpDropping && hpRatio < 0.5) {
+      const turnsToLive = character.hp / character.poison.damagePerTurn
+      if (turnsToLive < 10) {
+        return {
+          shouldRetreat: true,
+          urgency: 75,
+          reason: `Poisoned, no cure (${Math.floor(turnsToLive)} turns to live)`,
+        }
+      }
+    }
+  }
+
+  // Blind + surrounded (MEDIUM)
+  const isBlind = character.statusEffects.some(e => e.type === 'blind')
+  if (isBlind && adjacentCount >= 2) {
+    return {
+      shouldRetreat: true,
+      urgency: 60,
+      reason: 'Blind and surrounded',
+    }
+  }
+
+  // Slowed + outnumbered (MEDIUM)
+  const isSlowed = character.statusEffects.some(e => e.type === 'slowed')
+  if (isSlowed && adjacentCount >= 2 && hpRatio < 0.6) {
+    return {
+      shouldRetreat: true,
+      urgency: 55,
+      reason: 'Slowed and outnumbered',
+    }
+  }
+
+  return {
+    shouldRetreat: false,
+    urgency: 0,
+    reason: '',
+  }
+}
+
+/**
  * Evaluate whether we should retreat from current position
  *
  * Triggers:
+ * - Status effects that make current position deadly
  * - HP below personality caution threshold
  * - Outnumbered (2+ adjacent monsters)
  * - Losing the fight (combat advantage negative)
@@ -62,9 +144,18 @@ export interface TownPortalDecision {
 export function shouldRetreat(
   game: GameState,
   config: PersonalityConfig,
-  dangers: DangerMap
+  dangers: DangerMap,
+  hpRate: number = 0
 ): RetreatEvaluation {
   const character = game.character
+  const adjacentCount = countAdjacentMonsters(game, character.position)
+
+  // Check status effects FIRST (highest priority)
+  const statusRetreat = getStatusRetreatUrgency(game, adjacentCount, hpRate)
+  if (statusRetreat.shouldRetreat) {
+    return statusRetreat
+  }
+
   const hpRatio = character.hp / character.maxHp
   const cautionThreshold = config.caution / 100
 
@@ -79,7 +170,6 @@ export function shouldRetreat(
   }
 
   // Check if outnumbered
-  const adjacentCount = countAdjacentMonsters(game, character.position)
   if (adjacentCount >= 2) {
     // Only retreat if not super aggressive
     if (config.aggression < 80) {
@@ -605,26 +695,32 @@ export function shouldEscapeOverHeal(
  * Returns a flee goal if retreat is warranted, null otherwise.
  * Handles state transitions: corridor reset, safety flow caching.
  */
+/**
+ * Get FLEE goal - escape from danger
+ *
+ * CRITICAL: Never returns null when shouldRetreat=true
+ * Always provides emergency fallback to prevent walking into danger
+ */
 export function getFleeGoal(
   context: BotContext,
-  dangers: DangerMap
+  dangers: DangerMap,
+  hpRate: number = 0
 ): BotGoal | null {
   const { game, config, botState } = context
 
-  // Check flee cooldown (set after stop_fleeing to prevent immediately fleeing again)
+  // Check flee cooldown
   if (game.turn < botState.fleeCooldownUntil) {
     return null
   }
 
-  // Use survival module for retreat decision
-  const retreatEval = shouldRetreat(game, config, dangers)
-
+  // Check if retreat warranted (PASS HP RATE)
+  const retreatEval = shouldRetreat(game, config, dangers, hpRate)
   if (!retreatEval.shouldRetreat) return null
 
-  // Exit corridor-following mode when fleeing
+  // Exit corridor-following mode
   resetCorridorFollowing(botState)
 
-  // Try safety flow first (inverted Dijkstra for global escape planning)
+  // Try 1: Safety flow (if monsters nearby)
   const nearbyMonsters = game.monsters.filter(m => {
     if (m.hp <= 0) return false
     const dx = Math.abs(m.position.x - game.character.position.x)
@@ -641,9 +737,7 @@ export function getFleeGoal(
     )
 
     if (safetyResult.target) {
-      // Cache for debugging
       botState.cachedSafetyFlow = safetyResult
-
       return {
         type: 'FLEE',
         target: safetyResult.target,
@@ -654,34 +748,95 @@ export function getFleeGoal(
     }
   }
 
-  // Fallback to old escape route logic
+  // Try 2: Escape route logic
   const escapeRoute = findBestEscapeRoute(game, dangers)
-  if (!escapeRoute) {
-    // No escape - try stairs as last resort
-    if (game.currentLevel.stairsDown) {
-      const stairsTile = getTile(
-        game.currentLevel,
-        game.currentLevel.stairsDown.x,
-        game.currentLevel.stairsDown.y
-      )
-      if (stairsTile?.explored) {
-        return {
-          type: 'FLEE',
-          target: game.currentLevel.stairsDown,
-          targetId: null,
-          reason: retreatEval.reason,
-          startTurn: game.turn,
-        }
-      }
+  if (escapeRoute) {
+    return {
+      type: 'FLEE',
+      target: escapeRoute.target,
+      targetId: null,
+      reason: retreatEval.reason,
+      startTurn: game.turn,
     }
-    return null
   }
 
+  // Try 3: Stairs down
+  if (game.currentLevel.stairsDown) {
+    const stairsTile = getTile(game.currentLevel,
+      game.currentLevel.stairsDown.x,
+      game.currentLevel.stairsDown.y)
+    if (stairsTile?.explored) {
+      return {
+        type: 'FLEE',
+        target: game.currentLevel.stairsDown,
+        targetId: null,
+        reason: `${retreatEval.reason} (stairs escape)`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // Try 4: Stairs up
+  if (game.currentLevel.stairsUp) {
+    const stairsUpTile = getTile(game.currentLevel,
+      game.currentLevel.stairsUp.x,
+      game.currentLevel.stairsUp.y)
+    if (stairsUpTile?.explored) {
+      return {
+        type: 'FLEE',
+        target: game.currentLevel.stairsUp,
+        targetId: null,
+        reason: `${retreatEval.reason} (ascend escape)`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // Try 5: Any walkable adjacent tile with lowest danger
+  const pos = game.character.position
+  const adjacent = getAdjacentPositions(pos)
+  const walkableEscapes: Point[] = []
+
+  for (const adj of adjacent) {
+    const tile = getTile(game.currentLevel, adj.x, adj.y)
+    if (!tile || (!isWalkable(tile) && tile.type !== 'door_closed')) continue
+
+    const hasMonster = game.monsters.some(
+      m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
+    )
+    if (!hasMonster) {
+      walkableEscapes.push(adj)
+    }
+  }
+
+  if (walkableEscapes.length > 0) {
+    // Pick lowest danger tile
+    let bestEscape = walkableEscapes[0]!
+    let lowestDanger = getTileDanger(dangers, bestEscape)
+
+    for (const escape of walkableEscapes) {
+      const escapeDanger = getTileDanger(dangers, escape)
+      if (escapeDanger < lowestDanger) {
+        lowestDanger = escapeDanger
+        bestEscape = escape
+      }
+    }
+
+    return {
+      type: 'FLEE',
+      target: bestEscape,
+      targetId: null,
+      reason: `${retreatEval.reason} (adjacent escape)`,
+      startTurn: game.turn,
+    }
+  }
+
+  // Try 6: Stand still (last resort - better than moving into danger)
   return {
     type: 'FLEE',
-    target: escapeRoute.target,
+    target: pos,
     targetId: null,
-    reason: retreatEval.reason,
+    reason: `${retreatEval.reason} (stand ground)`,
     startTurn: game.turn,
   }
 }
