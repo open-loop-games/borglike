@@ -1,7 +1,7 @@
 /**
  * Town Data and Layout
  *
- * Defines the fixed Angband-style town layout with numbered shop buildings.
+ * Village square design with corner buildings facing a central plaza.
  * The town is a safe zone with healer, 5 specialized shops, and dungeon entrance.
  */
 
@@ -12,33 +12,44 @@ import type { Point } from '../types'
 // ============================================================================
 
 /**
- * Fixed ASCII town layout (40x9) - Angband style with numbered buildings
+ * Fixed ASCII town layout (48x16) - Village square with corner buildings
  *
  * Legend:
- * # = Wall
- * , = Cobblestone floor (walkable, visual variety)
+ * # = Wall (permanent)
+ * + = Door (walkable, visual marker)
+ * , = Cobblestone floor (walkable)
+ * : = Rubble/debris (walkable, decorative)
+ * ~ = Fountain (walkable, decorative)
  * 1-5 = Shop keeper positions (General, Armory, Weapons, Alchemy, Magic)
  * H = Healer position
  * < = Dungeon entrance (stairs to depth 1)
  * @ = Player spawn / portal spawn area
- * ~ = Well (decorative, walkable)
  */
 export const TOWN_LAYOUT = `
-########################################
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#
-#,,1,,,,2,,,,3,,,,4,,,,5,,,,H,,,,,,,~,,#
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#
-#,,,,,,,,,,,,,<,,,,,,,,@,,,,,,,,,,,,,,#
-#,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#
-########################################
+################################################
+##########,,,,,,,,,,,,,,,,,,,,,,,,,,,,##########
+##      ##,,,,,,,,,,,,,,,,,,,,,,,,,,,,##      ##
+##  1    +,,,,,,,,,,,,,,,,,,,,,,,,,,,,+    H  ##
+##      ##,,,,,,,,,,,,,,,~,,,,,,,,,,,,##      ##
+##########,,,,,,,,,,,,,,,,,,,,,,,,,,,,##########
+######,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,######
+#,,,,,,,,,,,,,,,,<,,,,,,,,,,@,,,,,,,,,,,,,,,,,,#
+######,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,######
+##########,,,,,,,,,,,,,,,,,,,,,,,,,,,,##########
+##      ##,,,,,,,,:::,,,,,,:::,,,,,,,,##      ##
+##  2    +,,,,,,,,:::,,,,,,:::,,,,,,,,+    5  ##
+##  3    +,,,,,,,,,,,,,,,,,,,,,,,,,,,,+    4  ##
+##      ##,,,,,,,,,,,,,,,,,,,,,,,,,,,,##      ##
+##########,,,,,,,,,,,,,,,,,,,,,,,,,,,,##########
+################################################
 `.trim()
 
 // ============================================================================
 // TOWN DIMENSIONS
 // ============================================================================
 
-export const TOWN_WIDTH = 40
-export const TOWN_HEIGHT = 7
+export const TOWN_WIDTH = 48
+export const TOWN_HEIGHT = 16
 
 // ============================================================================
 // SHOP CONFIGURATION
@@ -55,30 +66,38 @@ export const TOWN_SHOP_IDS = [
 
 export type TownShopId = typeof TOWN_SHOP_IDS[number]
 
-/** Shop positions indexed by shop ID */
+/**
+ * Shop positions indexed by shop ID
+ *
+ * Layout (village square):
+ * - Top-left building: General Store (1)
+ * - Top-right building: Healer (H)
+ * - Bottom-left building: Armory (2) and Weapons (3)
+ * - Bottom-right building: Alchemy (4) and Magic (5)
+ */
 export const TOWN_SHOP_POSITIONS: Record<TownShopId, Point> = {
-  town_general: { x: 3, y: 2 },
-  town_armory: { x: 8, y: 2 },
-  town_weapons: { x: 13, y: 2 },
-  town_alchemy: { x: 18, y: 2 },
-  town_magic: { x: 23, y: 2 },
+  town_general: { x: 4, y: 3 },   // Top-left building
+  town_armory: { x: 4, y: 11 },   // Bottom-left, upper floor
+  town_weapons: { x: 4, y: 12 },  // Bottom-left, lower floor
+  town_alchemy: { x: 43, y: 12 }, // Bottom-right, lower floor
+  town_magic: { x: 43, y: 11 },   // Bottom-right, upper floor
 }
 
 // ============================================================================
 // NPC AND FEATURE POSITIONS
 // ============================================================================
 
-/** Healer NPC position (H in layout) */
-export const HEALER_POSITION: Point = { x: 28, y: 2 }
+/** Healer NPC position (H in layout) - Top-right building */
+export const HEALER_POSITION: Point = { x: 43, y: 3 }
 
-/** Dungeon entrance position (< in layout) */
-export const DUNGEON_ENTRANCE_POSITION: Point = { x: 14, y: 4 }
+/** Dungeon entrance position (< in layout) - Left side of central plaza */
+export const DUNGEON_ENTRANCE_POSITION: Point = { x: 17, y: 7 }
 
-/** Player/portal spawn position (@ in layout) */
-export const PORTAL_SPAWN_POSITION: Point = { x: 21, y: 4 }
+/** Player/portal spawn position (@ in layout) - Right side of central plaza */
+export const PORTAL_SPAWN_POSITION: Point = { x: 28, y: 7 }
 
-/** Well decoration position (~ in layout) */
-export const WELL_POSITION: Point = { x: 36, y: 2 }
+/** Fountain position (~ in layout) - Center of upper plaza */
+export const WELL_POSITION: Point = { x: 25, y: 4 }
 
 // ============================================================================
 // HEALER COSTS

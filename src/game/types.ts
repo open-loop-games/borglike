@@ -144,6 +144,11 @@ export type TileType =
   | 'portal'           // Active town portal
   | 'dungeon_entrance' // Town stairs to depth 1
   | 'healer'           // Healer NPC tile
+  // Town decorative tiles
+  | 'cobblestone'      // Town floor with visual variety
+  | 'town_door'        // Shop entrance (visual marker)
+  | 'rubble'           // Decorative debris
+  | 'town_fountain'    // Town fountain (decorative)
 
 /** A single tile in the dungeon */
 export interface Tile {

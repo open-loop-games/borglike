@@ -14,10 +14,12 @@ import {
   computeBoosterBonuses,
   createGameRunner,
   getTile,
+  getDepthReadiness,
   type RunResult,
   type GameState,
   type BotPersonality,
   type Item,
+  type BotState,
 } from '@/game'
 import { randomInt } from '@/game/rng'
 import { handleRunCompletion } from '@/core/run-completion-service'
@@ -209,7 +211,8 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
 
   // Initialize run state from game
   const game = runner.getState()
-  updateRunFromGame(runId, game)
+  const botState = runner.getBotState()
+  updateRunFromGame(runId, game, botState)
   renderGameToGrid(runId, game)
 
   // Mark as running
@@ -276,7 +279,7 @@ export function killRun(runId: string): void {
 /**
  * Update run store stats from game state
  */
-function updateRunFromGame(runId: string, game: GameState): void {
+function updateRunFromGame(runId: string, game: GameState, botState?: BotState): void {
   const runs = useRunsStore()
 
   runs.handleEvent(runId, { type: 'hp', current: game.character.hp, max: game.character.maxHp })
@@ -337,6 +340,21 @@ function updateRunFromGame(runId: string, game: GameState): void {
 
     // Sync inventory
     run.inventory = game.character.inventory.map(toDisplayItem)
+
+    // AI introspection (minimal)
+    if (botState?.currentGoal) {
+      run.botGoal = `${botState.currentGoal.type} - ${botState.currentGoal.reason}`
+    } else {
+      run.botGoal = undefined
+    }
+
+    // Check depth blocker for next depth
+    const nextDepth = game.character.depth + 1
+    run.depthBlocker = getDepthReadiness(
+      game.character,
+      game.character.inventory,
+      nextDepth
+    ) ?? undefined
   }
 }
 
@@ -496,6 +514,23 @@ function renderGameToGrid(runId: string, game: GameState): void {
           char = '.'
           color = tile.visible ? 0x64748b : 0x334155 // floor (healer NPC rendered separately)
           break
+        // Town decorative tiles
+        case 'cobblestone':
+          char = ','
+          color = tile.visible ? 0x78716c : 0x44403c // warm stone gray
+          break
+        case 'town_door':
+          char = '+'
+          color = tile.visible ? 0xd97706 : 0x92400e // amber (shop entrance)
+          break
+        case 'rubble':
+          char = ':'
+          color = tile.visible ? 0x57534e : 0x292524 // dark stone
+          break
+        case 'town_fountain':
+          char = '~'
+          color = tile.visible ? 0x38bdf8 : 0x0369a1 // sky blue water
+          break
       }
 
       setLocalCell(grid, screenY, screenX, char, color)
@@ -610,9 +645,10 @@ function startGameLoop(runId: string): void {
     // Process turn
     instance.runner.step()
     const game = instance.runner.getState()
+    const botState = instance.runner.getBotState()
 
     // Update UI
-    updateRunFromGame(runId, game)
+    updateRunFromGame(runId, game, botState)
     renderGameToGrid(runId, game)
 
     // Process new messages for feed

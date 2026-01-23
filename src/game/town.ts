@@ -28,7 +28,7 @@ import {
   TOWN_SHOP_POSITIONS,
   type TownShopId,
 } from './data/town'
-import { getTile, setTile, computeFOV } from './dungeon'
+import { getTile, setTile, setAllTilesVisible, computeFOV } from './dungeon'
 import { calculateLightRadius } from './lighting'
 import { initializeMerchant, initializeFeaturesFromVault } from './features'
 import { spawnMonstersForLevel } from './monster-ai'
@@ -79,8 +79,8 @@ export function generateTownLevel(): DungeonLevel {
 /**
  * Convert ASCII character to tile type
  *
- * All non-wall characters are walkable floor tiles.
- * The visual characters (,, ~, 1-5) create variety but don't block movement.
+ * Maps ASCII layout characters to tile types for rendering variety.
+ * All non-wall tiles are walkable.
  */
 function charToTileType(char: string): TileType {
   switch (char) {
@@ -90,10 +90,18 @@ function charToTileType(char: string): TileType {
       return 'dungeon_entrance'
     case 'H':
       return 'healer'
-    // All decorative and floor characters map to 'floor'
+    // Town decorative tiles (all walkable)
+    case ',':
+      return 'cobblestone'
+    case '+':
+      return 'town_door'
+    case ':':
+      return 'rubble'
+    case '~':
+      return 'town_fountain'
+    // Plain floor tiles
     case '.':
-    case ',': // Cobblestone
-    case '~': // Well (decorative)
+    case ' ': // Interior floor (inside buildings)
     case '1': // Shop 1 (General Store)
     case '2': // Shop 2 (Armory)
     case '3': // Shop 3 (Weapon Smithy)
@@ -166,9 +174,8 @@ export function enterTown(game: GameState): void {
   // Initialize town features
   initializeTown(game)
 
-  // Update FOV - town is fully visible (calculateLightRadius returns MAX for depth 0)
-  const lightRadius = calculateLightRadius(game.character, 0)
-  computeFOV(townLevel, game.character.position, lightRadius)
+  // Town is always fully visible - no FOV restrictions
+  setAllTilesVisible(townLevel)
 
   // Clear monsters and items (town has no monsters)
   game.monsters = []
@@ -282,10 +289,11 @@ function destroyPortal(game: GameState): void {
 /**
  * Initialize town features (healer, 5 specialized shops)
  *
+ * Called when entering town via portal or ascending from depth 1.
  * Town shop inventory scales with maxDepthEver (permanent progression).
  * Once you've reached depth 15+, alchemy shops stock better potions, etc.
  */
-function initializeTown(game: GameState): void {
+export function initializeTown(game: GameState): void {
   // Initialize healer
   game.healer = {
     position: { ...HEALER_POSITION },

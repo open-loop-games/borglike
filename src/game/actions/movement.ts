@@ -24,6 +24,7 @@ import {
   getTile,
   isWalkable,
   computeFOV,
+  setAllTilesVisible,
   findOpenPosition,
 } from '../dungeon'
 import { spawnMonstersForLevel } from '../monster-ai'
@@ -34,7 +35,7 @@ import {
   evictOldLevels,
   LEVEL_CACHE_MAX_SIZE,
 } from '../level-cache'
-import { isInTown } from '../town'
+import { isInTown, initializeTown } from '../town'
 import { addMessage } from './helpers'
 import { handleAttack } from './combat'
 
@@ -301,34 +302,49 @@ export function handleAscend(game: GameState): ActionResult {
     game.character.position = findOpenPosition(previousLevel)
   }
 
-  // ENTITY REGENERATION: Always spawn fresh entities on level entry
-  // Layout is cached, but monsters/items regenerate (Angband-style)
-  // UniqueState ensures unique monsters don't respawn
-  game.monsters = spawnMonstersForLevel(previousLevel, newDepth, game.balance.monsterHpPercent, game.uniqueState)
-  game.items = spawnItemsForLevel(previousLevel, newDepth, game.balance.potionRatePercent, game.balance.enchantRatePercent, game.balance.itemRatePercent)
+  // Town (depth 0) has special initialization
+  if (newDepth === 0) {
+    // Town has no monsters or items
+    game.monsters = []
+    game.items = []
 
-  // Reset features for level entry
-  game.fountains = new Map<string, FountainState>()
-  game.altars = new Map<string, AltarState>()
-  game.merchants = []
-  game.traps = new Map<string, TrapState>()
+    // Initialize town features (healer, shops)
+    initializeTown(game)
 
-  // Initialize features from vault data (if vault was placed on this level)
-  initializeFeaturesFromVault(
-    previousLevel,
-    newDepth,
-    game.fountains,
-    game.altars,
-    game.merchants,
-    game.traps,
-    generateMerchantInventory
-  )
+    // Town is always fully visible
+    setAllTilesVisible(previousLevel)
 
-  // Update FOV (dynamic light radius)
-  const lightRadius = calculateLightRadius(game.character, newDepth)
-  computeFOV(previousLevel, game.character.position, lightRadius)
+    addMessage(game, 'You return to town.', 'info')
+  } else {
+    // ENTITY REGENERATION: Always spawn fresh entities on level entry
+    // Layout is cached, but monsters/items regenerate (Angband-style)
+    // UniqueState ensures unique monsters don't respawn
+    game.monsters = spawnMonstersForLevel(previousLevel, newDepth, game.balance.monsterHpPercent, game.uniqueState)
+    game.items = spawnItemsForLevel(previousLevel, newDepth, game.balance.potionRatePercent, game.balance.enchantRatePercent, game.balance.itemRatePercent)
 
-  addMessage(game, `You ascend to depth ${newDepth}.`, 'info')
+    // Reset features for level entry
+    game.fountains = new Map<string, FountainState>()
+    game.altars = new Map<string, AltarState>()
+    game.merchants = []
+    game.traps = new Map<string, TrapState>()
+
+    // Initialize features from vault data (if vault was placed on this level)
+    initializeFeaturesFromVault(
+      previousLevel,
+      newDepth,
+      game.fountains,
+      game.altars,
+      game.merchants,
+      game.traps,
+      generateMerchantInventory
+    )
+
+    // Update FOV (dynamic light radius)
+    const lightRadius = calculateLightRadius(game.character, newDepth)
+    computeFOV(previousLevel, game.character.position, lightRadius)
+
+    addMessage(game, `You ascend to depth ${newDepth}.`, 'info')
+  }
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }

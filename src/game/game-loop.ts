@@ -25,7 +25,7 @@ import { calculateLightRadius } from './lighting'
 import { createCharacter } from './character'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
-import { generateLevel, computeFOV, findOpenPosition } from './dungeon'
+import { generateLevel, computeFOV, setAllTilesVisible, findOpenPosition } from './dungeon'
 import { spawnMonstersForLevel, processMonsterTurns } from './monster-ai'
 import { processMinionTurns } from './minion-ai'
 import { spawnItemsForLevel, createStartingEquipment, createRandomPotion } from './items'
@@ -357,9 +357,13 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     return events
   }
 
-  // Update FOV (dynamic light radius based on equipment/race/depth)
-  const lightRadius = calculateLightRadius(game.character, game.character.depth)
-  computeFOV(game.currentLevel, game.character.position, lightRadius)
+  // Update FOV (town is always fully visible, dungeon uses shadowcasting)
+  if (game.character.depth === 0) {
+    setAllTilesVisible(game.currentLevel)
+  } else {
+    const lightRadius = calculateLightRadius(game.character, game.character.depth)
+    computeFOV(game.currentLevel, game.character.position, lightRadius)
+  }
 
   return events
 }

@@ -59,7 +59,12 @@ export function isWalkable(tile: Tile): boolean {
     tile.type === 'stairs_down' ||
     tile.type === 'portal' ||
     tile.type === 'dungeon_entrance' ||
-    tile.type === 'healer'
+    tile.type === 'healer' ||
+    // Town decorative tiles (all walkable)
+    tile.type === 'cobblestone' ||
+    tile.type === 'town_door' ||
+    tile.type === 'rubble' ||
+    tile.type === 'town_fountain'
   )
 }
 
@@ -186,6 +191,25 @@ export function computeFOV(level: DungeonLevel, origin: Point, radius: number): 
   )
 
   return visible
+}
+
+/**
+ * Set all tiles in a level as visible and explored
+ *
+ * Used for town level where everything should always be visible.
+ */
+export function setAllTilesVisible(level: DungeonLevel): void {
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+    for (let x = 0; x < level.width; x++) {
+      const tile = row[x]
+      if (tile) {
+        tile.visible = true
+        tile.explored = true
+      }
+    }
+  }
 }
 
 // ============================================================================
