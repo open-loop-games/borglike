@@ -102,10 +102,9 @@ src/
 
 - `docs/PLAN.md` - Roadmap and phase tracking
 - `docs/ARCHITECTURE.md` - System diagrams (needs update)
-- `docs/BOT-AI-PLAN.md` - Bot AI design
-- `docs/UI-PLAN.md` - UI design system
 - `docs/ANGBAND-LITE-DESIGN.md` - Game design (races, classes, balance)
 - `TODO.md` - Current tasks and technical debt
+- `/work/temp/angband/` - Angband and Borg source
 
 ## Development Notes
 
