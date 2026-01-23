@@ -113,7 +113,7 @@ function evaluateConsumable(item: Item, character: Character): ItemEvaluation {
   const template = item.template
   const baseValue = TIER_BASE_VALUE[template.tier] ?? 10
   let score = baseValue
-  let isUseful = true
+  const isUseful = true
   let reason = template.type === 'potion' ? 'Potion' : 'Scroll'
 
   // Healing potions are very valuable when HP is low

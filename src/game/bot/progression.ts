@@ -165,6 +165,7 @@ export function getDescentBlocker(
 ): string | null {
   const nextDepth = character.depth + 1
   if (nextDepth > MAX_DEPTH) return 'At max depth'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return getDepthReadiness(character as any, character.inventory as any, nextDepth, caution)
 }
 
@@ -184,13 +185,16 @@ export function shouldAscendToFarm(
  * Check if ready for town trip (has gold target and portal).
  */
 export function isTownTripReady(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   character: { depth: number; gold: number; inventory: any[]; level: number },
   goldTarget: number
 ): boolean {
   if (character.depth === 0) return false // Already in town
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const effectiveGold = getEffectiveGold(character as any)
   if (effectiveGold < goldTarget) return false
   if (character.level < character.depth) return false
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tpScroll = findTownPortalScroll(character as any)
   return tpScroll !== null
 }

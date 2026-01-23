@@ -449,6 +449,7 @@ export function createGoldPile(depth: number): Item | null {
     id: `gold-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     template: {
       name: pileTemplate.name,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: 'gold' as any, // Gold is a special type
       tier: pileTemplate.tier,
       weight: pileTemplate.weight,

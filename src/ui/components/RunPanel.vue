@@ -110,7 +110,7 @@ function handleDismiss() {
           {{ personalityDisplay.label }}
         </span>
       </div>
-      <div class="run-boosters" v-if="activeBoosters.length > 0">
+      <div v-if="activeBoosters.length > 0" class="run-boosters">
         <span v-for="b in activeBoosters" :key="b!.id" class="booster-badge" :title="b!.name">
           {{ b!.icon }}
         </span>

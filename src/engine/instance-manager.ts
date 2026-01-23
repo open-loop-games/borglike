@@ -273,7 +273,7 @@ export function killRun(runId: string): void {
 
   // Get the result and trigger normal end handling
   const result = instance.runner.getResult()
-  handleGameEnd(runId, result, run.config, run.slot)
+  void handleGameEnd(runId, result, run.config, run.slot)
 }
 
 /**
@@ -638,7 +638,7 @@ function startGameLoop(runId: string): void {
     if (!instance.runner.isActive()) {
       // Game ended
       const result = instance.runner.getResult()
-      handleGameEnd(runId, result, run.config, run.slot)
+      void handleGameEnd(runId, result, run.config, run.slot)
       return
     }
 

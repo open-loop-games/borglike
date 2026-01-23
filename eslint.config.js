@@ -42,6 +42,14 @@ export default tseslint.config(
         varsIgnorePattern: '^_',
       }],
       '@typescript-eslint/no-non-null-assertion': 'off', // Common in game code
+
+      // Promise safety
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+
+      // Style consistency
+      '@typescript-eslint/consistent-type-imports': 'warn',
     },
   },
 
@@ -67,6 +75,13 @@ export default tseslint.config(
         Blob: 'readonly',
         URL: 'readonly',
         FileReader: 'readonly',
+        // DOM types
+        HTMLCanvasElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLElement: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        ResizeObserver: 'readonly',
+        MouseEvent: 'readonly',
       },
     },
     rules: {

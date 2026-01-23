@@ -181,6 +181,7 @@ export function handleMonsterKill(
   game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
 
   // Award gold from monster
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   awardMonsterGold(game, monster.template as any)
 
   if (leveledUp && newLevel) {

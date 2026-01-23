@@ -486,12 +486,12 @@ export function getCombatAdvantage(game: GameState): number {
 
   // Sum up expected damage from all adjacent monsters
   let totalThreat = 0
-  let totalTurnsToKill = 0
+  let _totalTurnsToKill = 0
 
   for (const monster of adjacentMonsters) {
     const eval_ = evaluateCombat(character, monster)
     totalThreat += eval_.expectedDamage
-    totalTurnsToKill += eval_.turnsToKill
+    _totalTurnsToKill += eval_.turnsToKill
   }
 
   // Advantage = our HP buffer vs expected damage

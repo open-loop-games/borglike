@@ -6,6 +6,7 @@
  */
 
 import type { Character, Stats, CombatStats, Item, EquipSlot, Resistances } from './types'
+import type { Race } from './data/races'
 import { getRaceById, getClassById, calculateHitdie } from './data/index'
 import { xpForLevel } from '../core/formulas'
 import type { UpgradeBonuses } from './upgrade-effects'
@@ -252,7 +253,7 @@ export function createCharacter(config: {
  * Calculate resistances from a race's abilities
  * Helper function for character creation (before Character object exists)
  */
-function calculateResistancesFromRace(race: import('./data/races').Race): Resistances {
+function calculateResistancesFromRace(race: Race): Resistances {
   const resistances: Resistances = {}
 
   for (const ability of race.abilities) {

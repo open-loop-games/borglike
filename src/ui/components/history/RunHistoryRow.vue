@@ -100,7 +100,7 @@ const duration = computed(() => {
         <span class="essence-icon">&#x25C6;</span>
         {{ run.essenceEarned }}
       </span>
-      <span class="death-cause" v-if="run.deathCause">
+      <span v-if="run.deathCause" class="death-cause">
         {{ run.deathCause.slice(0, 30) }}{{ run.deathCause.length > 30 ? '...' : '' }}
       </span>
       <span v-else class="victory">Victory!</span>
@@ -123,11 +123,11 @@ const duration = computed(() => {
             <span class="label">XP Earned:</span>
             <span class="value">{{ run.xpEarned.toLocaleString() }}</span>
           </div>
-          <div class="detail" v-if="run.personality">
+          <div v-if="run.personality" class="detail">
             <span class="label">Personality:</span>
             <span class="value personality-value">{{ personalityDisplay }} <span class="personality-full">({{ run.personality }})</span></span>
           </div>
-          <div class="detail" v-if="run.seed">
+          <div v-if="run.seed" class="detail">
             <span class="label">Seed:</span>
             <span class="value seed">{{ run.seed }}</span>
           </div>

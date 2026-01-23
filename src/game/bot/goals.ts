@@ -243,11 +243,13 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       // Flee is valid while danger persists AND we haven't reached the target
       if (context.visibleMonsters.length === 0) return false
       // If we're at the flee target, goal is complete - need new evaluation
-      const fleePos = game.character.position
-      if (goal.target && fleePos.x === goal.target.x && fleePos.y === goal.target.y) {
-        return false
+      {
+        const fleePos = game.character.position
+        if (goal.target && fleePos.x === goal.target.x && fleePos.y === goal.target.y) {
+          return false
+        }
+        return true
       }
-      return true
 
     case 'RECOVER':
       // Recover until full HP or enemies appear
@@ -293,11 +295,13 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       // Exception: sweep mode can explore even when no unexplored tiles (targets seen-before tiles)
       if (context.unexploredTiles.length === 0 && !botState.sweepMode) return false
       // If we're at the target, goal is complete - need new target
-      const pos = game.character.position
-      if (goal.target && pos.x === goal.target.x && pos.y === goal.target.y) {
-        return false
+      {
+        const pos = game.character.position
+        if (goal.target && pos.x === goal.target.x && pos.y === goal.target.y) {
+          return false
+        }
+        return true
       }
-      return true
 
     case 'KITE':
       // Kite is valid if we have a ranged weapon and visible monsters
