@@ -99,7 +99,7 @@ function handleOpenHelp() {
       @open-help="handleOpenHelp"
       @open-run-history="handleOpenRunHistory"
       @open-bestiary="handleOpenBestiary"
-      @open-catalog="handleOpenArmory"
+      @open-armory="handleOpenArmory"
       @open-achievements="handleOpenAchievements"
     />
     <main class="game">
