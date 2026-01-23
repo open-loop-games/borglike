@@ -31,6 +31,7 @@ export {
   distance,
   manhattanDistance,
   computeFOV,
+  setAllTilesVisible,
   findPath,
 } from './dungeon'
 export {
@@ -159,6 +160,7 @@ export {
   getBotStatus,
   createBotState,
   getPersonalityConfig,
+  getDepthReadiness,
   BASE_CONFIGS,
 } from './bot'
 

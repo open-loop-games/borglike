@@ -77,6 +77,10 @@ export interface ActiveRun {
 
   // Final run stats (set when run ends)
   finalStats?: RunStats
+
+  // AI introspection (minimal)
+  botGoal?: string      // e.g., "EXPLORE - 45% explored"
+  depthBlocker?: string // e.g., "Need 3 healing potions (have 1)"
 }
 
 export interface GridCell {

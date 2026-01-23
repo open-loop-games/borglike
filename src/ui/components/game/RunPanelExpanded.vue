@@ -149,6 +149,20 @@ function startKillHold() {
   if (props.run.state === 'dead') return
   killHold.start()
 }
+
+// Format bot goal for display (truncate reason if too long)
+function formatGoal(goal: string | undefined): string {
+  if (!goal) return '...'
+  // Goal format: "TYPE - reason"
+  const parts = goal.split(' - ')
+  if (parts.length < 2) return goal
+  const type = parts[0]
+  const reason = parts.slice(1).join(' - ')
+  // Truncate reason if too long
+  const maxLen = 20
+  const shortReason = reason.length > maxLen ? reason.slice(0, maxLen) + '...' : reason
+  return `${type}: ${shortReason}`
+}
 </script>
 
 <template>
@@ -202,6 +216,18 @@ function startKillHold() {
     <div class="expanded-content">
       <!-- Stats Panel -->
       <aside class="stats-panel">
+        <!-- AI Status (minimal introspection) -->
+        <div v-if="run.state === 'running'" class="ai-status">
+          <div class="ai-goal" :title="run.botGoal">
+            <span class="ai-label">Goal</span>
+            <span class="ai-value">{{ formatGoal(run.botGoal) }}</span>
+          </div>
+          <div v-if="run.depthBlocker" class="ai-blocker" :title="run.depthBlocker">
+            <span class="ai-label">Block</span>
+            <span class="ai-value blocker">{{ run.depthBlocker }}</span>
+          </div>
+        </div>
+
         <!-- Vitals: HP/MP bars + level/XP/gold -->
         <CollapsibleSection
           title="Vitals"
@@ -599,6 +625,44 @@ function startKillHold() {
 }
 
 /* Stats Panel */
+/* AI Status */
+.ai-status {
+  padding: 6px 8px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.ai-goal, .ai-blocker {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.ai-blocker {
+  margin-top: 4px;
+}
+
+.ai-label {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+.ai-value {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-value.blocker {
+  color: var(--amber);
+}
+
 .stats-panel {
   width: 200px;
   padding: 8px;
