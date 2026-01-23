@@ -13,6 +13,7 @@
  *   batch [runs]    - Run multiple seeds and aggregate results
  *   find            - Find problematic seeds
  *   compare         - Compare behavior across personalities
+ *   debug-explore   - Debug EXPLORE goal breakdown at a specific turn
  *   help            - Show this help message
  *
  * Options:
@@ -60,7 +61,7 @@ import type { BotPersonality } from '../src/game/types'
 // ============================================================================
 
 interface Args {
-  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'help'
+  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'help' | 'debug-explore'
   seed?: number
   runs: number
   turns: number
@@ -83,6 +84,8 @@ interface Args {
   maxUpgrades: boolean
   /** Randomize race/class/personality per run */
   randomize: boolean
+  /** Target turn for debug-explore mode */
+  targetTurn?: number
   // Balance overrides (Tier 1)
   monsterHp: number
   monsterDamage: number
@@ -152,7 +155,8 @@ function parseArgs(): Args {
     mode === 'batch' ||
     mode === 'find' ||
     mode === 'compare' ||
-    mode === 'help'
+    mode === 'help' ||
+    mode === 'debug-explore'
   ) {
     result.mode = mode
   } else if (mode && !mode.startsWith('--')) {
@@ -196,6 +200,9 @@ function parseArgs(): Args {
       result.to = parseInt(arg.slice(5), 10)
     } else if (arg === '--log-only') {
       result.logOnly = true
+    } else if (arg.startsWith('--target-turn=') || arg.startsWith('--target=')) {
+      const value = arg.includes('target-turn') ? arg.slice(14) : arg.slice(9)
+      result.targetTurn = parseInt(value, 10)
     } else if (arg.startsWith('--threads=')) {
       result.threads = parseInt(arg.slice(10), 10)
     } else if (arg === '--max-upgrades') {
@@ -313,7 +320,7 @@ ANALYZERS:
 // MAIN
 // ============================================================================
 
-function main(): void {
+async function main(): Promise<void> {
   const args = parseArgs()
 
   if (args.mode === 'help') {
@@ -457,6 +464,100 @@ function main(): void {
           console.log('\nRun with "deep <seed>" for detailed analysis.')
         }
       })
+      break
+    }
+
+    case 'debug-explore': {
+      const seed = args.seed ?? Date.now()
+      const targetTurn = args.targetTurn ?? 1000
+      console.log(`\nDEBUG EXPLORE: seed=${seed} target=${targetTurn}\n`)
+
+      // Import needed functions dynamically
+      const { createGame, processTurn } = await import('../src/game/game-loop.js')
+      const { runBotTick, createBotState } = await import('../src/game/bot/index.js')
+      const { buildBotContext } = await import('../src/game/bot/context.js')
+      const { getExploreGoal, getFrontierPositions } = await import('../src/game/bot/exploration.js')
+      const { computeFlow, getFlowCost } = await import('../src/game/bot/flow.js')
+      const { MAX_FLOW_COST } = await import('../src/game/bot/types.js')
+
+      // Create and run game to target turn
+      const game = createGame({
+        seed,
+        raceId: args.race as any,
+        classId: args.classId as any,
+      })
+
+      let botState = createBotState()
+      for (let turn = 0; turn < targetTurn; turn++) {
+        const action = runBotTick(game, args.personality, botState)
+
+        processTurn(game, action)
+
+        if (!game.isRunning) {
+          console.log(`Game ended at turn ${turn}`)
+          break
+        }
+      }
+
+      // Debug at target turn
+      console.log('=== GAME STATE ===')
+      console.log(`Position: (${game.character.position.x}, ${game.character.position.y})`)
+      console.log(`Depth: ${game.character.depth}`)
+      console.log(`HP: ${game.character.hp}/${game.character.maxHp}`)
+      console.log(`Turn: ${game.turn}`)
+
+      const context = buildBotContext(game, args.personality, botState)
+
+      console.log('\n=== UNEXPLORED TILES (from context) ===')
+      console.log(`unexploredTiles.length: ${context.unexploredTiles.length}`)
+      if (context.unexploredTiles.length > 0) {
+        console.log('First 10 unexplored:', context.unexploredTiles.slice(0, 10).map(p => `(${p.x},${p.y})`).join(', '))
+      }
+
+      console.log('\n=== FRONTIERS (from getFrontierPositions) ===')
+      const frontiers = getFrontierPositions(game)
+      console.log(`frontiers.length: ${frontiers.length}`)
+      if (frontiers.length > 0) {
+        console.log('First 10 frontiers:', frontiers.slice(0, 10).map(p => `(${p.x},${p.y})`).join(', '))
+      }
+
+      console.log('\n=== EXPLORE GOAL ===')
+      const exploreGoal = getExploreGoal(context)
+      if (exploreGoal) {
+        console.log(`Goal type: ${exploreGoal.type}`)
+        console.log(`Target: (${exploreGoal.target?.x}, ${exploreGoal.target?.y})`)
+        console.log(`Reason: ${exploreGoal.reason}`)
+      } else {
+        console.log('NO EXPLORE GOAL RETURNED')
+      }
+
+      if (botState) {
+        console.log('\n=== BOT STATE ===')
+        console.log(`currentGoal: ${botState.currentGoal?.type ?? 'null'}`)
+        if (botState.currentGoal?.target) {
+          console.log(`  target: (${botState.currentGoal.target.x}, ${botState.currentGoal.target.y})`)
+        }
+        console.log(`blacklistedTargets.size: ${botState.blacklistedTargets?.size ?? 0}`)
+        if (botState.blacklistedTargets && botState.blacklistedTargets.size > 0) {
+          const blacklisted = Array.from(botState.blacklistedTargets.entries())
+          console.log('First 10 blacklisted:', blacklisted.slice(0, 10).map(([key, turn]) => `${key} (expires:${turn})`).join(', '))
+        }
+      }
+
+      // Check reachability of first 5 frontiers
+      if (frontiers.length > 0) {
+        console.log('\n=== REACHABILITY CHECK ===')
+        const pos = game.character.position
+        const sampleFrontiers = frontiers.slice(0, 5)
+
+        for (const frontier of sampleFrontiers) {
+          const flow = computeFlow(game.currentLevel, frontier)
+          const cost = getFlowCost(flow, pos)
+          const unreachable = cost >= MAX_FLOW_COST
+          console.log(`  (${frontier.x},${frontier.y}): cost=${cost} ${unreachable ? '[UNREACHABLE]' : ''}`)
+        }
+      }
+
       break
     }
   }
