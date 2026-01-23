@@ -6,7 +6,9 @@
  */
 
 import type { Item, GroundItem, Character, EquipSlot, ItemTemplate } from '../types'
-import type { PersonalityConfig } from './types'
+import type { PersonalityConfig, BotContext, BotGoal, DangerMap } from './types'
+import { getLocalDanger } from './danger'
+import { isSamePosition } from './movement'
 
 // ============================================================================
 // TYPES
@@ -761,5 +763,105 @@ export function findCureFor(character: Character, status: string): Item | null {
 
     default:
       return null
+  }
+}
+
+// ============================================================================
+// ITEM QUERIES (for goal selection)
+// ============================================================================
+
+/**
+ * Find best item within distance using smart evaluation
+ * Pure query function for goal selection - returns best pickup target or null.
+ */
+export function findBestItem(context: BotContext, maxDistance: number): GroundItem | null {
+  const { game, visibleItems, config } = context
+  const pos = game.character.position
+  const character = game.character
+
+  let best: GroundItem | null = null
+  let bestScore = -Infinity
+
+  for (const item of visibleItems) {
+    const dx = Math.abs(item.position.x - pos.x)
+    const dy = Math.abs(item.position.y - pos.y)
+    const distance = dx + dy
+
+    if (distance > maxDistance) continue
+
+    // Check if we should pick up this item
+    if (!shouldPickup(item, character, config)) continue
+
+    // Evaluate item value
+    const evaluation = evaluateItem(item, character)
+
+    // Score = value - distance penalty
+    // Upgrades get big bonus to encourage pickup
+    let score = evaluation.score
+    if (evaluation.isUpgrade) {
+      score += 50
+    }
+    score -= distance * 3 // Distance penalty
+
+    if (score > bestScore) {
+      bestScore = score
+      best = item
+    }
+  }
+
+  return best
+}
+
+/**
+ * Policy: Should we pick up items right now?
+ * Returns false if danger is too high.
+ */
+export function shouldPickupNow(
+  dangers: DangerMap,
+  pos: { x: number; y: number },
+  dangerThreshold: number
+): boolean {
+  const localDanger = getLocalDanger(dangers, pos)
+  return localDanger <= dangerThreshold
+}
+
+/**
+ * Get TAKE goal - pick up items.
+ * Returns a take goal for items at current position or nearby valuable items.
+ */
+export function getTakeGoal(
+  context: BotContext,
+  dangers: DangerMap,
+  dangerThreshold: number
+): BotGoal | null {
+  const { game, config } = context
+  const pos = game.character.position
+
+  // Check for item at current position first
+  const itemHere = game.items.find((item) => isSamePosition(item.position, pos))
+  if (itemHere) {
+    return {
+      type: 'TAKE',
+      target: pos,
+      targetId: itemHere.id,
+      reason: 'Item at position',
+      startTurn: game.turn,
+    }
+  }
+
+  // Check if safe enough to detour for items
+  if (!shouldPickupNow(dangers, pos, dangerThreshold)) return null
+
+  // Find best item within greed radius
+  const maxDetour = Math.floor(config.greed / 10) + 3
+  const nearestItem = findBestItem(context, maxDetour)
+  if (!nearestItem) return null
+
+  return {
+    type: 'TAKE',
+    target: nearestItem.position,
+    targetId: nearestItem.id,
+    reason: 'Collecting item',
+    startTurn: game.turn,
   }
 }

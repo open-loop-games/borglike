@@ -10,11 +10,11 @@ declare const process: { env: Record<string, string | undefined> } | undefined
 
 import type { GameState, Point, DungeonLevel, Tile, Direction } from '../types'
 import { DIRECTION_VECTORS, chebyshevDistance } from '../types'
-import type { BotState } from './types'
+import type { BotState, BotGoal, BotContext } from './types'
+import { MAX_FLOW_COST } from './types'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
 import { isTargetBlacklisted } from './state'
 import { computeFlow, getFlowCost } from './flow'
-import { MAX_FLOW_COST } from './types'
 
 // ============================================================================
 // TYPES
@@ -1028,4 +1028,65 @@ export function getExplorationDebugInfo(game: GameState, botState: BotState): st
   ]
 
   return lines.join(' | ')
+}
+
+// ============================================================================
+// GOAL CREATION (exploration domain)
+// ============================================================================
+
+/** Toggle to disable exploration module for A/B testing */
+const USE_EXPLORATION_MODULE = true
+
+/** Toggle to disable labyrinth-specific strategy for A/B testing */
+const USE_LABYRINTH_STRATEGY = true
+
+/**
+ * Get EXPLORE goal - find unexplored areas.
+ * Uses labyrinth-aware exploration for maze levels.
+ *
+ * Note: Sweep exploration for casters is handled by getProgressionGoal in
+ * progression.ts. This function only handles normal frontier-based exploration.
+ */
+export function getExploreGoal(context: BotContext): BotGoal | null {
+  const { game, unexploredTiles, botState } = context
+
+  if (unexploredTiles.length === 0) return null
+
+  let target
+
+  if (USE_EXPLORATION_MODULE) {
+    // Use labyrinth-aware exploration for maze levels (if enabled)
+    if (USE_LABYRINTH_STRATEGY && isLabyrinthLevel(game)) {
+      target = findLabyrinthExplorationTarget(game, botState)
+    } else {
+      // Standard exploration for other level types
+      // Reset corridor-following if we were in a labyrinth before
+      resetCorridorFollowing(botState)
+      target = findExplorationTarget(game, botState)
+    }
+  } else {
+    // Simple: pick nearest unexplored tile
+    const pos = game.character.position
+    let nearest = unexploredTiles[0]!
+    let nearestDist = Math.abs(nearest.x - pos.x) + Math.abs(nearest.y - pos.y)
+
+    for (const tile of unexploredTiles) {
+      const dist = Math.abs(tile.x - pos.x) + Math.abs(tile.y - pos.y)
+      if (dist < nearestDist) {
+        nearestDist = dist
+        nearest = tile
+      }
+    }
+    target = nearest
+  }
+
+  if (!target) return null
+
+  return {
+    type: 'EXPLORE',
+    target,
+    targetId: null,
+    reason: isLabyrinthLevel(game) ? 'Exploring labyrinth' : 'Exploring dungeon',
+    startTurn: game.turn,
+  }
 }

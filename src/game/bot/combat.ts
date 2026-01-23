@@ -7,11 +7,12 @@
 
 import type { GameState, Monster, Character, Point, Direction } from '../types'
 import { chebyshevDistance, isAdjacent, getDirectionFromDelta } from '../types'
-import type { BotContext, PersonalityConfig } from './types'
+import type { BotContext, PersonalityConfig, BotGoal } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 import { getAverageDamage } from '../data/monsters'
+import { resetCorridorFollowing } from './exploration'
 
 // ============================================================================
 // TYPES
@@ -690,4 +691,189 @@ export function shouldAvoidMelee(
     return true
   }
   return false
+}
+
+// ============================================================================
+// GOAL CREATION (combat domain)
+// ============================================================================
+
+/**
+ * Get KITE goal - proactive ranged combat positioning.
+ * For ranged classes with a bow equipped:
+ * - distance < optimal → KITE goal to reposition away
+ * - distance == optimal (within shooting range) → KITE goal to shoot from here
+ * - distance > bowRange → return null (let KILL approach to optimal range)
+ *
+ * This is the primary combat goal for ranged classes, evaluated BEFORE KILL.
+ */
+export function getKiteGoal(
+  context: BotContext
+): BotGoal | null {
+  const { game, classProfile, visibleMonsters } = context
+  const character = game.character
+  const pos = character.position
+
+  // Only for ranged classes
+  if (!classProfile.prefersRanged) return null
+
+  // Need ranged weapon and visible targets
+  if (!hasRangedWeapon(game)) return null
+  if (visibleMonsters.length === 0) return null
+
+  const bowRange = getBowRange(character)
+  const optimalRange = classProfile.engageDistance || 3
+
+  // Find closest visible monster to evaluate positioning
+  const closest = findClosestMonster(visibleMonsters, pos)
+  if (!closest) return null
+
+  const closestMonster = closest.monster
+  const closestDist = closest.distance
+
+  // Case 1: Too far to shoot - let KILL goal handle approach
+  if (closestDist > bowRange) {
+    return null
+  }
+
+  // Case 2: Too close - need to kite away
+  if (closestDist < optimalRange) {
+    const kiteDirection = findKitePosition(game, closestMonster, classProfile)
+
+    if (kiteDirection) {
+      // Calculate the position we'd move to
+      const dx = kiteDirection === 'e' || kiteDirection === 'ne' || kiteDirection === 'se' ? 1 :
+                 kiteDirection === 'w' || kiteDirection === 'nw' || kiteDirection === 'sw' ? -1 : 0
+      const dy = kiteDirection === 's' || kiteDirection === 'se' || kiteDirection === 'sw' ? 1 :
+                 kiteDirection === 'n' || kiteDirection === 'ne' || kiteDirection === 'nw' ? -1 : 0
+      const newPos = { x: pos.x + dx, y: pos.y + dy }
+
+      return {
+        type: 'KITE',
+        target: newPos,
+        targetId: closestMonster.id,
+        reason: `Kiting away from ${closestMonster.template.name} (dist ${closestDist})`,
+        startTurn: game.turn,
+      }
+    }
+
+    // Can't kite away - if we can still shoot (dist >= 2), shoot
+    if (closestDist >= 2 && canRangedAttack(character, closestMonster.position)) {
+      return {
+        type: 'KITE',
+        target: closestMonster.position,
+        targetId: closestMonster.id,
+        reason: `Shooting ${closestMonster.template.name} (can't kite)`,
+        startTurn: game.turn,
+      }
+    }
+
+    // Adjacent and can't kite - let melee handle it
+    return null
+  }
+
+  // Case 3: At or beyond optimal range but within bow range - shoot!
+  // Find best target to shoot at (might be different from closest)
+  const target = findBestRangedTarget(game, visibleMonsters)
+  if (target && canRangedAttack(character, target.position)) {
+    return {
+      type: 'KITE',
+      target: target.position,
+      targetId: target.id,
+      reason: `Shooting ${target.template.name} at range`,
+      startTurn: game.turn,
+    }
+  }
+
+  return null
+}
+
+/**
+ * Get KILL goal - hunt monsters.
+ *
+ * Creates KILL goals for:
+ * 1. Adjacent monsters (always, for any class)
+ * 2. Close monsters within engagement range (bypass shouldEngage for nearby threats)
+ * 3. Distant monsters if shouldEngage approves
+ *
+ * For ranged classes: Don't create KILL goal if already at shooting range.
+ * Let KITE handle shooting - KILL is for approaching distant targets.
+ */
+export function getKillGoal(
+  context: BotContext,
+  hpRatio: number
+): BotGoal | null {
+  const { game, config, botState, visibleMonsters, classProfile } = context
+  const pos = game.character.position
+  const character = game.character
+
+  // Check for adjacent monster first (always attack, any class)
+  const adjacentMonster = findAdjacentMonster(game)
+  if (adjacentMonster) {
+    // Exit corridor-following mode when in combat
+    resetCorridorFollowing(botState)
+    return {
+      type: 'KILL',
+      target: adjacentMonster.position,
+      targetId: adjacentMonster.id,
+      reason: 'Adjacent monster',
+      startTurn: game.turn,
+    }
+  }
+
+  // For ranged classes with a bow: check if we should let KITE handle this
+  if (classProfile.prefersRanged && hasRangedWeapon(game) && visibleMonsters.length > 0) {
+    const bowRange = getBowRange(character)
+
+    // Find distance to closest visible monster
+    const closestDist = getClosestMonsterDistance(visibleMonsters, pos)
+
+    // If already within shooting range (dist >= 2 and <= bowRange), let KITE handle it
+    if (closestDist >= 2 && closestDist <= bowRange) {
+      return null // KITE goal will handle shooting
+    }
+  }
+
+  // For close monsters (within 4 tiles), always create KILL goal to approach
+  // This prevents the "stuck at distance 2" bug where bot won't close the gap
+  // Exception: critically low HP (< 25%) should still flee instead
+  const CLOSE_ENGAGEMENT_RANGE = 4
+  if (visibleMonsters.length > 0 && hpRatio >= 0.25) {
+    const closest = findClosestMonster(visibleMonsters, pos)
+
+    // If monster is close, engage without shouldEngage check
+    // For ranged classes, this means approaching to get in range
+    if (closest && closest.distance <= CLOSE_ENGAGEMENT_RANGE) {
+      resetCorridorFollowing(botState)
+      return {
+        type: 'KILL',
+        target: closest.monster.position,
+        targetId: closest.monster.id,
+        reason: `Engaging nearby ${closest.monster.template.name}`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // For distant monsters, use full shouldEngage evaluation
+  // Use class-aware target selection for better scoring
+  const targetSelection = classProfile.prefersRanged
+    ? selectTargetForClass(context, classProfile, false)
+    : selectTarget(context, false)
+  if (!targetSelection) return null
+
+  // Check if we should engage this target
+  if (!shouldEngage(game, targetSelection.target, config)) {
+    return null
+  }
+
+  // Exit corridor-following mode when hunting
+  resetCorridorFollowing(botState)
+
+  return {
+    type: 'KILL',
+    target: targetSelection.target.position,
+    targetId: targetSelection.target.id,
+    reason: `Hunting ${targetSelection.target.template.name} (${targetSelection.reason})`,
+    startTurn: game.turn,
+  }
 }

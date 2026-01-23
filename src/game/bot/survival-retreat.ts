@@ -7,7 +7,7 @@
 
 import type { GameState, Point, Direction } from '../types'
 import { getDirectionFromDelta } from '../types'
-import type { PersonalityConfig, DangerMap, PhaseDoorSafety, DangerTier } from './types'
+import type { PersonalityConfig, DangerMap, PhaseDoorSafety, DangerTier, BotGoal, BotContext } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
 import { getLocalDanger, getTileDanger } from './danger'
@@ -16,6 +16,8 @@ import { findHealingPotion, findEscapeScroll, findTownPortalScroll } from './ite
 import { isInTown } from '../town'
 import { isUnderPrepared } from './preparation'
 import { getAverageDamage } from '../data/monsters'
+import { computeSafetyFlow } from './safety-flow'
+import { resetCorridorFollowing } from './exploration'
 
 // ============================================================================
 // TYPES
@@ -592,5 +594,126 @@ export function shouldEscapeOverHeal(
   }
 
   return false
+}
+
+// ============================================================================
+// GOAL CREATION (survival domain)
+// ============================================================================
+
+/**
+ * Get FLEE goal - escape from danger.
+ * Returns a flee goal if retreat is warranted, null otherwise.
+ * Handles state transitions: corridor reset, safety flow caching.
+ */
+export function getFleeGoal(
+  context: BotContext,
+  dangers: DangerMap
+): BotGoal | null {
+  const { game, config, botState } = context
+
+  // Check flee cooldown (set after stop_fleeing to prevent immediately fleeing again)
+  if (game.turn < botState.fleeCooldownUntil) {
+    return null
+  }
+
+  // Use survival module for retreat decision
+  const retreatEval = shouldRetreat(game, config, dangers)
+
+  if (!retreatEval.shouldRetreat) return null
+
+  // Exit corridor-following mode when fleeing
+  resetCorridorFollowing(botState)
+
+  // Try safety flow first (inverted Dijkstra for global escape planning)
+  const nearbyMonsters = game.monsters.filter(m => {
+    if (m.hp <= 0) return false
+    const dx = Math.abs(m.position.x - game.character.position.x)
+    const dy = Math.abs(m.position.y - game.character.position.y)
+    return dx <= 10 && dy <= 10
+  })
+
+  if (nearbyMonsters.length > 0) {
+    const safetyResult = computeSafetyFlow(
+      game.currentLevel,
+      nearbyMonsters,
+      game.character.position,
+      game.turn
+    )
+
+    if (safetyResult.target) {
+      // Cache for debugging
+      botState.cachedSafetyFlow = safetyResult
+
+      return {
+        type: 'FLEE',
+        target: safetyResult.target,
+        targetId: null,
+        reason: `${retreatEval.reason} (safety flow)`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // Fallback to old escape route logic
+  const escapeRoute = findBestEscapeRoute(game, dangers)
+  if (!escapeRoute) {
+    // No escape - try stairs as last resort
+    if (game.currentLevel.stairsDown) {
+      const stairsTile = getTile(
+        game.currentLevel,
+        game.currentLevel.stairsDown.x,
+        game.currentLevel.stairsDown.y
+      )
+      if (stairsTile?.explored) {
+        return {
+          type: 'FLEE',
+          target: game.currentLevel.stairsDown,
+          targetId: null,
+          reason: retreatEval.reason,
+          startTurn: game.turn,
+        }
+      }
+    }
+    return null
+  }
+
+  return {
+    type: 'FLEE',
+    target: escapeRoute.target,
+    targetId: null,
+    reason: retreatEval.reason,
+    startTurn: game.turn,
+  }
+}
+
+/**
+ * Get RECOVER goal - rest to heal when safe.
+ * Returns a recover goal if healing is needed and safe, null otherwise.
+ */
+export function getRecoverGoal(
+  context: BotContext,
+  dangerThreshold: number,
+  localDanger: number,
+  hpRatio: number
+): BotGoal | null {
+  const { game } = context
+  const pos = game.character.position
+
+  // Recover if: HP < 50% AND safe AND no visible monsters
+  const shouldRecoverNow =
+    hpRatio < 0.5 &&
+    localDanger < dangerThreshold * 0.5 &&
+    context.visibleMonsters.length === 0
+
+  if (!shouldRecoverNow) return null
+
+  // Stay in place to recover
+  return {
+    type: 'RECOVER',
+    target: pos,
+    targetId: null,
+    reason: `Recovering (HP: ${Math.round(hpRatio * 100)}%)`,
+    startTurn: game.turn,
+  }
 }
 

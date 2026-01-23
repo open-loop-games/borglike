@@ -10,6 +10,8 @@
 import type { Character, Item, UniqueState, MonsterTemplate } from '../types'
 import { getLivingUniques } from '../types'
 import { POTIONS, SCROLLS } from '../data/items'
+import { monsters as MONSTERS } from '../data/monsters'
+import type { BotContext, BotGoal } from './types'
 
 // ============================================================================
 // DEPTH REQUIREMENTS
@@ -577,4 +579,51 @@ export function getRelevantLivingUniques(
     const template = monsterTemplates.find(m => m.name === name)
     return template && template.minDepth <= targetDepth
   })
+}
+
+// ============================================================================
+// HUNT UNIQUE GOAL
+// ============================================================================
+
+/**
+ * Get HUNT_UNIQUE goal - hunt unique monsters blocking descent.
+ *
+ * If 2+ living uniques block descent to next depth, create a goal to hunt
+ * the one on the current level (if visible/known).
+ */
+export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
+  const { game, visibleMonsters } = context
+  const character = game.character
+  const nextDepth = character.depth + 1
+
+  // Check for unique blocker
+  const uniqueBlocker = getUniqueBlocker(
+    character.depth,
+    nextDepth,
+    game.uniqueState,
+    MONSTERS
+  )
+
+  if (!uniqueBlocker) return null
+
+  // Check if the blocking unique is visible on current level
+  const uniqueMonster = visibleMonsters.find(m =>
+    m.template.name === uniqueBlocker &&
+    m.template.flags?.includes('UNIQUE') &&
+    m.hp > 0
+  )
+
+  if (uniqueMonster) {
+    return {
+      type: 'HUNT_UNIQUE',
+      target: uniqueMonster.position,
+      targetId: uniqueMonster.id,
+      reason: `Hunting ${uniqueBlocker} to unlock descent`,
+      startTurn: game.turn,
+    }
+  }
+
+  // Unique exists but not visible - explore to find it
+  // This falls through to EXPLORE goal
+  return null
 }

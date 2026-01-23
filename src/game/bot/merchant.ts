@@ -5,7 +5,9 @@
  */
 
 import type { GameState } from '../types'
+import type { BotGoal, BotContext } from './types'
 import { findAdjacentMerchant, sellToMerchant, buyFromMerchant } from '../features'
+import { countHealingPotions } from './preparation'
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -29,16 +31,7 @@ function getSlotPriority(slot: string): number {
   }
 }
 
-/**
- * Count healing potions in character's inventory
- */
-export function countHealingPotions(character: { inventory: Array<{ template: { type: string; effect?: string } }> }): number {
-  return character.inventory.filter(item => {
-    if (item.template.type !== 'potion') return false
-    const effect = item.template.effect || ''
-    return effect.includes('Cure') || effect.includes('Heal')
-  }).length
-}
+// countHealingPotions moved to preparation.ts (deduplicated)
 
 // ============================================================================
 // BOT MERCHANT ACTIONS
@@ -241,4 +234,204 @@ export function botBuySupplies(game: GameState): number {
   }
 
   return boughtCount
+}
+
+// ============================================================================
+// GOAL CREATION (merchant domain)
+// ============================================================================
+
+/** Minimum gold buffer to keep for emergencies (potions, escapes) */
+const ALTAR_GOLD_BUFFER = 300
+
+/**
+ * Get USE_ALTAR goal - use dungeon altars for benefits.
+ *
+ * Priority order:
+ * 1. Enchantment Altar (200g) - +1 to weapon, best gold sink
+ * 2. Blessing Altar (50g) - Full heal + mana restore
+ * 3. Knowledge Altar (25g) - Identify all items
+ */
+export function getUseAltarGoal(
+  context: BotContext,
+  dangerThreshold: number,
+  localDanger: number
+): BotGoal | null {
+  const { game, visibleAltars, visibleMonsters } = context
+  const character = game.character
+
+  // Don't use altars if monsters are visible
+  if (visibleMonsters.length > 0) return null
+
+  // Don't use altars if in danger
+  if (localDanger > dangerThreshold * 0.3) return null
+
+  // No altars visible
+  if (visibleAltars.length === 0) return null
+
+  // Evaluate each visible altar
+  let bestAltar = null
+  let bestPriority = -1
+  let bestReason = ''
+
+  for (const altar of visibleAltars) {
+    const template = altar.template
+    const cost = template.cost
+
+    // Can we afford this altar while keeping buffer?
+    if (character.gold < cost + ALTAR_GOLD_BUFFER) continue
+
+    // Evaluate based on altar type
+    let priority = 0
+    let reason = ''
+
+    switch (template.effect) {
+      case 'enchant': {
+        // Enchantment altar: +1 to weapon
+        // Highest priority gold sink - always use if affordable
+        const weapon = character.equipment.weapon
+        if (weapon) {
+          // Higher priority for lower enchantment (bigger relative gain)
+          priority = 100 - weapon.enchantment * 5
+          reason = `Enchanting ${weapon.template.name} (+${weapon.enchantment} → +${weapon.enchantment + 1})`
+        }
+        break
+      }
+
+      case 'bless': {
+        // Blessing altar: Full heal + mana
+        // Use if HP < 70% or MP < 50%
+        const hpRatio = character.hp / character.maxHp
+        const mpRatio = character.maxMp > 0 ? character.mp / character.maxMp : 1
+        if (hpRatio < 0.7 || mpRatio < 0.5) {
+          priority = 50
+          reason = `Blessing (HP: ${Math.round(hpRatio * 100)}%, MP: ${Math.round(mpRatio * 100)}%)`
+        }
+        break
+      }
+
+      case 'identify': {
+        // Knowledge altar: Identify all items
+        // Use if we have 3+ unidentified items
+        const unidentifiedCount = character.inventory.filter(item => !item.identified).length
+        if (unidentifiedCount >= 3) {
+          priority = 20
+          reason = `Identifying ${unidentifiedCount} items`
+        }
+        break
+      }
+
+      case 'curse_remove': {
+        // Purification altar: Remove curses
+        // Skip for now - curses not implemented
+        break
+      }
+    }
+
+    if (priority > bestPriority) {
+      bestPriority = priority
+      bestAltar = altar
+      bestReason = reason
+    }
+  }
+
+  if (!bestAltar || bestPriority <= 0) return null
+
+  return {
+    type: 'USE_ALTAR',
+    target: bestAltar.position,
+    targetId: bestAltar.template.id,
+    reason: bestReason,
+    startTurn: game.turn,
+  }
+}
+
+/**
+ * Get VISIT_MERCHANT goal - visit dungeon merchants for supplies/gear.
+ *
+ * Priority scoring:
+ * - Shady Dealer (black market) - highest priority for T3-4 gear
+ * - Alchemist - high priority if low on healing potions
+ * - Weapon/Armor dealers - moderate priority if gold available
+ * - General/Mixed - low priority for general supplies
+ */
+export function getVisitMerchantGoal(
+  context: BotContext,
+  dangerThreshold: number,
+  localDanger: number
+): BotGoal | null {
+  const { game, visibleMerchants, visibleMonsters } = context
+  const character = game.character
+
+  // Safety checks
+  if (visibleMonsters.length > 0) return null
+  if (localDanger > dangerThreshold * 0.3) return null
+  if (visibleMerchants.length === 0) return null
+  if (game.character.depth === 0) return null  // Town handled separately
+
+  // Score each merchant
+  let bestMerchant = null
+  let bestScore = 0
+  let bestReason = ''
+
+  for (const merchant of visibleMerchants) {
+    let score = 0
+    let reason = ''
+
+    // Shady Dealer (black market) - highest priority for late-game gear
+    if (merchant.template.id === 'black_market') {
+      // High priority if we have gold for T3-4 gear
+      if (character.gold > 500) {
+        score = 100
+        reason = 'Black market (T3-4 gear)'
+      }
+    }
+    // Alchemist - if low on healing
+    else if (merchant.template.shopType === 'potion') {
+      const healingCount = countHealingPotions(character.inventory)
+      if (healingCount < 3) {
+        score = 60
+        reason = 'Need healing potions'
+      } else if (character.gold > 300) {
+        score = 20
+        reason = 'Checking potion supplies'
+      }
+    }
+    // Weapon/Armor dealers - if gold available
+    else if (merchant.template.shopType === 'weapon' || merchant.template.shopType === 'armor') {
+      if (character.gold > 500) {
+        score = 40
+        reason = `Checking ${merchant.template.shopType} upgrades`
+      }
+    }
+    // Scroll merchant - if need escape/utility scrolls
+    else if (merchant.template.shopType === 'scroll') {
+      if (character.gold > 200) {
+        score = 35
+        reason = 'Checking scroll supplies'
+      }
+    }
+    // Mixed/general - moderate priority
+    else {
+      if (character.gold > 200) {
+        score = 20
+        reason = 'General supplies'
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score
+      bestMerchant = merchant
+      bestReason = reason
+    }
+  }
+
+  if (!bestMerchant || bestScore <= 0) return null
+
+  return {
+    type: 'VISIT_MERCHANT',
+    target: bestMerchant.position,
+    targetId: bestMerchant.template.id,
+    reason: bestReason,
+    startTurn: game.turn,
+  }
 }

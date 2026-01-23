@@ -16,41 +16,53 @@ import { findAdjacentMonster, hasRangedWeapon } from './combat'
 import { isInTown, HEALER_POSITION, DUNGEON_ENTRANCE_POSITION, TOWN_SHOP_POSITIONS } from '../town'
 import { type TownShopId } from '../data/town'
 
-// Import evaluators used locally
-import {
-  evaluateFlee,
-  evaluateKite,
-  evaluateRecover,
-  evaluateKill,
-  evaluateTake,
-  evaluateExplore,
-  evaluateUseAltar,
-  evaluateVisitMerchant,
-  evaluateHuntUnique,
-} from './goal-evaluators'
-import { evaluateDescend } from './farming'
-import { getEffectiveGold } from './preparation'
+// Import goal functions from domain modules
+import { getFleeGoal, getRecoverGoal } from './survival-retreat'
+import { getKiteGoal, getKillGoal } from './combat'
+import { getTakeGoal, findBestItem } from './items'
+import { getExploreGoal } from './exploration'
+import { getUseAltarGoal, getVisitMerchantGoal } from './merchant'
+import { evaluateDescend } from './progression'
+import { getEffectiveGold, getHuntUniqueGoal } from './preparation'
 
-// Re-export all evaluators for external use
-export {
-  evaluateFlee,
-  evaluateKite,
-  evaluateRecover,
-  evaluateKill,
-  evaluateTake,
-  evaluateExplore,
-  evaluateUseAltar,
-  evaluateVisitMerchant,
-  evaluateHuntUnique,
-  findBestItem,
-} from './goal-evaluators'
+// Wrapper functions to maintain backward compatibility with evaluateX naming
+function evaluateFlee(context: BotContext, dangers: DangerMap, _t: number, _l: number, _h: number): BotGoal | null {
+  return getFleeGoal(context, dangers)
+}
+function evaluateHuntUnique(context: BotContext): BotGoal | null {
+  return getHuntUniqueGoal(context)
+}
+function evaluateKite(context: BotContext, _d: DangerMap, _t: number): BotGoal | null {
+  return getKiteGoal(context)
+}
+function evaluateRecover(context: BotContext, dangerThreshold: number, localDanger: number, hpRatio: number): BotGoal | null {
+  return getRecoverGoal(context, dangerThreshold, localDanger, hpRatio)
+}
+function evaluateKill(context: BotContext, hpRatio: number): BotGoal | null {
+  return getKillGoal(context, hpRatio)
+}
+function evaluateTake(context: BotContext, dangers: DangerMap, dangerThreshold: number): BotGoal | null {
+  return getTakeGoal(context, dangers, dangerThreshold)
+}
+function evaluateExplore(context: BotContext): BotGoal | null {
+  return getExploreGoal(context)
+}
+function evaluateUseAltar(context: BotContext, dangerThreshold: number, localDanger: number): BotGoal | null {
+  return getUseAltarGoal(context, dangerThreshold, localDanger)
+}
+function evaluateVisitMerchant(context: BotContext, dangerThreshold: number, localDanger: number): BotGoal | null {
+  return getVisitMerchantGoal(context, dangerThreshold, localDanger)
+}
+
+// Re-export for external use
+export { findBestItem, evaluateHuntUnique }
 export {
   evaluateDescend,
   evaluateFarm,
   evaluateAscendToFarm,
   evaluateTownTrip,
   evaluateSweep,
-} from './farming'
+} from './progression'
 
 // ============================================================================
 // CONSTANTS
