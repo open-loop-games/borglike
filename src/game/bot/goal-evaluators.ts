@@ -1448,34 +1448,48 @@ export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
   const stairsUp = botState.knownStairsUp
   if (!stairsUp) return null
 
-  // Tethered exploration check: must explore around stairs before flipping again
-  // Origin is set by tick.ts after each level change
-  if (botState.tetheredRadius > 0 && botState.tetheredOrigin) {
-    const done = isTetheredExplorationComplete(context, botState.tetheredOrigin, botState.tetheredRadius)
-    if (!done) {
-      // Not done exploring - don't allow ascent yet
-      // Let FARM/EXPLORE continue
-      return null
+  // Early-game casters use sweep instead of tethered exploration
+  // Just set farming mode and skip tether logic
+  const isCasterFarming = SQUISHY_CLASSES.has(character.classId) && character.level < CASTER_STAIR_SURF_MIN_LEVEL
+  if (isCasterFarming) {
+    // Ensure farming mode is on for casters
+    if (!botState.farmingMode) {
+      botState.farmingMode = true
+      botState.farmBlockedDepth = blockedDepth
+      botState.farmGoldTarget = getGoldTarget(blockedDepth, effectiveConfig.caution)
+      botState.farmStartTurn = game.turn
     }
-    // Done exploring this radius - set next radius for after this flip
-    botState.tetheredFlipCount++
-    if (botState.tetheredFlipCount < TETHER_RADII.length) {
-      botState.tetheredRadius = TETHER_RADII[botState.tetheredFlipCount]!
-    } else {
-      // Done with tether cycle, reset for next cycle
-      botState.tetheredRadius = 0
+    // Skip tether - casters use sweep exploration via tick.ts
+  } else {
+    // Tethered exploration check: must explore around stairs before flipping again
+    // Origin is set by tick.ts after each level change
+    if (botState.tetheredRadius > 0 && botState.tetheredOrigin) {
+      const done = isTetheredExplorationComplete(context, botState.tetheredOrigin, botState.tetheredRadius)
+      if (!done) {
+        // Not done exploring - don't allow ascent yet
+        // Let FARM/EXPLORE continue
+        return null
+      }
+      // Done exploring this radius - set next radius for after this flip
+      botState.tetheredFlipCount++
+      if (botState.tetheredFlipCount < TETHER_RADII.length) {
+        botState.tetheredRadius = TETHER_RADII[botState.tetheredFlipCount]!
+      } else {
+        // Done with tether cycle, reset for next cycle
+        botState.tetheredRadius = 0
+        botState.tetheredFlipCount = 0
+      }
+    } else if (botState.tetheredRadius === 0) {
+      // Starting a new tether cycle - set initial radius for after this flip
+      // Origin will be set by tick.ts after the level change
+      // Also ensure farming mode is on (we're ascending to farm)
+      botState.farmingMode = true
+      botState.farmBlockedDepth = blockedDepth
+      botState.farmGoldTarget = getGoldTarget(blockedDepth, effectiveConfig.caution)
+      botState.farmStartTurn = game.turn
+      botState.tetheredRadius = TETHER_RADII[0]!
       botState.tetheredFlipCount = 0
     }
-  } else if (botState.tetheredRadius === 0) {
-    // Starting a new tether cycle - set initial radius for after this flip
-    // Origin will be set by tick.ts after the level change
-    // Also ensure farming mode is on (we're ascending to farm)
-    botState.farmingMode = true
-    botState.farmBlockedDepth = blockedDepth
-    botState.farmGoldTarget = getGoldTarget(blockedDepth, effectiveConfig.caution)
-    botState.farmStartTurn = game.turn
-    botState.tetheredRadius = TETHER_RADII[0]!
-    botState.tetheredFlipCount = 0
   }
 
   // Check if previous level is in cache (ascend will fail without it)

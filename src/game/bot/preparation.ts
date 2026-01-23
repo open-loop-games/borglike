@@ -21,11 +21,14 @@ export interface DepthRequirement {
   escapeScrolls: number
   townPortals: number
   minHpPercent: number
+  /** Buff potions (speed, heroism, berserk) - required for boss fights */
+  buffPotions?: number
 }
 
 /**
  * Consumable requirements by depth bracket.
  * Core survival items only - buffs are nice-to-have, not gates.
+ * Exception: Depth 50 (Morgoth) requires buff potions for the extended boss fight.
  */
 export const DEPTH_REQUIREMENTS: Record<number, DepthRequirement> = {
   1:  { healingPotions: 0, escapeScrolls: 0, townPortals: 0, minHpPercent: 30 },
@@ -35,7 +38,9 @@ export const DEPTH_REQUIREMENTS: Record<number, DepthRequirement> = {
   20: { healingPotions: 3, escapeScrolls: 3, townPortals: 2, minHpPercent: 70 },
   30: { healingPotions: 4, escapeScrolls: 3, townPortals: 2, minHpPercent: 75 },
   40: { healingPotions: 5, escapeScrolls: 4, townPortals: 2, minHpPercent: 80 },
-  50: { healingPotions: 6, escapeScrolls: 4, townPortals: 3, minHpPercent: 90 },
+  // Morgoth fight: 20,000 HP boss doing 150+ damage/turn requires serious preparation
+  // Need enough healing for ~100+ turn fight, plus buffs to boost damage output
+  50: { healingPotions: 12, escapeScrolls: 4, townPortals: 3, minHpPercent: 100, buffPotions: 3 },
 }
 
 // ============================================================================
@@ -87,6 +92,20 @@ export function countEscapeScrolls(inventory: Item[]): number {
 export function countTownPortals(inventory: Item[]): number {
   return inventory.filter(item =>
     item.template.name === 'Scroll of Town Portal'
+  ).length
+}
+
+/**
+ * Count buff potions in inventory.
+ * Includes Speed, Heroism, and Berserk Strength potions.
+ */
+export function countBuffPotions(inventory: Item[]): number {
+  return inventory.filter(item =>
+    item.template.type === 'potion' && (
+      item.template.name.includes('Speed') ||
+      item.template.name.includes('Heroism') ||
+      item.template.name.includes('Berserk')
+    )
   ).length
 }
 
@@ -142,6 +161,7 @@ export function getPrepMultiplier(caution: number): number {
 
 /**
  * Scale a depth requirement by personality caution.
+ * Note: buffPotions and minHpPercent are NOT scaled for depth 50 (Morgoth fight is non-negotiable)
  */
 export function scaleRequirement(req: DepthRequirement, caution: number): DepthRequirement {
   const mult = getPrepMultiplier(caution)
@@ -150,6 +170,8 @@ export function scaleRequirement(req: DepthRequirement, caution: number): DepthR
     escapeScrolls: Math.floor(req.escapeScrolls * mult),
     townPortals: Math.floor(req.townPortals * mult),
     minHpPercent: Math.floor(req.minHpPercent * mult),
+    // Buff potions don't scale - boss fight requirements are absolute
+    buffPotions: req.buffPotions,
   }
 }
 
@@ -229,6 +251,14 @@ export function getDepthReadiness(
   }
   if (hpPercent < req.minHpPercent) {
     return `Need ${req.minHpPercent}% HP (have ${Math.floor(hpPercent)}%)`
+  }
+
+  // Buff potion requirement (for Morgoth fight at depth 50)
+  if (req.buffPotions && req.buffPotions > 0) {
+    const buffs = countBuffPotions(inventory)
+    if (buffs < req.buffPotions) {
+      return `Need ${req.buffPotions} buff potions for boss fight (have ${buffs})`
+    }
   }
 
   return null

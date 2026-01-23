@@ -71,6 +71,31 @@ Angband borg-inspired: casters don't stair scum in early game - they explore ful
 
 ---
 
+## Standard Test Parameters
+
+Current standard for balance testing (while CB rates remain elevated):
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| `--turns` | 25,000 | Enough for endgame (melee avg ~15k), catches stuck bots |
+| `--runs` | 30 | Statistical significance without excessive wait |
+| `--seed` | 1000 | Reproducibility baseline |
+| `--max-upgrades` | always | Consistent meta-progression state |
+
+**Execution notes:**
+- Diagnose script uses 8 threads by default
+- Run 2 batch commands in parallel for best throughput (16 total threads)
+- Expected time per batch: 6-15 min depending on class
+
+**Standard command:**
+```bash
+npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=CLASS --max-upgrades --turns=25000
+```
+
+**Future threshold:** Once CB rates drop below 10%, bump to `--turns=50000 --runs=50` for finer-grained endgame analysis.
+
+---
+
 ## Diagnostic Tooling
 
 ```bash
@@ -80,14 +105,14 @@ npx tsx scripts/diagnose.ts quick --seed=12345 --class=warrior
 # Deep dive with turn log
 npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior --map
 
-# Batch testing (seeded for reproducibility, 50k turns for endgame)
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --turns=50000
+# Standard batch test
+npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=warrior --max-upgrades --turns=25000
 
 # With balance overrides
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --max-upgrades --monster-hp=50 --turns=50000
+npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --max-upgrades --monster-hp=50 --turns=25000
 
 # Find problematic seeds
-npx tsx scripts/diagnose.ts find --runs=500 --seed=1000 --class=mage --turns=50000
+npx tsx scripts/diagnose.ts find --runs=500 --seed=1000 --class=mage --turns=25000
 ```
 
 ### Balance Flags
@@ -95,7 +120,7 @@ npx tsx scripts/diagnose.ts find --runs=500 --seed=1000 --class=mage --turns=500
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--max-upgrades` | off | Apply all upgrades at max (includes 25% bestiary) |
-| `--turns=N` | 5000 | Max turns per run (use 50000 for endgame testing) |
+| `--turns=N` | 5000 | Max turns per run (use 25000 standard, 50000 post-CB-fix) |
 | `--monster-hp=N` | 100 | Monster HP % |
 | `--monster-damage=N` | 100 | Monster damage % |
 | `--bestiary=N` | 0 | Fixed bestiary bonus % (0=use kills, 1-25=fixed) |
@@ -181,14 +206,23 @@ Ranger improved slightly (4.2 → 5.5 avg) but still underperforming:
 When testing a change:
 
 ```bash
-# Baseline (seeded for reproducibility, 50k turns)
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=50000
+# Baseline (seeded for reproducibility)
+npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=CLASS --max-upgrades --turns=25000
 
 # With change (same seed for A/B comparison)
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=50000 [flags]
+npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=CLASS --max-upgrades --turns=25000 [flags]
 
 # Verify no regression on warrior
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=50000 [flags]
+npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=warrior --max-upgrades --turns=25000 [flags]
+```
+
+**Parallel execution** (run 2 classes simultaneously):
+```bash
+# Terminal 1
+npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=warrior --max-upgrades --turns=25000
+
+# Terminal 2 (simultaneously)
+npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=mage --max-upgrades --turns=25000
 ```
 
 **Success criteria:**

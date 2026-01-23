@@ -153,11 +153,8 @@ function getDeathCause(game: RunResult['game']): string {
   // Check recent messages for death cause
   const recentMessages = game.messages.slice(-5)
   for (const msg of recentMessages) {
-    if (msg.type === 'danger' && msg.text.includes('killed')) {
-      return msg.text
-    }
-    // Also check for "kills you" format from combat
-    if (msg.type === 'combat' && msg.text.includes('kills you')) {
+    // Check for "kills you" format (monster-ai sends as 'danger', combat sends as 'combat')
+    if ((msg.type === 'danger' || msg.type === 'combat') && msg.text.includes('kills you')) {
       return msg.text
     }
   }

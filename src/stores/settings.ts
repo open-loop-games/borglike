@@ -51,7 +51,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   fontSize: 'medium',
   defaultPersonality: 'cautious',
   autoRestart: false,
-  turboByDefault: false,
+  turboByDefault: true,
   soundEnabled: true,
   musicEnabled: false,
   volume: 0.7,

@@ -20,7 +20,7 @@ import type {
   BalanceOverrides,
 } from './types'
 import { DEFAULT_BALANCE } from './types'
-import { seedRNG } from './rng'
+import { seedRNG, random, randomInt } from './rng'
 import { calculateLightRadius } from './lighting'
 import { createCharacter } from './character'
 import { DEFAULT_BONUSES } from './upgrade-effects'
@@ -266,10 +266,10 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
   // Check if confused - 50% chance of random movement
   const isConfused = game.character.statusEffects.some((e) => e.type === 'confused')
   if (isConfused && (action.type === 'move' || action.type === 'attack')) {
-    if (Math.random() < 0.5) {
+    if (random() < 0.5) {
       // Random movement instead of intended action
       const directions = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const
-      const randomDir = directions[Math.floor(Math.random() * 8)]!
+      const randomDir = directions[randomInt(0, 7)]!
       addMessage(game, 'You stumble in confusion!', 'danger')
       action = { type: 'move', direction: randomDir }
     }

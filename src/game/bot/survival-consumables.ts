@@ -173,23 +173,36 @@ export function getSurvivalConsumableAction(
   // 4. Healing decision based on IMMEDIATE danger and HP ratio
   // Don't heal at full HP just because distant monsters exist
   // Following Angband borg: heal when HP missing AND threat is REAL (adjacent)
-  // NOTE: threat is scaled 10x (damage*10), so threshold must also be scaled
+
+  // Check if fighting Morgoth - needs aggressive healing (at 50% not 75%)
+  const fightingMorgoth = game.monsters.some(m =>
+    m.template.name === 'Morgoth, Lord of Darkness' &&
+    m.hp > 0 &&
+    Math.max(Math.abs(m.position.x - character.position.x), Math.abs(m.position.y - character.position.y)) <= 2
+  )
+
+  // Boss fight healing threshold: 50% (aggressive) vs normal 75%
+  const healingThreshold = fightingMorgoth ? 0.50 : 0.75
+
   const shouldHeal =
     // Must have taken some damage (not at 100% HP)
     hpRatio < 0.95 &&
     (
-      // Actual adjacent monster AND HP below 75%
-      (adjacentCount > 0 && hpRatio < 0.75) ||
+      // Actual adjacent monster AND HP below threshold
+      (adjacentCount > 0 && hpRatio < healingThreshold) ||
       // OR immediate danger could kill us (threat > 70% of current HP)
       // Threat is damage*2, so compare against hp*1.4 (70% threshold)
       immediateDanger > character.hp * 1.4 ||
       // OR we're in local CRITICAL with HP below 65% (retreat situation)
-      (localTier === 'CRITICAL' && hpRatio < 0.65)
+      (localTier === 'CRITICAL' && hpRatio < 0.65) ||
+      // MORGOTH SPECIAL: heal more aggressively - at 50% HP regardless of other factors
+      (fightingMorgoth && hpRatio < 0.50)
     )
 
   if (shouldHeal) {
-    // Try stronger potions first when more hurt
-    const minTier = hpRatio < 0.25 ? 2 : 1
+    // Against Morgoth: always use best potions available
+    // Normal: try stronger potions when more hurt
+    const minTier = fightingMorgoth ? 4 : (hpRatio < 0.25 ? 2 : 1)
     const potion = findHealingPotion(character, minTier) ?? findHealingPotion(character, 1)
     if (potion) {
       return { type: 'use', itemId: potion.id }
@@ -315,6 +328,8 @@ export function getSurvivalConsumableAction(
  * - Visible dangerous monster approaching (threat > 100)
  * - Not yet in melee (adjacentCount == 0)
  * - Don't already have the buff active
+ *
+ * Special handling for Morgoth: apply ALL buffs (speed + berserk + blessing)
  */
 export function getPreCombatBuffAction(
   game: GameState,
@@ -330,8 +345,56 @@ export function getPreCombatBuffAction(
   // No visible monsters, no need to buff
   if (visibleMonsters.length === 0) return null
 
+  // Check if Morgoth is visible - triggers full buffing protocol
+  const morgothVisible = visibleMonsters.some(m => m.template.name === 'Morgoth, Lord of Darkness')
+
+  // Check if already buffed
+  const hasBlessing = hasStatusEffect(character, 'blessing')
+  const hasProtection = hasStatusEffect(character, 'protection')
+  const hasSpeed = hasStatusEffect(character, 'speed')
+  const hasBerserk = hasStatusEffect(character, 'berserk')
+  const hasHeroism = hasStatusEffect(character, 'heroism')
+
+  // MORGOTH PROTOCOL: Full buff stack before engaging
+  if (morgothVisible) {
+    // 1. Speed first - critical for matching Morgoth's 140 speed
+    if (!hasSpeed) {
+      const speedPotion = findSpeedPotion(character)
+      if (speedPotion) {
+        return { type: 'use', itemId: speedPotion.id }
+      }
+    }
+
+    // 2. Berserk for damage boost (or heroism if no berserk)
+    if (!hasBerserk && !hasHeroism) {
+      const buffPotion = findBuffPotion(character)
+      if (buffPotion) {
+        return { type: 'use', itemId: buffPotion.id }
+      }
+    }
+
+    // 3. Blessing for accuracy
+    if (!hasBlessing) {
+      const blessingScroll = findBlessingScroll(character)
+      if (blessingScroll) {
+        return { type: 'use', itemId: blessingScroll.id }
+      }
+    }
+
+    // 4. Protection from evil
+    if (!hasProtection) {
+      const protScroll = findProtectionScroll(character)
+      if (protScroll) {
+        return { type: 'use', itemId: protScroll.id }
+      }
+    }
+
+    // Fully buffed for Morgoth, proceed to combat
+    return null
+  }
+
+  // STANDARD ENEMIES: Normal buffing logic
   // Check if any visible monster is dangerous enough to warrant buffing
-  // Threshold: 100 threat = roughly a 10-damage monster that's awake
   const THREAT_THRESHOLD = 100
   const hasDangerousMonster = visibleMonsters.some(m => {
     const threat = getMonsterThreat(m, character)
@@ -339,11 +402,6 @@ export function getPreCombatBuffAction(
   })
 
   if (!hasDangerousMonster) return null
-
-  // Check if already buffed
-  const hasBlessing = hasStatusEffect(character, 'blessing')
-  const hasProtection = hasStatusEffect(character, 'protection')
-  const hasSpeed = hasStatusEffect(character, 'speed')
 
   // For ranged classes with bow: speed is highest priority pre-combat buff
   // Speed gives huge kiting advantage - more actions to shoot and reposition
@@ -384,6 +442,7 @@ export function getPreCombatBuffAction(
  * This handles:
  * - Heroism/Berserk potions for tough fights (high localDanger)
  * - Resistance potions when facing elemental monsters
+ * - MORGOTH: Maintain speed + berserk buffs throughout the fight
  *
  * Note: Speed and Blessing are handled elsewhere:
  * - Speed: escape logic (outrun enemies) or speedrunner utility
@@ -404,6 +463,33 @@ export function getCombatBuffAction(
   // Check if already buffed
   const hasHeroism = hasStatusEffect(character, 'heroism')
   const hasBerserk = hasStatusEffect(character, 'berserk')
+  const hasSpeed = hasStatusEffect(character, 'speed')
+
+  // MORGOTH: Maintain buff stack during fight
+  // This is critical - Morgoth fight is long and buffs may wear off
+  const fightingMorgoth = game.monsters.some(m =>
+    m.template.name === 'Morgoth, Lord of Darkness' &&
+    m.hp > 0 &&
+    Math.max(Math.abs(m.position.x - character.position.x), Math.abs(m.position.y - character.position.y)) <= 3
+  )
+
+  if (fightingMorgoth) {
+    // Maintain speed - critical for matching Morgoth's 140 speed
+    if (!hasSpeed) {
+      const speedPotion = findSpeedPotion(character)
+      if (speedPotion) {
+        return { type: 'use', itemId: speedPotion.id }
+      }
+    }
+
+    // Maintain berserk/heroism for damage boost
+    if (!hasBerserk && !hasHeroism) {
+      const buffPotion = findBuffPotion(character)
+      if (buffPotion) {
+        return { type: 'use', itemId: buffPotion.id }
+      }
+    }
+  }
 
   // Use buff potion (heroism/berserk) for tough fights
   if (!hasHeroism && !hasBerserk && localDanger > 50) {

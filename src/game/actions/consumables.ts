@@ -18,7 +18,7 @@ import {
 } from '../status-effects'
 import { createTownPortal, enterTown, isInTown } from '../town'
 import { addMessage, BASE_ENERGY_COST, getHealAmount } from './helpers'
-import { handleDescend } from './movement'
+import { handleAscend } from './movement'
 
 // ============================================================================
 // TYPES
@@ -250,15 +250,17 @@ const SCROLL_EFFECTS: Array<{
     },
   },
 
-  // Teleport Level - go down one level
+  // Teleport Level - go UP one level (escape scroll)
+  // Changed from going down to going up - makes it useful as an emergency escape
   {
     match: (e) => e.includes('Teleport') && e.includes('adjacent dungeon level'),
     apply: (game) => {
-      const newDepth = game.character.depth + 1
-      if (newDepth <= 50) {
-        handleDescend(game)
-        return { success: true }
+      const newDepth = game.character.depth - 1
+      if (newDepth >= 1) {
+        handleAscend(game)
+        return { success: true, message: 'You feel yourself yanked upward!' }
       } else {
+        // Already at depth 1, can't go higher
         return { success: true, message: 'You read the scroll, but nothing happens.' }
       }
     },

@@ -106,16 +106,8 @@ export function runBotTick(
       }
     }
 
-    // Set tethered origin after level change if in farming mode (for tethered exploration)
-    // Origin = current position (where we entered the level)
-    // The tether check in evaluateAscendToFarm will block flipping until exploration is done
-    if (wasInFarmingMode && game.character.depth !== 0) {
-      botState.tetheredOrigin = { x: game.character.position.x, y: game.character.position.y }
-    }
-
     // Initialize sweep mode for early-game casters on any dungeon level change
-    // Casters can't enter farming mode normally (always under-leveled due to +5 offset)
-    // So we trigger sweep on every level transition to let them farm via exploration
+    // Casters use sweep exploration instead of tethered exploration during farming
     const isCaster = SQUISHY_CLASSES.has(game.character.classId)
     const isEarlyGame = game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
     const inDungeon = game.character.depth !== 0
@@ -123,6 +115,12 @@ export function runBotTick(
       botState.sweepMode = true
       botState.sweepStartTurn = game.turn
       initializeSweepDirection(game, botState)
+      // Don't set tetheredOrigin - casters use sweep, not tether
+    } else if (wasInFarmingMode && inDungeon) {
+      // Set tethered origin for non-casters in farming mode
+      // Origin = current position (where we entered the level)
+      // The tether check in evaluateAscendToFarm will block flipping until exploration is done
+      botState.tetheredOrigin = { x: game.character.position.x, y: game.character.position.y }
     }
   }
 
@@ -838,6 +836,8 @@ function updateTownState(botState: BotState, goal: BotGoal, _game: GameState): v
 function executeGoalAction(goal: BotGoal, game: GameState, botState: BotState): GameAction {
   switch (goal.type) {
     case 'DESCEND':
+      // Goal system already verified readiness during goal selection
+      // Don't re-check here - creates loops when goal eval uses different caution
       return { type: 'descend' }
 
     case 'TAKE': {

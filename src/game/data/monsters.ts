@@ -1313,7 +1313,7 @@ export const monsters: MonsterTemplate[] = [
     ],
     spells: { freq: 2, list: ['BRAIN_SMASH', 'SUMMON', 'BR_DARK'] },
     immune: ['DARK'],
-    rarity: 0.05,
+    rarity: 1, // Guaranteed spawn via boss logic, not random pool
   },
 ]
 
