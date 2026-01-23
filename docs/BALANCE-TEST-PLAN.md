@@ -1,8 +1,8 @@
 # Balance Test Plan
 
-## Current State (2026-01-23 Post-Caster-Fix)
+## Current State (2026-01-23 Post-Ranger-Fix)
 
-### Class Performance (50 runs each, 30k turns, seed=1000)
+### Class Performance (30-50 runs each, 30k turns, seed=1000)
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
@@ -12,17 +12,17 @@
 | **Priest** | 38.8 | 50 | 37% | 486 | ✅ Endgame |
 | **Berserker** | 38.4 | 50 | 56% | 379 | ✅ Endgame |
 | **Rogue** | 38.1 | 50 | 46% | 472 | ✅ Endgame |
+| **Ranger** | 37.7 | 50 | 27% | 473 | ✅ Endgame |
 | **Druid** | 34.1 | 47 | 30% | 425 | ✅ Endgame |
 | **Mage** | 14.8 | 25 | 8% | 391 | ⚠️ Midgame |
 | **Necromancer** | 14.7 | 25 | 0% | 388 | ⚠️ Midgame |
 | **Archmage** | 12.9 | 27 | 10% | 357 | ⚠️ Midgame |
-| **Ranger** | 5.0 | 22 | 0% | 55 | ❌ REGRESSED |
 
 ### Key Findings
 
 1. **Pure casters FIXED** - Mage 4.9→14.8, Necromancer 5.5→14.7, Archmage 5.9→12.9
-2. **Ranger REGRESSED** - Dropped from 41.0 to 5.0 avg depth (investigating)
-3. **8 classes endgame-viable** - Warrior, Paladin, Blackguard, Priest, Berserker, Rogue, Druid
+2. **Ranger FIXED** - Was 5.0, now 37.7 avg depth (dist 2 kiting bug)
+3. **9 classes endgame-viable** - Warrior, Paladin, Blackguard, Priest, Berserker, Rogue, Ranger, Druid
 4. **3 classes midgame** - Mage, Necromancer, Archmage (need more work to reach endgame)
 
 ### Caster Fix Details (2026-01-23)
@@ -35,7 +35,13 @@
 
 ### Ranger Fix Details (2026-01-23)
 
-Changes that fixed ranger:
+**Root cause:** Dist 2 proactive repositioning (added for casters) was causing rangers to oscillate. Rangers tried to kite from dist 2 to optimal range (3-4), monster closed back to dist 2, repeat → oscillation instead of shooting.
+
+**Fix:** Only apply dist 2 kiting for casters (no bow). Rangers now shoot at dist 2 instead of kiting.
+
+**Result:** Ranger 4.6 → 37.7 avg depth. Mage unchanged (14.6).
+
+Earlier ranger improvements (still active):
 1. **Bow multipliers** - Added Angband-style launcher multipliers (×2/×3) to bows
 2. **Wolf summon integration** - Rangers now summon wolf proactively in SAFE/DANGER/CAUTION tiers
 3. **Root shot before kiting** - When adjacent, rangers stun with root_shot before kiting away
@@ -117,25 +123,21 @@ Mage went from 4.9 to 14.8 avg depth, Necromancer from 5.5 to 14.7, Archmage fro
 
 ### Ranger Fixed (2026-01-23)
 
-Ranger went from 5.0 to 41.0 avg depth. Fixed by:
-- Added Angband-style bow multipliers (×2/×3)
-- Integrated wolf summon into tick decision loop (proactive summoning)
-- Added root_shot check before kiting (stun then retreat)
-- Added new spells: Hunter's Mark, Camouflage, Summon Bear
-- Added new bows: War Bow, Bow of the Serpent
+Ranger went from 4.6 to 37.7 avg depth. Fixed by:
+- **Root cause:** Dist 2 proactive repositioning (for casters) caused rangers to oscillate
+- **Fix:** Only apply dist 2 kiting for casters (no bow); rangers shoot at dist 2 instead
+- Rangers now use bow effectively at close range instead of futile kiting
+
+Earlier ranger improvements (still active):
+- Angband-style bow multipliers (×2/×3)
+- Wolf summon integration (proactive summoning)
+- Root shot before kiting (stun then retreat)
+- New spells: Hunter's Mark, Camouflage, Summon Bear
+- New bows: War Bow, Bow of the Serpent
 
 ---
 
 ## Known Issues
-
-### Ranger Regression (2026-01-23) - NEXT TARGET
-
-Ranger dropped from 41.0 to 5.0 avg depth after caster fix. The `hasRangedWeapon()` fix shouldn't affect rangers since they DO have bows (`hasBow=true bow=Short Bow` confirmed).
-
-**Investigation needed:**
-- May be a separate issue that existed before
-- Need to check if ranger was tested at the claimed 41.0 performance
-- Check decision loop for rangers specifically
 
 ### Pure Casters Midgame (2026-01-23)
 
