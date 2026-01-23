@@ -29,6 +29,9 @@ import {
   getSweepProgress,
   isSweepComplete,
   isSweepTimedOut,
+  getNextSweepWaypoint,
+  clearSweepWaypoints,
+  saveSweepTour,
 } from './exploration'
 import {
   getDepthReadiness,
@@ -806,9 +809,12 @@ export function evaluateHuntUnique(context: BotContext): BotGoal | null {
 /**
  * Evaluate sweep exploration goal for casters in early game.
  *
- * Sweep exploration targets tiles that are explored but NOT seen THIS VISIT.
- * This causes the bot to walk through the entire level, triggering fresh
+ * Sweep exploration targets tiles NOT seen THIS VISIT, causing fresh
  * monster spawns (monsters spawn based on sight, not just exploration).
+ *
+ * Two-phase approach:
+ * 1. First visit: Reactive exploration to 70%, then save tour for this depth
+ * 2. Re-visits: Use pre-computed tour for efficient coverage
  *
  * Returns EXPLORE goal with sweep-specific targeting.
  */
@@ -824,10 +830,15 @@ export function evaluateSweep(context: BotContext): BotGoal | null {
 
   // Check if sweep is complete (70% of floor tiles seen this visit)
   if (isSweepComplete(game, botState)) {
+    // Save tour for future visits to this depth (if not already saved)
+    if (!botState.sweepToursByDepth.has(game.character.depth)) {
+      saveSweepTour(game, botState)
+    }
     // Clear sweep mode - allow normal exploration/descent
     botState.sweepMode = false
     botState.sweepDirection = null
     botState.sweepStartTurn = 0
+    clearSweepWaypoints(botState)
     return null
   }
 
@@ -836,16 +847,36 @@ export function evaluateSweep(context: BotContext): BotGoal | null {
     botState.sweepMode = false
     botState.sweepDirection = null
     botState.sweepStartTurn = 0
+    clearSweepWaypoints(botState)
     return null
   }
 
-  // Find sweep target using standard exploration logic with sweep mode
+  // Re-visit with pre-computed tour: use waypoints for efficient coverage
+  if (botState.sweepWaypoints.length > 0) {
+    const waypoint = getNextSweepWaypoint(game, botState)
+    if (waypoint) {
+      const waypointNum = botState.sweepWaypointIndex + 1
+      const totalWaypoints = botState.sweepWaypoints.length
+      return {
+        type: 'EXPLORE',
+        target: waypoint,
+        targetId: null,
+        reason: `Sweep tour (${waypointNum}/${totalWaypoints}, ${progress}% seen)`,
+        startTurn: game.turn,
+      }
+    }
+    // Tour exhausted but not at 70% - clear and fall through to reactive
+    clearSweepWaypoints(botState)
+  }
+
+  // First visit or tour exhausted: use reactive exploration
   const target = findExplorationTarget(game, botState, true)
   if (!target) {
-    // No reachable unseen tiles left - sweep considered complete (may be blocked by terrain)
+    // No reachable unseen tiles - consider sweep complete
     botState.sweepMode = false
     botState.sweepDirection = null
     botState.sweepStartTurn = 0
+    clearSweepWaypoints(botState)
     return null
   }
 

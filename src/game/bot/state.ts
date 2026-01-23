@@ -54,6 +54,9 @@ export function createBotState(): BotState {
     sweepMode: false,
     sweepDirection: null,
     sweepStartTurn: 0,
+    sweepToursByDepth: new Map(),
+    sweepWaypoints: [],
+    sweepWaypointIndex: 0,
   }
 }
 
@@ -89,7 +92,17 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.seenThisVisit.clear()
   // Sweep exploration - reset direction (will be re-initialized based on entry point)
   // Keep sweepMode active across levels (part of multi-level pattern)
+  // Keep sweepToursByDepth (persists across level changes)
   state.sweepDirection = null
+  // Load pre-computed tour for this depth if it exists
+  const savedTour = state.sweepToursByDepth.get(newDepth)
+  if (savedTour && savedTour.length > 0) {
+    state.sweepWaypoints = [...savedTour] // Copy so we don't mutate the saved tour
+    state.sweepWaypointIndex = 0
+  } else {
+    state.sweepWaypoints = []
+    state.sweepWaypointIndex = 0
+  }
 }
 
 /**

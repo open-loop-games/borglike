@@ -181,6 +181,12 @@ export interface BotState {
   sweepDirection: Direction | null
   /** Turn when sweep started (for timeout tracking) */
   sweepStartTurn: number
+  /** Pre-computed sweep tours by depth (computed after first 70% sweep) */
+  sweepToursByDepth: Map<number, Point[]>
+  /** Current sweep tour waypoints for this level (copied from sweepToursByDepth on entry) */
+  sweepWaypoints: Point[]
+  /** Current position in sweep tour */
+  sweepWaypointIndex: number
 }
 
 // ============================================================================

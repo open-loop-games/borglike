@@ -61,6 +61,9 @@ function createMinimalBotState(): BotState {
     sweepMode: false,
     sweepDirection: null,
     sweepStartTurn: 0,
+    sweepToursByDepth: new Map(),
+    sweepWaypoints: [],
+    sweepWaypointIndex: 0,
   }
 }
 
