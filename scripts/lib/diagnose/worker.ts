@@ -163,6 +163,9 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
   const armorItem = char.equipment.armor
   const bow = char.equipment.bow
 
+  // Check if Morgoth was killed
+  const morgothKills = game.stats.monsterKills['Morgoth, Lord of Darkness'] ?? 0
+
   const analyzerResults: AnalyzerResult[] = [{
     name: 'worker-metrics',
     metrics: {
@@ -174,6 +177,8 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
       kills: game.stats.kills,
       damageTaken: totalDamageTaken,
       killedBy: killedBy ?? 'unknown',
+      morgothKills,
+      isVictory: game.isVictory,
     },
     issues: [],
   }, {

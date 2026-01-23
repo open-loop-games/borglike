@@ -206,6 +206,12 @@ export function formatBatchResult(result: BatchResult): string {
   lines.push(`  Turns:  avg=${turns?.avg.toFixed(0) ?? '?'}`)
   lines.push(`  Runs:   ${result.totalRuns} total, ${circuitBreakers} circuit breakers (${(circuitBreakers/result.totalRuns*100).toFixed(0)}%)`)
 
+  // Victory and Morgoth tracking
+  if (result.victoryCount > 0 || result.morgothKillCount > 0) {
+    lines.push(`  VICTORIES: ${result.victoryCount} (${(result.victoryCount/result.totalRuns*100).toFixed(0)}%)`)
+    lines.push(`  Morgoth kills: ${result.morgothKillCount}`)
+  }
+
   // Death causes
   if (result.deathCauses && result.deathCauses.length > 0) {
     lines.push(section('Top Killers'))

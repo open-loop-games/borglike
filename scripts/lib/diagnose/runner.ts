@@ -195,6 +195,9 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
   const metricSums: Record<string, number[]> = {}
   const issueCounter = new Map<string, number>()
   const deathCauses = new Map<string, number>()
+  let victoryCount = 0
+  let morgothKillCount = 0
+  let circuitBreakerCount = 0
 
   for (let i = 0; i < config.runs; i++) {
     const seed = startSeed + i
@@ -209,6 +212,13 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
       problemRuns.push(result)
     }
 
+    // Track end reasons
+    if (result.endReason === 'victory') {
+      victoryCount++
+    } else if (result.endReason === 'circuit_breaker') {
+      circuitBreakerCount++
+    }
+
     // Aggregate metrics from each analyzer
     for (const ar of result.analyzerResults) {
       for (const [key, value] of Object.entries(ar.metrics)) {
@@ -218,6 +228,10 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
             metricSums[fullKey] = []
           }
           metricSums[fullKey].push(value)
+          // Track morgoth kills specifically
+          if (key === 'morgothKills' && value > 0) {
+            morgothKillCount++
+          }
         } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
           const count = deathCauses.get(value) ?? 0
           deathCauses.set(value, count + 1)
@@ -262,6 +276,9 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
     aggregateMetrics,
     aggregateIssues,
     deathCauses: sortedDeathCauses,
+    victoryCount,
+    morgothKillCount,
+    circuitBreakerCount,
   }
 }
 
@@ -306,6 +323,9 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
   const metricSums: Record<string, number[]> = {}
   const issueCounter = new Map<string, number>()
   const deathCauses = new Map<string, number>() // Track what killed us
+  let victoryCount = 0
+  let morgothKillCount = 0
+  let circuitBreakerCount = 0
 
   // Build work items
   const baseConfig = {
@@ -347,6 +367,13 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
         problemRuns.push(result)
       }
 
+      // Track end reasons
+      if (result.endReason === 'victory') {
+        victoryCount++
+      } else if (result.endReason === 'circuit_breaker') {
+        circuitBreakerCount++
+      }
+
       // Aggregate metrics
       for (const ar of result.analyzerResults) {
         for (const [key, value] of Object.entries(ar.metrics)) {
@@ -356,6 +383,10 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
               metricSums[fullKey] = []
             }
             metricSums[fullKey].push(value)
+            // Track morgoth kills specifically
+            if (key === 'morgothKills' && value > 0) {
+              morgothKillCount++
+            }
           } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
             // Track death causes
             const count = deathCauses.get(value) ?? 0
@@ -409,6 +440,9 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     aggregateMetrics,
     aggregateIssues,
     deathCauses: sortedDeathCauses,
+    victoryCount,
+    morgothKillCount,
+    circuitBreakerCount,
   }
 }
 
