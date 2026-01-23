@@ -110,6 +110,17 @@ export function invalidateFrontierCache(): void {
   frontierCache = null
 }
 
+/**
+ * Get cached explored count (avoids redundant full level scans).
+ * Returns null if cache is invalid for this depth.
+ */
+export function getCachedExploredCount(depth: number): number | null {
+  if (frontierCache && frontierCache.levelDepth === depth) {
+    return frontierCache.exploredCount
+  }
+  return null
+}
+
 // ============================================================================
 // FRONTIER DETECTION
 // ============================================================================
@@ -205,6 +216,39 @@ export function getFrontierPositions(game: GameState): Point[] {
     levelDepth: game.character.depth,
   }
   return tiles.map((t) => t.position)
+}
+
+/**
+ * Get sweep frontier positions as simple Point array (for Dijkstra sweep flow).
+ * Returns walkable EXPLORED tiles NOT seen this visit.
+ * Must match findSweepFrontierTiles behavior for consistency.
+ */
+export function getSweepFrontierPositions(game: GameState, botState: BotState): Point[] {
+  const level = game.currentLevel
+  const result: Point[] = []
+
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+
+    for (let x = 0; x < level.width; x++) {
+      const tile = row[x]
+      if (!tile) continue
+
+      // Skip tiles already seen this visit
+      const key = `${x},${y}`
+      if (botState.seenThisVisit.has(key)) continue
+
+      // Only consider explored walkable tiles (matches findSweepFrontierTiles)
+      // Note: explored check ensures we only sweep to known areas, not unknown walls
+      if (!tile.explored) continue
+      if (!isWalkableOrDoor(tile)) continue
+
+      result.push({ x, y })
+    }
+  }
+
+  return result
 }
 
 /**

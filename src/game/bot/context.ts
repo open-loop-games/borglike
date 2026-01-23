@@ -4,13 +4,14 @@
  * Functions to build BotContext and provide status/danger queries.
  */
 
-import type { GameState, BotPersonality, Point, DungeonLevel, AltarState } from '../types'
+import type { GameState, BotPersonality, Point, AltarState } from '../types'
 import { manhattanDistance } from '../types'
 import type { BotContext, BotState, PersonalityConfig } from './types'
-import { getTile, getAdjacentPositions } from '../dungeon'
+import { getTile } from '../dungeon'
 import { getPersonalityConfig } from './personality'
 import { getClassProfile } from './class-profiles'
 import { profile } from './profiler'
+import { getCachedExploredCount } from './exploration'
 
 // ============================================================================
 // CONTEXT BUILDING
@@ -71,6 +72,7 @@ function createMinimalBotState(): BotState {
     hpRate: 0,
     // Performance caches
     cachedExplorationFlow: null,
+    cachedSweepFlow: null,
     lastExploredCount: 0,
   }
 }
@@ -129,10 +131,9 @@ export function buildBotContext(
   // Find known stairs
   const knownStairs = findKnownStairs(game)
 
-  // Find unexplored tiles (frontier) - use cached count for quick check
-  // Full list is only computed lazily if actually needed
+  // Find unexplored tiles - returns sentinel (only .length === 0 is checked)
   const unexploredTiles = profile('ctx.unexplored', () =>
-    botState ? getCachedUnexploredTiles(game, botState) : findUnexploredTiles(game)
+    botState ? getCachedUnexploredTiles(game, botState) : [{ x: 0, y: 0 }]
   )
 
   return {
@@ -192,114 +193,63 @@ function findKnownStairs(game: GameState): Point | null {
   return null
 }
 
-/** How often to recount explored tiles (in turns) */
-const EXPLORED_RECOUNT_INTERVAL = 20
+/** How often to revalidate unexplored cache (in turns) */
+const UNEXPLORED_REVALIDATE_INTERVAL = 50
 
-/** Cache for unexplored tiles result */
+/** Cache for unexplored state */
 let unexploredCache: {
   depth: number
   turn: number
   exploredCount: number
-  result: Point[]
 } | null = null
 
 /**
- * Get unexplored tiles using cache when possible
- * Only recomputes when depth changes or recount interval passes
+ * Get unexplored tiles indicator.
+ * Returns sentinel array - only `.length === 0` matters to callers.
+ * Uses shared explored count from frontier cache to avoid redundant scans.
  */
 function getCachedUnexploredTiles(game: GameState, botState: BotState): Point[] {
   const level = game.currentLevel
   const currentDepth = game.character.depth
   const currentTurn = game.turn
+  const totalTiles = level.width * level.height
 
-  // Fast path: if same depth and within interval, return cached result
+  // Fast path: if same depth and within interval, return cached sentinel
   if (
     unexploredCache &&
     unexploredCache.depth === currentDepth &&
-    currentTurn - unexploredCache.turn < EXPLORED_RECOUNT_INTERVAL
+    currentTurn - unexploredCache.turn < UNEXPLORED_REVALIDATE_INTERVAL
   ) {
-    // Return sentinel based on cached state
-    const hasUnexplored = unexploredCache.exploredCount < level.width * level.height * 0.95
+    const hasUnexplored = unexploredCache.exploredCount < totalTiles * 0.95
     return hasUnexplored ? [{ x: 0, y: 0 }] : []
   }
 
-  // Need to recount - do the full scan
-  let exploredCount = 0
-  for (let y = 0; y < level.height; y++) {
-    const row = level.tiles[y]
-    if (!row) continue
-    for (let x = 0; x < level.width; x++) {
-      if (row[x]?.explored) exploredCount++
-    }
-  }
+  // Need to revalidate - try to get count from frontier cache (avoids full scan)
+  let exploredCount = getCachedExploredCount(currentDepth)
 
-  // Check if exploration state changed
-  const exploredChanged =
-    unexploredCache === null ||
-    unexploredCache.depth !== currentDepth ||
-    unexploredCache.exploredCount !== exploredCount
-
-  if (!exploredChanged && unexploredCache) {
-    // Same state, just update turn and return sentinel
-    unexploredCache.turn = currentTurn
-    const hasUnexplored = exploredCount < level.width * level.height * 0.95
-    return hasUnexplored ? [{ x: 0, y: 0 }] : []
-  }
-
-  // Exploration changed - compute full frontier
-  const result = findUnexploredTiles(game)
-  unexploredCache = {
-    depth: currentDepth,
-    turn: currentTurn,
-    exploredCount,
-    result,
-  }
-  botState.lastExploredCount = exploredCount
-
-  return result
-}
-
-/**
- * Find unexplored tiles adjacent to explored tiles (frontier)
- */
-function findUnexploredTiles(game: GameState): Point[] {
-  const frontier: Point[] = []
-  const level = game.currentLevel
-
-  for (let y = 0; y < level.height; y++) {
-    const row = level.tiles[y]
-    if (!row) continue
-
-    for (let x = 0; x < level.width; x++) {
-      const tile = row[x]
-      if (!tile) continue
-
-      // We want unexplored tiles that are adjacent to explored tiles
-      if (!tile.explored) {
-        // Check if any adjacent tile is explored
-        const hasExploredNeighbor = checkAdjacentExplored(level, x, y)
-        if (hasExploredNeighbor) {
-          frontier.push({ x, y })
-        }
+  // Fallback: count explored tiles (only when frontier cache is cold)
+  if (exploredCount === null) {
+    exploredCount = 0
+    for (let y = 0; y < level.height; y++) {
+      const row = level.tiles[y]
+      if (!row) continue
+      for (let x = 0; x < level.width; x++) {
+        if (row[x]?.explored) exploredCount++
       }
     }
   }
 
-  return frontier
-}
-
-/**
- * Check if any adjacent tile is explored
- */
-function checkAdjacentExplored(level: DungeonLevel, x: number, y: number): boolean {
-  const neighbors = getAdjacentPositions({ x, y })
-
-  for (const neighbor of neighbors) {
-    const tile = getTile(level, neighbor.x, neighbor.y)
-    if (tile?.explored) return true
+  // Update cache
+  unexploredCache = {
+    depth: currentDepth,
+    turn: currentTurn,
+    exploredCount,
   }
+  botState.lastExploredCount = exploredCount
 
-  return false
+  // Return sentinel based on explored ratio
+  const hasUnexplored = exploredCount < totalTiles * 0.95
+  return hasUnexplored ? [{ x: 0, y: 0 }] : []
 }
 
 // ============================================================================

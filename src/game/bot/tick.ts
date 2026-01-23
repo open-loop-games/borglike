@@ -63,7 +63,11 @@ import {
   handleStopFleeingStrategy,
 } from './stuck'
 import { selectGoal } from './goals'
-import { invalidateFrontierCache, getFrontierPositions } from './exploration'
+import {
+  invalidateFrontierCache,
+  getFrontierPositions,
+  getSweepFrontierPositions,
+} from './exploration'
 import { initializeSweepDirection } from './progression'
 import { recordVisibleTiles } from './progression'
 import {
@@ -847,6 +851,305 @@ function handleStuckRecovery(
   }
 }
 
+// ============================================================================
+// FALLBACK MOVEMENT - QUERIES
+// ============================================================================
+
+/**
+ * Check if bot has arrived at goal position.
+ */
+function isAtGoal(pos: { x: number; y: number }, goal: BotGoal): boolean {
+  return goal.target !== null && isSamePosition(pos, goal.target)
+}
+
+/**
+ * Check if EXPLORE goal should use sweep mode flow (casters re-exploring).
+ */
+function shouldUseSweepFlow(game: GameState, botState: BotState): boolean {
+  return (
+    botState.sweepMode &&
+    SQUISHY_CLASSES.has(game.character.classId) &&
+    game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
+  )
+}
+
+// ============================================================================
+// FALLBACK MOVEMENT - FLOW COMPUTATION
+// ============================================================================
+
+/**
+ * Compute flow map for goal-based movement.
+ * Dispatches by goal type: EXPLORE (sweep vs frontier) vs single-target.
+ * Returns null if no valid flow (e.g., no frontiers for exploration).
+ */
+function computeGoalFlow(
+  game: GameState,
+  botState: BotState,
+  goal: BotGoal,
+  avoidSet: Set<string>
+): FlowMap | null {
+  if (goal.type === 'EXPLORE') {
+    return computeExploreGoalFlow(game, botState, goal, avoidSet)
+  }
+  return computeSingleTargetFlow(game, botState, goal, avoidSet)
+}
+
+/**
+ * Compute flow for EXPLORE goals.
+ * Both sweep mode and normal exploration use multi-target Dijkstra.
+ * Sweep: all tiles explored but not seen this visit.
+ * Normal: all unexplored frontier tiles.
+ */
+function computeExploreGoalFlow(
+  game: GameState,
+  botState: BotState,
+  _goal: BotGoal,
+  avoidSet: Set<string>
+): FlowMap | null {
+  // Sweep mode: multi-target Dijkstra to all sweep frontier tiles
+  if (shouldUseSweepFlow(game, botState)) {
+    const sweepFrontiers = getSweepFrontierPositions(game, botState)
+    if (sweepFrontiers.length === 0) {
+      // No sweep frontiers (first visit or sweep complete) - fall through to normal exploration
+      // This handles fresh level visits where nothing is explored-but-not-seen yet
+    } else {
+      // Check sweep cache validity (invalidate when seenThisVisit changes)
+      const seenCount = botState.seenThisVisit.size
+      const cache = botState.cachedSweepFlow
+      const cacheValid =
+        cache &&
+        cache.depth === game.character.depth &&
+        cache.seenCount === seenCount &&
+        game.turn - cache.computedAt < 5
+
+      if (cacheValid) {
+        return cache.costs
+      }
+
+      // Compute fresh sweep flow
+      const flowCosts = profile('flow.sweep', () =>
+        computeExplorationFlow(game.currentLevel, sweepFrontiers, avoidSet)
+      )
+      botState.cachedSweepFlow = {
+        costs: flowCosts,
+        seenCount,
+        computedAt: game.turn,
+        depth: game.character.depth,
+      }
+      botState.cachedFlow = null // Don't use single-target cache for sweep
+      return flowCosts
+    }
+  }
+
+  // Normal exploration: multi-target Dijkstra to all frontiers
+  const frontiers = profile('getFrontierPositions', () => getFrontierPositions(game))
+  if (frontiers.length === 0) {
+    // No frontiers - exploration complete
+    botState.currentGoal = null
+    botState.goalTarget = null
+    return null
+  }
+
+  // Check cache validity
+  const exploredCount = countExploredTiles(game.currentLevel)
+  const cache = botState.cachedExplorationFlow
+  const cacheValid =
+    cache &&
+    cache.depth === game.character.depth &&
+    cache.exploredCount === exploredCount &&
+    game.turn - cache.computedAt < 5
+
+  if (cacheValid) {
+    return cache.costs
+  }
+
+  // Compute fresh exploration flow
+  const flowCosts = profile('flow.exploration', () =>
+    computeExplorationFlow(game.currentLevel, frontiers, avoidSet)
+  )
+  botState.cachedExplorationFlow = {
+    costs: flowCosts,
+    frontierCount: frontiers.length,
+    exploredCount,
+    computedAt: game.turn,
+    depth: game.character.depth,
+  }
+  botState.cachedFlow = null // Don't use single-target cache for EXPLORE
+  return flowCosts
+}
+
+/**
+ * Compute flow for single-target goals (KILL, DESCEND, TAKE, etc.).
+ * Uses caching to avoid redundant computation.
+ */
+function computeSingleTargetFlow(
+  game: GameState,
+  botState: BotState,
+  goal: BotGoal,
+  avoidSet: Set<string>
+): FlowMap {
+  const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)
+  if (!needsRecompute && botState.cachedFlow?.costs) {
+    return botState.cachedFlow.costs
+  }
+
+  const flowCosts = profile('flow.singleTarget', () =>
+    computeFlow(game.currentLevel, goal.target!, avoidSet)
+  )
+  botState.cachedFlow = createFlowResult(goal.target!, flowCosts, game.turn)
+  return flowCosts
+}
+
+/**
+ * Ensure goal is reachable, trying without avoidance if blocked.
+ * Returns updated flow map or null if truly unreachable.
+ */
+function ensureFlowReachable(
+  game: GameState,
+  botState: BotState,
+  goal: BotGoal,
+  flowCosts: FlowMap,
+  avoidSet: Set<string>
+): FlowMap | null {
+  const pos = game.character.position
+  const currentCost = getFlowCost(flowCosts, pos)
+
+  // Already reachable
+  if (currentCost < MAX_FLOW_COST) {
+    return flowCosts
+  }
+
+  // No avoidance to remove - truly unreachable
+  if (avoidSet.size === 0) {
+    clearUnreachableGoal(botState)
+    return null
+  }
+
+  // Try without avoidance
+  let fallbackFlow: FlowMap
+  if (goal.type === 'EXPLORE') {
+    const frontiers = getFrontierPositions(game)
+    fallbackFlow =
+      frontiers.length > 0 ? computeExplorationFlow(game.currentLevel, frontiers) : new Map()
+  } else {
+    fallbackFlow = computeFlow(game.currentLevel, goal.target!)
+    botState.cachedFlow = createFlowResult(goal.target!, fallbackFlow, game.turn)
+  }
+
+  const fallbackCost = getFlowCost(fallbackFlow, pos)
+  if (fallbackCost >= MAX_FLOW_COST) {
+    clearUnreachableGoal(botState)
+    return null
+  }
+
+  return fallbackFlow
+}
+
+/**
+ * Clear goal state when goal is unreachable.
+ */
+function clearUnreachableGoal(botState: BotState): void {
+  botState.currentGoal = null
+  botState.goalTarget = null
+  botState.cachedFlow = null
+}
+
+// ============================================================================
+// FALLBACK MOVEMENT - ACTION GETTERS
+// ============================================================================
+
+/**
+ * Get action when bot has arrived at goal position.
+ * Returns null if not at goal.
+ */
+function getGoalArrivalAction(
+  game: GameState,
+  botState: BotState,
+  goal: BotGoal,
+  config: PersonalityConfig
+): GameAction | null {
+  if (!isAtGoal(game.character.position, goal)) {
+    return null
+  }
+
+  recordProgress(botState, game.turn)
+  updateTownState(botState, goal, game)
+  return profile('fallback.executeGoal', () => executeGoalAction(goal, game, botState, config))
+}
+
+/**
+ * Get tactical action for approaching KILL target.
+ * Handles ranged attacks, kiting, and pre-combat buffs.
+ * Returns null to fall through to normal movement.
+ */
+function getKillApproachAction(
+  goal: BotGoal,
+  game: GameState,
+  context: BotContext,
+  dangerResult: DangerResult
+): GameAction | null {
+  if (goal.type !== 'KILL' || !goal.targetId) {
+    return null
+  }
+
+  const { classProfile, config, visibleMonsters, botState } = context
+  const pos = game.character.position
+  const targetMonster = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
+
+  if (!targetMonster) return null
+
+  // Ranged class tactics
+  if (classProfile.prefersRanged && hasRangedWeapon(game)) {
+    const dx = Math.abs(targetMonster.position.x - pos.x)
+    const dy = Math.abs(targetMonster.position.y - pos.y)
+    const distance = Math.max(dx, dy)
+    const bowRange = getBowRange(game.character)
+
+    // At shooting range - ranged attack
+    if (distance >= 2 && distance <= bowRange) {
+      if (canRangedAttack(game.character, targetMonster.position)) {
+        recordProgress(botState, game.turn)
+        return { type: 'ranged_attack', targetId: targetMonster.id }
+      }
+    }
+
+    // Adjacent - try to kite away
+    if (shouldAvoidMelee(classProfile, distance)) {
+      const kiteDir = findKitePosition(game, targetMonster, classProfile)
+      if (kiteDir) {
+        recordProgress(botState, game.turn)
+        return { type: 'move', direction: kiteDir }
+      }
+    }
+  }
+
+  // Pre-combat buffs for dangerous targets
+  const threat = getMonsterThreat(targetMonster, game.character)
+  const BUFF_THREAT_THRESHOLD = 100
+  const isUnique = targetMonster.template.flags.includes('UNIQUE')
+  const shouldBuffTarget = threat >= BUFF_THREAT_THRESHOLD || isUnique
+
+  if (shouldBuffTarget) {
+    const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers)
+    if (combatBuff) {
+      recordProgress(botState, game.turn)
+      return combatBuff
+    }
+
+    const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters)
+    if (preCombatBuff) {
+      recordProgress(botState, game.turn)
+      return preCombatBuff
+    }
+  }
+
+  return null
+}
+
+// ============================================================================
+// FALLBACK MOVEMENT - ORCHESTRATION
+// ============================================================================
+
 function handleGoalMovement(
   game: GameState,
   context: BotContext,
@@ -857,28 +1160,20 @@ function handleGoalMovement(
   const pos = game.character.position
   const dangerThreshold = getDangerThreshold(effectiveConfig.aggression, effectiveConfig.caution)
 
-  // Select goal
+  // 1. Select goal
   const goal = profile('selectGoal', () =>
     selectGoal(context, botState, dangerResult.dangers, dangerThreshold)
   )
-
-  if (!goal || !goal.target) {
+  if (!goal?.target) {
     return { type: 'wait' }
   }
-
-  // Set goal in state
   setGoal(botState, goal)
 
-  // Check if we're at the goal
-  if (isSamePosition(pos, goal.target)) {
-    recordProgress(botState, game.turn)
-    updateTownState(botState, goal, game)
-    return profile('fallback.executeGoal', () =>
-      executeGoalAction(goal, game, botState, context.config)
-    )
-  }
+  // 2. At goal? Execute
+  const arrivalAction = getGoalArrivalAction(game, botState, goal, effectiveConfig)
+  if (arrivalAction) return arrivalAction
 
-  // Build avoid set (skip when fleeing)
+  // 3. Build avoidance (skip for FLEE)
   const avoidSet =
     goal.type === 'FLEE'
       ? new Set<string>()
@@ -886,164 +1181,24 @@ function handleGoalMovement(
           buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character)
         )
 
-  // Compute or reuse flow
-  let flowCosts: FlowMap | undefined = botState.cachedFlow?.costs
-
-  // For EXPLORE goals, use Dijkstra map approach (all frontiers as goals)
-  // This eliminates target selection thrashing - bot just "rolls downhill"
-  if (goal.type === 'EXPLORE') {
-    // Check if this is sweep mode (casters re-exploring visited levels)
-    const isSweepExplore =
-      botState.sweepMode &&
-      SQUISHY_CLASSES.has(game.character.classId) &&
-      game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
-
-    if (isSweepExplore) {
-      // Sweep mode: use single-target flow to the sweep target
-      // (sweep targets are tiles not seen this visit, not unexplored frontiers)
-      flowCosts = profile('flow.sweep', () =>
-        computeFlow(game.currentLevel, goal.target!, avoidSet)
-      )
-      botState.cachedFlow = { costs: flowCosts, goal: goal.target, computedAt: game.turn }
-    } else {
-      // Normal exploration: use multi-target Dijkstra to all frontiers
-      // Check if we can reuse cached exploration flow
-      const frontiers = profile('getFrontierPositions', () => getFrontierPositions(game))
-      if (frontiers.length === 0) {
-        // No frontiers - exploration complete
-        botState.currentGoal = null
-        botState.goalTarget = null
-        return { type: 'wait' }
-      }
-
-      // Count explored tiles for cache validation
-      const exploredCount = countExploredTiles(game.currentLevel)
-      const cache = botState.cachedExplorationFlow
-
-      // Reuse cache if: same depth, same explored count, recent enough (within 5 turns)
-      const cacheValid =
-        cache &&
-        cache.depth === game.character.depth &&
-        cache.exploredCount === exploredCount &&
-        game.turn - cache.computedAt < 5
-
-      if (cacheValid) {
-        flowCosts = cache.costs
-      } else {
-        flowCosts = profile('flow.exploration', () =>
-          computeExplorationFlow(game.currentLevel, frontiers, avoidSet)
-        )
-        botState.cachedExplorationFlow = {
-          costs: flowCosts,
-          frontierCount: frontiers.length,
-          exploredCount,
-          computedAt: game.turn,
-          depth: game.character.depth,
-        }
-      }
-      botState.cachedFlow = null // Don't use single-target cache for EXPLORE
-    }
-  } else {
-    // Standard single-target flow for other goal types
-    const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)
-    if (needsRecompute) {
-      flowCosts = profile('flow.singleTarget', () =>
-        computeFlow(game.currentLevel, goal.target!, avoidSet)
-      )
-      botState.cachedFlow = createFlowResult(goal.target!, flowCosts, game.turn)
-    }
+  // 4. Compute flow
+  const flowCosts = computeGoalFlow(game, botState, goal, avoidSet)
+  if (!flowCosts) {
+    return { type: 'wait' }
   }
 
-  // Check if goal is reachable
-  const currentCost = getFlowCost(flowCosts!, pos)
-  if (currentCost >= MAX_FLOW_COST) {
-    // Try without avoidance
-    if (avoidSet.size > 0) {
-      if (goal.type === 'EXPLORE') {
-        // For EXPLORE, recompute exploration flow without avoidance
-        const frontiers = getFrontierPositions(game)
-        flowCosts =
-          frontiers.length > 0 ? computeExplorationFlow(game.currentLevel, frontiers) : new Map()
-      } else {
-        flowCosts = computeFlow(game.currentLevel, goal.target)
-        botState.cachedFlow = createFlowResult(goal.target, flowCosts, game.turn)
-      }
-      const fallbackCost = getFlowCost(flowCosts, pos)
-      if (fallbackCost >= MAX_FLOW_COST) {
-        // Truly unreachable
-        botState.currentGoal = null
-        botState.goalTarget = null
-        botState.cachedFlow = null
-        return { type: 'wait' }
-      }
-    } else {
-      // No avoidance to remove - truly unreachable
-      botState.currentGoal = null
-      botState.goalTarget = null
-      botState.cachedFlow = null
-      return { type: 'wait' }
-    }
+  // 5. Ensure reachable
+  const reachableFlow = ensureFlowReachable(game, botState, goal, flowCosts, avoidSet)
+  if (!reachableFlow) {
+    return { type: 'wait' }
   }
 
-  // For KILL goals with ranged classes: check if we should shoot instead of approaching
-  if (goal.type === 'KILL' && goal.targetId) {
-    const { classProfile } = context
-    const targetMonster = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
+  // 6. KILL approach tactics (ranged/kite/buff)
+  const killAction = getKillApproachAction(goal, game, context, dangerResult)
+  if (killAction) return killAction
 
-    if (targetMonster && classProfile.prefersRanged && hasRangedWeapon(game)) {
-      const dx = Math.abs(targetMonster.position.x - pos.x)
-      const dy = Math.abs(targetMonster.position.y - pos.y)
-      const distance = Math.max(dx, dy)
-      const bowRange = getBowRange(game.character)
-
-      // If at shooting range (>= 2 and <= bowRange), shoot instead of approaching
-      if (distance >= 2 && distance <= bowRange) {
-        if (canRangedAttack(game.character, targetMonster.position)) {
-          recordProgress(botState, game.turn)
-          return { type: 'ranged_attack', targetId: targetMonster.id }
-        }
-      }
-
-      // If adjacent, check shouldAvoidMelee - try to kite away
-      if (shouldAvoidMelee(classProfile, distance)) {
-        const kiteDir = findKitePosition(game, targetMonster, classProfile)
-        if (kiteDir) {
-          recordProgress(botState, game.turn)
-          return { type: 'move', direction: kiteDir }
-        }
-      }
-    }
-
-    // Check for buffs when approaching dangerous KILL target
-    // This catches bosses like Wormtongue before we enter melee range
-    if (targetMonster) {
-      const threat = getMonsterThreat(targetMonster, game.character)
-      // Use same threshold as getPreCombatBuffAction (100 = roughly 10-damage awake monster)
-      // But also check for unique/boss monsters which may have lower threat but deserve buffs
-      const BUFF_THREAT_THRESHOLD = 100
-      const isUnique = targetMonster.template.flags.includes('UNIQUE')
-      const shouldBuffTarget = threat >= BUFF_THREAT_THRESHOLD || isUnique
-
-      if (shouldBuffTarget) {
-        // Try combat buff potions (heroism/berserk) for dangerous fights
-        const combatBuff = getCombatBuffAction(game, context.config, dangerResult.dangers)
-        if (combatBuff) {
-          recordProgress(botState, game.turn)
-          return combatBuff
-        }
-
-        // Try pre-combat buffs (blessing scrolls)
-        const preCombatBuff = getPreCombatBuffAction(game, context.config, context.visibleMonsters)
-        if (preCombatBuff) {
-          recordProgress(botState, game.turn)
-          return preCombatBuff
-        }
-      }
-    }
-  }
-
-  // Select step toward goal
-  const direction = profile('fallback.selectStep', () => selectStep(game, botState, flowCosts!))
+  // 7. Step toward goal
+  const direction = profile('fallback.selectStep', () => selectStep(game, botState, reachableFlow))
   recordPosition(botState, pos)
 
   // Record progress for productive goals (not FLEE/RECOVER)

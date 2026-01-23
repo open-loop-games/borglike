@@ -63,6 +63,7 @@ export function createBotState(): BotState {
     hpRate: 0,
     // Performance caches
     cachedExplorationFlow: null,
+    cachedSweepFlow: null,
     lastExploredCount: 0,
   }
 }
@@ -99,6 +100,7 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.seenThisVisit.clear()
   // Performance caches - clear on level change
   state.cachedExplorationFlow = null
+  state.cachedSweepFlow = null
   state.lastExploredCount = 0
   // Sweep exploration - reset direction (will be re-initialized based on entry point)
   // Keep sweepMode active across levels (part of multi-level pattern)

@@ -101,6 +101,18 @@ export interface ExplorationFlowCache {
   depth: number
 }
 
+/** Cached sweep flow (multi-goal BFS for caster sweep mode) */
+export interface SweepFlowCache {
+  /** The computed flow costs */
+  costs: FlowMap
+  /** seenThisVisit.size when computed (for invalidation) */
+  seenCount: number
+  /** Turn when computed */
+  computedAt: number
+  /** Depth where computed */
+  depth: number
+}
+
 // ============================================================================
 // DANGER TIER TYPES (Angband-inspired 4-tier system)
 // ============================================================================
@@ -222,6 +234,8 @@ export interface BotState {
   // Performance caches
   /** Cached exploration flow (multi-goal BFS to all frontiers) */
   cachedExplorationFlow: ExplorationFlowCache | null
+  /** Cached sweep flow (multi-goal BFS for caster sweep mode) */
+  cachedSweepFlow: SweepFlowCache | null
   /** Cached unexplored tile count (for invalidation detection) */
   lastExploredCount: number
 }
