@@ -18,7 +18,7 @@ export function createBotState(): BotState {
     goalTarget: null,
     levelEnterTurn: 0,
     turnsOnLevel: 0,
-    currentDepth: 1,
+    currentDepth: 0,  // Start at 0 so first dungeon entry (depth 1) triggers level change
     knownStairsDown: null,
     knownStairsUp: null,
     cachedFlow: null,

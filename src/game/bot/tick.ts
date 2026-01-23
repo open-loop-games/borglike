@@ -113,12 +113,13 @@ export function runBotTick(
       botState.tetheredOrigin = { x: game.character.position.x, y: game.character.position.y }
     }
 
-    // Initialize sweep mode for casters entering a new level while farming
-    // This triggers whole-level sweep exploration instead of stair surfing
-    if (SQUISHY_CLASSES.has(game.character.classId) &&
-        game.character.level < CASTER_STAIR_SURF_MIN_LEVEL &&
-        wasInFarmingMode &&
-        game.character.depth !== 0) {
+    // Initialize sweep mode for early-game casters on any dungeon level change
+    // Casters can't enter farming mode normally (always under-leveled due to +5 offset)
+    // So we trigger sweep on every level transition to let them farm via exploration
+    const isCaster = SQUISHY_CLASSES.has(game.character.classId)
+    const isEarlyGame = game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
+    const inDungeon = game.character.depth !== 0
+    if (isCaster && isEarlyGame && inDungeon) {
       botState.sweepMode = true
       botState.sweepStartTurn = game.turn
       initializeSweepDirection(game, botState)
