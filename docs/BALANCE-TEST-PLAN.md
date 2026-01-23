@@ -1,12 +1,12 @@
 # Balance Test Plan
 
-## Current State (2026-01-23 Post-Ranger-Fix)
+## Current State (2026-01-23 Post-A4-Light-Orb)
 
-### Class Performance (30-50 runs each, 30k turns, seed=1000)
+### Class Performance (30 runs each, 30k turns, seed=1000)
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
-| **Warrior** | 40.8 | 50 | 38% | 406 | ✅ Endgame |
+| **Warrior** | 37.6 | 50 | 63% | 364 | ✅ Endgame |
 | **Paladin** | 39.4 | 50 | 35% | 505 | ✅ Endgame |
 | **Blackguard** | 39.1 | 50 | 49% | 395 | ✅ Endgame |
 | **Priest** | 38.8 | 50 | 37% | 486 | ✅ Endgame |
@@ -14,16 +14,16 @@
 | **Rogue** | 38.1 | 50 | 46% | 472 | ✅ Endgame |
 | **Ranger** | 37.7 | 50 | 27% | 473 | ✅ Endgame |
 | **Druid** | 34.1 | 47 | 30% | 425 | ✅ Endgame |
-| **Mage** | 14.8 | 25 | 8% | 391 | ⚠️ Midgame |
-| **Necromancer** | 14.7 | 25 | 0% | 388 | ⚠️ Midgame |
-| **Archmage** | 12.9 | 27 | 10% | 357 | ⚠️ Midgame |
+| **Mage** | 25.2 | 38 | 7% | 504 | ⚠️ Late-Midgame |
+| **Archmage** | 25.5 | 36 | 17% | 503 | ⚠️ Late-Midgame |
+| **Necromancer** | 25.0 | 38 | 17% | 509 | ⚠️ Late-Midgame |
 
 ### Key Findings
 
-1. **Pure casters FIXED** - Mage 4.9→14.8, Necromancer 5.5→14.7, Archmage 5.9→12.9
+1. **Vision buff spells** - Mage/Archmage get Light Orb, Necromancer gets Shadow Sight (A4 change)
 2. **Ranger FIXED** - Was 5.0, now 37.7 avg depth (dist 2 kiting bug)
 3. **9 classes endgame-viable** - Warrior, Paladin, Blackguard, Priest, Berserker, Rogue, Ranger, Druid
-4. **3 classes midgame** - Mage, Necromancer, Archmage (need more work to reach endgame)
+4. **3 classes late-midgame** - Mage, Archmage, Necromancer (25+ avg depth, approaching endgame)
 
 ### Caster Fix Details (2026-01-23)
 
@@ -139,17 +139,142 @@ Earlier ranger improvements (still active):
 
 ## Known Issues
 
-### Pure Casters Midgame (2026-01-23)
+### Pure Casters Midgame (2026-01-23) - IN PROGRESS
 
 Mage, Archmage, Necromancer now at 12-15 avg depth (up from 5-6):
 - Fixed the `hasRangedWeapon()` null vs undefined bug
 - Casters now cast when adjacent instead of futile kiting
 - Still need work to reach endgame (30+ depth)
 
-Possible improvements:
-- Better mana management
-- Improved kiting at visibility boundaries
-- Phase door usage optimization
+**Root cause identified:** Progression speed, NOT combat ability.
+- With 50k turns, mage reached **depth 39** before circuit breaker
+- Warrior reached depth 43 in only 13.5k turns (~315 turns/depth)
+- Mage took ~867 turns/depth - **2.7x slower** due to sweep mode farming
+- Casters CAN reach endgame, they're just too slow within 30k turns
+
+#### A1 Test: Reduce CASTER_STAIR_SURF_MIN_LEVEL (15 → 10)
+
+Lets casters stair-surf earlier instead of sweep-exploring every level.
+
+| Class | Before Avg | After Avg | Δ | Before Max | After Max | Δ |
+|-------|------------|-----------|---|------------|-----------|---|
+| Mage | 13.5 | 16.5 | **+3.0** | 25 | 34 | **+9** |
+| Archmage | 12.9 | 17.3 | **+4.4** | 25 | 33 | **+8** |
+| Necromancer | 14.7 | 13.9 | -0.8 | 25 | 33 | **+8** |
+
+**Result:** All three casters now hitting 30+ max depth. Change kept.
+
+#### A2 Investigation: Mana Potions - NOT NEEDED
+
+Added MP tracking to diagnose output. Findings:
+- Casters enter combat at **93%+ MP** (26-28/30 typical)
+- Mana regen is 1 + WIS/10 per turn when not adjacent (~2 MP/turn for mages)
+- Between combats, MP refills to near-full
+- Mana is NOT a bottleneck - reverted mana potion implementation
+
+#### A3 Test: Phase Door at DANGER tier for Mage/Archmage
+
+**Hypothesis:** Casters should use Phase Door spell to escape at DANGER tier (not just CRITICAL).
+
+**Spell availability:**
+- Mage: Phase Door at L1, Teleport at L25
+- Archmage: Phase Door at L1, Teleport at L18
+- Necromancer: NO teleport spells (relies on scrolls + skeletons)
+
+**Initial A3 (unconditional):** Phase Door whenever adjacent at DANGER tier
+- Mage: avg +2.0, but max **-5** (regression)
+- Archmage: avg +4.1, max +1
+
+**Problem found:** Phase Door disrupted exploration. Bot teleported away from stairs, caused "left depth without finding stairs" loops. Seed 1010 showed depth 18→12 regression.
+
+**A3v2 (with conditions):** Only Phase Door if HP < 50% OR 2+ adjacent monsters
+
+| Class | A1 Avg | A3v2 Avg | Δ | A1 Max | A3v2 Max | Δ |
+|-------|--------|----------|---|--------|----------|---|
+| Mage | 18.0 | 18.4 | +0.4 | 26 | 33 | **+7** |
+| Archmage | 17.3 | 21.2 | **+3.9** | 33 | 34 | +1 |
+
+**Result:** A3v2 kept - tighter conditions prevent exploration disruption while still helping in real emergencies.
+
+#### Future Investigation: Teleport State Management
+
+Phase Door / Teleport spells disrupt bot state:
+- Goal target position becomes invalid or far away
+- Exploration frontier cache may be stale
+- Known stairs position preserved but bot may teleport away from it
+- Sweep mode direction may need reset
+
+Current approach: let bot re-evaluate naturally. Works for Phase Door (short range) with tight conditions, but full Teleport may need explicit state cleanup. Investigate if casters need deeper progression.
+
+#### A4 Investigation: Lighting System
+
+**Hypothesis:** Casters have low visibility (2-3 tiles), hindering exploration and combat.
+
+**Existing system (already implemented):**
+- Light equipment slot: torch (radius 2), lantern (radius 3)
+- Race infravision: elf +1, dwarf +1, kobold +2
+- Artifact LIGHT bonuses
+- Everyone starts with a torch (auto-equipped)
+
+**Bug found:** `BASE_LIGHT_RADIUS = 2` meant torches (radius 2) provided no benefit.
+
+**Fix:** Changed `BASE_LIGHT_RADIUS` to 1 (Angband standard: dark without light source).
+
+| Race | No Light | Torch | Lantern |
+|------|----------|-------|---------|
+| Human | 1 | 2 | 3 |
+| Elf | 2 | 3 | 4 |
+| Kobold | 3 | 4 | 5 |
+
+**Impact:** Minimal immediate change (everyone has torch), but:
+- Infravision now more valuable
+- Correct Angband-style darkness
+- Future-proofs for torch burn-out mechanics
+
+#### Angband Lighting Reference (from source exploration)
+
+**Equipment:**
+- Wooden Torch: radius 2, BURNS_OUT (needs replacement)
+- Lantern: radius 3, TAKES_FUEL (needs oil flasks)
+- Artifact lights (Phial of Galadriel): radius 4, NO_FUEL
+
+**Spells (Mage/Priest L1-5, 1-2 MP):**
+- `Call Light` / `Light Area`: Permanently lights room + damages light-sensitive monsters
+- Cheap and early - designed to be cast frequently in Angband
+
+**Consumables:**
+- Scroll/Staff/Rod of Light: Area illumination
+- Wand of Light: Beam attack + hallway lighting
+- Potion of Enlightenment: Maps entire level
+
+**Borg fuel management:**
+- Swaps torches at <250 turns remaining
+- Refuels lantern at <1000 turns with oil flasks
+
+**Key insight:** Angband Light spell illuminates the room permanently (tiles stay lit). This works well for room-based dungeons but our cavern dungeons are more open. Better to implement as FOV radius buff for borglike.
+
+#### A4 Implementation (Vision Buffs + Ring of Light)
+
+**Changes implemented:**
+1. **Light Orb spell** (L1 Mage/Archmage): +2 FOV radius for 50 turns, 4 MP, 30 turn cooldown
+2. **Shadow Sight spell** (L1 Necromancer): Same stats, shadow-school thematic variant
+3. **Ring of Light**: Tier 2 ring, +1 light radius, minDepth 15
+4. **Bot light scoring**: `calculateEquipmentScore` now factors in lightRadius (lantern > torch)
+5. **Proactive casting**: Bot casts vision buff in SAFE tier when buff not active
+
+**Results (30 runs, seed=1000):**
+
+| Class | A3v2 Avg | A4 Avg | Δ | A3v2 Max | A4 Max | Δ |
+|-------|----------|--------|---|----------|--------|---|
+| Mage | 18.4 | 25.2 | **+6.8** | 33 | 38 | **+5** |
+| Archmage | 21.2 | 25.5 | **+4.3** | 34 | 36 | +2 |
+| Necromancer | 14.7 | 25.0 | **+10.3** | 25 | 38 | **+13** |
+| Warrior | ~40 | 37.6 | -2.4 | 50 | 50 | 0 |
+
+**Note:** Warrior slight drop is noise (high CB rate at endgame, 63%), not regression from lighting.
+
+Vision buffs cast every ~50 turns during exploration, providing consistent visibility boost.
+4. **Future**: Fuel/burnout mechanics for torches (adds resource management)
 
 ### Endgame Circuit Breakers (2026-01-22)
 

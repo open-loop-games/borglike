@@ -340,6 +340,11 @@ export function calculateEquipmentScore(item: Item): number {
     score += 15
   }
 
+  // Light radius bonus (lantern > torch)
+  if (template.lightRadius) {
+    score += template.lightRadius * 10
+  }
+
   return score
 }
 

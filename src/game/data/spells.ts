@@ -167,6 +167,18 @@ const mage_armor: SpellTemplate = {
   description: 'A magical barrier grants +8 AC.',
 }
 
+const light_orb: SpellTemplate = {
+  id: 'light_orb',
+  name: 'Light Orb',
+  school: 'arcane',
+  level: 1,
+  manaCost: 4,
+  cooldown: 30,
+  effectType: 'buff',
+  buff: { type: 'enhanced_light', value: 2, duration: 50 },
+  description: 'Conjure a glowing orb that follows you, extending your vision by 2 tiles.',
+}
+
 // ============================================================================
 // DIVINE SPELLS (WIS-based)
 // ============================================================================
@@ -414,6 +426,18 @@ const drain_life: SpellTemplate = {
   description: 'Steal life force from your enemy.',
 }
 
+const shadow_sight: SpellTemplate = {
+  id: 'shadow_sight',
+  name: 'Shadow Sight',
+  school: 'shadow',
+  level: 1,
+  manaCost: 4,
+  cooldown: 30,
+  effectType: 'buff',
+  buff: { type: 'enhanced_light', value: 2, duration: 50 },
+  description: 'Your eyes adapt to darkness, extending your vision by 2 tiles.',
+}
+
 const shadow_bolt: SpellTemplate = {
   id: 'shadow_bolt',
   name: 'Shadow Bolt',
@@ -484,6 +508,7 @@ export const SPELLS: Record<string, SpellTemplate> = {
   fireball,
   teleport,
   mage_armor,
+  light_orb,
   // Divine
   minor_heal,
   bless,
@@ -504,6 +529,7 @@ export const SPELLS: Record<string, SpellTemplate> = {
   summon_bear,
   // Shadow
   drain_life,
+  shadow_sight,
   shadow_bolt,
   weaken,
   dark_pact,

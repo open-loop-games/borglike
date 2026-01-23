@@ -761,6 +761,16 @@ export const RINGS: ItemTemplate[] = [
     minDepth: 30,
   },
   {
+    name: 'Ring of Light',
+    type: 'ring',
+    slot: 'ring',
+    tier: 2,
+    weight: 2,
+    lightRadius: 1,
+    effect: '+1 Light Radius',
+    minDepth: 15,
+  },
+  {
     name: 'Ring of Resist Fire and Cold',
     type: 'ring',
     slot: 'ring',

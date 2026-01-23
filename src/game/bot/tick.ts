@@ -73,6 +73,7 @@ import {
   findKitePosition,
   shouldAvoidMelee,
   findClosestMonster,
+  countAdjacentMonsters,
 } from './combat'
 import { getBowRange } from '../combat'
 import { findEquipmentUpgrades } from './items'
@@ -87,10 +88,12 @@ import {
   getDamageSpellAction,
   getBuffSpellAction,
   getEscapeSpellAction,
+  getPhaseDoorSpellAction,
   getDebuffSpellAction,
   getSummonSpellAction,
   getRootShotAction,
   classShouldSummon,
+  getLightOrbSpellAction,
 } from './spells'
 import { botSellItems, botBuySupplies } from './merchant'
 import { profile } from './profiler'
@@ -353,6 +356,22 @@ function handleDangerTier(
         if (rootAction) {
           recordProgress(botState, game.turn)
           return rootAction
+        }
+      }
+
+      // Mage/Archmage: Try Phase Door at DANGER tier (tactical escape)
+      // Only when actually threatened: HP < 50% OR surrounded (2+ adjacent)
+      // Avoids disrupting exploration when bot could just fight
+      const classId = game.character.classId
+      const hpRatio = game.character.hp / game.character.maxHp
+      const adjacentCount = countAdjacentMonsters(game, pos)
+      if (classId === 'mage' || classId === 'archmage') {
+        if (hpRatio < 0.5 || adjacentCount >= 2) {
+          const phaseDoorAction = getPhaseDoorSpellAction(game)
+          if (phaseDoorAction) {
+            recordProgress(botState, game.turn)
+            return phaseDoorAction
+          }
         }
       }
 
@@ -624,6 +643,13 @@ function handleSafeTier(
       recordProgress(botState, game.turn)
       return summonAction
     }
+  }
+
+  // 0b. Proactive Light Orb for mage/archmage - extended visibility helps exploration
+  const lightOrbAction = getLightOrbSpellAction(game)
+  if (lightOrbAction) {
+    recordProgress(botState, game.turn)
+    return lightOrbAction
   }
 
   // 1. Pick up items at current position

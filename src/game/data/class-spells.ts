@@ -27,8 +27,8 @@ export interface ClassSpellList {
 // ============================================================================
 
 /**
- * Mage - Full arcane caster (7 spells)
- * Gets Phase Door and Mage Armor at level 1 for early survival
+ * Mage - Full arcane caster (8 spells)
+ * Gets Phase Door, Mage Armor, and Light Orb at level 1 for early survival
  */
 const mageSpells: ClassSpellList = {
   classId: 'mage',
@@ -36,6 +36,7 @@ const mageSpells: ClassSpellList = {
     { spellId: 'magic_missile', learnLevel: 1 },
     { spellId: 'phase_door', learnLevel: 1 }, // Early escape spell
     { spellId: 'mage_armor', learnLevel: 1 }, // Early defense buff
+    { spellId: 'light_orb', learnLevel: 1 }, // Early visibility buff
     { spellId: 'frost_bolt', learnLevel: 5 },
     { spellId: 'lightning_bolt', learnLevel: 15 },
     { spellId: 'fireball', learnLevel: 20 },
@@ -57,7 +58,7 @@ const rogueSpells: ClassSpellList = {
 }
 
 /**
- * Archmage - Ultimate arcane caster (6 spells, learns faster)
+ * Archmage - Ultimate arcane caster (7 spells, learns faster)
  * Prestige class - more powerful versions
  */
 const archmageSpells: ClassSpellList = {
@@ -66,6 +67,7 @@ const archmageSpells: ClassSpellList = {
     { spellId: 'magic_missile', learnLevel: 1 },
     { spellId: 'phase_door', learnLevel: 1 }, // Early escape like Mage - essential for glass cannon
     { spellId: 'frost_bolt', learnLevel: 1 }, // Extra damage spell at L1
+    { spellId: 'light_orb', learnLevel: 1 }, // Early visibility buff
     { spellId: 'lightning_bolt', learnLevel: 5 },
     { spellId: 'fireball', learnLevel: 12 },
     { spellId: 'teleport', learnLevel: 18 },
@@ -139,7 +141,7 @@ const rangerSpells: ClassSpellList = {
 }
 
 /**
- * Necromancer - Shadow caster with minions (6 spells)
+ * Necromancer - Shadow caster with minions (7 spells)
  * Dark magic with life drain and skeleton summon from L1
  */
 const necromancerSpells: ClassSpellList = {
@@ -147,6 +149,7 @@ const necromancerSpells: ClassSpellList = {
   spells: [
     { spellId: 'drain_life', learnLevel: 1 },
     { spellId: 'summon_skeleton', learnLevel: 1 }, // Skeleton from start for early survival
+    { spellId: 'shadow_sight', learnLevel: 1 }, // Early visibility buff
     { spellId: 'shadow_bolt', learnLevel: 5 },
     { spellId: 'weaken', learnLevel: 12 },
     { spellId: 'dark_pact', learnLevel: 18 },

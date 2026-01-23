@@ -12,8 +12,8 @@
 import type { Character } from './types'
 import { getRaceById } from './data/index'
 
-/** Base light radius without any light source */
-const BASE_LIGHT_RADIUS = 2
+/** Base light radius without any light source (groping in dark) */
+const BASE_LIGHT_RADIUS = 1
 
 /** Maximum FOV radius (also used for Town) */
 export const MAX_FOV_RADIUS = 8
@@ -46,6 +46,10 @@ export function calculateLightRadius(character: Character, depth: number): numbe
     if (item?.artifact?.bonuses?.LIGHT) {
       radius += item.artifact.bonuses.LIGHT
     }
+    // Non-light equipment with lightRadius bonus (e.g., Ring of Light)
+    if (item?.template.lightRadius && item.template.slot !== 'light') {
+      radius += item.template.lightRadius
+    }
   }
 
   // Race infravision (convert from Angband 10-ft increments to tiles)
@@ -53,6 +57,12 @@ export function calculateLightRadius(character: Character, depth: number): numbe
   const race = getRaceById(character.raceId)
   if (race?.infravision) {
     radius += Math.floor(race.infravision / 2)
+  }
+
+  // Enhanced light from Light Orb spell
+  const enhancedLight = character.statusEffects.find((e) => e.type === 'enhanced_light')
+  if (enhancedLight) {
+    radius += enhancedLight.value
   }
 
   // Depth penalty for very deep levels (optional darkening)

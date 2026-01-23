@@ -342,4 +342,4 @@ export const SQUISHY_CLASSES = new Set(
 )
 
 /** Minimum character level before casters can safely stair surf */
-export const CASTER_STAIR_SURF_MIN_LEVEL = 15
+export const CASTER_STAIR_SURF_MIN_LEVEL = 10

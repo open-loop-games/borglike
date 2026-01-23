@@ -206,6 +206,7 @@ export type StatusEffectType =
   | 'stun'
   | 'immunity_fear'
   | 'active_form'
+  | 'enhanced_light' // +2 FOV radius from Light Orb spell
   // Debuffs (from monster attacks)
   | 'blind'
   | 'confused'

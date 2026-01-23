@@ -428,6 +428,27 @@ export function getTeleportSpellAction(game: GameState): GameAction | null {
 }
 
 /**
+ * Get Phase Door spell only (no full teleport fallback)
+ * Used for DANGER tier tactical escape - stays in same area, goals remain valid
+ * Only mage/archmage have this spell (at L1)
+ */
+export function getPhaseDoorSpellAction(game: GameState): GameAction | null {
+  const character = game.character
+  const available = getAvailableSpells(character, game.turn)
+
+  // Find phase door specifically (teleportRange > 0 means short-range)
+  const phaseDoor = available.find(
+    (entry) => entry.canCast && entry.spell.effectType === 'teleport' && (entry.spell.teleportRange ?? 0) > 0
+  )
+
+  if (phaseDoor) {
+    return { type: 'cast', spellId: phaseDoor.spell.id }
+  }
+
+  return null
+}
+
+/**
  * Check if we should cast a debuff spell
  *
  * Useful for:
@@ -686,4 +707,56 @@ export function hasActiveMinions(game: GameState): boolean {
  */
 export function classShouldSummon(classId: string): boolean {
   return classId === 'ranger' || classId === 'necromancer' || classId === 'druid'
+}
+
+// ============================================================================
+// LIGHT ORB SPELL
+// ============================================================================
+
+/**
+ * Get vision buff spell action (Light Orb or Shadow Sight)
+ *
+ * Cast when:
+ * - Character is mage, archmage, or necromancer
+ * - Has light_orb or shadow_sight spell available
+ * - Not already buffed with enhanced_light
+ * - Not in town (full visibility anyway)
+ *
+ * @returns GameAction to cast vision buff, or null
+ */
+export function getLightOrbSpellAction(game: GameState): GameAction | null {
+  const character = game.character
+
+  // Only caster classes have vision buffs
+  const visionSpellId =
+    character.classId === 'mage' || character.classId === 'archmage'
+      ? 'light_orb'
+      : character.classId === 'necromancer'
+        ? 'shadow_sight'
+        : null
+
+  if (!visionSpellId) {
+    return null
+  }
+
+  // Town is fully lit - don't waste mana
+  if (character.depth === 0) {
+    return null
+  }
+
+  // Already have enhanced light buff?
+  const hasEnhancedLight = character.statusEffects.some((e) => e.type === 'enhanced_light')
+  if (hasEnhancedLight) {
+    return null
+  }
+
+  // Get available spells
+  const available = getAvailableSpells(character, game.turn)
+  const visionSpell = available.find((entry) => entry.canCast && entry.spell.id === visionSpellId)
+
+  if (visionSpell) {
+    return { type: 'cast', spellId: visionSpellId }
+  }
+
+  return null
 }
