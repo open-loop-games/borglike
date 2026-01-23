@@ -12,6 +12,7 @@ import { getLivingUniques } from '../types'
 import { POTIONS, SCROLLS } from '../data/items'
 import { monsters as MONSTERS } from '../data/monsters'
 import type { BotContext, BotGoal } from './types'
+import { getClassTier, type ClassTier } from './types'
 
 // ============================================================================
 // DEPTH REQUIREMENTS
@@ -439,46 +440,6 @@ export function getEffectiveGold(character: Character): number {
 }
 
 /**
- * Class tier for level requirements (Angband borg-inspired).
- *
- * - TANK: Warriors/melee - can handle 4 levels deeper than their level
- * - MEDIUM: Hybrid classes - need to match depth with level
- * - SQUISHY: Pure casters - need 5 levels above depth
- */
-type ClassTier = 'TANK' | 'MEDIUM' | 'SQUISHY'
-
-/**
- * Get class tier for level requirement calculation.
- * Based on Angband borg's class-specific depth rules.
- */
-function getClassTier(classId: string): ClassTier {
-  switch (classId) {
-    // Tank: Strong melee, high HP - can go deep early
-    case 'warrior':
-    case 'berserker':
-    case 'blackguard':
-      return 'TANK'
-
-    // Squishy: Pure casters - need to overlevel significantly
-    case 'mage':
-    case 'archmage':
-    case 'necromancer':
-      return 'SQUISHY'
-
-    // Medium: Hybrids - need level to match depth
-    case 'paladin':
-    case 'priest':
-    case 'druid':
-    case 'ranger':
-    case 'rogue':
-    case 'monk':
-    case 'bard':
-    default:
-      return 'MEDIUM'
-  }
-}
-
-/**
  * Get level offset for a class tier.
  * Positive = needs to be higher level than depth.
  * Negative = can be lower level than depth.
@@ -588,13 +549,18 @@ export function getRelevantLivingUniques(
 /**
  * Get HUNT_UNIQUE goal - hunt unique monsters blocking descent.
  *
- * If 2+ living uniques block descent to next depth, create a goal to hunt
- * the one on the current level (if visible/known).
+ * If 2+ living uniques block descent to next depth:
+ * 1. If unique visible → HUNT_UNIQUE (engage it)
+ * 2. If level has unexplored tiles → null (let EXPLORE find it)
+ * 3. If level fully explored → ASCEND_TO_FARM (flip level to respawn)
  */
 export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
-  const { game, visibleMonsters } = context
+  const { game, visibleMonsters, botState } = context
   const character = game.character
   const nextDepth = character.depth + 1
+
+  // Skip in town
+  if (character.depth === 0) return null
 
   // Check for unique blocker
   const uniqueBlocker = getUniqueBlocker(
@@ -604,7 +570,14 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
     MONSTERS
   )
 
-  if (!uniqueBlocker) return null
+  if (!uniqueBlocker) {
+    // No blocker - clear hunt state if active
+    if (botState.huntingUniqueBlocker) {
+      botState.huntingUniqueBlocker = null
+      botState.uniqueHuntFlipDepth = null
+    }
+    return null
+  }
 
   // Check if the blocking unique is visible on current level
   const uniqueMonster = visibleMonsters.find(m =>
@@ -614,6 +587,7 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
   )
 
   if (uniqueMonster) {
+    // Found it! Engage.
     return {
       type: 'HUNT_UNIQUE',
       target: uniqueMonster.position,
@@ -623,7 +597,33 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
     }
   }
 
-  // Unique exists but not visible - explore to find it
-  // This falls through to EXPLORE goal
-  return null
+  // Unique exists but not visible - check if level is fully explored
+  const hasUnexploredTiles = game.currentLevel.tiles.some(row =>
+    row.some(tile => !tile.explored && tile.type !== 'wall')
+  )
+
+  if (hasUnexploredTiles) {
+    // Still tiles to explore - let EXPLORE goal handle it
+    return null
+  }
+
+  // Level fully explored, unique not found - trigger level flip
+  // This forces respawn of monsters, giving another chance to find the unique
+  botState.huntingUniqueBlocker = uniqueBlocker
+  botState.uniqueHuntFlipDepth = character.depth
+
+  // Find stairs up
+  const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+  if (!stairsUp) {
+    // No stairs up available - give up on flip (shouldn't happen in dungeon)
+    return null
+  }
+
+  return {
+    type: 'ASCEND_TO_FARM',
+    target: stairsUp,
+    targetId: null,
+    reason: `Level flip to find ${uniqueBlocker}`,
+    startTurn: game.turn,
+  }
 }

@@ -22,12 +22,12 @@ import { getKiteGoal, getKillGoal } from './combat'
 import { getTakeGoal, findBestItem } from './items'
 import { getExploreGoal } from './exploration'
 import { getUseAltarGoal, getVisitMerchantGoal } from './merchant'
-import { evaluateDescend } from './progression'
+import { evaluateDescend, getReturnToUniqueHuntGoal } from './progression'
 import { getEffectiveGold, getHuntUniqueGoal } from './preparation'
 
 // Wrapper functions to maintain backward compatibility with evaluateX naming
 function evaluateFlee(context: BotContext, dangers: DangerMap, _t: number, _l: number, _h: number): BotGoal | null {
-  return getFleeGoal(context, dangers)
+  return getFleeGoal(context, dangers, context.botState.hpRate)
 }
 function evaluateHuntUnique(context: BotContext): BotGoal | null {
   return getHuntUniqueGoal(context)
@@ -183,6 +183,10 @@ export function selectGoal(
   // 2. RECOVER - Low HP but safe
   const recoverGoal = evaluateRecover(context, dangerThreshold, localDanger, hpRatio)
   if (recoverGoal) return recoverGoal
+
+  // 2.3 RETURN_TO_UNIQUE_HUNT - Return to depth after level flip for unique hunting
+  const returnToHuntGoal = getReturnToUniqueHuntGoal(context)
+  if (returnToHuntGoal) return returnToHuntGoal
 
   // 2.5 HUNT_UNIQUE - Hunt uniques blocking descent (priority over regular KILL)
   const huntUniqueGoal = evaluateHuntUnique(context)

@@ -412,6 +412,61 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
 }
 
 /**
+ * Get DESCEND goal to return to unique hunt depth after level flip.
+ *
+ * When hunting a unique blocker, bot may flip levels (ascend/descend) to trigger
+ * new spawns. This goal ensures bot returns to the original depth to continue hunt.
+ */
+export function getReturnToUniqueHuntGoal(context: BotContext): BotGoal | null {
+  const { game, botState } = context
+  const character = game.character
+
+  // Check if we're in unique hunt flip mode
+  if (!botState.huntingUniqueBlocker || botState.uniqueHuntFlipDepth === null) {
+    return null
+  }
+
+  // Skip in town
+  if (character.depth === 0) return null
+
+  // If we're back at the flip depth, clear state and let normal hunt resume
+  if (character.depth === botState.uniqueHuntFlipDepth) {
+    // Don't clear state yet - let getHuntUniqueGoal handle it when unique found/killed
+    return null
+  }
+
+  // If we're above the flip depth, descend back
+  if (character.depth < botState.uniqueHuntFlipDepth) {
+    const stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
+    if (!stairsDown) return null
+
+    return {
+      type: 'DESCEND',
+      target: stairsDown,
+      targetId: null,
+      reason: `Returning to depth ${botState.uniqueHuntFlipDepth} to hunt ${botState.huntingUniqueBlocker}`,
+      startTurn: game.turn,
+    }
+  }
+
+  // If we're below flip depth somehow, ascend back
+  if (character.depth > botState.uniqueHuntFlipDepth) {
+    const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+    if (!stairsUp) return null
+
+    return {
+      type: 'ASCEND_TO_FARM',
+      target: stairsUp,
+      targetId: null,
+      reason: `Returning to depth ${botState.uniqueHuntFlipDepth} to hunt ${botState.huntingUniqueBlocker}`,
+      startTurn: game.turn,
+    }
+  }
+
+  return null
+}
+
+/**
  * Get TOWN_TRIP goal if ready to portal to town.
  */
 export function getTownTripGoal(context: BotContext): BotGoal | null {
