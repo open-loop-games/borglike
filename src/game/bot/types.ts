@@ -173,6 +173,14 @@ export interface BotState {
   lastFlipTurn: number
   /** Tiles seen via FOV on THIS level visit - reset on level change */
   seenThisVisit: Set<string>
+
+  // Sweep exploration state (for casters in early game)
+  /** Whether bot is in sweep exploration mode (covering whole level) */
+  sweepMode: boolean
+  /** Preferred compass direction for consistent sweep movement */
+  sweepDirection: Direction | null
+  /** Turn when sweep started (for timeout tracking) */
+  sweepStartTurn: number
 }
 
 // ============================================================================

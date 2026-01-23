@@ -20,12 +20,15 @@ import { MAX_FLOW_COST } from './types'
 import { evaluateItem, shouldPickup } from './items'
 import { countHealingPotions } from './merchant'
 import {
-  findExplorationTarget as findExploreTarget,
+  findExplorationTarget,
   findLabyrinthExplorationTarget,
   isLabyrinthLevel,
   getLabyrinthExplorationThreshold,
   getExplorationProgress,
   resetCorridorFollowing,
+  getSweepProgress,
+  isSweepComplete,
+  isSweepTimedOut,
 } from './exploration'
 import {
   getDepthReadiness,
@@ -523,7 +526,11 @@ export function evaluateDescend(context: BotContext, botState: BotState): BotGoa
       // 4. Tether sweep - actively walk to unseen tiles within tether radius
       // This is the key farming exploration: walk around stairs to find spawns
       // Uses FARM goal to indicate "explore this area for farming purposes"
-      if (botState.tetheredOrigin) {
+      // Skip for early-game casters - they use sweep exploration instead
+      const skipTetherForSweep = botState.sweepMode &&
+        SQUISHY_CLASSES.has(character.classId) &&
+        character.level < CASTER_STAIR_SURF_MIN_LEVEL
+      if (botState.tetheredOrigin && !skipTetherForSweep) {
         // Try current radius, advance if FOV already covers it
         let radius = botState.tetheredRadius || TETHER_RADII[0]!
         let flipCount = botState.tetheredFlipCount
@@ -637,6 +644,17 @@ export function evaluateDescend(context: BotContext, botState: BotState): BotGoa
   // STANDARD DESCENT CHECKS - Only proceed if ready for next depth
   // ============================================================================
 
+  // Casters in sweep mode must complete sweep before descending
+  if (botState.sweepMode && SQUISHY_CLASSES.has(character.classId)) {
+    if (!isSweepComplete(game, botState)) {
+      return null // Let sweep exploration continue
+    }
+    // Sweep complete - clear mode and allow descent
+    botState.sweepMode = false
+    botState.sweepDirection = null
+    botState.sweepStartTurn = 0
+  }
+
   // Need to know where stairs are to actually descend
   if (!botState.knownStairsDown) return null
 
@@ -682,9 +700,16 @@ export function evaluateDescend(context: BotContext, botState: BotState): BotGoa
 /**
  * Evaluate EXPLORE goal - find unexplored areas
  * Uses labyrinth-aware exploration for maze levels
+ * Delegates to sweep exploration for casters in sweepMode
  */
 export function evaluateExplore(context: BotContext): BotGoal | null {
   const { game, unexploredTiles, botState } = context
+  const character = game.character
+
+  // Caster sweep mode: when active, use sweep exploration instead of frontier
+  if (botState.sweepMode && SQUISHY_CLASSES.has(character.classId)) {
+    return evaluateSweep(context)
+  }
 
   if (unexploredTiles.length === 0) return null
 
@@ -698,7 +723,7 @@ export function evaluateExplore(context: BotContext): BotGoal | null {
       // Standard exploration for other level types
       // Reset corridor-following if we were in a labyrinth before
       resetCorridorFollowing(botState)
-      target = findExploreTarget(game, botState)
+      target = findExplorationTarget(game, botState)
     }
   } else {
     // Simple: pick nearest unexplored tile
@@ -772,6 +797,65 @@ export function evaluateHuntUnique(context: BotContext): BotGoal | null {
   // Unique exists but not visible - explore to find it
   // This falls through to EXPLORE goal
   return null
+}
+
+// ============================================================================
+// SWEEP EXPLORATION EVALUATOR (Caster-specific)
+// ============================================================================
+
+/**
+ * Evaluate sweep exploration goal for casters in early game.
+ *
+ * Sweep exploration targets tiles that are explored but NOT seen THIS VISIT.
+ * This causes the bot to walk through the entire level, triggering fresh
+ * monster spawns (monsters spawn based on sight, not just exploration).
+ *
+ * Returns EXPLORE goal with sweep-specific targeting.
+ */
+export function evaluateSweep(context: BotContext): BotGoal | null {
+  const { game, botState } = context
+  const character = game.character
+
+  // Only for casters in sweep mode
+  if (!botState.sweepMode) return null
+  if (!SQUISHY_CLASSES.has(character.classId)) return null
+
+  const progress = getSweepProgress(game, botState)
+
+  // Check if sweep is complete (70% of floor tiles seen this visit)
+  if (isSweepComplete(game, botState)) {
+    // Clear sweep mode - allow normal exploration/descent
+    botState.sweepMode = false
+    botState.sweepDirection = null
+    botState.sweepStartTurn = 0
+    return null
+  }
+
+  // Check for timeout (prevent infinite sweep on weird maps)
+  if (isSweepTimedOut(game, botState)) {
+    botState.sweepMode = false
+    botState.sweepDirection = null
+    botState.sweepStartTurn = 0
+    return null
+  }
+
+  // Find sweep target using standard exploration logic with sweep mode
+  const target = findExplorationTarget(game, botState, true)
+  if (!target) {
+    // No reachable unseen tiles left - sweep considered complete (may be blocked by terrain)
+    botState.sweepMode = false
+    botState.sweepDirection = null
+    botState.sweepStartTurn = 0
+    return null
+  }
+
+  return {
+    type: 'EXPLORE',
+    target,
+    targetId: null,
+    reason: `Sweep exploration (${progress}% seen)`,
+    startTurn: game.turn,
+  }
 }
 
 // ============================================================================
@@ -1061,6 +1145,13 @@ export function evaluateFarm(
   const character = game.character
   const pos = character.position
 
+  // Early-game casters in sweep mode use sweep exploration instead of tethered farming
+  if (botState.sweepMode &&
+      SQUISHY_CLASSES.has(character.classId) &&
+      character.level < CASTER_STAIR_SURF_MIN_LEVEL) {
+    return null // Let evaluateSweep handle exploration
+  }
+
   // Already have enough effective gold (gold + equipment sell value)? Don't need to farm
   if (getEffectiveGold(character) >= goldTarget) return null
 
@@ -1245,6 +1336,12 @@ function isTetheredExplorationComplete(context: BotContext, origin: Point, radiu
   return totalFloor === 0 || (seenFloor / totalFloor) >= 0.8
 }
 
+/** Caster classes that shouldn't stair surf in early game (Angband borg-inspired) */
+const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
+
+/** Minimum level for casters to start stair surfing. Below this, they explore fully. */
+const CASTER_STAIR_SURF_MIN_LEVEL = 15
+
 /**
  * Evaluate ASCEND_TO_FARM goal - go up to easier levels when under-leveled
  *
@@ -1259,6 +1356,11 @@ function isTetheredExplorationComplete(context: BotContext, origin: Point, radiu
  *
  * Tethered exploration: After each flip, must explore around the stairs
  * before flipping again. Radius increases: 5x5 → 9x9 → allow flip.
+ *
+ * CASTER RESTRICTION (Angband borg-inspired):
+ * Squishy casters (mage, archmage, necromancer) should NOT stair surf in early game.
+ * Stair surfing resets monster spawns, which is deadly for low-HP classes that can't
+ * handle fresh encounters. Instead, they should explore fully and level up naturally.
  */
 export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
   const { game, botState, effectiveConfig } = context
@@ -1266,6 +1368,24 @@ export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
 
   // Can't ascend from depth 1
   if (character.depth <= 1) return null
+
+  // CASTER SWEEP MODE: Casters must complete sweep before ascending again
+  // Sweep is initialized by tick.ts when RE-ENTERING a level during farming
+  // Here we just gate ascent on sweep completion (if sweep is active)
+  if (SQUISHY_CLASSES.has(character.classId) && character.level < CASTER_STAIR_SURF_MIN_LEVEL) {
+    if (botState.sweepMode) {
+      // Sweep is active - block ascent until complete
+      if (!isSweepComplete(game, botState) && !isSweepTimedOut(game, botState)) {
+        return null // Keep sweeping
+      }
+      // Sweep complete or timed out - clear mode and allow ascent
+      botState.sweepMode = false
+      botState.sweepDirection = null
+      botState.sweepStartTurn = 0
+    }
+    // Not in sweep mode, or sweep just completed - allow ascent
+    // tick.ts will initialize sweep on the destination level
+  }
 
   // Find the "blocked depth" - scan forward until readiness fails
   // This is the depth we're ultimately trying to reach but can't

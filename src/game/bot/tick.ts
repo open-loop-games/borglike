@@ -49,7 +49,7 @@ import {
   handleStopFleeingStrategy,
 } from './stuck'
 import { selectGoal } from './goals'
-import { invalidateFrontierCache, getFrontierPositions } from './exploration'
+import { invalidateFrontierCache, getFrontierPositions, initializeSweepDirection } from './exploration'
 import { findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition, shouldAvoidMelee } from './combat'
 import { getBowRange } from '../combat'
 import { findEquipmentUpgrades } from './items'
@@ -62,6 +62,16 @@ import {
   getDebuffSpellAction,
 } from './spells'
 import { botSellItems, botBuySupplies } from './merchant'
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/** Classes that use sweep exploration instead of stair surfing */
+const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
+
+/** Minimum character level before casters can safely stair surf */
+const CASTER_STAIR_SURF_MIN_LEVEL = 15
 
 /**
  * Run one tick of bot decision making
@@ -101,6 +111,17 @@ export function runBotTick(
     // The tether check in evaluateAscendToFarm will block flipping until exploration is done
     if (wasInFarmingMode && game.character.depth !== 0) {
       botState.tetheredOrigin = { x: game.character.position.x, y: game.character.position.y }
+    }
+
+    // Initialize sweep mode for casters entering a new level while farming
+    // This triggers whole-level sweep exploration instead of stair surfing
+    if (SQUISHY_CLASSES.has(game.character.classId) &&
+        game.character.level < CASTER_STAIR_SURF_MIN_LEVEL &&
+        wasInFarmingMode &&
+        game.character.depth !== 0) {
+      botState.sweepMode = true
+      botState.sweepStartTurn = game.turn
+      initializeSweepDirection(game, botState)
     }
   }
 
@@ -668,16 +689,28 @@ function handleGoalMovement(
   // For EXPLORE goals, use Dijkstra map approach (all frontiers as goals)
   // This eliminates target selection thrashing - bot just "rolls downhill"
   if (goal.type === 'EXPLORE') {
-    // Recompute exploration flow each turn (frontier changes as we move)
-    const frontiers = getFrontierPositions(game)
-    if (frontiers.length === 0) {
-      // No frontiers - exploration complete
-      botState.currentGoal = null
-      botState.goalTarget = null
-      return { type: 'wait' }
+    // Check if this is sweep mode (casters re-exploring visited levels)
+    const isSweepExplore = botState.sweepMode &&
+      SQUISHY_CLASSES.has(game.character.classId) &&
+      game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
+
+    if (isSweepExplore) {
+      // Sweep mode: use single-target flow to the sweep target
+      // (sweep targets are tiles not seen this visit, not unexplored frontiers)
+      flowCosts = computeFlow(game.currentLevel, goal.target, avoidSet)
+      botState.cachedFlow = { costs: flowCosts, goal: goal.target, computedAt: game.turn }
+    } else {
+      // Normal exploration: use multi-target Dijkstra to all frontiers
+      const frontiers = getFrontierPositions(game)
+      if (frontiers.length === 0) {
+        // No frontiers - exploration complete
+        botState.currentGoal = null
+        botState.goalTarget = null
+        return { type: 'wait' }
+      }
+      flowCosts = computeExplorationFlow(game.currentLevel, frontiers, avoidSet)
+      botState.cachedFlow = null // Don't use single-target cache for EXPLORE
     }
-    flowCosts = computeExplorationFlow(game.currentLevel, frontiers, avoidSet)
-    botState.cachedFlow = null // Don't use single-target cache for EXPLORE
   } else {
     // Standard single-target flow for other goal types
     const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)

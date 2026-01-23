@@ -57,6 +57,10 @@ function createMinimalBotState(): BotState {
     tetheredFlipCount: 0,
     lastFlipTurn: 0,
     seenThisVisit: new Set(),
+    // Sweep exploration (casters)
+    sweepMode: false,
+    sweepDirection: null,
+    sweepStartTurn: 0,
   }
 }
 

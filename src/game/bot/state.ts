@@ -50,6 +50,10 @@ export function createBotState(): BotState {
     tetheredFlipCount: 0,
     lastFlipTurn: 0,
     seenThisVisit: new Set(),
+    // Sweep exploration (casters)
+    sweepMode: false,
+    sweepDirection: null,
+    sweepStartTurn: 0,
   }
 }
 
@@ -83,6 +87,9 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.blacklistedTargets.clear()
   // Tethered exploration - reset seen tiles for this visit
   state.seenThisVisit.clear()
+  // Sweep exploration - reset direction (will be re-initialized based on entry point)
+  // Keep sweepMode active across levels (part of multi-level pattern)
+  state.sweepDirection = null
 }
 
 /**

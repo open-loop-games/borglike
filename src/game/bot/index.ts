@@ -138,3 +138,9 @@ export {
 } from './exploration'
 
 export type { FrontierTile, ExplorationCluster, ExplorationStats } from './exploration'
+
+// ============================================================================
+// PREPARATION (depth readiness)
+// ============================================================================
+
+export { getDepthReadiness } from './preparation'

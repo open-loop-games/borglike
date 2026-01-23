@@ -269,7 +269,8 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
 
     case 'EXPLORE':
       // Explore is valid if unexplored areas exist AND we haven't reached the target
-      if (context.unexploredTiles.length === 0) return false
+      // Exception: sweep mode can explore even when no unexplored tiles (targets seen-before tiles)
+      if (context.unexploredTiles.length === 0 && !botState.sweepMode) return false
       // If we're at the target, goal is complete - need new target
       const pos = game.character.position
       if (goal.target && pos.x === goal.target.x && pos.y === goal.target.y) {

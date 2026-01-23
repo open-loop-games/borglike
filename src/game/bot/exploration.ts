@@ -179,6 +179,58 @@ export function getFrontierPositions(game: GameState): Point[] {
 }
 
 /**
+ * Find sweep frontier tiles - walkable tiles NOT seen this visit.
+ * Used for sweep exploration to re-cover previously explored levels.
+ * Returns same format as findFrontierTiles for compatibility.
+ */
+function findSweepFrontierTiles(game: GameState, botState: BotState): FrontierTile[] {
+  const level = game.currentLevel
+  const pos = game.character.position
+  const result: FrontierTile[] = []
+
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+
+    for (let x = 0; x < level.width; x++) {
+      const tile = row[x]
+      if (!tile) continue
+
+      // Skip tiles already seen this visit
+      const key = `${x},${y}`
+      if (botState.seenThisVisit.has(key)) continue
+
+      // Only consider walkable tiles
+      if (!isWalkableOrDoor(tile)) continue
+
+      // Count unseen neighbors (for scoring - prefer tiles that reveal more)
+      const neighbors = getAdjacentPositions({ x, y })
+      let unseenNeighbors = 0
+      for (const neighbor of neighbors) {
+        const neighborKey = `${neighbor.x},${neighbor.y}`
+        if (!botState.seenThisVisit.has(neighborKey)) {
+          unseenNeighbors++
+        }
+      }
+
+      const distance = chebyshevDistance(pos, { x, y })
+      const score = unseenNeighbors * 10 - distance
+
+      result.push({
+        position: { x, y },
+        unexploredNeighbors: unseenNeighbors, // Reusing field name for compatibility
+        distance,
+        score,
+      })
+    }
+  }
+
+  // Sort by score (descending)
+  result.sort((a, b) => b.score - a.score)
+  return result
+}
+
+/**
  * Compute frontier positions (internal, for caching)
  */
 function computeFrontierPositions(game: GameState): Array<{ position: Point; unexploredNeighbors: number }> {
@@ -228,16 +280,22 @@ function computeFrontierPositions(game: GameState): Array<{ position: Point; une
  * Find the best exploration target
  * Returns an EXPLORED walkable tile adjacent to unexplored areas.
  * This ensures pathfinding can always reach the target.
+ *
+ * When sweepMode is true, targets tiles not seen this visit instead of
+ * unexplored tiles. Used by casters to re-sweep previously explored levels.
  */
 export function findExplorationTarget(
   game: GameState,
-  botState: BotState
+  botState: BotState,
+  sweepMode: boolean = false
 ): Point | null {
   const level = game.currentLevel
   const pos = game.character.position
 
-  // Get frontier tiles (unexplored tiles adjacent to explored walkable tiles)
-  const frontier = findFrontierTiles(game)
+  // Get frontier tiles - either unexplored (normal) or unseen-this-visit (sweep)
+  const frontier = sweepMode
+    ? findSweepFrontierTiles(game, botState)
+    : findFrontierTiles(game)
 
   if (frontier.length === 0) {
     return null
@@ -260,41 +318,47 @@ export function findExplorationTarget(
   const hasGoodAlternatives = frontier.some(f => f.unexploredNeighbors >= GOOD_FRONTIER_THRESHOLD)
 
   for (const f of frontier) {
-    // Find the explored entry point for this frontier tile
-    const entryPoint = findNearestWalkableExplored(level, f.position)
-    if (!entryPoint) continue
+    // In sweep mode, the frontier tile IS the target (already walkable)
+    // In normal mode, find the explored entry point adjacent to the unexplored frontier
+    let target: Point
+    if (sweepMode) {
+      target = f.position
+    } else {
+      const entryPoint = findNearestWalkableExplored(level, f.position)
+      if (!entryPoint) continue
+      target = entryPoint
+    }
 
-    // Skip blacklisted entry points
-    if (isTargetBlacklisted(botState, entryPoint, game.turn)) {
+    // Skip blacklisted targets
+    if (isTargetBlacklisted(botState, target, game.turn)) {
       continue
     }
 
-    // Verify entry point is actually reachable from current position
-    const reachCost = getFlowCost(reachabilityFlow, entryPoint)
+    // Verify target is actually reachable from current position
+    const reachCost = getFlowCost(reachabilityFlow, target)
     if (reachCost >= MAX_FLOW_COST) {
-      continue // Can't reach this entry point
+      continue // Can't reach this target
     }
 
-    // Distance to the entry point (not the unexplored tile)
-    const distance = chebyshevDistance(pos, entryPoint)
+    // Distance to the target
+    const distance = chebyshevDistance(pos, target)
     if (distance > MAX_EXPLORATION_DISTANCE) continue
 
-    // If we're at the entry point, this frontier will be revealed by FOV
-    // Skip to avoid getting stuck
+    // If we're at the target, skip to avoid getting stuck
     if (distance === 0) continue
 
     // Visit penalty: avoid areas near recent positions
-    const visitPenalty = getRecentVisitPenalty(botState, entryPoint)
+    const visitPenalty = getRecentVisitPenalty(botState, target)
 
     // PERSISTENCE BONUS: Strong preference for current target or nearby tiles
     let persistenceBonus = 0
     if (currentGoalTarget) {
       // Is this the same tile as our current target?
-      if (entryPoint.x === currentGoalTarget.x && entryPoint.y === currentGoalTarget.y) {
+      if (target.x === currentGoalTarget.x && target.y === currentGoalTarget.y) {
         persistenceBonus = CURRENT_TARGET_PERSISTENCE_BONUS
       } else {
         // Is this near our current target? (same region)
-        const distToCurrentTarget = chebyshevDistance(entryPoint, currentGoalTarget)
+        const distToCurrentTarget = chebyshevDistance(target, currentGoalTarget)
         if (distToCurrentTarget <= NEAR_TARGET_DISTANCE) {
           persistenceBonus = NEAR_CURRENT_TARGET_BONUS - distToCurrentTarget * 5
         }
@@ -305,7 +369,7 @@ export function findExplorationTarget(
     let directionalBonus = 0
     if (currentGoalTarget && persistenceBonus === 0) {
       const currentDir = { x: currentGoalTarget.x - pos.x, y: currentGoalTarget.y - pos.y }
-      const targetDir = { x: entryPoint.x - pos.x, y: entryPoint.y - pos.y }
+      const targetDir = { x: target.x - pos.x, y: target.y - pos.y }
       const dotProduct = currentDir.x * targetDir.x + currentDir.y * targetDir.y
       if (dotProduct > 0) {
         directionalBonus = Math.min(30, Math.floor(dotProduct / 2))
@@ -315,8 +379,9 @@ export function findExplorationTarget(
     }
 
     // Dead-end penalty: penalize terminal frontiers in corridors when better options exist
+    // Skip dead-end penalty in sweep mode (we want to cover everything)
     let deadEndPenalty = 0
-    if (hasGoodAlternatives && isLikelyDeadEnd(level, f.position, entryPoint, f.unexploredNeighbors)) {
+    if (!sweepMode && hasGoodAlternatives && isLikelyDeadEnd(level, f.position, target, f.unexploredNeighbors)) {
       deadEndPenalty = DEAD_END_PENALTY
     }
 
@@ -330,13 +395,13 @@ export function findExplorationTarget(
     const finalScore = f.unexploredNeighbors * 15 + persistenceBonus + directionalBonus - distance - visitPenalty - deadEndPenalty - shortDistancePenalty
 
     // Track current target's score for hysteresis
-    if (currentGoalTarget && entryPoint.x === currentGoalTarget.x && entryPoint.y === currentGoalTarget.y) {
+    if (currentGoalTarget && target.x === currentGoalTarget.x && target.y === currentGoalTarget.y) {
       currentTargetScore = finalScore - persistenceBonus // Raw score without persistence
     }
 
     if (finalScore > bestScore) {
       bestScore = finalScore
-      bestTarget = entryPoint
+      bestTarget = target
     }
   }
 
@@ -941,6 +1006,89 @@ export function resetCorridorFollowing(botState: BotState): void {
   botState.corridorFollowingMode = false
   botState.corridorFacing = null
 }
+
+// ============================================================================
+// SWEEP EXPLORATION (for casters in early game)
+// ============================================================================
+
+/** Completion threshold: 70% of floor tiles seen this visit */
+const SWEEP_COMPLETION_THRESHOLD = 70
+
+/** Timeout for sweep mode (turns) */
+const SWEEP_TIMEOUT = 500
+
+/**
+ * Get sweep exploration progress as percentage (0-100).
+ * Returns % of floor tiles that have been seen THIS visit.
+ */
+export function getSweepProgress(game: GameState, botState: BotState): number {
+  const level = game.currentLevel
+  let totalFloor = 0
+  let seenFloor = 0
+
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+
+    for (let x = 0; x < level.width; x++) {
+      const tile = row[x]
+      if (!tile) continue
+
+      // Count explorable tiles (floor, doors)
+      if (isExplorableTile(tile)) {
+        totalFloor++
+        if (botState.seenThisVisit.has(`${x},${y}`)) {
+          seenFloor++
+        }
+      }
+    }
+  }
+
+  return totalFloor > 0 ? Math.floor((seenFloor / totalFloor) * 100) : 100
+}
+
+/**
+ * Check if sweep exploration is complete (70% threshold).
+ */
+export function isSweepComplete(game: GameState, botState: BotState): boolean {
+  return getSweepProgress(game, botState) >= SWEEP_COMPLETION_THRESHOLD
+}
+
+/**
+ * Check if sweep exploration has timed out.
+ */
+export function isSweepTimedOut(game: GameState, botState: BotState): boolean {
+  if (botState.sweepStartTurn === 0) return false
+  return game.turn - botState.sweepStartTurn > SWEEP_TIMEOUT
+}
+
+/**
+ * Initialize sweep direction based on entry point.
+ * Sets direction away from the entry point (toward unexplored areas).
+ */
+export function initializeSweepDirection(game: GameState, botState: BotState): void {
+  const pos = game.character.position
+  const level = game.currentLevel
+
+  // Find center of level
+  const centerX = Math.floor(level.width / 2)
+  const centerY = Math.floor(level.height / 2)
+
+  // Direction from player to center
+  const dx = centerX - pos.x
+  const dy = centerY - pos.y
+
+  // Choose primary direction based on larger delta
+  if (Math.abs(dx) > Math.abs(dy)) {
+    botState.sweepDirection = dx > 0 ? 'e' : 'w'
+  } else if (dy !== 0) {
+    botState.sweepDirection = dy > 0 ? 's' : 'n'
+  } else {
+    // At center, default to east
+    botState.sweepDirection = 'e'
+  }
+}
+
 
 // ============================================================================
 // DEBUGGING
