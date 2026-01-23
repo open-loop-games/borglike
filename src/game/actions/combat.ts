@@ -149,8 +149,11 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
 
 /**
  * Handle monster death - award XP, gold, check victory, track unique kills
+ *
+ * This is the single source of truth for monster kill handling.
+ * All kill paths (melee, ranged, spells) should call this function.
  */
-function handleMonsterKill(
+export function handleMonsterKill(
   game: GameState,
   monster: { id: string; template: { name: string; experience: number; flags: string[] } }
 ): void {

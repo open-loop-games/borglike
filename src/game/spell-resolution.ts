@@ -20,6 +20,7 @@ import { randomInt, random } from './rng'
 import { getSpellById, getSchoolStat, type SpellTemplate } from './data/spells'
 import { getSpellIdsForLevel } from './data/class-spells'
 import { applyDamage } from './combat'
+import { handleMonsterKill } from './actions/combat'
 import { getTile, findOpenPosition, isWalkable } from './dungeon'
 import { addStatusEffect, addTempResistance } from './status-effects'
 import { DEFAULT_BONUSES } from './upgrade-effects'
@@ -513,14 +514,7 @@ function castDamageSpell(
   game.stats.damageDealt += damage
 
   if (killed) {
-    // Remove monster
-    const idx = game.monsters.indexOf(target)
-    if (idx >= 0) game.monsters.splice(idx, 1)
-    game.stats.kills++
-
-    // Track monster kill by name for bestiary
-    const monsterName = target.template.name
-    game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
+    handleMonsterKill(game, target)
   }
 
   const killedStr = killed ? ' It dies!' : ''
@@ -582,14 +576,8 @@ function castBeamSpell(
     })
 
     if (killed) {
-      const idx = game.monsters.indexOf(target)
-      if (idx >= 0) game.monsters.splice(idx, 1)
+      handleMonsterKill(game, target)
       killedCount++
-      game.stats.kills++
-
-      // Track monster kill by name for bestiary
-      const monsterName = target.template.name
-      game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
     }
   }
 
@@ -653,14 +641,8 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
     })
 
     if (killed) {
-      const idx = game.monsters.indexOf(target)
-      if (idx >= 0) game.monsters.splice(idx, 1)
+      handleMonsterKill(game, target)
       killedCount++
-      game.stats.kills++
-
-      // Track monster kill by name for bestiary
-      const monsterName = target.template.name
-      game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
     }
   }
 
@@ -810,13 +792,7 @@ function castLifedrainSpell(
   const actualHeal = game.character.hp - oldHp
 
   if (killed) {
-    const idx = game.monsters.indexOf(target)
-    if (idx >= 0) game.monsters.splice(idx, 1)
-    game.stats.kills++
-
-    // Track monster kill by name for bestiary
-    const monsterName = target.template.name
-    game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
+    handleMonsterKill(game, target)
   }
 
   const killedStr = killed ? ' It dies!' : ''

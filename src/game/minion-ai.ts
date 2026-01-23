@@ -8,6 +8,7 @@ import type { GameState, Minion, Monster, Point, GameEvent } from './types'
 import { MINION_TEMPLATES } from './types'
 import { getTile, isWalkable } from './dungeon'
 import { applyDamage } from './combat'
+import { handleMonsterKill } from './actions/combat'
 import { addMessage } from './actions'
 
 // ============================================================================
@@ -86,12 +87,8 @@ function processSingleMinionTurn(game: GameState, minion: Minion): GameEvent[] {
     })
 
     if (killed) {
-      const idx = game.monsters.indexOf(adjacentEnemy)
-      if (idx >= 0) game.monsters.splice(idx, 1)
-      game.stats.kills++
-      const monsterName = adjacentEnemy.template.name
-      game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
       addMessage(game, `Your ${minion.name} kills the ${adjacentEnemy.template.name}!`, 'good')
+      handleMonsterKill(game, adjacentEnemy)
     }
     return events
   }
