@@ -17,7 +17,7 @@ import { getTile } from '../dungeon'
 import { canRangedAttack } from '../combat'
 
 import type { BotState, BotGoal, BotContext, FlowMap, DangerResult, DangerTier } from './types'
-import { MAX_FLOW_COST } from './types'
+import { MAX_FLOW_COST, SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from './types'
 import {
   createBotState,
   resetLevelState,
@@ -49,7 +49,8 @@ import {
   handleStopFleeingStrategy,
 } from './stuck'
 import { selectGoal } from './goals'
-import { invalidateFrontierCache, getFrontierPositions, initializeSweepDirection } from './exploration'
+import { invalidateFrontierCache, getFrontierPositions } from './exploration'
+import { initializeSweepDirection, recordVisibleTiles } from './farming'
 import { findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition, shouldAvoidMelee } from './combat'
 import { getBowRange } from '../combat'
 import { findEquipmentUpgrades } from './items'
@@ -62,16 +63,6 @@ import {
   getDebuffSpellAction,
 } from './spells'
 import { botSellItems, botBuySupplies } from './merchant'
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-/** Classes that use sweep exploration instead of stair surfing */
-const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
-
-/** Minimum character level before casters can safely stair surf */
-const CASTER_STAIR_SURF_MIN_LEVEL = 15
 
 /**
  * Run one tick of bot decision making
@@ -583,25 +574,6 @@ function updateKnownStairs(game: GameState, botState: BotState): void {
     const tile = getTile(game.currentLevel, stairsDown.x, stairsDown.y)
     if (tile?.explored) {
       botState.knownStairsDown = stairsDown
-    }
-  }
-}
-
-/**
- * Record all currently visible tiles for tethered exploration tracking.
- * This allows us to check if the bot has "seen" tiles on THIS level visit,
- * rather than relying on cached exploration state which persists across visits.
- */
-function recordVisibleTiles(game: GameState, botState: BotState): void {
-  const level = game.currentLevel
-  for (let y = 0; y < level.height; y++) {
-    const row = level.tiles[y]
-    if (!row) continue
-    for (let x = 0; x < level.width; x++) {
-      const tile = row[x]
-      if (tile?.visible) {
-        botState.seenThisVisit.add(`${x},${y}`)
-      }
     }
   }
 }

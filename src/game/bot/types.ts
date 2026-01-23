@@ -234,3 +234,13 @@ export const CARDINAL_DIRECTIONS: readonly string[] = ['n', 's', 'e', 'w']
 
 /** All 8 directions */
 export const ALL_DIRECTIONS: readonly string[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']
+
+// ============================================================================
+// CLASS CONSTANTS (shared across modules)
+// ============================================================================
+
+/** Caster classes that use sweep exploration instead of stair surfing */
+export const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
+
+/** Minimum character level before casters can safely stair surf */
+export const CASTER_STAIR_SURF_MIN_LEVEL = 15

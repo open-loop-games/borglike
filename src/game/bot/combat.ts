@@ -6,7 +6,7 @@
  */
 
 import type { GameState, Monster, Character, Point, Direction } from '../types'
-import { chebyshevDistance, isAdjacent } from '../types'
+import { chebyshevDistance, isAdjacent, getDirectionFromDelta } from '../types'
 import type { BotContext, PersonalityConfig } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
@@ -405,6 +405,37 @@ export function isOutnumbered(game: GameState): boolean {
   return adjacentCount >= 2
 }
 
+/**
+ * Find closest monster from a list
+ * Returns both the monster and distance, or null if list is empty or all dead
+ */
+export function findClosestMonster(
+  monsters: Monster[],
+  pos: Point
+): { monster: Monster; distance: number } | null {
+  let closest: Monster | null = null
+  let closestDist = Infinity
+
+  for (const monster of monsters) {
+    if (monster.hp <= 0) continue
+    const dist = chebyshevDistance(pos, monster.position)
+    if (dist < closestDist) {
+      closestDist = dist
+      closest = monster
+    }
+  }
+
+  return closest ? { monster: closest, distance: closestDist } : null
+}
+
+/**
+ * Get distance to closest monster (convenience wrapper)
+ */
+export function getClosestMonsterDistance(monsters: Monster[], pos: Point): number {
+  const result = findClosestMonster(monsters, pos)
+  return result ? result.distance : Infinity
+}
+
 // ============================================================================
 // EFFECTIVE DAMAGE CALCULATION
 // ============================================================================
@@ -635,7 +666,7 @@ export function findKitePosition(
     // Calculate direction
     const dx = adj.x - pos.x
     const dy = adj.y - pos.y
-    const direction = deltaToDirection(dx, dy)
+    const direction = getDirectionFromDelta(dx, dy)
     if (!direction) continue
 
     if (score > bestScore) {
@@ -659,19 +690,4 @@ export function shouldAvoidMelee(
     return true
   }
   return false
-}
-
-/**
- * Convert delta coordinates to direction
- */
-function deltaToDirection(dx: number, dy: number): Direction | null {
-  if (dx === 0 && dy === -1) return 'n'
-  if (dx === 0 && dy === 1) return 's'
-  if (dx === 1 && dy === 0) return 'e'
-  if (dx === -1 && dy === 0) return 'w'
-  if (dx === 1 && dy === -1) return 'ne'
-  if (dx === -1 && dy === -1) return 'nw'
-  if (dx === 1 && dy === 1) return 'se'
-  if (dx === -1 && dy === 1) return 'sw'
-  return null
 }

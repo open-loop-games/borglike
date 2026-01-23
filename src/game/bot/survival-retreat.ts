@@ -6,6 +6,7 @@
  */
 
 import type { GameState, Point, Direction } from '../types'
+import { getDirectionFromDelta } from '../types'
 import type { PersonalityConfig, DangerMap, PhaseDoorSafety, DangerTier } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
@@ -214,7 +215,7 @@ export function findBestEscapeRoute(
     // Calculate direction
     const dx = adj.x - pos.x
     const dy = adj.y - pos.y
-    const direction = deltaToDirection(dx, dy)
+    const direction = getDirectionFromDelta(dx, dy)
     if (!direction) continue
 
     routes.push({
@@ -265,7 +266,7 @@ export function findEscapeDirection(
       bestDistance = distFromThreat
       const dx = adj.x - pos.x
       const dy = adj.y - pos.y
-      bestDirection = deltaToDirection(dx, dy)
+      bestDirection = getDirectionFromDelta(dx, dy)
     }
   }
 
@@ -593,18 +594,3 @@ export function shouldEscapeOverHeal(
   return false
 }
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function deltaToDirection(dx: number, dy: number): Direction | null {
-  if (dx === 0 && dy === -1) return 'n'
-  if (dx === 0 && dy === 1) return 's'
-  if (dx === 1 && dy === 0) return 'e'
-  if (dx === -1 && dy === 0) return 'w'
-  if (dx === 1 && dy === -1) return 'ne'
-  if (dx === -1 && dy === -1) return 'nw'
-  if (dx === 1 && dy === 1) return 'se'
-  if (dx === -1 && dy === 1) return 'sw'
-  return null
-}

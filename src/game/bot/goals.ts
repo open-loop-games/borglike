@@ -16,38 +16,41 @@ import { findAdjacentMonster, hasRangedWeapon } from './combat'
 import { isInTown, HEALER_POSITION, DUNGEON_ENTRANCE_POSITION, TOWN_SHOP_POSITIONS } from '../town'
 import { type TownShopId } from '../data/town'
 
-// Import evaluators from separate module (only ones used locally)
+// Import evaluators used locally
 import {
   evaluateFlee,
   evaluateKite,
   evaluateRecover,
   evaluateKill,
   evaluateTake,
-  evaluateDescend,
   evaluateExplore,
   evaluateUseAltar,
   evaluateVisitMerchant,
   evaluateHuntUnique,
 } from './goal-evaluators'
+import { evaluateDescend } from './farming'
 import { getEffectiveGold } from './preparation'
 
-// Re-export evaluators for external use
+// Re-export all evaluators for external use
 export {
   evaluateFlee,
   evaluateKite,
   evaluateRecover,
   evaluateKill,
   evaluateTake,
-  evaluateDescend,
   evaluateExplore,
   evaluateUseAltar,
   evaluateVisitMerchant,
   evaluateHuntUnique,
+  findBestItem,
+} from './goal-evaluators'
+export {
+  evaluateDescend,
   evaluateFarm,
   evaluateAscendToFarm,
   evaluateTownTrip,
-  findBestItem,
-} from './goal-evaluators'
+  evaluateSweep,
+} from './farming'
 
 // ============================================================================
 // CONSTANTS
