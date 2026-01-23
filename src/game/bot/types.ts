@@ -181,6 +181,20 @@ export interface BotState {
   sweepDirection: Direction | null
   /** Turn when sweep started (for timeout tracking) */
   sweepStartTurn: number
+
+  // Unique hunt level flip (when unique blocks descent but isn't on current level)
+  /** Name of unique we're hunting that blocks descent */
+  huntingUniqueBlocker: string | null
+  /** Depth to return to for hunting the unique */
+  uniqueHuntFlipDepth: number | null
+
+  // HP tracking for DOT detection
+  /** HP value from previous turn */
+  previousHp: number
+  /** HP history (last 5 turns) */
+  hpHistory: number[]
+  /** Detected HP loss rate (HP/turn, negative = losing) */
+  hpRate: number
 }
 
 // ============================================================================
@@ -239,8 +253,51 @@ export const ALL_DIRECTIONS: readonly string[] = ['n', 's', 'e', 'w', 'ne', 'nw'
 // CLASS CONSTANTS (shared across modules)
 // ============================================================================
 
+/**
+ * Class tier for level requirements (Angband borg-inspired).
+ *
+ * - TANK: Warriors/melee - can handle 4 levels deeper than their level
+ * - MEDIUM: Hybrid classes - need to match depth with level
+ * - SQUISHY: Pure casters - need 5 levels above depth
+ */
+export type ClassTier = 'TANK' | 'MEDIUM' | 'SQUISHY'
+
+/**
+ * Get class tier for level requirement calculation.
+ * Based on Angband borg's class-specific depth rules.
+ */
+export function getClassTier(classId: string): ClassTier {
+  switch (classId) {
+    // Tank: Strong melee, high HP - can go deep early
+    case 'warrior':
+    case 'berserker':
+    case 'blackguard':
+      return 'TANK'
+
+    // Squishy: Pure casters - need to overlevel significantly
+    case 'mage':
+    case 'archmage':
+    case 'necromancer':
+      return 'SQUISHY'
+
+    // Medium: Hybrids - need level to match depth
+    case 'paladin':
+    case 'priest':
+    case 'druid':
+    case 'ranger':
+    case 'rogue':
+    case 'monk':
+    case 'bard':
+    default:
+      return 'MEDIUM'
+  }
+}
+
 /** Caster classes that use sweep exploration instead of stair surfing */
-export const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
+export const SQUISHY_CLASSES = new Set(
+  ['mage', 'archmage', 'necromancer', 'ranger', 'rogue', 'monk', 'bard', 'paladin', 'priest', 'druid', 'warrior', 'berserker', 'blackguard']
+    .filter(classId => getClassTier(classId) === 'SQUISHY')
+)
 
 /** Minimum character level before casters can safely stair surf */
 export const CASTER_STAIR_SURF_MIN_LEVEL = 15

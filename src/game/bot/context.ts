@@ -61,6 +61,13 @@ function createMinimalBotState(): BotState {
     sweepMode: false,
     sweepDirection: null,
     sweepStartTurn: 0,
+    // Unique hunt level flip
+    huntingUniqueBlocker: null,
+    uniqueHuntFlipDepth: null,
+    // HP tracking
+    previousHp: 0,
+    hpHistory: [],
+    hpRate: 0,
   }
 }
 

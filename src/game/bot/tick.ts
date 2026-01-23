@@ -131,6 +131,9 @@ export function runBotTick(
   // Record all currently visible tiles (for tethered exploration check)
   recordVisibleTiles(game, botState)
 
+  // Update HP tracking for DOT detection
+  updateHPTracking(game, botState)
+
   // Compute danger grid
   const dangerResult = computeDangerGrid(game)
   botState.cachedDanger = dangerResult
@@ -918,4 +921,28 @@ function setKillGoal(
     reason: reason,
     startTurn: turn,
   })
+}
+
+// ============================================================================
+// HP TRACKING (DOT DETECTION)
+// ============================================================================
+
+/**
+ * Track HP changes to detect DOT and invisible damage
+ */
+function updateHPTracking(game: GameState, botState: BotState): void {
+  const currentHp = game.character.hp
+
+  // Calculate rate from previous turn
+  if (botState.previousHp > 0) {
+    botState.hpRate = currentHp - botState.previousHp
+  }
+
+  // Update history (keep last 5 turns)
+  botState.hpHistory.push(currentHp)
+  if (botState.hpHistory.length > 5) {
+    botState.hpHistory.shift()
+  }
+
+  botState.previousHp = currentHp
 }
