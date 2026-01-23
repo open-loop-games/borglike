@@ -1,73 +1,54 @@
 # Balance Test Plan
 
-## Current State (2026-01-22, Post-Caster Fix)
+## Current State (2026-01-22, Post-Refactor Baseline)
 
-### Class Performance (50-100 runs each, 50k turns, --max-upgrades)
+### Class Performance (30 runs each, 25k turns, --max-upgrades, seed=1000)
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
-| **Berserker** | 40.1 | 50 | 43% | 519 | ✅ Endgame |
-| **Blackguard** | 40.0 | 50 | 47% | 498 | ✅ Endgame |
-| **Paladin** | 39.7 | 50 | 43% | 525 | ✅ Endgame |
-| **Warrior** | 39.5 | 50 | 40% | 514 | ✅ Endgame |
-| **Rogue** | 39.5 | 50 | 44% | 537 | ✅ Endgame |
-| **Priest** | 38.8 | 50 | 33% | 503 | ✅ Endgame |
-| **Druid** | 36.2 | 49 | 24% | 490 | ✅ Endgame |
-| **Necromancer** | 12.3 | 19 | 6% | 49 | ⚠️ Mid-game |
-| **Mage** | 8.8 | 14 | 4% | 27 | ⚠️ Early-mid |
-| **Archmage** | 6.6 | 13 | 8% | 19 | ⚠️ Early-mid |
-| **Ranger** | 5.5 | 35 | 1% | 62 | ⚠️ Weak |
+| **Berserker** | 42.4 | 50 | 37% | 436 | ✅ Endgame |
+| **Paladin** | 39.1 | 50 | 33% | 496 | ✅ Endgame |
+| **Priest** | 38.0 | 49 | 30% | 471 | ✅ Endgame |
+| **Warrior** | 36.5 | 50 | 50% | 350 | ✅ Endgame |
+| **Blackguard** | 36.0 | 50 | 50% | 357 | ✅ Endgame |
+| **Rogue** | 35.9 | 48 | 57% | 451 | ✅ Endgame |
+| **Druid** | 32.0 | 45 | 37% | 402 | ✅ Endgame |
+| **Archmage** | 4.7 | 9 | 3% | 176 | ⚠️ Early |
+| **Ranger** | 4.2 | 14 | 0% | 39 | ⚠️ Weak |
+| **Mage** | 3.5 | 8 | 3% | 119 | ⚠️ Early |
+| **Necromancer** | 2.6 | 5 | 17% | 85 | ⚠️ Early |
 
 ### Key Findings
 
-1. **Melee/hybrid classes reach endgame** - 7 classes averaging depth 36-40, regularly killing Morgoth
-2. **Casters now functional** - Mage/Archmage/Necromancer progress to depth 6-12 (was 2), natural deaths
-3. **Stair surfing fix worked** - Disabling early-game stair surfing for casters prevents farming loop trap
-4. **Ranger still weak** - Needs separate investigation
-5. **Morgoth kills observed** - Berserker (8), Warrior (6), Blackguard (4), Paladin (3), others sporadic
-
-### Caster Fix Details (2026-01-22)
-
-**Problem:** Stair surfing (ascending to reset level for farming) trapped casters in endless loops:
-- Mages need `level >= depth + 5` to descend
-- At depths 1-2, XP too slow to level up
-- Stair surfing kept them "alive" but prevented progression
-- Eventually died to attrition without meaningful progress
-
-**Solution:** Disable `ASCEND_TO_FARM` for SQUISHY classes (mage, archmage, necromancer) below level 15.
-Angband borg-inspired: casters don't stair scum in early game - they explore fully and level naturally.
-
-**Results:**
-
-| Class | Before | After | Improvement |
-|-------|--------|-------|-------------|
-| Mage | 2.0 | 8.8 | +6.8 (4.4x) |
-| Archmage | 2.0 | 6.6 | +4.6 (3.3x) |
-| Necromancer | 2.0 | 12.3 | +10.3 (6x) |
+1. **Melee/hybrid classes still strong** - 7 classes averaging depth 32-42, reaching endgame
+2. **Casters regressed significantly** - Necro 12.3→2.6, Mage 8.8→3.5 (needs investigation)
+3. **Circuit breaker rates elevated** - 30-57% for melee classes at endgame depths
+4. **Ranger still weak** - Max depth 14 shows some potential but avg 4.2
+5. **Morgoth kills observed** - Berserker (5), Warrior (3), Blackguard (2), Paladin (1)
 
 ### Top Killers by Class Tier
 
-**Endgame classes (depth 36-40):**
-- 7-Headed Hydra, Undead Beholder, Beholder, Mature Green Dragon, Cyclops, Nalfeshnee
+**Endgame classes (depth 32-42):**
+- 7-Headed Hydra, Undead Beholder, Beholder, Mature Green Dragon, Cyclops, Marilith
 
-**Casters (depth 6-12):**
-- Baby Multi-Hued Dragon, Cave Orc, Orc Warrior, Giant Spider
+**Casters (depth 2-5):**
+- White Jelly, Small Kobold, Centipede, unknown (starvation/attrition)
 
-### Comparison to Pre-Combat Rework Baseline
+### Comparison to Previous Baseline (2026-01-22 Post-Caster Fix)
 
 | Class | Old Avg | New Avg | Old CB | New CB | Change |
 |-------|---------|---------|--------|--------|--------|
-| Berserker | 12.5 | 40.1 | 4% | 43% | ✅ +27.6 |
-| Warrior | 9.7 | 39.5 | 3% | 40% | ✅ +29.8 |
-| Blackguard | 9.3 | 40.0 | 3% | 47% | ✅ +30.7 |
-| Paladin | 4.3 | 39.7 | 97% | 43% | ✅ +35.4 |
-| Priest | 4.0 | 38.8 | 99% | 33% | ✅ +34.8 |
-| Druid | 4.3 | 36.2 | 92% | 24% | ✅ +31.9 |
-| Rogue | 4.3 | 39.5 | 96% | 44% | ✅ +35.2 |
-| Necromancer | 4.0 | 12.3 | 4% | 6% | ✅ +8.3 |
-| Mage | 4.2 | 8.8 | 7% | 4% | ✅ +4.6 |
-| Archmage | 4.3 | 6.6 | 5% | 8% | ✅ +2.3 |
-| Ranger | 4.2 | 5.5 | 18% | 1% | ⚠️ +1.3 |
+| Berserker | 40.1 | 42.4 | 43% | 37% | ✅ +2.3 |
+| Paladin | 39.7 | 39.1 | 43% | 33% | ≈ -0.6 |
+| Priest | 38.8 | 38.0 | 33% | 30% | ≈ -0.8 |
+| Warrior | 39.5 | 36.5 | 40% | 50% | ⚠️ -3.0 |
+| Blackguard | 40.0 | 36.0 | 47% | 50% | ⚠️ -4.0 |
+| Rogue | 39.5 | 35.9 | 44% | 57% | ⚠️ -3.6 |
+| Druid | 36.2 | 32.0 | 24% | 37% | ⚠️ -4.2 |
+| Archmage | 6.6 | 4.7 | 8% | 3% | ⚠️ -1.9 |
+| Ranger | 5.5 | 4.2 | 1% | 0% | ⚠️ -1.3 |
+| Mage | 8.8 | 3.5 | 4% | 3% | ❌ -5.3 |
+| Necromancer | 12.3 | 2.6 | 6% | 17% | ❌ -9.7 |
 
 ---
 
@@ -84,7 +65,7 @@ Current standard for balance testing (while CB rates remain elevated):
 
 **Execution notes:**
 - Diagnose script uses 8 threads by default
-- Run 2 batch commands in parallel for best throughput (16 total threads)
+- Run only 2 batch commands in parallel for best throughput (16 total threads)
 - Expected time per batch: 6-15 min depending on class
 
 **Standard command:**
@@ -136,65 +117,28 @@ npx tsx scripts/diagnose.ts find --runs=500 --seed=1000 --class=mage --turns=250
 
 ## Resolved Issues
 
-### Farming System Blocking Descent (FIXED)
-
-Previously, Paladin/Priest/Druid/Rogue were stuck at depth 4 with 92-99% CB rates due to farming system preventing descent. This is now resolved - all 4 classes reach avg depth 36-40.
-
-### Caster Stair Surfing Trap (FIXED 2026-01-22)
-
-Casters (mage, archmage, necromancer) were trapped in endless stair-flipping loops between depths 1-2:
-- Needed `level >= depth + 5` to progress (SQUISHY class tier)
-- Stair surfing reset monsters, but XP gains at depth 1-2 too slow to level up
-- Result: 10,000+ turns at depth 2 before dying to attrition
-
-**Fix:** Disable `ASCEND_TO_FARM` for SQUISHY classes below level 15 (Angband borg-inspired).
-Casters now explore fully and level naturally instead of stair scumming.
-
-**Code:** `src/game/bot/goal-evaluators.ts` - added `SQUISHY_CLASSES` check in `evaluateAscendToFarm()`
-
-### Dungeon Generation Improvements
-
-Circuit breaker rate reduced from 16% to 7-10% through dungeon generation fixes.
-
-**Fix 1: Room-based stair placement**
-- Stairs placed at room centers instead of random floor tiles
-- Up-stairs in leftmost room, down-stairs in rightmost room
-- Creates natural west-to-east flow
-
-**Fix 2: Custom labyrinth generator**
-- Replaced rot.js IceyMaze which created tiny clustered rooms
-- Anchor rooms in opposite quadrants (top-left, bottom-right guaranteed)
-- L-shaped corridors connect rooms before maze fill
-- 8% shortcut rate reduces dead ends
-
-**Fix 3: Cavern quadrant detection**
-- `findOpenAreas()` finds best floor cluster in each map quadrant
-- Ensures stair placement candidates spread across connected caverns
-
 ---
 
 ## Known Issues
 
-### Casters Still Weaker Than Melee (2026-01-22)
+### Caster Regression (2026-01-22 Post-Refactor)
 
-After the stair surfing fix, casters now progress (avg 6-12 depth vs 2 before) but still underperform melee classes (avg 36-40). This is expected - casters are inherently squishier and our bot AI doesn't optimize spell usage yet.
+After recent refactors, casters have regressed significantly:
+- Necromancer: 12.3 → 2.6 avg depth (-9.7)
+- Mage: 8.8 → 3.5 avg depth (-5.3)
+- Archmage: 6.6 → 4.7 avg depth (-1.9)
 
-**Future improvements to consider:**
-1. Better kiting behavior for ranged casters
-2. Mana-based retreat triggers (Angband borg uses 10-20% mana thresholds)
-3. Defense-first spell priority (shields before heals)
-4. Smarter spell selection based on monster type
+Top killers are now early-game mobs (White Jelly, Small Kobold, Centipede) suggesting they're dying very early. Needs investigation - likely a change broke the stair surfing fix or early game survival logic.
 
 ### Ranger Still Weak (2026-01-22)
 
-Ranger improved slightly (4.2 → 5.5 avg) but still underperforming:
-- Max depth 35 shows potential exists
-- 1% CB rate means dying, not stuck
+Ranger at avg 4.2 depth, max 14:
+- 0% CB rate means dying, not stuck
 - Top killers are early-game mobs (White Jelly, Centipede, Cave Spider)
 
 ### Endgame Circuit Breakers (2026-01-22)
 
-33-47% CB rate at depth 40+ for melee/hybrid classes. This is a "good problem" compared to the old depth-4 stuckness, but worth investigating:
+30-57% CB rate at depth 32-42 for melee/hybrid classes:
 - Bot may be oscillating between goals at high depths
 - Pathfinding issues in complex late-game dungeons
 - Decision paralysis with many options available
@@ -216,7 +160,7 @@ npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=CLASS --max-upgr
 npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=warrior --max-upgrades --turns=25000 [flags]
 ```
 
-**Parallel execution** (run 2 classes simultaneously):
+**Parallel execution** (only run 2 classes simultaneously):
 ```bash
 # Terminal 1
 npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=warrior --max-upgrades --turns=25000
@@ -233,6 +177,22 @@ npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=mage --max-upgra
 ---
 
 ## Historical Baselines
+
+### 2026-01-22 Post-Caster Fix (Previous Baseline)
+
+| Class | Avg Depth | Max Depth | CB Rate | Kills |
+|-------|-----------|-----------|---------|-------|
+| Berserker | 40.1 | 50 | 43% | 519 |
+| Blackguard | 40.0 | 50 | 47% | 498 |
+| Paladin | 39.7 | 50 | 43% | 525 |
+| Warrior | 39.5 | 50 | 40% | 514 |
+| Rogue | 39.5 | 50 | 44% | 537 |
+| Priest | 38.8 | 50 | 33% | 503 |
+| Druid | 36.2 | 49 | 24% | 490 |
+| Necromancer | 12.3 | 19 | 6% | 49 |
+| Mage | 8.8 | 14 | 4% | 27 |
+| Archmage | 6.6 | 13 | 8% | 19 |
+| Ranger | 5.5 | 35 | 1% | 62 |
 
 ### 2026-01-22 Pre-Combat Rework
 

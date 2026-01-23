@@ -92,6 +92,8 @@ npx tsx scripts/diagnose.ts deep 1768965560201 --map
 
 ## Diagnostic Workflow
 
+**💡 For detailed navigation tips, grep patterns, and filtering strategies, see `references/navigation.md`**
+
 ### Investigating a Reported Issue
 
 1. **Reproduce with deep mode**: Get full turn log for the problematic seed
@@ -177,5 +179,6 @@ Tier 3: `--xp-rate`, `--upgrade-power`, `--bestiary`
 
 ### Reference Files
 
-For detailed documentation on extending the toolkit:
+For detailed documentation on using and extending the toolkit:
+- **`references/navigation.md`** - Grep patterns, turn ranges, and workflow examples for navigating diagnostic output
 - **`references/extending.md`** - Adding new analyzers, code structure, lifecycle hooks
