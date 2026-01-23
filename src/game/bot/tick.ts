@@ -64,6 +64,23 @@ import {
   getDebuffSpellAction,
 } from './spells'
 import { botSellItems, botBuySupplies } from './merchant'
+import { profile, profileStart, profileEnd } from './profiler'
+import type { DungeonLevel } from '../types'
+
+/**
+ * Count explored tiles in a level (for cache validation)
+ */
+function countExploredTiles(level: DungeonLevel): number {
+  let count = 0
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+    for (let x = 0; x < level.width; x++) {
+      if (row[x]?.explored) count++
+    }
+  }
+  return count
+}
 
 /**
  * Run one tick of bot decision making
@@ -123,19 +140,19 @@ export function runBotTick(
   cleanupBlacklist(botState, game.turn)
 
   // Build context
-  const context = buildBotContext(game, personality, botState)
+  const context = profile('buildBotContext', () => buildBotContext(game, personality, botState))
 
   // Update known stairs if visible
   updateKnownStairs(game, botState)
 
   // Record all currently visible tiles (for tethered exploration check)
-  recordVisibleTiles(game, botState)
+  profile('recordVisibleTiles', () => recordVisibleTiles(game, botState))
 
   // Update HP tracking for DOT detection
   updateHPTracking(game, botState)
 
   // Compute danger grid
-  const dangerResult = computeDangerGrid(game)
+  const dangerResult = profile('computeDangerGrid', () => computeDangerGrid(game))
   botState.cachedDanger = dangerResult
 
   // Calculate immediate danger tier (adjacent threats only)
@@ -149,11 +166,13 @@ export function runBotTick(
   )
 
   // Urgency-gated action selection
-  const action = selectActionByTier(game, context, botState, dangerResult, personality, immediateTier)
+  const action = profile('selectActionByTier', () =>
+    selectActionByTier(game, context, botState, dangerResult, personality, immediateTier)
+  )
   if (action) return action
 
   // Fallback: stuck recovery and movement
-  return handleFallback(game, context, botState, dangerResult)
+  return profile('handleFallback', () => handleFallback(game, context, botState, dangerResult))
 }
 
 // ============================================================================
@@ -560,12 +579,12 @@ function handleFallback(
 ): GameAction {
   // Stuck recovery (skip in town)
   if (game.character.depth > 0) {
-    const stuckAction = handleStuckRecovery(game, context, botState)
+    const stuckAction = profile('fallback.stuckRecovery', () => handleStuckRecovery(game, context, botState))
     if (stuckAction) return stuckAction
   }
 
   // Goal selection and movement
-  return handleGoalMovement(game, context, botState, dangerResult)
+  return profile('fallback.goalMovement', () => handleGoalMovement(game, context, botState, dangerResult))
 }
 
 // ============================================================================
@@ -636,7 +655,7 @@ function handleGoalMovement(
   const dangerThreshold = getDangerThreshold(effectiveConfig.aggression, effectiveConfig.caution)
 
   // Select goal
-  const goal = selectGoal(context, botState, dangerResult.dangers, dangerThreshold)
+  const goal = profile('selectGoal', () => selectGoal(context, botState, dangerResult.dangers, dangerThreshold))
 
   if (!goal || !goal.target) {
     return { type: 'wait' }
@@ -649,14 +668,14 @@ function handleGoalMovement(
   if (isSamePosition(pos, goal.target)) {
     recordProgress(botState, game.turn)
     updateTownState(botState, goal, game)
-    return executeGoalAction(goal, game, botState)
+    return profile('fallback.executeGoal', () => executeGoalAction(goal, game, botState))
   }
 
   // Build avoid set (skip when fleeing)
   const avoidSet =
     goal.type === 'FLEE'
       ? new Set<string>()
-      : buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character)
+      : profile('fallback.buildAvoidSet', () => buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character))
 
   // Compute or reuse flow
   let flowCosts: FlowMap | undefined = botState.cachedFlow?.costs
@@ -672,26 +691,49 @@ function handleGoalMovement(
     if (isSweepExplore) {
       // Sweep mode: use single-target flow to the sweep target
       // (sweep targets are tiles not seen this visit, not unexplored frontiers)
-      flowCosts = computeFlow(game.currentLevel, goal.target, avoidSet)
+      flowCosts = profile('flow.sweep', () => computeFlow(game.currentLevel, goal.target!, avoidSet))
       botState.cachedFlow = { costs: flowCosts, goal: goal.target, computedAt: game.turn }
     } else {
       // Normal exploration: use multi-target Dijkstra to all frontiers
-      const frontiers = getFrontierPositions(game)
+      // Check if we can reuse cached exploration flow
+      const frontiers = profile('getFrontierPositions', () => getFrontierPositions(game))
       if (frontiers.length === 0) {
         // No frontiers - exploration complete
         botState.currentGoal = null
         botState.goalTarget = null
         return { type: 'wait' }
       }
-      flowCosts = computeExplorationFlow(game.currentLevel, frontiers, avoidSet)
+
+      // Count explored tiles for cache validation
+      const exploredCount = countExploredTiles(game.currentLevel)
+      const cache = botState.cachedExplorationFlow
+
+      // Reuse cache if: same depth, same explored count, recent enough (within 5 turns)
+      const cacheValid = cache &&
+        cache.depth === game.character.depth &&
+        cache.exploredCount === exploredCount &&
+        game.turn - cache.computedAt < 5
+
+      if (cacheValid) {
+        flowCosts = cache.costs
+      } else {
+        flowCosts = profile('flow.exploration', () => computeExplorationFlow(game.currentLevel, frontiers, avoidSet))
+        botState.cachedExplorationFlow = {
+          costs: flowCosts,
+          frontierCount: frontiers.length,
+          exploredCount,
+          computedAt: game.turn,
+          depth: game.character.depth,
+        }
+      }
       botState.cachedFlow = null // Don't use single-target cache for EXPLORE
     }
   } else {
     // Standard single-target flow for other goal types
     const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)
     if (needsRecompute) {
-      flowCosts = computeFlow(game.currentLevel, goal.target, avoidSet)
-      botState.cachedFlow = createFlowResult(goal.target, flowCosts, game.turn)
+      flowCosts = profile('flow.singleTarget', () => computeFlow(game.currentLevel, goal.target!, avoidSet))
+      botState.cachedFlow = createFlowResult(goal.target!, flowCosts, game.turn)
     }
   }
 
@@ -785,7 +827,7 @@ function handleGoalMovement(
   }
 
   // Select step toward goal
-  const direction = selectStep(game, botState, flowCosts!)
+  const direction = profile('fallback.selectStep', () => selectStep(game, botState, flowCosts!))
   recordPosition(botState, pos)
 
   // Record progress for productive goals (not FLEE/RECOVER)

@@ -23,6 +23,7 @@ import type { BotState, BotGoal, BotContext } from './types'
 import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL, MAX_FLOW_COST } from './types'
 import { getTile } from '../dungeon'
 import { computeFlow, getFlowCost } from './flow'
+import { profile } from './profiler'
 import {
   getExplorationProgress,
   isLabyrinthLevel,
@@ -208,20 +209,25 @@ function isWithinTether(pos: Point, origin: Point | null, radius: number): boole
   return Math.max(dx, dy) <= radius
 }
 
+/** Flow map type for tether search */
+type FlowMap = Map<string, number>
+
 /**
  * Find nearest unseen tile within tether using flow-based path distance.
+ * Accepts optional precomputed flow to avoid redundant computations.
  */
 function findUnseenTileInTether(
   context: BotContext,
   origin: Point,
-  radius: number
+  radius: number,
+  precomputedFlow?: FlowMap
 ): Point | null {
   const { game, botState } = context
   const level = game.currentLevel
   const pos = game.character.position
 
-  // Compute flow from character position to get actual path distances
-  const flowCosts = computeFlow(level, pos)
+  // Use precomputed flow or compute fresh
+  const flowCosts = precomputedFlow ?? computeFlow(level, pos)
 
   // Cap path distance: don't walk further than 2x the tether radius
   const maxPathDist = radius * 2
@@ -618,12 +624,12 @@ function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   const goldTarget = botState.farmGoldTarget || getGoldTarget(botState.farmBlockedDepth, effectiveConfig.caution)
 
   // Check if ready for blocked depth
-  const blockedReadiness = getDepthReadiness(
+  const blockedReadiness = profile('farm.readiness', () => getDepthReadiness(
     character,
     character.inventory,
     botState.farmBlockedDepth,
     effectiveConfig.caution
-  )
+  ))
 
   if (!blockedReadiness) {
     // Ready for blocked depth - exit farming mode
@@ -632,7 +638,7 @@ function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   }
 
   // 1. If ready for town trip, use portal (unless at depth 1 - just walk)
-  const townTrip = evaluateTownTrip(context)
+  const townTrip = profile('farm.townTrip', () => evaluateTownTrip(context))
   if (townTrip) return townTrip
 
   // 1b. At depth 1 and ready for town? Walk up stairs instead of using TP
@@ -655,11 +661,11 @@ function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   }
 
   // 2. If under-leveled, ascend to farm easier content
-  const ascend = evaluateAscendToFarm(context)
+  const ascend = profile('farm.ascend', () => evaluateAscendToFarm(context))
   if (ascend) return ascend
 
   // 3. Farm on current level (monsters/items within tether)
-  const farm = getFarmGoal(context, goldTarget)
+  const farm = profile('farm.getFarmGoal', () => getFarmGoal(context, goldTarget))
   if (farm) {
     // Set farming state for goal validator
     botState.farmingMode = true
@@ -675,7 +681,7 @@ function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
     SQUISHY_CLASSES.has(character.classId) &&
     character.level < CASTER_STAIR_SURF_MIN_LEVEL
   if (botState.tetheredOrigin && !skipTetherForSweep) {
-    const sweepGoal = handleTetherSweep(context, goldTarget)
+    const sweepGoal = profile('farm.tetherSweep', () => handleTetherSweep(context, goldTarget))
     if (sweepGoal) return sweepGoal
   }
 
@@ -714,10 +720,15 @@ function handleTetherSweep(context: BotContext, goldTarget: number): BotGoal | n
   let radius = botState.tetheredRadius || TETHER_RADII[0]!
   let flipCount = botState.tetheredFlipCount
 
+  // Compute flow once - reuse for all radius checks
+  const flowCosts = profile('tether.computeFlow', () =>
+    computeFlow(game.currentLevel, game.character.position)
+  )
+
   // Keep advancing radius until we find unseen tiles or exhaust all radii
   while (flipCount < TETHER_RADII.length) {
     radius = TETHER_RADII[flipCount]!
-    const unseenTarget = findUnseenTileInTether(context, botState.tetheredOrigin!, radius)
+    const unseenTarget = profile('tether.findUnseen', () => findUnseenTileInTether(context, botState.tetheredOrigin!, radius, flowCosts))
 
     if (unseenTarget) {
       // Found unseen tiles - update state and return sweep goal
@@ -790,20 +801,20 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
 
   // FARMING MODE: Handle active farming loop
   if (botState.farmingMode && botState.farmBlockedDepth > 0) {
-    const farmingGoal = handleActiveFarmingLoop(context)
+    const farmingGoal = profile('prog.activeFarm', () => handleActiveFarmingLoop(context))
     if (farmingGoal) return farmingGoal
     // If null, farming mode was cleared - continue to standard descent
   }
 
   // PROACTIVE CHECK: Descent blocked by consumable requirements?
-  const readinessIssue = getDepthReadiness(
+  const readinessIssue = profile('prog.depthReadiness', () => getDepthReadiness(
     character,
     character.inventory,
     nextDepth,
     effectiveConfig.caution
-  )
+  ))
   if (readinessIssue) {
-    const farmingGoal = initiateFarmingLoop(context)
+    const farmingGoal = profile('prog.initFarm', () => initiateFarmingLoop(context))
     if (farmingGoal) return farmingGoal
     // Fall through to EXPLORE if no farming goal
   }
@@ -816,7 +827,7 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
   }
 
   // STANDARD DESCENT: Check exploration/patience thresholds
-  return getDescendGoal(context)
+  return profile('prog.getDescendGoal', () => getDescendGoal(context))
 }
 
 // ============================================================================

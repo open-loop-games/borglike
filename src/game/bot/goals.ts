@@ -24,6 +24,7 @@ import { getExploreGoal } from './exploration'
 import { getUseAltarGoal, getVisitMerchantGoal } from './merchant'
 import { evaluateDescend, getReturnToUniqueHuntGoal } from './progression'
 import { getEffectiveGold, getHuntUniqueGoal } from './preparation'
+import { profile } from './profiler'
 
 // Wrapper functions to maintain backward compatibility with evaluateX naming
 function evaluateFlee(context: BotContext, dangers: DangerMap, _t: number, _l: number, _h: number): BotGoal | null {
@@ -209,11 +210,11 @@ export function selectGoal(
   if (merchantGoal) return merchantGoal
 
   // 5. DESCEND - Ready to go down (may trigger FARM, ASCEND_TO_FARM, TOWN_TRIP)
-  const descendGoal = evaluateDescend(context, botState)
+  const descendGoal = profile('goal.descend', () => evaluateDescend(context, botState))
   if (descendGoal) return descendGoal
 
   // 6. EXPLORE - Default
-  const exploreGoal = evaluateExplore(context)
+  const exploreGoal = profile('goal.explore', () => evaluateExplore(context))
   if (exploreGoal) return exploreGoal
 
   // 7. WAIT - Nothing possible

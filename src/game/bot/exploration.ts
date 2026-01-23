@@ -11,10 +11,8 @@ declare const process: { env: Record<string, string | undefined> } | undefined
 import type { GameState, Point, DungeonLevel, Tile, Direction } from '../types'
 import { DIRECTION_VECTORS, chebyshevDistance } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { MAX_FLOW_COST } from './types'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
 import { isTargetBlacklisted } from './state'
-import { computeFlow, getFlowCost } from './flow'
 
 // ============================================================================
 // TYPES
@@ -173,9 +171,36 @@ export function findFrontierTiles(game: GameState): FrontierTile[] {
 
 /**
  * Get frontier positions as simple Point array (for Dijkstra exploration flow)
+ * Uses the same cache as findFrontierTiles for efficiency.
  */
 export function getFrontierPositions(game: GameState): Point[] {
-  return computeFrontierPositions(game).map(f => f.position)
+  const level = game.currentLevel
+
+  // Count explored tiles for cache validation
+  let exploredCount = 0
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+    for (let x = 0; x < level.width; x++) {
+      if (row[x]?.explored) exploredCount++
+    }
+  }
+
+  // Check cache
+  if (frontierCache &&
+      frontierCache.exploredCount === exploredCount &&
+      frontierCache.levelDepth === game.character.depth) {
+    return frontierCache.tiles.map(t => t.position)
+  }
+
+  // Cache miss - compute and cache
+  const tiles = computeFrontierPositions(game)
+  frontierCache = {
+    tiles,
+    exploredCount,
+    levelDepth: game.character.depth,
+  }
+  return tiles.map(t => t.position)
 }
 
 /**
@@ -309,9 +334,9 @@ export function findExplorationTarget(
   // Get current goal target for persistence
   const currentGoalTarget = botState.goalTarget
 
-  // Compute flow from current position to check reachability
-  // We compute once and reuse for all candidates
-  const reachabilityFlow = computeFlow(level, pos)
+  // NOTE: We skip reachability pre-check here for performance.
+  // Unreachable targets are handled by tick.ts flow computation.
+  // This saves a full BFS per exploration evaluation (~40% of selectGoal time).
 
   // Check if good alternatives exist (for dead-end penalty logic)
   // Only penalize dead ends when there are better options available
@@ -332,12 +357,6 @@ export function findExplorationTarget(
     // Skip blacklisted targets
     if (isTargetBlacklisted(botState, target, game.turn)) {
       continue
-    }
-
-    // Verify target is actually reachable from current position
-    const reachCost = getFlowCost(reachabilityFlow, target)
-    if (reachCost >= MAX_FLOW_COST) {
-      continue // Can't reach this target
     }
 
     // Distance to the target

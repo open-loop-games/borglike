@@ -20,6 +20,26 @@ export type { DangerMap, DangerResult, DangerTier }
 // DANGER CALCULATION
 // ============================================================================
 
+/** Cached danger result with state hash for invalidation */
+let cachedDangerResult: DangerResult | null = null
+let cachedMonsterHash: string = ''
+let cachedCharPos: string = ''
+
+/**
+ * Create a hash of monster state for cache invalidation
+ * Only includes alive monsters' positions and HP
+ */
+function hashMonsterState(monsters: Monster[]): string {
+  let hash = ''
+  for (const m of monsters) {
+    if (m.hp > 0) {
+      // Include position and HP - if either changes, danger changes
+      hash += `${m.id}:${m.position.x},${m.position.y},${m.hp};`
+    }
+  }
+  return hash
+}
+
 /**
  * Compute danger grid for the current game state
  *
@@ -28,8 +48,25 @@ export type { DangerMap, DangerResult, DangerTier }
  * - Monster damage potential
  * - Monster speed (faster = more dangerous)
  * - Whether monster is awake
+ *
+ * Caches result when monster state unchanged.
  */
 export function computeDangerGrid(game: GameState): DangerResult {
+  // Check cache validity
+  const monsterHash = hashMonsterState(game.monsters)
+  const charPos = `${game.character.position.x},${game.character.position.y}`
+
+  if (cachedDangerResult &&
+      monsterHash === cachedMonsterHash &&
+      charPos === cachedCharPos) {
+    // Cache hit - return cached result with updated turn
+    return {
+      ...cachedDangerResult,
+      computedAt: game.turn,
+    }
+  }
+
+  // Cache miss - compute fresh
   const dangers: DangerMap = new Map()
   let maxDanger = 0
 
@@ -71,11 +108,18 @@ export function computeDangerGrid(game: GameState): DangerResult {
     }
   }
 
-  return {
+  const result: DangerResult = {
     dangers,
     maxDanger,
     computedAt: game.turn,
   }
+
+  // Cache the result
+  cachedDangerResult = result
+  cachedMonsterHash = monsterHash
+  cachedCharPos = charPos
+
+  return result
 }
 
 /**

@@ -12,6 +12,7 @@ import { createGame, processTurn } from '../../../src/game/game-loop'
 import { computeMaxUpgradeBonuses } from '../../../src/game/upgrade-effects'
 import { DEFAULT_BALANCE, type BalanceOverrides } from '../../../src/game/types'
 import { runBotTick, createBotState } from '../../../src/game/bot'
+import { reportProfile } from '../../../src/game/bot/profiler'
 import type { GameState } from '../../../src/game/types'
 import type { BotState } from '../../../src/game/bot/types'
 import type {
@@ -154,6 +155,9 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
   for (const analyzer of analyzers) {
     analyzer.onEnd?.(game, endReason)
   }
+
+  // Report profiling if enabled (PROFILE_BOT=1)
+  reportProfile()
 
   // Collect results
   const analyzerResults = analyzers.map((a) => a.summarize())
@@ -628,6 +632,9 @@ export function runDeepDiagnosis(
   for (const analyzer of analyzers) {
     analyzer.onEnd?.(game, endReason)
   }
+
+  // Report profiling if enabled (PROFILE_BOT=1)
+  reportProfile()
 
   // Collect results
   const analyzerResults = analyzers.map((a) => a.summarize())

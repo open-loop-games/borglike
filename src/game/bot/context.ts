@@ -10,6 +10,7 @@ import type { BotContext, BotState, PersonalityConfig } from './types'
 import { getTile, getAdjacentPositions } from '../dungeon'
 import { getPersonalityConfig } from './personality'
 import { getClassProfile } from './class-profiles'
+import { profile } from './profiler'
 
 // ============================================================================
 // CONTEXT BUILDING
@@ -68,6 +69,9 @@ function createMinimalBotState(): BotState {
     previousHp: 0,
     hpHistory: [],
     hpRate: 0,
+    // Performance caches
+    cachedExplorationFlow: null,
+    lastExploredCount: 0,
   }
 }
 
@@ -87,37 +91,43 @@ export function buildBotContext(
   const effectiveConfig = computeEffectiveConfig(config, classProfile)
 
   // Find visible monsters
-  const visibleMonsters = game.monsters.filter((m) => {
+  const visibleMonsters = profile('ctx.monsters', () => game.monsters.filter((m) => {
     const tile = getTile(game.currentLevel, m.position.x, m.position.y)
     return tile?.visible ?? false
-  })
+  }))
 
   // Find visible items
-  const visibleItems = game.items.filter((item) => {
+  const visibleItems = profile('ctx.items', () => game.items.filter((item) => {
     const tile = getTile(game.currentLevel, item.position.x, item.position.y)
     return tile?.visible ?? false
-  })
+  }))
 
   // Find visible altars (from Map values)
-  const visibleAltars: AltarState[] = []
-  for (const altar of game.altars.values()) {
-    const tile = getTile(game.currentLevel, altar.position.x, altar.position.y)
-    if (tile?.visible) {
-      visibleAltars.push(altar)
+  const visibleAltars: AltarState[] = profile('ctx.altars', () => {
+    const result: AltarState[] = []
+    for (const altar of game.altars.values()) {
+      const tile = getTile(game.currentLevel, altar.position.x, altar.position.y)
+      if (tile?.visible) {
+        result.push(altar)
+      }
     }
-  }
+    return result
+  })
 
   // Find visible merchants
-  const visibleMerchants = game.merchants.filter((merchant) => {
+  const visibleMerchants = profile('ctx.merchants', () => game.merchants.filter((merchant) => {
     const tile = getTile(game.currentLevel, merchant.position.x, merchant.position.y)
     return tile?.visible ?? false
-  })
+  }))
 
   // Find known stairs
   const knownStairs = findKnownStairs(game)
 
-  // Find unexplored tiles (frontier)
-  const unexploredTiles = findUnexploredTiles(game)
+  // Find unexplored tiles (frontier) - use cached count for quick check
+  // Full list is only computed lazily if actually needed
+  const unexploredTiles = profile('ctx.unexplored', () => botState
+    ? getCachedUnexploredTiles(game, botState)
+    : findUnexploredTiles(game))
 
   return {
     game,
@@ -174,6 +184,70 @@ function findKnownStairs(game: GameState): Point | null {
   }
 
   return null
+}
+
+/** How often to recount explored tiles (in turns) */
+const EXPLORED_RECOUNT_INTERVAL = 20
+
+/** Cache for unexplored tiles result */
+let unexploredCache: {
+  depth: number
+  turn: number
+  exploredCount: number
+  result: Point[]
+} | null = null
+
+/**
+ * Get unexplored tiles using cache when possible
+ * Only recomputes when depth changes or recount interval passes
+ */
+function getCachedUnexploredTiles(game: GameState, botState: BotState): Point[] {
+  const level = game.currentLevel
+  const currentDepth = game.character.depth
+  const currentTurn = game.turn
+
+  // Fast path: if same depth and within interval, return cached result
+  if (unexploredCache &&
+      unexploredCache.depth === currentDepth &&
+      currentTurn - unexploredCache.turn < EXPLORED_RECOUNT_INTERVAL) {
+    // Return sentinel based on cached state
+    const hasUnexplored = unexploredCache.exploredCount < level.width * level.height * 0.95
+    return hasUnexplored ? [{ x: 0, y: 0 }] : []
+  }
+
+  // Need to recount - do the full scan
+  let exploredCount = 0
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y]
+    if (!row) continue
+    for (let x = 0; x < level.width; x++) {
+      if (row[x]?.explored) exploredCount++
+    }
+  }
+
+  // Check if exploration state changed
+  const exploredChanged = unexploredCache === null ||
+    unexploredCache.depth !== currentDepth ||
+    unexploredCache.exploredCount !== exploredCount
+
+  if (!exploredChanged && unexploredCache) {
+    // Same state, just update turn and return sentinel
+    unexploredCache.turn = currentTurn
+    const hasUnexplored = exploredCount < level.width * level.height * 0.95
+    return hasUnexplored ? [{ x: 0, y: 0 }] : []
+  }
+
+  // Exploration changed - compute full frontier
+  const result = findUnexploredTiles(game)
+  unexploredCache = {
+    depth: currentDepth,
+    turn: currentTurn,
+    exploredCount,
+    result,
+  }
+  botState.lastExploredCount = exploredCount
+
+  return result
 }
 
 /**

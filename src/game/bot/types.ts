@@ -78,6 +78,20 @@ export interface SafetyFlowResult {
   computedAt: number
 }
 
+/** Cached exploration flow (multi-goal BFS) */
+export interface ExplorationFlowCache {
+  /** The computed flow costs */
+  costs: FlowMap
+  /** Frontier count when computed (for invalidation) */
+  frontierCount: number
+  /** Explored tile count when computed */
+  exploredCount: number
+  /** Turn when computed */
+  computedAt: number
+  /** Depth where computed */
+  depth: number
+}
+
 // ============================================================================
 // DANGER TIER TYPES (Angband-inspired 4-tier system)
 // ============================================================================
@@ -195,6 +209,12 @@ export interface BotState {
   hpHistory: number[]
   /** Detected HP loss rate (HP/turn, negative = losing) */
   hpRate: number
+
+  // Performance caches
+  /** Cached exploration flow (multi-goal BFS to all frontiers) */
+  cachedExplorationFlow: ExplorationFlowCache | null
+  /** Cached unexplored tile count (for invalidation detection) */
+  lastExploredCount: number
 }
 
 // ============================================================================
