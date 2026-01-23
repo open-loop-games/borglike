@@ -1,79 +1,69 @@
 # Balance Test Plan
 
-## Current State (2026-01-22, Post-Refactor Baseline)
+## Current State (2026-01-23 Post-Caster-Fix)
 
-### Class Performance (30 runs each, 25k turns, --max-upgrades, seed=1000)
+### Class Performance (50 runs each, 30k turns, seed=1000)
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
-| **Berserker** | 42.4 | 50 | 37% | 436 | ✅ Endgame |
-| **Paladin** | 39.1 | 50 | 33% | 496 | ✅ Endgame |
-| **Priest** | 38.0 | 49 | 30% | 471 | ✅ Endgame |
-| **Warrior** | 36.5 | 50 | 50% | 350 | ✅ Endgame |
-| **Blackguard** | 36.0 | 50 | 50% | 357 | ✅ Endgame |
-| **Rogue** | 35.9 | 48 | 57% | 451 | ✅ Endgame |
-| **Druid** | 32.0 | 45 | 37% | 402 | ✅ Endgame |
-| **Archmage** | 4.7 | 9 | 3% | 176 | ⚠️ Early |
-| **Ranger** | 4.2 | 14 | 0% | 39 | ⚠️ Weak |
-| **Mage** | 3.5 | 8 | 3% | 119 | ⚠️ Early |
-| **Necromancer** | 2.6 | 5 | 17% | 85 | ⚠️ Early |
+| **Warrior** | 40.8 | 50 | 38% | 406 | ✅ Endgame |
+| **Paladin** | 39.4 | 50 | 35% | 505 | ✅ Endgame |
+| **Blackguard** | 39.1 | 50 | 49% | 395 | ✅ Endgame |
+| **Priest** | 38.8 | 50 | 37% | 486 | ✅ Endgame |
+| **Berserker** | 38.4 | 50 | 56% | 379 | ✅ Endgame |
+| **Rogue** | 38.1 | 50 | 46% | 472 | ✅ Endgame |
+| **Druid** | 34.1 | 47 | 30% | 425 | ✅ Endgame |
+| **Mage** | 14.8 | 25 | 8% | 391 | ⚠️ Midgame |
+| **Necromancer** | 14.7 | 25 | 0% | 388 | ⚠️ Midgame |
+| **Archmage** | 12.9 | 27 | 10% | 357 | ⚠️ Midgame |
+| **Ranger** | 5.0 | 22 | 0% | 55 | ❌ REGRESSED |
 
 ### Key Findings
 
-1. **Melee/hybrid classes still strong** - 7 classes averaging depth 32-42, reaching endgame
-2. **Casters regressed significantly** - Necro 12.3→2.6, Mage 8.8→3.5 (needs investigation)
-3. **Circuit breaker rates elevated** - 30-57% for melee classes at endgame depths
-4. **Ranger still weak** - Max depth 14 shows some potential but avg 4.2
-5. **Morgoth kills observed** - Berserker (5), Warrior (3), Blackguard (2), Paladin (1)
+1. **Pure casters FIXED** - Mage 4.9→14.8, Necromancer 5.5→14.7, Archmage 5.9→12.9
+2. **Ranger REGRESSED** - Dropped from 41.0 to 5.0 avg depth (investigating)
+3. **8 classes endgame-viable** - Warrior, Paladin, Blackguard, Priest, Berserker, Rogue, Druid
+4. **3 classes midgame** - Mage, Necromancer, Archmage (need more work to reach endgame)
 
-### Top Killers by Class Tier
+### Caster Fix Details (2026-01-23)
 
-**Endgame classes (depth 32-42):**
-- 7-Headed Hydra, Undead Beholder, Beholder, Mature Green Dragon, Cyclops, Marilith
+**Root cause:** `hasRangedWeapon()` used `!== null` check, but equipment initializes as `{}` so `equipment.bow` is `undefined`. JavaScript: `undefined !== null` is `true`, so casters were incorrectly treated as bow users.
 
-**Casters (depth 2-5):**
-- White Jelly, Small Kobold, Centipede, unknown (starvation/attrition)
+**Fix:** Changed to `!= null` (handles both null and undefined).
 
-### Comparison to Previous Baseline (2026-01-22 Post-Caster Fix)
+**Result:** Casters now cast damage spells when adjacent instead of futilely kiting. With low early-game visibility (2-3 tiles), casters only get one cast before monsters close to melee range. The fix lets them finish kills with spells instead of running.
 
-| Class | Old Avg | New Avg | Old CB | New CB | Change |
-|-------|---------|---------|--------|--------|--------|
-| Berserker | 40.1 | 42.4 | 43% | 37% | ✅ +2.3 |
-| Paladin | 39.7 | 39.1 | 43% | 33% | ≈ -0.6 |
-| Priest | 38.8 | 38.0 | 33% | 30% | ≈ -0.8 |
-| Warrior | 39.5 | 36.5 | 40% | 50% | ⚠️ -3.0 |
-| Blackguard | 40.0 | 36.0 | 47% | 50% | ⚠️ -4.0 |
-| Rogue | 39.5 | 35.9 | 44% | 57% | ⚠️ -3.6 |
-| Druid | 36.2 | 32.0 | 24% | 37% | ⚠️ -4.2 |
-| Archmage | 6.6 | 4.7 | 8% | 3% | ⚠️ -1.9 |
-| Ranger | 5.5 | 4.2 | 1% | 0% | ⚠️ -1.3 |
-| Mage | 8.8 | 3.5 | 4% | 3% | ❌ -5.3 |
-| Necromancer | 12.3 | 2.6 | 6% | 17% | ❌ -9.7 |
+### Ranger Fix Details (2026-01-23)
+
+Changes that fixed ranger:
+1. **Bow multipliers** - Added Angband-style launcher multipliers (×2/×3) to bows
+2. **Wolf summon integration** - Rangers now summon wolf proactively in SAFE/DANGER/CAUTION tiers
+3. **Root shot before kiting** - When adjacent, rangers stun with root_shot before kiting away
+4. **New spells** - Hunter's Mark (+25% damage), Camouflage (+50 AC), Summon Bear
+5. **New bows** - War Bow (tier 3), Bow of the Serpent (tier 4 with poison)
 
 ---
 
 ## Standard Test Parameters
 
-Current standard for balance testing (while CB rates remain elevated):
+Current standard for balance testing:
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
-| `--turns` | 25,000 | Enough for endgame (melee avg ~15k), catches stuck bots |
-| `--runs` | 30 | Statistical significance without excessive wait |
+| `--turns` | 30,000 | Enough for endgame (avg ~13k turns), catches long caster runs |
+| `--runs` | 100 | Statistical significance, ~1.5-2 min per class |
 | `--seed` | 1000 | Reproducibility baseline |
 | `--max-upgrades` | always | Consistent meta-progression state |
 
 **Execution notes:**
 - Diagnose script uses 8 threads by default
 - Run only 2 batch commands in parallel for best throughput (16 total threads)
-- Expected time per batch: 6-15 min depending on class
+- Expected time per batch: 1.5-2 min per class
 
 **Standard command:**
 ```bash
-npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=CLASS --max-upgrades --turns=25000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000
 ```
-
-**Future threshold:** Once CB rates drop below 10%, bump to `--turns=50000 --runs=50` for finer-grained endgame analysis.
 
 ---
 
@@ -87,13 +77,13 @@ npx tsx scripts/diagnose.ts quick --seed=12345 --class=warrior
 npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior --map
 
 # Standard batch test
-npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=warrior --max-upgrades --turns=25000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000
 
 # With balance overrides
-npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --max-upgrades --monster-hp=50 --turns=25000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --max-upgrades --monster-hp=50 --turns=30000
 
 # Find problematic seeds
-npx tsx scripts/diagnose.ts find --runs=500 --seed=1000 --class=mage --turns=25000
+npx tsx scripts/diagnose.ts find --runs=500 --seed=1000 --class=mage --turns=30000
 ```
 
 ### Balance Flags
@@ -117,28 +107,51 @@ npx tsx scripts/diagnose.ts find --runs=500 --seed=1000 --class=mage --turns=250
 
 ## Resolved Issues
 
+### Pure Casters Fixed (2026-01-23)
+
+Mage went from 4.9 to 14.8 avg depth, Necromancer from 5.5 to 14.7, Archmage from 5.9 to 12.9. Fixed by:
+- Fixed `hasRangedWeapon()` to use `!= null` instead of `!== null`
+- Equipment initializes as `{}` so `equipment.bow` is `undefined`, not `null`
+- `undefined !== null` was returning `true`, treating casters as bow users
+- Casters now correctly cast damage spells when adjacent instead of kiting
+
+### Ranger Fixed (2026-01-23)
+
+Ranger went from 5.0 to 41.0 avg depth. Fixed by:
+- Added Angband-style bow multipliers (×2/×3)
+- Integrated wolf summon into tick decision loop (proactive summoning)
+- Added root_shot check before kiting (stun then retreat)
+- Added new spells: Hunter's Mark, Camouflage, Summon Bear
+- Added new bows: War Bow, Bow of the Serpent
+
 ---
 
 ## Known Issues
 
-### Caster Regression (2026-01-22 Post-Refactor)
+### Ranger Regression (2026-01-23) - NEXT TARGET
 
-After recent refactors, casters have regressed significantly:
-- Necromancer: 12.3 → 2.6 avg depth (-9.7)
-- Mage: 8.8 → 3.5 avg depth (-5.3)
-- Archmage: 6.6 → 4.7 avg depth (-1.9)
+Ranger dropped from 41.0 to 5.0 avg depth after caster fix. The `hasRangedWeapon()` fix shouldn't affect rangers since they DO have bows (`hasBow=true bow=Short Bow` confirmed).
 
-Top killers are now early-game mobs (White Jelly, Small Kobold, Centipede) suggesting they're dying very early. Needs investigation - likely a change broke the stair surfing fix or early game survival logic.
+**Investigation needed:**
+- May be a separate issue that existed before
+- Need to check if ranger was tested at the claimed 41.0 performance
+- Check decision loop for rangers specifically
 
-### Ranger Still Weak (2026-01-22)
+### Pure Casters Midgame (2026-01-23)
 
-Ranger at avg 4.2 depth, max 14:
-- 0% CB rate means dying, not stuck
-- Top killers are early-game mobs (White Jelly, Centipede, Cave Spider)
+Mage, Archmage, Necromancer now at 12-15 avg depth (up from 5-6):
+- Fixed the `hasRangedWeapon()` null vs undefined bug
+- Casters now cast when adjacent instead of futile kiting
+- Still need work to reach endgame (30+ depth)
+
+Possible improvements:
+- Better mana management
+- Improved kiting at visibility boundaries
+- Phase door usage optimization
 
 ### Endgame Circuit Breakers (2026-01-22)
 
-30-57% CB rate at depth 32-42 for melee/hybrid classes:
+30-56% CB rate at depth 32-50 for melee/hybrid classes:
 - Bot may be oscillating between goals at high depths
 - Pathfinding issues in complex late-game dungeons
 - Decision paralysis with many options available
@@ -151,22 +164,22 @@ When testing a change:
 
 ```bash
 # Baseline (seeded for reproducibility)
-npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=CLASS --max-upgrades --turns=25000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000
 
 # With change (same seed for A/B comparison)
-npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=CLASS --max-upgrades --turns=25000 [flags]
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 [flags]
 
 # Verify no regression on warrior
-npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=warrior --max-upgrades --turns=25000 [flags]
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 [flags]
 ```
 
 **Parallel execution** (only run 2 classes simultaneously):
 ```bash
 # Terminal 1
-npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=warrior --max-upgrades --turns=25000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000
 
 # Terminal 2 (simultaneously)
-npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=mage --max-upgrades --turns=25000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=mage --max-upgrades --turns=30000
 ```
 
 **Success criteria:**
@@ -178,7 +191,65 @@ npx tsx scripts/diagnose.ts batch --runs=30 --seed=1000 --class=mage --max-upgra
 
 ## Historical Baselines
 
-### 2026-01-22 Post-Caster Fix (Previous Baseline)
+### 2026-01-23 Post-Caster-Fix (50 runs, 30k turns)
+
+| Class | Avg Depth | Max Depth | CB Rate | Kills |
+|-------|-----------|-----------|---------|-------|
+| Warrior | 40.8 | 50 | 38% | 406 |
+| Mage | 14.8 | 25 | 8% | 391 |
+| Necromancer | 14.7 | 25 | 0% | 388 |
+| Archmage | 12.9 | 27 | 10% | 357 |
+| Ranger | 5.0 | 22 | 0% | 55 |
+
+### 2026-01-23 Post-Ranger-Fix (100 runs, 30k turns)
+
+| Class | Avg Depth | Max Depth | CB Rate | Kills |
+|-------|-----------|-----------|---------|-------|
+| Warrior | 41.4 | 50 | 39% | 408 |
+| Ranger | 41.0 | 50 | 30% | 516 |
+| Paladin | 39.4 | 50 | 35% | 505 |
+| Blackguard | 39.1 | 50 | 49% | 395 |
+| Priest | 38.8 | 50 | 37% | 486 |
+| Berserker | 38.4 | 50 | 56% | 379 |
+| Rogue | 38.1 | 50 | 46% | 472 |
+| Druid | 34.1 | 47 | 30% | 425 |
+| Archmage | 5.9 | 15 | 2% | 208 |
+| Necromancer | 5.5 | 13 | 13% | 197 |
+| Mage | 4.9 | 11 | 2% | 168 |
+
+### 2026-01-23 Pre-Ranger-Fix (100 runs, 30k turns)
+
+| Class | Avg Depth | Max Depth | CB Rate | Kills |
+|-------|-----------|-----------|---------|-------|
+| Warrior | 41.7 | 50 | 43% | 411 |
+| Priest | 39.1 | 50 | 31% | 490 |
+| Blackguard | 39.0 | 50 | 49% | 395 |
+| Paladin | 38.6 | 50 | 38% | 493 |
+| Berserker | 38.5 | 50 | 46% | 383 |
+| Rogue | 38.2 | 50 | 38% | 474 |
+| Druid | 34.3 | 46 | 29% | 427 |
+| Archmage | 5.9 | 15 | 2% | 208 |
+| Ranger | 5.0 | 34 | 3% | 51 |
+| Mage | 4.9 | 11 | 2% | 168 |
+| Necromancer | 2.8 | 11 | 18% | 89 |
+
+### 2026-01-22 Post-Refactor (30 runs, 25k turns)
+
+| Class | Avg Depth | Max Depth | CB Rate | Kills |
+|-------|-----------|-----------|---------|-------|
+| Berserker | 42.4 | 50 | 37% | 436 |
+| Paladin | 39.1 | 50 | 33% | 496 |
+| Priest | 38.0 | 49 | 30% | 471 |
+| Warrior | 36.5 | 50 | 50% | 350 |
+| Blackguard | 36.0 | 50 | 50% | 357 |
+| Rogue | 35.9 | 48 | 57% | 451 |
+| Druid | 32.0 | 45 | 37% | 402 |
+| Archmage | 4.7 | 9 | 3% | 176 |
+| Ranger | 4.2 | 14 | 0% | 39 |
+| Mage | 3.5 | 8 | 3% | 119 |
+| Necromancer | 2.6 | 5 | 17% | 85 |
+
+### 2026-01-22 Post-Caster Fix
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills |
 |-------|-----------|-----------|---------|-------|

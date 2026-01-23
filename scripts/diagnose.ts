@@ -13,6 +13,7 @@
  *   batch [runs]    - Run multiple seeds and aggregate results
  *   find            - Find problematic seeds
  *   compare         - Compare behavior across personalities
+ *   baseline        - Run full baseline test across all classes (100 runs, 30k turns)
  *   debug-explore   - Debug EXPLORE goal breakdown at a specific turn
  *   help            - Show this help message
  *
@@ -61,7 +62,7 @@ import type { BotPersonality } from '../src/game/types'
 // ============================================================================
 
 interface Args {
-  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'help' | 'debug-explore'
+  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'help' | 'debug-explore'
   seed?: number
   runs: number
   turns: number
@@ -155,6 +156,7 @@ function parseArgs(): Args {
     mode === 'batch' ||
     mode === 'find' ||
     mode === 'compare' ||
+    mode === 'baseline' ||
     mode === 'help' ||
     mode === 'debug-explore'
   ) {
@@ -262,6 +264,7 @@ MODES:
   batch           Run multiple seeds and aggregate results
   find            Find problematic seeds automatically
   compare         Compare behavior across all personalities
+  baseline        Run full baseline across all 11 classes (100 runs, 30k turns)
   help            Show this help message
 
 OPTIONS:
@@ -317,6 +320,148 @@ ANALYZERS:
 }
 
 // ============================================================================
+// BASELINE MODE
+// ============================================================================
+
+/** Standard classes for baseline testing (alphabetical) */
+const BASELINE_CLASSES = [
+  'archmage',
+  'berserker',
+  'blackguard',
+  'druid',
+  'mage',
+  'necromancer',
+  'paladin',
+  'priest',
+  'ranger',
+  'rogue',
+  'warrior',
+] as const
+
+/** Standard baseline parameters */
+const BASELINE_DEFAULTS = {
+  runs: 100,
+  turns: 30000,
+  seed: 1000,
+  threads: 20,
+}
+
+interface BaselineResult {
+  classId: string
+  avgDepth: number
+  maxDepth: number
+  cbRate: number
+  avgKills: number
+  morgothKills: number
+  avgTurns: number
+}
+
+async function runBaseline(args: Args): Promise<void> {
+  const runs = args.runs !== 50 ? args.runs : BASELINE_DEFAULTS.runs
+  const turns = args.turns !== 5000 ? args.turns : BASELINE_DEFAULTS.turns
+  const seed = args.seed ?? BASELINE_DEFAULTS.seed
+  const threads = args.threads !== 8 ? args.threads : BASELINE_DEFAULTS.threads
+
+  console.log(`\n${'='.repeat(60)}`)
+  console.log('BASELINE TEST')
+  console.log('='.repeat(60))
+  console.log(`Parameters: ${runs} runs, ${turns} turns, seed=${seed}, ${threads} threads`)
+  console.log(`Classes: ${BASELINE_CLASSES.length}`)
+  console.log('='.repeat(60))
+
+  const results: BaselineResult[] = []
+  const startTime = Date.now()
+
+  // Build balance config
+  const effectiveBestiary = args.bestiary > 0 ? args.bestiary : 25 // Always use max bestiary for baseline
+  const balance = {
+    monsterHpPercent: args.monsterHp,
+    monsterDamagePercent: args.monsterDamage,
+    startingPotions: args.startPotions,
+    potionRatePercent: args.potionRate,
+    regenPer10Turns: args.regen,
+    armorPenetration: args.armorPen,
+    enchantRatePercent: args.enchantRate,
+    itemRatePercent: args.itemRate,
+    levelupHpPercent: args.levelupHp,
+    xpRatePercent: args.xpRate,
+    upgradePowerPercent: args.upgradePower,
+    bestiaryBonusPercent: effectiveBestiary,
+  }
+
+  for (const classId of BASELINE_CLASSES) {
+    const classStart = Date.now()
+    process.stdout.write(`\n${classId.padEnd(12)} `)
+
+    const batchResult = await runBatchDiagnosisParallel({
+      raceId: args.race,
+      classId,
+      personality: args.personality,
+      maxTurns: turns,
+      analyzers: createAllAnalyzers(),
+      maxUpgrades: true, // Always use max upgrades for baseline
+      balance,
+      runs,
+      startSeed: seed,
+      threads,
+      onProgress: (completed, total) => {
+        const pct = Math.floor((completed / total) * 20)
+        process.stdout.write(`\r${classId.padEnd(12)} [${'█'.repeat(pct)}${'░'.repeat(20 - pct)}] ${completed}/${total}`)
+      },
+    })
+
+    const depthMetrics = batchResult.aggregateMetrics['worker-metrics.maxDepth']
+    const killMetrics = batchResult.aggregateMetrics['worker-metrics.kills']
+    const turnMetrics = batchResult.aggregateMetrics['worker-metrics.totalTurns']
+
+    const result: BaselineResult = {
+      classId,
+      avgDepth: depthMetrics?.avg ?? 0,
+      maxDepth: depthMetrics?.max ?? 0,
+      cbRate: (batchResult.circuitBreakerCount / runs) * 100,
+      avgKills: killMetrics?.avg ?? 0,
+      morgothKills: batchResult.morgothKillCount,
+      avgTurns: turnMetrics?.avg ?? 0,
+    }
+    results.push(result)
+
+    const elapsed = ((Date.now() - classStart) / 1000).toFixed(1)
+    process.stdout.write(`\r${classId.padEnd(12)} [${'█'.repeat(20)}] done (${elapsed}s)\n`)
+  }
+
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
+
+  // Sort by avg depth descending
+  results.sort((a, b) => b.avgDepth - a.avgDepth)
+
+  // Print results table
+  console.log(`\n${'='.repeat(60)}`)
+  console.log('BASELINE RESULTS')
+  console.log('='.repeat(60))
+  console.log(`\n| Class | Avg Depth | Max Depth | CB Rate | Kills | Morgoth |`)
+  console.log('|-------|-----------|-----------|---------|-------|---------|')
+  for (const r of results) {
+    const status = r.avgDepth >= 30 ? '✅' : r.avgDepth >= 10 ? '⚠️' : '❌'
+    console.log(
+      `| ${status} ${r.classId.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
+    )
+  }
+
+  console.log(`\nTotal time: ${totalTime}s`)
+  console.log(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
+  console.log('```')
+  console.log(`| Class | Avg Depth | Max Depth | CB Rate | Kills | Status |`)
+  console.log('|-------|-----------|-----------|---------|-------|--------|')
+  for (const r of results) {
+    const status = r.avgDepth >= 30 ? '✅ Endgame' : r.avgDepth >= 10 ? '⚠️ Mid' : '⚠️ Early'
+    console.log(
+      `| **${r.classId.charAt(0).toUpperCase() + r.classId.slice(1)}** | ${r.avgDepth.toFixed(1)} | ${r.maxDepth} | ${r.cbRate.toFixed(0)}% | ${r.avgKills.toFixed(0)} | ${status} |`
+    )
+  }
+  console.log('```')
+}
+
+// ============================================================================
 // MAIN
 // ============================================================================
 
@@ -338,6 +483,12 @@ async function main(): Promise<void> {
       classId: args.classId,
     })
     console.log(formatPersonalityComparison(result))
+    return
+  }
+
+  // Handle baseline mode - run all classes with standard parameters
+  if (args.mode === 'baseline') {
+    await runBaseline(args)
     return
   }
 

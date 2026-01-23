@@ -57,6 +57,7 @@ npx tsx scripts/diagnose.ts [mode] [options]
 | `batch` | Aggregate statistics across runs | `batch --runs=100 --seed=1000` |
 | `find` | Search for problematic seeds | `find --runs=500 --seed=1000` |
 | `compare` | Compare across personalities | `compare --runs=20 --seed=1000` |
+| `baseline` | Full baseline across all 11 classes | `baseline` (100 runs, 30k turns per class) |
 
 ### Seed Syntax
 
@@ -129,6 +130,15 @@ Compare performance across all personalities:
 ```bash
 npx tsx scripts/diagnose.ts compare --runs=50
 ```
+
+### Running a Full Baseline
+
+Generate baseline metrics for all 11 classes (100 runs, 30k turns each):
+```bash
+npx tsx scripts/diagnose.ts baseline
+```
+
+Output includes a markdown table ready to paste into `docs/BALANCE-TEST-PLAN.md`. Classes tested: archmage, berserker, blackguard, druid, mage, necromancer, paladin, priest, ranger, rogue, warrior.
 
 ## Analyzers
 
