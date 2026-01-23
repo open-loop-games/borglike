@@ -11,7 +11,7 @@ const emit = defineEmits<{
   toggle: []
 }>()
 
-const chevron = computed(() => props.expanded ? '\u25BE' : '\u25B8')
+const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 </script>
 
 <template>

@@ -19,7 +19,7 @@ import type { BestiaryEntry } from '@/types/progression'
 
 /** Combat bonuses from monster knowledge */
 export interface KnowledgeBonuses {
-  damagePercent: number    // +X% damage dealt to this monster
+  damagePercent: number // +X% damage dealt to this monster
   reductionPercent: number // -X% damage taken from this monster
 }
 

@@ -9,11 +9,7 @@ import type { GameState, GameAction, Monster } from '../types'
 import { MINION_TEMPLATES } from '../types'
 import type { PersonalityConfig, DangerMap } from './types'
 import type { SpellTemplate } from '../data/spells'
-import {
-  getAvailableSpells,
-  getNearestVisibleMonster,
-  selectAOETargets,
-} from '../spell-resolution'
+import { getAvailableSpells, getNearestVisibleMonster, selectAOETargets } from '../spell-resolution'
 import { getLocalDanger } from './danger'
 import { countAdjacentMonsters } from './combat'
 import { hasStatusEffect } from './items'
@@ -52,8 +48,7 @@ export function getHealingSpellAction(
   const available = getAvailableSpells(character, game.turn)
   const healSpells = available.filter(
     (entry) =>
-      entry.canCast &&
-      (entry.spell.effectType === 'heal' || entry.spell.effectType === 'lifedrain')
+      entry.canCast && (entry.spell.effectType === 'heal' || entry.spell.effectType === 'lifedrain')
   )
 
   if (healSpells.length === 0) return null
@@ -82,10 +77,10 @@ function evaluateHealNeed(
 
   // Graduated thresholds (Angband-style)
   // Lower HP = always heal, higher HP = only if danger justifies it
-  if (hpRatio < 0.25) return true              // Always heal below 25%
-  if (hpRatio < 0.40) return danger > 20       // Heal at 40% if any real danger
-  if (hpRatio < 0.55) return danger > 50       // Heal at 55% if moderate danger
-  if (hpRatio < 0.70) return danger > 100      // Heal at 70% if high danger
+  if (hpRatio < 0.25) return true // Always heal below 25%
+  if (hpRatio < 0.4) return danger > 20 // Heal at 40% if any real danger
+  if (hpRatio < 0.55) return danger > 50 // Heal at 55% if moderate danger
+  if (hpRatio < 0.7) return danger > 100 // Heal at 70% if high danger
 
   return false
 }
@@ -182,7 +177,8 @@ export function getDamageSpellAction(
   const nearest = getNearestVisibleMonster(game)
   if (!nearest) return null
 
-  const distToNearest = Math.abs(nearest.position.x - character.position.x) +
+  const distToNearest =
+    Math.abs(nearest.position.x - character.position.x) +
     Math.abs(nearest.position.y - character.position.y)
 
   // Check for AOE opportunities
@@ -322,8 +318,8 @@ export function getBuffSpellAction(
     }
 
     // Resist elements (check if visible monsters use fire/cold)
-    const hasElementalEnemy = visibleMonsters.some((m) =>
-      hasAbility(m.template, 'FIRE') || hasAbility(m.template, 'COLD')
+    const hasElementalEnemy = visibleMonsters.some(
+      (m) => hasAbility(m.template, 'FIRE') || hasAbility(m.template, 'COLD')
     )
     if (hasElementalEnemy) {
       const resistElements = buffSpells.find((entry) => entry.spell.id === 'resist_elements')
@@ -461,7 +457,9 @@ export function getDebuffSpellAction(
   if (character.mp < character.maxMp * 0.4) return null
 
   // Find strongest visible monster
-  const sortedByThreat = [...visibleMonsters].sort((a, b) => getAverageDamage(b.template) - getAverageDamage(a.template))
+  const sortedByThreat = [...visibleMonsters].sort(
+    (a, b) => getAverageDamage(b.template) - getAverageDamage(a.template)
+  )
   const strongestMonster = sortedByThreat[0]
 
   if (!strongestMonster) return null
@@ -583,23 +581,20 @@ export function hasCastableDamageSpell(game: GameState): boolean {
  *
  * Used by Rangers to root enemies and back off
  */
-export function getRootShotAction(
-  game: GameState,
-  adjacentMonster: Monster
-): GameAction | null {
+export function getRootShotAction(game: GameState, adjacentMonster: Monster): GameAction | null {
   const character = game.character
 
   // Get available spells
   const available = getAvailableSpells(character, game.turn)
 
   // Look for root_shot specifically (damage spell with 100% slow = stun)
-  const rootShot = available.find(
-    (entry) => entry.canCast && entry.spell.id === 'root_shot'
-  )
+  const rootShot = available.find((entry) => entry.canCast && entry.spell.id === 'root_shot')
 
   if (rootShot) {
     // Check if monster is already rooted/slowed
-    const isAlreadySlowed = adjacentMonster.debuffs.some(d => d.type === 'slow' && d.turnsRemaining > 1)
+    const isAlreadySlowed = adjacentMonster.debuffs.some(
+      (d) => d.type === 'slow' && d.turnsRemaining > 1
+    )
     if (!isAlreadySlowed) {
       return { type: 'cast', spellId: 'root_shot', targetId: adjacentMonster.id }
     }
@@ -637,13 +632,13 @@ export function getSummonSpellAction(
   if (summonSpells.length === 0) return null
 
   // Check existing minions
-  const existingMinions = game.minions.filter(m => m.hp > 0)
+  const existingMinions = game.minions.filter((m) => m.hp > 0)
 
   // For permanent pets (wolf): summon IMMEDIATELY if missing, heal if damaged
   // This is high priority - we want the wolf out at all times
   const wolfSpell = summonSpells.find((entry) => entry.spell.id === 'summon_wolf')
   if (wolfSpell) {
-    const wolf = existingMinions.find(m => m.type === 'wolf')
+    const wolf = existingMinions.find((m) => m.type === 'wolf')
     if (!wolf) {
       // No wolf - summon one immediately (even without enemies)
       return { type: 'cast', spellId: 'summon_wolf' }
@@ -659,7 +654,7 @@ export function getSummonSpellAction(
   const skeletonSpell = summonSpells.find((entry) => entry.spell.id === 'summon_skeleton')
   if (skeletonSpell) {
     // Count non-permanent summons
-    const tempSummons = existingMinions.filter(m => !MINION_TEMPLATES[m.type].permanent)
+    const tempSummons = existingMinions.filter((m) => !MINION_TEMPLATES[m.type].permanent)
 
     // Summon if we have no summons and decent mana
     if (tempSummons.length === 0 && character.mp >= character.maxMp * 0.4) {
@@ -667,7 +662,11 @@ export function getSummonSpellAction(
     }
 
     // Summon second skeleton if enemies are visible and we have good mana
-    if (tempSummons.length < 2 && visibleMonsters.length > 0 && character.mp >= character.maxMp * 0.5) {
+    if (
+      tempSummons.length < 2 &&
+      visibleMonsters.length > 0 &&
+      character.mp >= character.maxMp * 0.5
+    ) {
       return { type: 'cast', spellId: 'summon_skeleton' }
     }
   }
@@ -679,7 +678,7 @@ export function getSummonSpellAction(
  * Check if bot has any active minions
  */
 export function hasActiveMinions(game: GameState): boolean {
-  return game.minions.some(m => m.hp > 0)
+  return game.minions.some((m) => m.hp > 0)
 }
 
 /**

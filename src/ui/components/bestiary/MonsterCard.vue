@@ -85,12 +85,8 @@ const monsterColor = computed(() => {
         <span class="stat">HP {{ monster.hp }}</span>
         <span class="stat">D:{{ monster.minDepth }}</span>
       </div>
-      <div v-if="!isLocked" class="kill-count">
-        {{ kills }} kill{{ kills !== 1 ? 's' : '' }}
-      </div>
-      <div v-if="knowledgeBonus > 0" class="knowledge-badge">
-        +{{ knowledgeBonus.toFixed(0) }}%
-      </div>
+      <div v-if="!isLocked" class="kill-count">{{ kills }} kill{{ kills !== 1 ? 's' : '' }}</div>
+      <div v-if="knowledgeBonus > 0" class="knowledge-badge">+{{ knowledgeBonus.toFixed(0) }}%</div>
     </div>
 
     <div v-if="progress" class="progress-bar">

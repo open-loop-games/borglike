@@ -62,10 +62,14 @@ export function shuffle<T>(array: readonly T[]): T[] {
  */
 export function weightedPick<T>(items: readonly { item: T; weight: number }[]): T | undefined {
   if (items.length === 0) return undefined
-  return RNG.getWeightedValue(
+  return (RNG.getWeightedValue(
     Object.fromEntries(items.map((i, idx) => [idx, i.weight]))
-  ) as unknown as number | undefined !== undefined
-    ? items[RNG.getWeightedValue(Object.fromEntries(items.map((i, idx) => [idx, i.weight]))) as unknown as number]?.item
+  ) as unknown as number | undefined) !== undefined
+    ? items[
+        RNG.getWeightedValue(
+          Object.fromEntries(items.map((i, idx) => [idx, i.weight]))
+        ) as unknown as number
+      ]?.item
     : undefined
 }
 

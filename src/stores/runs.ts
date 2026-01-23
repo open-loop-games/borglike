@@ -79,7 +79,7 @@ export interface ActiveRun {
   finalStats?: RunStats
 
   // AI introspection (minimal)
-  botGoal?: string      // e.g., "EXPLORE - 45% explored"
+  botGoal?: string // e.g., "EXPLORE - 45% explored"
   depthBlocker?: string // e.g., "Need 3 healing potions (have 1)"
 }
 
@@ -91,15 +91,25 @@ export interface GridCell {
 export interface DisplayItem {
   id: string
   name: string
-  char: string        // ASCII display char: ), [, !, ?, etc.
-  color: number       // Hex color based on tier/artifact
+  char: string // ASCII display char: ), [, !, ?, etc.
+  color: number // Hex color based on tier/artifact
   enchantment: number
   isArtifact: boolean
   tier: number
 }
 
-export type EquipSlot = 'weapon' | 'bow' | 'armor' | 'shield' | 'helm' |
-                        'gloves' | 'boots' | 'ring1' | 'ring2' | 'amulet' | 'light'
+export type EquipSlot =
+  | 'weapon'
+  | 'bow'
+  | 'armor'
+  | 'shield'
+  | 'helm'
+  | 'gloves'
+  | 'boots'
+  | 'ring1'
+  | 'ring2'
+  | 'amulet'
+  | 'light'
 
 function createEmptyGrid(): GridCell[][] {
   return Array.from({ length: 24 }, () =>

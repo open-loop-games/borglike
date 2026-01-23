@@ -26,22 +26,22 @@ const ALWAYS_SHOW_TYPES = new Set(['combat', 'danger', 'good', 'item'])
 /** Message patterns to filter out (even if type matches) */
 const FILTER_PATTERNS = [
   /^You open the door\.$/,
-  /^You pick up .* gold\.$/,  // Gold pickups are too noisy
-  /^The .* misses you\.$/,    // Misses are less interesting
-  /^The .* misses[.!]$/,      // Monster misses (no target specified)
+  /^You pick up .* gold\.$/, // Gold pickups are too noisy
+  /^The .* misses you\.$/, // Misses are less interesting
+  /^The .* misses[.!]$/, // Monster misses (no target specified)
   /^You miss the .*\.$/,
-  /^You suffer \d+ poison damage/,  // Poison tick damage is noisy
-  /^You hit the .* for \d+ damage/,  // Regular hits are too noisy
-  /^You hit the .* \d+.*x for \d+.*damage/,  // Multi-hit melee
-  /^Your arrow hits .* for \d+ damage/,  // Ranged hits also noisy
-  /^Your arrows? .* \d+.*x for \d+.*damage/,  // Multi-shot ranged
+  /^You suffer \d+ poison damage/, // Poison tick damage is noisy
+  /^You hit the .* for \d+ damage/, // Regular hits are too noisy
+  /^You hit the .* \d+.*x for \d+.*damage/, // Multi-hit melee
+  /^Your arrow hits .* for \d+ damage/, // Ranged hits also noisy
+  /^Your arrows? .* \d+.*x for \d+.*damage/, // Multi-shot ranged
   /^The .* (hits|bites|claws|touches|stings|crushes|gazes at|gazes|engulfs) you for \d+ damage/, // Getting hit is noisy
   /^The .* attacks \d+ times for \d+ damage/, // Multi-attack messages
-  /^You critically hit/,             // Even crits can be noisy
-  /^You cast .* for \d+ damage/,     // Spell damage is noisy
-  /^You cast .* hitting \d+ enemies/,  // AOE spells
-  /^Your .* beams through/,          // Beam spells
-  /^You drain \d+ HP/,               // Lifesteal is noisy
+  /^You critically hit/, // Even crits can be noisy
+  /^You cast .* for \d+ damage/, // Spell damage is noisy
+  /^You cast .* hitting \d+ enemies/, // AOE spells
+  /^Your .* beams through/, // Beam spells
+  /^You drain \d+ HP/, // Lifesteal is noisy
 ]
 
 /** Message patterns that should always show (even if type is 'info') */

@@ -32,7 +32,7 @@ export function getDepthProfile(depth: number): DepthProfile {
     generatorWeights: {
       classic: interpolateByDepth(depth, 1, 50, 0.92, 0.45),
       cavern: interpolateByDepth(depth, 1, 50, 0.06, 0.35),
-      labyrinth: interpolateByDepth(depth, 1, 50, 0.02, 0.20),
+      labyrinth: interpolateByDepth(depth, 1, 50, 0.02, 0.2),
     },
     roomCount: [
       Math.round(interpolateByDepth(depth, 1, 50, 4, 7)),
@@ -47,7 +47,7 @@ export function getDepthProfile(depth: number): DepthProfile {
       Math.round(interpolateByDepth(depth, 1, 50, 6, 12)),
     ],
     dugPercentage: interpolateByDepth(depth, 1, 50, 0.25, 0.38),
-    doorChance: interpolateByDepth(depth, 1, 50, 0.1, 0.50),
+    doorChance: interpolateByDepth(depth, 1, 50, 0.1, 0.5),
     vaultChance: interpolateByDepth(depth, 1, 50, 0, 0.28),
   }
 }

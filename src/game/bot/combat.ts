@@ -132,11 +132,14 @@ export function evaluateCombat(
 
   // Threat level (0-100)
   // Based on damage potential and HP
-  const threatLevel = Math.min(100, Math.floor(
-    (monsterDamage / character.maxHp) * 100 +
-    (turnsToKill > 3 ? 20 : 0) +
-    (monster.isAwake ? 10 : 0)
-  ))
+  const threatLevel = Math.min(
+    100,
+    Math.floor(
+      (monsterDamage / character.maxHp) * 100 +
+        (turnsToKill > 3 ? 20 : 0) +
+        (monster.isAwake ? 10 : 0)
+    )
+  )
 
   // Should engage (basic heuristic)
   const shouldEngage = canWin && threatLevel < 50
@@ -172,10 +175,10 @@ export function selectTarget(
   const pos = character.position
 
   // Get candidate monsters
-  let candidates = context.visibleMonsters.filter(m => m.hp > 0)
+  let candidates = context.visibleMonsters.filter((m) => m.hp > 0)
 
   if (adjacentOnly) {
-    candidates = candidates.filter(m => isAdjacent(pos, m.position))
+    candidates = candidates.filter((m) => isAdjacent(pos, m.position))
   }
 
   if (candidates.length === 0) {
@@ -264,10 +267,10 @@ export function selectTargetForClass(
   const pos = character.position
 
   // Get candidate monsters
-  let candidates = context.visibleMonsters.filter(m => m.hp > 0)
+  let candidates = context.visibleMonsters.filter((m) => m.hp > 0)
 
   if (adjacentOnly) {
-    candidates = candidates.filter(m => isAdjacent(pos, m.position))
+    candidates = candidates.filter((m) => isAdjacent(pos, m.position))
   }
 
   if (candidates.length === 0) {
@@ -373,7 +376,7 @@ export function findAdjacentMonster(game: GameState): Monster | null {
 
   for (const adj of adjacent) {
     const monster = game.monsters.find(
-      m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
+      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
     )
     if (monster) {
       return monster
@@ -391,7 +394,7 @@ export function countAdjacentMonsters(game: GameState, pos: Point): number {
   let count = 0
 
   for (const adj of adjacent) {
-    if (game.monsters.some(m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0)) {
+    if (game.monsters.some((m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0)) {
       count++
     }
   }
@@ -476,8 +479,8 @@ export function isInCombat(game: GameState): boolean {
  */
 export function getCombatAdvantage(game: GameState): number {
   const character = game.character
-  const adjacentMonsters = game.monsters.filter(m =>
-    isAdjacent(character.position, m.position) && m.hp > 0
+  const adjacentMonsters = game.monsters.filter(
+    (m) => isAdjacent(character.position, m.position) && m.hp > 0
   )
 
   if (adjacentMonsters.length === 0) {
@@ -519,7 +522,7 @@ function countEscapeRoutes(game: GameState, pos: Point): number {
 
     // Check if not occupied by monster
     const hasMonster = game.monsters.some(
-      m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
+      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
     )
     if (!hasMonster) {
       routes++
@@ -537,7 +540,7 @@ function countEscapeRoutes(game: GameState, pos: Point): number {
  * Check if character has a ranged weapon equipped
  */
 export function hasRangedWeapon(game: GameState): boolean {
-  return game.character.equipment.bow != null  // Handles both null and undefined
+  return game.character.equipment.bow != null // Handles both null and undefined
 }
 
 /**
@@ -545,10 +548,7 @@ export function hasRangedWeapon(game: GameState): boolean {
  *
  * Prefers targets at optimal range (2-4 tiles) that we can hit
  */
-export function findBestRangedTarget(
-  game: GameState,
-  visibleMonsters: Monster[]
-): Monster | null {
+export function findBestRangedTarget(game: GameState, visibleMonsters: Monster[]): Monster | null {
   const character = game.character
   const pos = character.position
   const bowRange = getBowRange(character)
@@ -625,9 +625,8 @@ export function findKitePosition(
 
   // Calculate effective max range: bow range for archers, light radius for casters
   const bowRange = getBowRange(character)
-  const effectiveMaxRange = bowRange > 0
-    ? bowRange
-    : calculateLightRadius(character, game.character.depth)
+  const effectiveMaxRange =
+    bowRange > 0 ? bowRange : calculateLightRadius(character, game.character.depth)
 
   // If engageDistance > what we can see, cap it at what we can actually hit
   const actualOptimal = Math.min(optimalRange, effectiveMaxRange)
@@ -649,7 +648,7 @@ export function findKitePosition(
 
     // Skip if occupied by monster
     const hasMonster = game.monsters.some(
-      m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
+      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
     )
     if (hasMonster) continue
 
@@ -693,10 +692,7 @@ export function findKitePosition(
 /**
  * Check if we should avoid melee based on class profile
  */
-export function shouldAvoidMelee(
-  classProfile: ClassBehaviorProfile,
-  distance: number
-): boolean {
+export function shouldAvoidMelee(classProfile: ClassBehaviorProfile, distance: number): boolean {
   // Ranged classes should avoid adjacent (distance 1) if possible
   if (classProfile.prefersRanged && distance <= 1) {
     return true
@@ -717,9 +713,7 @@ export function shouldAvoidMelee(
  *
  * This is the primary combat goal for ranged classes, evaluated BEFORE KILL.
  */
-export function getKiteGoal(
-  context: BotContext
-): BotGoal | null {
+export function getKiteGoal(context: BotContext): BotGoal | null {
   const { game, classProfile, visibleMonsters } = context
   const character = game.character
   const pos = character.position
@@ -756,10 +750,18 @@ export function getKiteGoal(
 
     if (kiteDirection) {
       // Calculate the position we'd move to
-      const dx = kiteDirection === 'e' || kiteDirection === 'ne' || kiteDirection === 'se' ? 1 :
-                 kiteDirection === 'w' || kiteDirection === 'nw' || kiteDirection === 'sw' ? -1 : 0
-      const dy = kiteDirection === 's' || kiteDirection === 'se' || kiteDirection === 'sw' ? 1 :
-                 kiteDirection === 'n' || kiteDirection === 'ne' || kiteDirection === 'nw' ? -1 : 0
+      const dx =
+        kiteDirection === 'e' || kiteDirection === 'ne' || kiteDirection === 'se'
+          ? 1
+          : kiteDirection === 'w' || kiteDirection === 'nw' || kiteDirection === 'sw'
+            ? -1
+            : 0
+      const dy =
+        kiteDirection === 's' || kiteDirection === 'se' || kiteDirection === 'sw'
+          ? 1
+          : kiteDirection === 'n' || kiteDirection === 'ne' || kiteDirection === 'nw'
+            ? -1
+            : 0
       const newPos = { x: pos.x + dx, y: pos.y + dy }
 
       return {
@@ -819,10 +821,7 @@ export function getKiteGoal(
  * For ranged classes: Don't create KILL goal if already at shooting range.
  * Let KITE handle shooting - KILL is for approaching distant targets.
  */
-export function getKillGoal(
-  context: BotContext,
-  hpRatio: number
-): BotGoal | null {
+export function getKillGoal(context: BotContext, hpRatio: number): BotGoal | null {
   const { game, config, botState, visibleMonsters, classProfile } = context
   const pos = game.character.position
   const character = game.character

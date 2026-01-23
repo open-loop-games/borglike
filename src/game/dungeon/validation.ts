@@ -9,11 +9,7 @@ import type { Tile, Point } from '../types'
 /**
  * Check if all floor tiles are connected (reachable from each other)
  */
-export function validateConnectivity(
-  tiles: Tile[][],
-  width: number,
-  height: number
-): boolean {
+export function validateConnectivity(tiles: Tile[][], width: number, height: number): boolean {
   // Find first floor tile
   let startPoint: Point | null = null
 
@@ -68,11 +64,7 @@ export function validateConnectivity(
 /**
  * Ensure connectivity by carving corridors between disconnected regions
  */
-export function ensureConnectivity(
-  tiles: Tile[][],
-  width: number,
-  height: number
-): void {
+export function ensureConnectivity(tiles: Tile[][], width: number, height: number): void {
   // Find all disconnected regions
   const regions = findRegions(tiles, width, height)
 
@@ -108,11 +100,7 @@ export function ensureConnectivity(
 /**
  * Find all disconnected floor regions
  */
-function findRegions(
-  tiles: Tile[][],
-  width: number,
-  height: number
-): Point[][] {
+function findRegions(tiles: Tile[][], width: number, height: number): Point[][] {
   const visited = new Set<string>()
   const regions: Point[][] = []
 

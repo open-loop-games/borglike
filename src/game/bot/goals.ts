@@ -27,7 +27,13 @@ import { getEffectiveGold, getHuntUniqueGoal } from './preparation'
 import { profile } from './profiler'
 
 // Wrapper functions to maintain backward compatibility with evaluateX naming
-function evaluateFlee(context: BotContext, dangers: DangerMap, _t: number, _l: number, _h: number): BotGoal | null {
+function evaluateFlee(
+  context: BotContext,
+  dangers: DangerMap,
+  _t: number,
+  _l: number,
+  _h: number
+): BotGoal | null {
   return getFleeGoal(context, dangers, context.botState.hpRate)
 }
 function evaluateHuntUnique(context: BotContext): BotGoal | null {
@@ -36,22 +42,39 @@ function evaluateHuntUnique(context: BotContext): BotGoal | null {
 function evaluateKite(context: BotContext, _d: DangerMap, _t: number): BotGoal | null {
   return getKiteGoal(context)
 }
-function evaluateRecover(context: BotContext, dangerThreshold: number, localDanger: number, hpRatio: number): BotGoal | null {
+function evaluateRecover(
+  context: BotContext,
+  dangerThreshold: number,
+  localDanger: number,
+  hpRatio: number
+): BotGoal | null {
   return getRecoverGoal(context, dangerThreshold, localDanger, hpRatio)
 }
 function evaluateKill(context: BotContext, hpRatio: number): BotGoal | null {
   return getKillGoal(context, hpRatio)
 }
-function evaluateTake(context: BotContext, dangers: DangerMap, dangerThreshold: number): BotGoal | null {
+function evaluateTake(
+  context: BotContext,
+  dangers: DangerMap,
+  dangerThreshold: number
+): BotGoal | null {
   return getTakeGoal(context, dangers, dangerThreshold)
 }
 function evaluateExplore(context: BotContext): BotGoal | null {
   return getExploreGoal(context)
 }
-function evaluateUseAltar(context: BotContext, dangerThreshold: number, localDanger: number): BotGoal | null {
+function evaluateUseAltar(
+  context: BotContext,
+  dangerThreshold: number,
+  localDanger: number
+): BotGoal | null {
   return getUseAltarGoal(context, dangerThreshold, localDanger)
 }
-function evaluateVisitMerchant(context: BotContext, dangerThreshold: number, localDanger: number): BotGoal | null {
+function evaluateVisitMerchant(
+  context: BotContext,
+  dangerThreshold: number,
+  localDanger: number
+): BotGoal | null {
   return getVisitMerchantGoal(context, dangerThreshold, localDanger)
 }
 
@@ -82,19 +105,19 @@ const GOAL_PRIORITY: Record<GoalType, number> = {
   KITE: 90, // Higher than RECOVER, ranged classes prefer kiting
   // Town goals (order: sell → heal → buy → return)
   SELL_TO_MERCHANT: 88, // Sell loot first to get gold
-  VISIT_HEALER: 85,     // Heal with gold from selling
+  VISIT_HEALER: 85, // Heal with gold from selling
   BUY_FROM_MERCHANT: 82, // Buy consumables after healing
-  RETURN_PORTAL: 70,    // Return through portal
-  EXIT_TOWN: 65,        // Fallback if no portal
+  RETURN_PORTAL: 70, // Return through portal
+  EXIT_TOWN: 65, // Fallback if no portal
   RECOVER: 80,
-  HUNT_UNIQUE: 75,      // Below RECOVER, above KILL - hunt uniques blocking descent
+  HUNT_UNIQUE: 75, // Below RECOVER, above KILL - hunt uniques blocking descent
   // Farming loop goals (when descent blocked by consumable requirements)
-  FARM: 72,             // Below RECOVER, above KILL - farm when safe
+  FARM: 72, // Below RECOVER, above KILL - farm when safe
   KILL: 70,
-  TOWN_TRIP: 68,        // Below KILL - finish fights first, then town
-  ASCEND_TO_FARM: 66,   // Below KILL/FARM - try current level first
-  USE_ALTAR: 55,        // Use altars when safe (gold sink)
-  VISIT_MERCHANT: 52,   // Visit dungeon merchants when safe
+  TOWN_TRIP: 68, // Below KILL - finish fights first, then town
+  ASCEND_TO_FARM: 66, // Below KILL/FARM - try current level first
+  USE_ALTAR: 55, // Use altars when safe (gold sink)
+  VISIT_MERCHANT: 52, // Visit dungeon merchants when safe
   TAKE: 50,
   DESCEND: 40,
   EXPLORE: 30,
@@ -138,18 +161,25 @@ export function selectGoal(
     // 1. A higher priority need arises
     // 2. We've been on this goal too long
     // Use shorter interval for EXPLORE to adapt to newly discovered areas
-    const reevalInterval = currentGoal.type === 'EXPLORE'
-      ? EXPLORE_REEVALUATE_INTERVAL
-      : GOAL_REEVALUATE_INTERVAL
+    const reevalInterval =
+      currentGoal.type === 'EXPLORE' ? EXPLORE_REEVALUATE_INTERVAL : GOAL_REEVALUATE_INTERVAL
 
     // Debug logging
     if (typeof process !== 'undefined' && process.env.DEBUG_GOALS) {
-      console.log(`[GOALS] turn=${turn} currentGoal=${currentGoal.type}@(${currentGoal.target?.x},${currentGoal.target?.y}) startTurn=${currentGoal.startTurn} turnsSince=${turnsSinceGoalStart} reevalInterval=${reevalInterval}`)
+      console.log(
+        `[GOALS] turn=${turn} currentGoal=${currentGoal.type}@(${currentGoal.target?.x},${currentGoal.target?.y}) startTurn=${currentGoal.startTurn} turnsSince=${turnsSinceGoalStart} reevalInterval=${reevalInterval}`
+      )
     }
 
     if (turnsSinceGoalStart < reevalInterval) {
       // Check for higher priority override
-      const overrideGoal = checkHighPriorityOverride(context, botState, dangers, dangerThreshold, currentPriority)
+      const overrideGoal = checkHighPriorityOverride(
+        context,
+        botState,
+        dangers,
+        dangerThreshold,
+        currentPriority
+      )
       if (overrideGoal) {
         return overrideGoal
       }
@@ -253,10 +283,7 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
 
     case 'RECOVER':
       // Recover until full HP or enemies appear
-      return (
-        game.character.hp < game.character.maxHp &&
-        context.visibleMonsters.length === 0
-      )
+      return game.character.hp < game.character.maxHp && context.visibleMonsters.length === 0
 
     case 'KILL': {
       // Kill is valid if target still exists AND is still visible/adjacent
@@ -273,8 +300,10 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       if (!isVisible && !isAdjacentToPlayer) return false
 
       // Update target position if monster moved (keeps flow computation accurate)
-      if (goal.target &&
-          (goal.target.x !== targetMonster.position.x || goal.target.y !== targetMonster.position.y)) {
+      if (
+        goal.target &&
+        (goal.target.x !== targetMonster.position.x || goal.target.y !== targetMonster.position.y)
+      ) {
         goal.target = { ...targetMonster.position }
       }
 
@@ -346,8 +375,10 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       const targetUnique = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
       if (!targetUnique) return false
       // Update target position if monster moved
-      if (goal.target &&
-          (goal.target.x !== targetUnique.position.x || goal.target.y !== targetUnique.position.y)) {
+      if (
+        goal.target &&
+        (goal.target.x !== targetUnique.position.x || goal.target.y !== targetUnique.position.y)
+      ) {
         goal.target = { ...targetUnique.position }
       }
       return true
@@ -372,8 +403,8 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       }
       // Check if target still exists (monster or item)
       if (goal.targetId) {
-        const monsterExists = game.monsters.some(m => m.id === goal.targetId && m.hp > 0)
-        const itemExists = game.items.some(i => i.id === goal.targetId)
+        const monsterExists = game.monsters.some((m) => m.id === goal.targetId && m.hp > 0)
+        const itemExists = game.items.some((i) => i.id === goal.targetId)
         if (!monsterExists && !itemExists) return false
       }
       return true
@@ -385,13 +416,12 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       const stairsUp = botState.knownStairsUp
       if (!stairsUp) return false
       // Goal is stale if target doesn't match current knownStairsUp
-      if (goal.target &&
-          (goal.target.x !== stairsUp.x || goal.target.y !== stairsUp.y)) {
+      if (goal.target && (goal.target.x !== stairsUp.x || goal.target.y !== stairsUp.y)) {
         return false
       }
       // If at stairs, goal complete
-      const atStairs = game.character.position.x === stairsUp.x &&
-                       game.character.position.y === stairsUp.y
+      const atStairs =
+        game.character.position.x === stairsUp.x && game.character.position.y === stairsUp.y
       if (atStairs) return false
       return true
     }
@@ -479,18 +509,18 @@ function checkHighPriorityOverride(
  */
 function selectShopForSelling(game: GameState, botState: BotState): TownShopId | null {
   const inventory = game.character.inventory
-  const sellableItems = inventory.filter(item =>
-    item.template.type !== 'potion' && item.template.type !== 'scroll'
+  const sellableItems = inventory.filter(
+    (item) => item.template.type !== 'potion' && item.template.type !== 'scroll'
   )
 
   // No items to sell
   if (sellableItems.length === 0) return null
 
   // Check what types of items we have
-  const hasWeapons = sellableItems.some(item =>
-    item.template.type === 'weapon' || item.template.type === 'bow'
+  const hasWeapons = sellableItems.some(
+    (item) => item.template.type === 'weapon' || item.template.type === 'bow'
   )
-  const hasArmor = sellableItems.some(item =>
+  const hasArmor = sellableItems.some((item) =>
     ['armor', 'shield', 'helm', 'gloves', 'boots'].includes(item.template.type)
   )
 
@@ -520,14 +550,13 @@ function selectShopForBuying(game: GameState, botState: BotState): TownShopId | 
   const inventory = game.character.inventory
 
   // Count consumables
-  const tpCount = inventory.filter(item =>
-    item.template.name === 'Scroll of Town Portal'
+  const tpCount = inventory.filter((item) => item.template.name === 'Scroll of Town Portal').length
+  const healCount = inventory.filter(
+    (item) => item.template.name.includes('Cure') || item.template.name.includes('Healing')
   ).length
-  const healCount = inventory.filter(item =>
-    item.template.name.includes('Cure') || item.template.name.includes('Healing')
-  ).length
-  const escapeCount = inventory.filter(item =>
-    item.template.name.includes('Phase Door') || item.template.name.includes('Teleportation')
+  const escapeCount = inventory.filter(
+    (item) =>
+      item.template.name.includes('Phase Door') || item.template.name.includes('Teleportation')
   ).length
 
   // Need Town Portal scrolls (primary escape)
@@ -558,11 +587,7 @@ function selectShopForBuying(game: GameState, botState: BotState): TownShopId | 
  * 4. RETURN_PORTAL - Return through active portal
  * 5. EXIT_TOWN - Fallback: use dungeon entrance
  */
-function selectTownGoal(
-  context: BotContext,
-  botState: BotState,
-  hpRatio: number
-): BotGoal | null {
+function selectTownGoal(context: BotContext, botState: BotState, hpRatio: number): BotGoal | null {
   const { game } = context
   const turn = game.turn
 

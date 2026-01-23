@@ -125,7 +125,11 @@ function charToTileType(char: string): TileType {
  */
 export function createTownPortal(game: GameState): TownPortalState {
   // Get original tile type before overwriting
-  const currentTile = getTile(game.currentLevel, game.character.position.x, game.character.position.y)
+  const currentTile = getTile(
+    game.currentLevel,
+    game.character.position.x,
+    game.character.position.y
+  )
   const originalTileType = currentTile?.type ?? 'floor'
 
   const portal: TownPortalState = {
@@ -214,8 +218,19 @@ export function returnFromTown(game: GameState): ActionResult {
   // ENTITY REGENERATION: Always spawn fresh entities on level entry
   // Layout is cached, but monsters/items regenerate (Angband-style)
   // UniqueState ensures unique monsters don't respawn
-  game.monsters = spawnMonstersForLevel(dungeonLevel, portal.dungeonDepth, game.balance.monsterHpPercent, game.uniqueState)
-  game.items = spawnItemsForLevel(dungeonLevel, portal.dungeonDepth, game.balance.potionRatePercent, game.balance.enchantRatePercent, game.balance.itemRatePercent)
+  game.monsters = spawnMonstersForLevel(
+    dungeonLevel,
+    portal.dungeonDepth,
+    game.balance.monsterHpPercent,
+    game.uniqueState
+  )
+  game.items = spawnItemsForLevel(
+    dungeonLevel,
+    portal.dungeonDepth,
+    game.balance.potionRatePercent,
+    game.balance.enchantRatePercent,
+    game.balance.itemRatePercent
+  )
   game.fountains = new Map()
   game.altars = new Map()
   game.merchants = []
@@ -269,7 +284,12 @@ function destroyPortal(game: GameState): void {
   // Restore original tile type (e.g., stairs_down) instead of hardcoding floor
   const dungeonLevel = game.levelCache.get(portal.dungeonDepth)
   if (dungeonLevel) {
-    setTile(dungeonLevel, portal.dungeonPosition.x, portal.dungeonPosition.y, portal.originalTileType)
+    setTile(
+      dungeonLevel,
+      portal.dungeonPosition.x,
+      portal.dungeonPosition.y,
+      portal.originalTileType
+    )
   }
 
   // Remove portal tile from town (if level is in cache)
@@ -364,7 +384,7 @@ function generateGeneralStoreInventory(): Item[] {
   const items: Item[] = []
 
   // Always stock Town Portal Scrolls (3-5)
-  const tpScroll = SCROLLS.find(s => s.name === 'Scroll of Town Portal')
+  const tpScroll = SCROLLS.find((s) => s.name === 'Scroll of Town Portal')
   if (tpScroll) {
     const count = randomInt(3, 5)
     for (let i = 0; i < count; i++) {
@@ -375,8 +395,8 @@ function generateGeneralStoreInventory(): Item[] {
   }
 
   // Stock light healing potions (2-3 each of Cure Light and Cure Serious)
-  const lightHealing = POTIONS.filter(p =>
-    p.name === 'Potion of Cure Light Wounds' || p.name === 'Potion of Cure Serious Wounds'
+  const lightHealing = POTIONS.filter(
+    (p) => p.name === 'Potion of Cure Light Wounds' || p.name === 'Potion of Cure Serious Wounds'
   )
   for (const potion of lightHealing) {
     const count = randomInt(2, 3)
@@ -388,7 +408,7 @@ function generateGeneralStoreInventory(): Item[] {
   }
 
   // Stock Phase Door scrolls (2-3)
-  const phaseDoor = SCROLLS.find(s => s.name === 'Scroll of Phase Door')
+  const phaseDoor = SCROLLS.find((s) => s.name === 'Scroll of Phase Door')
   if (phaseDoor) {
     const count = randomInt(2, 3)
     for (let i = 0; i < count; i++) {
@@ -414,13 +434,13 @@ function generateArmoryInventory(maxDepthEver: number): Item[] {
   const tier = maxDepthEver >= 30 ? 2 : maxDepthEver >= 15 ? 1 : 0
 
   // Determine tier range based on progression
-  const minTier = tier + 1  // 1, 2, or 3
-  const maxTier = tier + 2  // 2, 3, or 4
+  const minTier = tier + 1 // 1, 2, or 3
+  const maxTier = tier + 2 // 2, 3, or 4
 
   // Filter for armor-type items in tier range
   const armorTypes: ItemTemplate['slot'][] = ['body', 'shield', 'helm', 'gloves', 'boots']
-  const armorItems = ALL_EQUIPMENT.filter(e =>
-    e.slot && armorTypes.includes(e.slot) && e.tier >= minTier && e.tier <= maxTier
+  const armorItems = ALL_EQUIPMENT.filter(
+    (e) => e.slot && armorTypes.includes(e.slot) && e.tier >= minTier && e.tier <= maxTier
   )
 
   // Stock 6-8 random armor pieces (more at higher tiers)
@@ -448,13 +468,13 @@ function generateWeaponShopInventory(maxDepthEver: number): Item[] {
   const tier = maxDepthEver >= 30 ? 2 : maxDepthEver >= 15 ? 1 : 0
 
   // Determine tier range based on progression
-  const minTier = tier + 1  // 1, 2, or 3
-  const maxTier = tier + 2  // 2, 3, or 4
+  const minTier = tier + 1 // 1, 2, or 3
+  const maxTier = tier + 2 // 2, 3, or 4
 
   // Filter for weapon-type items in tier range
   const weaponTypes: ItemTemplate['slot'][] = ['weapon', 'bow']
-  const weaponItems = ALL_EQUIPMENT.filter(e =>
-    e.slot && weaponTypes.includes(e.slot) && e.tier >= minTier && e.tier <= maxTier
+  const weaponItems = ALL_EQUIPMENT.filter(
+    (e) => e.slot && weaponTypes.includes(e.slot) && e.tier >= minTier && e.tier <= maxTier
   )
 
   // Stock 6-8 random weapons (more at higher tiers)
@@ -482,8 +502,8 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
   const tier = maxDepthEver >= 30 ? 2 : maxDepthEver >= 15 ? 1 : 0
 
   // Tier 0: Basic healing potions
-  const basicHealing = POTIONS.filter(p =>
-    p.name === 'Potion of Cure Light Wounds' || p.name === 'Potion of Cure Serious Wounds'
+  const basicHealing = POTIONS.filter(
+    (p) => p.name === 'Potion of Cure Light Wounds' || p.name === 'Potion of Cure Serious Wounds'
   )
   for (const potion of basicHealing) {
     const count = randomInt(3, 5)
@@ -496,7 +516,7 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
 
   // Tier 1+: Add Cure Critical Wounds
   if (tier >= 1) {
-    const cureCritical = POTIONS.find(p => p.name === 'Potion of Cure Critical Wounds')
+    const cureCritical = POTIONS.find((p) => p.name === 'Potion of Cure Critical Wounds')
     if (cureCritical) {
       const count = randomInt(2, 4)
       for (let i = 0; i < count; i++) {
@@ -507,7 +527,7 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
     }
 
     // Free Action and Clarity potions
-    const freeAction = POTIONS.find(p => p.name === 'Potion of Free Action')
+    const freeAction = POTIONS.find((p) => p.name === 'Potion of Free Action')
     if (freeAction) {
       const count = randomInt(2, 3)
       for (let i = 0; i < count; i++) {
@@ -517,7 +537,7 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
       }
     }
 
-    const clarity = POTIONS.find(p => p.name === 'Potion of Clarity')
+    const clarity = POTIONS.find((p) => p.name === 'Potion of Clarity')
     if (clarity) {
       const count = randomInt(2, 3)
       for (let i = 0; i < count; i++) {
@@ -530,7 +550,7 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
 
   // Tier 2: Add Healing, Heroism, and Restoration potions
   if (tier >= 2) {
-    const healingPotion = POTIONS.find(p => p.name === 'Potion of Healing')
+    const healingPotion = POTIONS.find((p) => p.name === 'Potion of Healing')
     if (healingPotion) {
       const count = randomInt(2, 3)
       for (let i = 0; i < count; i++) {
@@ -540,7 +560,7 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
       }
     }
 
-    const heroismPotion = POTIONS.find(p => p.name === 'Potion of Heroism')
+    const heroismPotion = POTIONS.find((p) => p.name === 'Potion of Heroism')
     if (heroismPotion) {
       const count = randomInt(1, 2)
       for (let i = 0; i < count; i++) {
@@ -551,7 +571,7 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
     }
 
     // Restoration potion
-    const restoration = POTIONS.find(p => p.name === 'Potion of Restoration')
+    const restoration = POTIONS.find((p) => p.name === 'Potion of Restoration')
     if (restoration) {
       const count = randomInt(1, 2)
       for (let i = 0; i < count; i++) {
@@ -563,8 +583,9 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
   }
 
   // Utility potions: Speed, Neutralize Poison, Restore Mana
-  const utilityPotions = POTIONS.filter(p =>
-    p.name.includes('Speed') || p.name.includes('Neutralize') || p.name.includes('Restore Mana')
+  const utilityPotions = POTIONS.filter(
+    (p) =>
+      p.name.includes('Speed') || p.name.includes('Neutralize') || p.name.includes('Restore Mana')
   )
   for (const potion of utilityPotions) {
     // More utility potions at higher tiers
@@ -592,7 +613,7 @@ function generateMagicShopInventory(maxDepthEver: number): Item[] {
   const tier = maxDepthEver >= 30 ? 2 : maxDepthEver >= 15 ? 1 : 0
 
   // Always stock Town Portal Scrolls (more at higher tiers)
-  const tpScroll = SCROLLS.find(s => s.name === 'Scroll of Town Portal')
+  const tpScroll = SCROLLS.find((s) => s.name === 'Scroll of Town Portal')
   if (tpScroll) {
     const count = randomInt(4 + tier, 6 + tier * 2)
     for (let i = 0; i < count; i++) {
@@ -603,8 +624,8 @@ function generateMagicShopInventory(maxDepthEver: number): Item[] {
   }
 
   // Stock teleport scrolls (Phase Door, Teleportation)
-  const teleportScrolls = SCROLLS.filter(s =>
-    s.name.includes('Phase Door') || s.name.includes('Teleportation')
+  const teleportScrolls = SCROLLS.filter(
+    (s) => s.name.includes('Phase Door') || s.name.includes('Teleportation')
   )
   for (const scroll of teleportScrolls) {
     const count = randomInt(3 + tier, 4 + tier)
@@ -616,8 +637,8 @@ function generateMagicShopInventory(maxDepthEver: number): Item[] {
   }
 
   // Stock utility scrolls (Light, Magic Mapping)
-  const utilityScrolls = SCROLLS.filter(s =>
-    s.name.includes('Light') || s.name.includes('Magic Mapping')
+  const utilityScrolls = SCROLLS.filter(
+    (s) => s.name.includes('Light') || s.name.includes('Magic Mapping')
   )
   for (const scroll of utilityScrolls) {
     const count = randomInt(2, 3)
@@ -630,7 +651,7 @@ function generateMagicShopInventory(maxDepthEver: number): Item[] {
 
   // Tier 1+: Add Teleport Level and Blessing scrolls
   if (tier >= 1) {
-    const teleportLevel = SCROLLS.find(s => s.name === 'Scroll of Teleport Level')
+    const teleportLevel = SCROLLS.find((s) => s.name === 'Scroll of Teleport Level')
     if (teleportLevel) {
       const count = randomInt(2, 3)
       for (let i = 0; i < count; i++) {
@@ -640,7 +661,7 @@ function generateMagicShopInventory(maxDepthEver: number): Item[] {
       }
     }
 
-    const blessing = SCROLLS.find(s => s.name === 'Scroll of Blessing')
+    const blessing = SCROLLS.find((s) => s.name === 'Scroll of Blessing')
     if (blessing) {
       const count = randomInt(2, 3)
       for (let i = 0; i < count; i++) {
@@ -653,7 +674,7 @@ function generateMagicShopInventory(maxDepthEver: number): Item[] {
 
   // Tier 2: Add Protection from Evil and Enchant scrolls
   if (tier >= 2) {
-    const protection = SCROLLS.find(s => s.name === 'Scroll of Protection from Evil')
+    const protection = SCROLLS.find((s) => s.name === 'Scroll of Protection from Evil')
     if (protection) {
       const count = randomInt(1, 2)
       for (let i = 0; i < count; i++) {
@@ -664,7 +685,7 @@ function generateMagicShopInventory(maxDepthEver: number): Item[] {
     }
 
     // Enchant scrolls (weapon and armor)
-    const enchantWeapon = SCROLLS.find(s => s.name === 'Scroll of Enchant Weapon')
+    const enchantWeapon = SCROLLS.find((s) => s.name === 'Scroll of Enchant Weapon')
     if (enchantWeapon) {
       const count = randomInt(1, 2)
       for (let i = 0; i < count; i++) {
@@ -674,7 +695,7 @@ function generateMagicShopInventory(maxDepthEver: number): Item[] {
       }
     }
 
-    const enchantArmor = SCROLLS.find(s => s.name === 'Scroll of Enchant Armor')
+    const enchantArmor = SCROLLS.find((s) => s.name === 'Scroll of Enchant Armor')
     if (enchantArmor) {
       const count = randomInt(1, 2)
       for (let i = 0; i < count; i++) {

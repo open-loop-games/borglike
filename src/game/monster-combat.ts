@@ -56,10 +56,7 @@ export interface MonsterAttackResult {
  * @param character - The defending character
  * @returns Combined result of all attacks
  */
-export function resolveMonsterAttacks(
-  monster: Monster,
-  character: Character
-): MonsterAttackResult {
+export function resolveMonsterAttacks(monster: Monster, character: Character): MonsterAttackResult {
   const template = monster.template
   const attacks = template.attacks
 
@@ -119,7 +116,7 @@ function resolveSingleAttack(
 
   // Apply armor reduction (percentage based)
   const armorReduction = Math.min(character.combat.armor / 2, 50) // Max 50% reduction
-  damage = Math.floor(damage * (100 - armorReduction) / 100)
+  damage = Math.floor((damage * (100 - armorReduction)) / 100)
 
   // Apply elemental resistance
   if (attack.effect.type === 'ELEMENTAL') {
@@ -186,11 +183,7 @@ function calculateHitChance(monster: Monster, character: Character): number {
  * @param character - Character with resistances
  * @returns Reduced damage
  */
-function applyElementalResistance(
-  damage: number,
-  element: Element,
-  character: Character
-): number {
+function applyElementalResistance(damage: number, element: Element, character: Character): number {
   // Map element to resistance type
   const resistMap: Record<Element, string> = {
     FIRE: 'FIRE',
@@ -207,14 +200,14 @@ function applyElementalResistance(
   const permResist = (character.resistances as Record<string, number | undefined>)[resistType] ?? 0
 
   // Check temp resistance
-  const tempResist = character.tempResistances.find(r => r.type === resistType)
+  const tempResist = character.tempResistances.find((r) => r.type === resistType)
   const tempValue = tempResist?.value ?? 0
 
   // Combine resistances (cap at 90%)
   const totalResist = Math.min(90, permResist + tempValue)
 
   // Apply resistance
-  return Math.floor(damage * (100 - totalResist) / 100)
+  return Math.floor((damage * (100 - totalResist)) / 100)
 }
 
 // ============================================================================
@@ -229,10 +222,7 @@ function applyElementalResistance(
  *
  * @returns The status type if inflicted, null otherwise
  */
-function tryInflictStatus(
-  character: Character,
-  effect: AttackEffect
-): StatusEffectType | null {
+function tryInflictStatus(character: Character, effect: AttackEffect): StatusEffectType | null {
   // Only status-inflicting effects
   if (effect.type === 'HURT' || effect.type === 'ELEMENTAL') {
     return null
@@ -278,7 +268,7 @@ function tryInflictStatus(
 function tryInflictPoison(character: Character): 'poison' | null {
   // Check poison resistance
   const poisonResist = (character.resistances as Record<string, number | undefined>)['POISON'] ?? 0
-  const tempPoisonResist = character.tempResistances.find(r => r.type === 'POISON')
+  const tempPoisonResist = character.tempResistances.find((r) => r.type === 'POISON')
   const totalResist = poisonResist + (tempPoisonResist?.value ?? 0)
 
   // High resistance prevents poison
@@ -326,21 +316,20 @@ function getStatusValue(type: StatusEffectType): number {
  * Resolve attack for monsters without defined attacks
  * This is a safety fallback - all monsters should now have attacks defined
  */
-function resolveLegacyAttack(
-  _monster: Monster,
-  _character: Character
-): MonsterAttackResult {
+function resolveLegacyAttack(_monster: Monster, _character: Character): MonsterAttackResult {
   // No attacks = no damage
   // This shouldn't happen with fully migrated monster data
   return {
     totalDamage: 0,
-    hits: [{
-      hit: false,
-      damage: 0,
-      method: 'HIT',
-      effect: { type: 'HURT' },
-      statusInflicted: null,
-    }],
+    hits: [
+      {
+        hit: false,
+        damage: 0,
+        method: 'HIT',
+        effect: { type: 'HURT' },
+        statusInflicted: null,
+      },
+    ],
     statusEffectsInflicted: [],
   }
 }
@@ -375,17 +364,19 @@ export function formatMonsterAttackMessage(
   monsterName: string,
   result: MonsterAttackResult
 ): string {
-  if (result.totalDamage === 0 && result.hits.every(h => !h.hit)) {
+  if (result.totalDamage === 0 && result.hits.every((h) => !h.hit)) {
     return `The ${monsterName} misses!`
   }
 
   const parts: string[] = []
 
   // Describe hits
-  const hitCount = result.hits.filter(h => h.hit).length
+  const hitCount = result.hits.filter((h) => h.hit).length
   if (hitCount === 1) {
-    const hit = result.hits.find(h => h.hit)!
-    parts.push(`The ${monsterName} ${formatAttackMethod(hit.method)}s you for ${result.totalDamage} damage!`)
+    const hit = result.hits.find((h) => h.hit)!
+    parts.push(
+      `The ${monsterName} ${formatAttackMethod(hit.method)}s you for ${result.totalDamage} damage!`
+    )
   } else if (hitCount > 1) {
     parts.push(`The ${monsterName} attacks ${hitCount} times for ${result.totalDamage} damage!`)
   }
@@ -400,27 +391,44 @@ export function formatMonsterAttackMessage(
 
 function formatAttackMethod(method: string): string {
   switch (method) {
-    case 'HIT': return 'hit'
-    case 'BITE': return 'bite'
-    case 'CLAW': return 'claw'
-    case 'TOUCH': return 'touche'
-    case 'STING': return 'sting'
-    case 'CRUSH': return 'crushe'
-    case 'GAZE': return 'gaze'
-    case 'ENGULF': return 'engulf'
-    default: return 'hit'
+    case 'HIT':
+      return 'hit'
+    case 'BITE':
+      return 'bite'
+    case 'CLAW':
+      return 'claw'
+    case 'TOUCH':
+      return 'touche'
+    case 'STING':
+      return 'sting'
+    case 'CRUSH':
+      return 'crushe'
+    case 'GAZE':
+      return 'gaze'
+    case 'ENGULF':
+      return 'engulf'
+    default:
+      return 'hit'
   }
 }
 
 function formatStatusInfliction(status: StatusEffectType | 'poison'): string {
   switch (status) {
-    case 'poison': return 'You are poisoned!'
-    case 'paralyzed': return 'You are paralyzed!'
-    case 'blind': return 'You are blinded!'
-    case 'confused': return 'You are confused!'
-    case 'terrified': return 'You are terrified!'
-    case 'slowed': return 'You feel sluggish!'
-    case 'drained': return 'You feel drained!'
-    default: return ''
+    case 'poison':
+      return 'You are poisoned!'
+    case 'paralyzed':
+      return 'You are paralyzed!'
+    case 'blind':
+      return 'You are blinded!'
+    case 'confused':
+      return 'You are confused!'
+    case 'terrified':
+      return 'You are terrified!'
+    case 'slowed':
+      return 'You feel sluggish!'
+    case 'drained':
+      return 'You feel drained!'
+    default:
+      return ''
   }
 }

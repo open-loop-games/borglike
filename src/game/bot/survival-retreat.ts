@@ -7,12 +7,25 @@
 
 import type { GameState, Point, Direction } from '../types'
 import { getDirectionFromDelta } from '../types'
-import type { PersonalityConfig, DangerMap, PhaseDoorSafety, DangerTier, BotGoal, BotContext } from './types'
+import type {
+  PersonalityConfig,
+  DangerMap,
+  PhaseDoorSafety,
+  DangerTier,
+  BotGoal,
+  BotContext,
+} from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
 import { getLocalDanger, getTileDanger } from './danger'
 import { isInCombat, countAdjacentMonsters, getCombatAdvantage } from './combat'
-import { findHealingPotion, findEscapeScroll, findTownPortalScroll, findNeutralizePoison, findResistancePotion } from './items'
+import {
+  findHealingPotion,
+  findEscapeScroll,
+  findTownPortalScroll,
+  findNeutralizePoison,
+  findResistancePotion,
+} from './items'
 import { isInTown } from '../town'
 import { isUnderPrepared } from './preparation'
 import { getAverageDamage } from '../data/monsters'
@@ -67,7 +80,7 @@ export function getStatusRetreatUrgency(
   const hpRatio = character.hp / character.maxHp
 
   // Paralyzed + adjacent monsters (CRITICAL)
-  const isParalyzed = character.statusEffects.some(e => e.type === 'paralyzed')
+  const isParalyzed = character.statusEffects.some((e) => e.type === 'paralyzed')
   if (isParalyzed && adjacentCount > 0) {
     return {
       shouldRetreat: true,
@@ -77,7 +90,7 @@ export function getStatusRetreatUrgency(
   }
 
   // Confused + low HP (HIGH)
-  const isConfused = character.statusEffects.some(e => e.type === 'confused')
+  const isConfused = character.statusEffects.some((e) => e.type === 'confused')
   if (isConfused && hpRatio < 0.4) {
     return {
       shouldRetreat: true,
@@ -88,8 +101,8 @@ export function getStatusRetreatUrgency(
 
   // Poison + no cure + HP dropping (HIGH)
   if (character.poison) {
-    const hasCure = findNeutralizePoison(character) !== null ||
-                    findResistancePotion(character, 'poison') !== null
+    const hasCure =
+      findNeutralizePoison(character) !== null || findResistancePotion(character, 'poison') !== null
     const hpDropping = hpRate < 0
 
     if (!hasCure && hpDropping && hpRatio < 0.5) {
@@ -105,7 +118,7 @@ export function getStatusRetreatUrgency(
   }
 
   // Blind + surrounded (MEDIUM)
-  const isBlind = character.statusEffects.some(e => e.type === 'blind')
+  const isBlind = character.statusEffects.some((e) => e.type === 'blind')
   if (isBlind && adjacentCount >= 2) {
     return {
       shouldRetreat: true,
@@ -115,7 +128,7 @@ export function getStatusRetreatUrgency(
   }
 
   // Slowed + outnumbered (MEDIUM)
-  const isSlowed = character.statusEffects.some(e => e.type === 'slowed')
+  const isSlowed = character.statusEffects.some((e) => e.type === 'slowed')
   if (isSlowed && adjacentCount >= 2 && hpRatio < 0.6) {
     return {
       shouldRetreat: true,
@@ -242,16 +255,13 @@ export function needsHealing(game: GameState): boolean {
  * - Lower danger tiles
  * - Towards known safe areas (stairs, explored corridors)
  */
-export function findBestEscapeRoute(
-  game: GameState,
-  dangers: DangerMap
-): EscapeRoute | null {
+export function findBestEscapeRoute(game: GameState, dangers: DangerMap): EscapeRoute | null {
   const pos = game.character.position
   const adjacent = getAdjacentPositions(pos)
   const routes: EscapeRoute[] = []
 
   // Find monster centroid (average position of nearby monsters)
-  const nearbyMonsters = game.monsters.filter(m => {
+  const nearbyMonsters = game.monsters.filter((m) => {
     const dx = Math.abs(m.position.x - pos.x)
     const dy = Math.abs(m.position.y - pos.y)
     return dx <= 3 && dy <= 3 && m.hp > 0
@@ -274,7 +284,7 @@ export function findBestEscapeRoute(
 
     // Skip if occupied by monster
     const hasMonster = game.monsters.some(
-      m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
+      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
     )
     if (hasMonster) continue
 
@@ -330,10 +340,7 @@ export function findBestEscapeRoute(
 /**
  * Find escape direction away from a specific threat
  */
-export function findEscapeDirection(
-  game: GameState,
-  threatPos: Point
-): Direction | null {
+export function findEscapeDirection(game: GameState, threatPos: Point): Direction | null {
   const pos = game.character.position
   const adjacent = getAdjacentPositions(pos)
 
@@ -347,7 +354,7 @@ export function findEscapeDirection(
 
     // Skip if occupied by monster
     const hasMonster = game.monsters.some(
-      m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
+      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
     )
     if (hasMonster) continue
 
@@ -372,7 +379,10 @@ export function findEscapeDirection(
 /**
  * Get HP status for decision making
  */
-export function getHPStatus(game: GameState, config: PersonalityConfig): {
+export function getHPStatus(
+  game: GameState,
+  config: PersonalityConfig
+): {
   ratio: number
   isCritical: boolean
   needsHealing: boolean
@@ -397,7 +407,7 @@ export function getHitsTillDeath(game: GameState): number {
   const character = game.character
 
   // Estimate average incoming damage based on nearby monsters
-  const nearbyMonsters = game.monsters.filter(m => {
+  const nearbyMonsters = game.monsters.filter((m) => {
     const dx = Math.abs(m.position.x - character.position.x)
     const dy = Math.abs(m.position.y - character.position.y)
     return dx <= 2 && dy <= 2 && m.hp > 0
@@ -408,10 +418,11 @@ export function getHitsTillDeath(game: GameState): number {
   }
 
   // Average damage from nearby monsters
-  const avgDamage = nearbyMonsters.reduce((sum, m) => {
-    const rawDamage = getAverageDamage(m.template)
-    return sum + Math.max(rawDamage - character.combat.armor, 1)
-  }, 0) / nearbyMonsters.length
+  const avgDamage =
+    nearbyMonsters.reduce((sum, m) => {
+      const rawDamage = getAverageDamage(m.template)
+      return sum + Math.max(rawDamage - character.combat.armor, 1)
+    }, 0) / nearbyMonsters.length
 
   return Math.floor(character.hp / avgDamage)
 }
@@ -450,7 +461,8 @@ export function shouldClassRetreat(
   // Aggressive classes (positive aggressionMod) have lower urgency
   // Cautious classes (positive cautionMod) have higher urgency
   if (baseEval.shouldRetreat) {
-    const modifiedUrgency = baseEval.urgency + classProfile.cautionMod - classProfile.aggressionMod / 2
+    const modifiedUrgency =
+      baseEval.urgency + classProfile.cautionMod - classProfile.aggressionMod / 2
     return {
       ...baseEval,
       urgency: Math.max(0, Math.min(100, modifiedUrgency)),
@@ -504,20 +516,28 @@ export function shouldUseTownPortal(
   // cautious bots trigger town visits earlier
   const adjacentCount = countAdjacentMonsters(game, character.position)
   if (adjacentCount === 0) {
-    const underPrepared = isUnderPrepared(character, character.inventory, character.depth, config.caution)
+    const underPrepared = isUnderPrepared(
+      character,
+      character.inventory,
+      character.depth,
+      config.caution
+    )
     if (underPrepared) {
       return { shouldUse: true, reason: `Under-prepared: ${underPrepared}` }
     }
   }
 
   // Count sellable items (non-equipped equipment in inventory)
-  const sellableItems = character.inventory.filter(item =>
-    item.template.slot !== undefined && item.template.type !== 'potion' && item.template.type !== 'scroll'
+  const sellableItems = character.inventory.filter(
+    (item) =>
+      item.template.slot !== undefined &&
+      item.template.type !== 'potion' &&
+      item.template.type !== 'scroll'
   ).length
 
   // Count total TP scrolls (to check if we can spare one)
-  const tpScrollCount = character.inventory.filter(item =>
-    item.template.name === 'Scroll of Town Portal'
+  const tpScrollCount = character.inventory.filter(
+    (item) => item.template.name === 'Scroll of Town Portal'
   ).length
 
   // At early depths (1-4), preserve the ONLY TP scroll for planned trips
@@ -530,7 +550,7 @@ export function shouldUseTownPortal(
   const minUsefulGold = 75 // Enough to buy a replacement TP scroll
   const hasTownValue = character.gold >= minUsefulGold || sellableItems >= 3
   const canSpareTP = tpScrollCount >= 2
-  const absoluteEmergency = hpRatio < 0.10 // Only 10% HP = 1-2 hits from death
+  const absoluteEmergency = hpRatio < 0.1 // Only 10% HP = 1-2 hits from death
 
   if (isEarlyDepth && !canSpareTP && !hasTownValue && !absoluteEmergency) {
     // Preserve TP scroll at early depths - use other survival options instead
@@ -625,7 +645,7 @@ export function evaluatePhaseDoorSafety(
 
       // Check if occupied by monster
       const hasMonster = game.monsters.some(
-        m => m.position.x === x && m.position.y === y && m.hp > 0
+        (m) => m.position.x === x && m.position.y === y && m.hp > 0
       )
       if (hasMonster) continue
 
@@ -721,7 +741,7 @@ export function getFleeGoal(
   resetCorridorFollowing(botState)
 
   // Try 1: Safety flow (if monsters nearby)
-  const nearbyMonsters = game.monsters.filter(m => {
+  const nearbyMonsters = game.monsters.filter((m) => {
     if (m.hp <= 0) return false
     const dx = Math.abs(m.position.x - game.character.position.x)
     const dy = Math.abs(m.position.y - game.character.position.y)
@@ -762,9 +782,11 @@ export function getFleeGoal(
 
   // Try 3: Stairs down
   if (game.currentLevel.stairsDown) {
-    const stairsTile = getTile(game.currentLevel,
+    const stairsTile = getTile(
+      game.currentLevel,
       game.currentLevel.stairsDown.x,
-      game.currentLevel.stairsDown.y)
+      game.currentLevel.stairsDown.y
+    )
     if (stairsTile?.explored) {
       return {
         type: 'FLEE',
@@ -778,9 +800,11 @@ export function getFleeGoal(
 
   // Try 4: Stairs up
   if (game.currentLevel.stairsUp) {
-    const stairsUpTile = getTile(game.currentLevel,
+    const stairsUpTile = getTile(
+      game.currentLevel,
       game.currentLevel.stairsUp.x,
-      game.currentLevel.stairsUp.y)
+      game.currentLevel.stairsUp.y
+    )
     if (stairsUpTile?.explored) {
       return {
         type: 'FLEE',
@@ -802,7 +826,7 @@ export function getFleeGoal(
     if (!tile || (!isWalkable(tile) && tile.type !== 'door_closed')) continue
 
     const hasMonster = game.monsters.some(
-      m => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
+      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
     )
     if (!hasMonster) {
       walkableEscapes.push(adj)
@@ -859,9 +883,7 @@ export function getRecoverGoal(
 
   // Recover if: HP < 50% AND safe AND no visible monsters
   const shouldRecoverNow =
-    hpRatio < 0.5 &&
-    localDanger < dangerThreshold * 0.5 &&
-    context.visibleMonsters.length === 0
+    hpRatio < 0.5 && localDanger < dangerThreshold * 0.5 && context.visibleMonsters.length === 0
 
   if (!shouldRecoverNow) return null
 
@@ -899,4 +921,3 @@ export function getRecoverGoal(
     startTurn: game.turn,
   }
 }
-

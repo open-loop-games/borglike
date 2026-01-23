@@ -135,10 +135,16 @@ function getItemCountForLevel(depth: number): number {
  * @param depth - The dungeon depth (affects item types)
  * @returns Array of ground items
  */
-export function spawnItemsForLevel(level: DungeonLevel, depth: number, potionRatePercent = 100, enchantRatePercent = 100, itemRatePercent = 100): GroundItem[] {
+export function spawnItemsForLevel(
+  level: DungeonLevel,
+  depth: number,
+  potionRatePercent = 100,
+  enchantRatePercent = 100,
+  itemRatePercent = 100
+): GroundItem[] {
   const items: GroundItem[] = []
   const baseItemCount = getItemCountForLevel(depth)
-  const itemCount = Math.max(1, Math.floor(baseItemCount * itemRatePercent / 100))
+  const itemCount = Math.max(1, Math.floor((baseItemCount * itemRatePercent) / 100))
 
   // Get available templates for this depth
   const availableItems = getItemsForDepth(depth)
@@ -173,7 +179,7 @@ export function spawnItemsForLevel(level: DungeonLevel, depth: number, potionRat
   if (potionRatePercent !== 100 && POTIONS.length > 0) {
     // Base: 1-2 potions per level, scale by rate
     const basePotionCount = 1 + Math.floor(depth * 0.1)
-    const scaledCount = Math.floor(basePotionCount * potionRatePercent / 100)
+    const scaledCount = Math.floor((basePotionCount * potionRatePercent) / 100)
     const bonusPotions = scaledCount - basePotionCount
 
     // Find more open positions if needed
@@ -182,8 +188,11 @@ export function spawnItemsForLevel(level: DungeonLevel, depth: number, potionRat
       const tile = getTile(level, pos.x, pos.y)
       if (!tile) return false
       // Exclude stairs and positions already used
-      return tile.type !== 'stairs_up' && tile.type !== 'stairs_down' &&
+      return (
+        tile.type !== 'stairs_up' &&
+        tile.type !== 'stairs_down' &&
         !items.some((item) => item.position.x === pos.x && item.position.y === pos.y)
+      )
     })
 
     if (bonusPotions > 0) {
@@ -276,7 +285,7 @@ function pickRandomArtifact(depth: number): ArtifactTemplate | null {
  */
 function rollEnchantment(depth: number, enchantRatePercent = 100): number {
   // Base 30% chance of enchantment, scaled by enchantRatePercent
-  const enchantChance = 0.3 * enchantRatePercent / 100
+  const enchantChance = (0.3 * enchantRatePercent) / 100
   if (random() > enchantChance) {
     return 0
   }
@@ -693,17 +702,19 @@ export function generateMerchantInventory(merchantId: string, depth: number): It
   let shopItems: ItemTemplate[] = []
 
   if (isWeaponShop) {
-    shopItems = availableItems.filter(i => i.type === 'weapon' || i.type === 'bow')
+    shopItems = availableItems.filter((i) => i.type === 'weapon' || i.type === 'bow')
   } else if (isArmorShop) {
-    shopItems = availableItems.filter(i => ['armor', 'shield', 'helm', 'gloves', 'boots'].includes(i.type))
+    shopItems = availableItems.filter((i) =>
+      ['armor', 'shield', 'helm', 'gloves', 'boots'].includes(i.type)
+    )
   } else if (isPotionShop) {
-    shopItems = POTIONS.filter(p => (p.minDepth ?? 0) <= depth)
+    shopItems = POTIONS.filter((p) => (p.minDepth ?? 0) <= depth)
   } else if (isScrollShop) {
-    shopItems = SCROLLS.filter(s => (s.minDepth ?? 0) <= depth)
+    shopItems = SCROLLS.filter((s) => (s.minDepth ?? 0) <= depth)
   } else if (isGeneralShop) {
     // Mix of everything
-    const potions = POTIONS.filter(p => (p.minDepth ?? 0) <= depth)
-    const scrolls = SCROLLS.filter(s => (s.minDepth ?? 0) <= depth)
+    const potions = POTIONS.filter((p) => (p.minDepth ?? 0) <= depth)
+    const scrolls = SCROLLS.filter((s) => (s.minDepth ?? 0) <= depth)
     shopItems = [...availableItems.slice(0, 5), ...potions.slice(0, 3), ...scrolls.slice(0, 3)]
   }
 

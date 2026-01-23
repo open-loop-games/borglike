@@ -36,7 +36,11 @@ import {
   hasTempResistance,
   findCureFor,
 } from './items'
-import { shouldUseTownPortal, evaluatePhaseDoorSafety, shouldEscapeOverHeal } from './survival-retreat'
+import {
+  shouldUseTownPortal,
+  evaluatePhaseDoorSafety,
+  shouldEscapeOverHeal,
+} from './survival-retreat'
 import { hasAbility } from '../data/monsters'
 
 // ============================================================================
@@ -175,34 +179,36 @@ export function getSurvivalConsumableAction(
   // Following Angband borg: heal when HP missing AND threat is REAL (adjacent)
 
   // Check if fighting Morgoth - needs aggressive healing (at 50% not 75%)
-  const fightingMorgoth = game.monsters.some(m =>
-    m.template.name === 'Morgoth, Lord of Darkness' &&
-    m.hp > 0 &&
-    Math.max(Math.abs(m.position.x - character.position.x), Math.abs(m.position.y - character.position.y)) <= 2
+  const fightingMorgoth = game.monsters.some(
+    (m) =>
+      m.template.name === 'Morgoth, Lord of Darkness' &&
+      m.hp > 0 &&
+      Math.max(
+        Math.abs(m.position.x - character.position.x),
+        Math.abs(m.position.y - character.position.y)
+      ) <= 2
   )
 
   // Boss fight healing threshold: 50% (aggressive) vs normal 75%
-  const healingThreshold = fightingMorgoth ? 0.50 : 0.75
+  const healingThreshold = fightingMorgoth ? 0.5 : 0.75
 
   const shouldHeal =
     // Must have taken some damage (not at 100% HP)
     hpRatio < 0.95 &&
-    (
-      // Actual adjacent monster AND HP below threshold
-      (adjacentCount > 0 && hpRatio < healingThreshold) ||
+    // Actual adjacent monster AND HP below threshold
+    ((adjacentCount > 0 && hpRatio < healingThreshold) ||
       // OR immediate danger could kill us (threat > 70% of current HP)
       // Threat is damage*2, so compare against hp*1.4 (70% threshold)
       immediateDanger > character.hp * 1.4 ||
       // OR we're in local CRITICAL with HP below 65% (retreat situation)
       (localTier === 'CRITICAL' && hpRatio < 0.65) ||
       // MORGOTH SPECIAL: heal more aggressively - at 50% HP regardless of other factors
-      (fightingMorgoth && hpRatio < 0.50)
-    )
+      (fightingMorgoth && hpRatio < 0.5))
 
   if (shouldHeal) {
     // Against Morgoth: always use best potions available
     // Normal: try stronger potions when more hurt
-    const minTier = fightingMorgoth ? 4 : (hpRatio < 0.25 ? 2 : 1)
+    const minTier = fightingMorgoth ? 4 : hpRatio < 0.25 ? 2 : 1
     const potion = findHealingPotion(character, minTier) ?? findHealingPotion(character, 1)
     if (potion) {
       return { type: 'use', itemId: potion.id }
@@ -226,22 +232,14 @@ export function getSurvivalConsumableAction(
   // Don't escape from distant monsters - only from actual adjacent threats
   // CAUTION tier from distance-2 monsters is NOT enough to trigger escape
   const shouldEscape =
-    (
-      // Actual adjacent monsters present AND no healing AND damaged
-      adjacentCount > 0 && !hasHealing && hpRatio < 0.8
-    ) ||
-    (
-      // OR immediate danger is CRITICAL (could die this turn)
-      immediateTier === 'CRITICAL'
-    ) ||
-    (
-      // OR surrounded (2+ adjacent)
-      adjacentCount >= 2 && hpRatio < 0.9
-    ) ||
-    (
-      // OR local CRITICAL with no healing and significantly damaged
-      localTier === 'CRITICAL' && !hasHealing && hpRatio < 0.7
-    )
+    // Actual adjacent monsters present AND no healing AND damaged
+    (adjacentCount > 0 && !hasHealing && hpRatio < 0.8) ||
+    // OR immediate danger is CRITICAL (could die this turn)
+    immediateTier === 'CRITICAL' ||
+    // OR surrounded (2+ adjacent)
+    (adjacentCount >= 2 && hpRatio < 0.9) ||
+    // OR local CRITICAL with no healing and significantly damaged
+    (localTier === 'CRITICAL' && !hasHealing && hpRatio < 0.7)
 
   if (shouldEscape) {
     // Try full teleport (always safe)
@@ -346,7 +344,9 @@ export function getPreCombatBuffAction(
   if (visibleMonsters.length === 0) return null
 
   // Check if Morgoth is visible - triggers full buffing protocol
-  const morgothVisible = visibleMonsters.some(m => m.template.name === 'Morgoth, Lord of Darkness')
+  const morgothVisible = visibleMonsters.some(
+    (m) => m.template.name === 'Morgoth, Lord of Darkness'
+  )
 
   // Check if already buffed
   const hasBlessing = hasStatusEffect(character, 'blessing')
@@ -396,7 +396,7 @@ export function getPreCombatBuffAction(
   // STANDARD ENEMIES: Normal buffing logic
   // Check if any visible monster is dangerous enough to warrant buffing
   const THREAT_THRESHOLD = 100
-  const hasDangerousMonster = visibleMonsters.some(m => {
+  const hasDangerousMonster = visibleMonsters.some((m) => {
     const threat = getMonsterThreat(m, character)
     return threat >= THREAT_THRESHOLD
   })
@@ -467,10 +467,14 @@ export function getCombatBuffAction(
 
   // MORGOTH: Maintain buff stack during fight
   // This is critical - Morgoth fight is long and buffs may wear off
-  const fightingMorgoth = game.monsters.some(m =>
-    m.template.name === 'Morgoth, Lord of Darkness' &&
-    m.hp > 0 &&
-    Math.max(Math.abs(m.position.x - character.position.x), Math.abs(m.position.y - character.position.y)) <= 3
+  const fightingMorgoth = game.monsters.some(
+    (m) =>
+      m.template.name === 'Morgoth, Lord of Darkness' &&
+      m.hp > 0 &&
+      Math.max(
+        Math.abs(m.position.x - character.position.x),
+        Math.abs(m.position.y - character.position.y)
+      ) <= 3
   )
 
   if (fightingMorgoth) {
@@ -500,7 +504,7 @@ export function getCombatBuffAction(
   }
 
   // Use resistance potions based on nearby monster types
-  const nearbyMonsters = game.monsters.filter(m => {
+  const nearbyMonsters = game.monsters.filter((m) => {
     const dx = Math.abs(m.position.x - character.position.x)
     const dy = Math.abs(m.position.y - character.position.y)
     return dx <= 3 && dy <= 3 && m.hp > 0
@@ -624,9 +628,9 @@ function calculateExplorationRatio(game: GameState): number {
  * Working backwards from 1000-turn circuit breaker
  */
 const STUCK_THRESHOLDS = {
-  DETECT_STAIRS: 300,   // First intervention: just find the stairs
-  MAGIC_MAPPING: 500,   // Second intervention: reveal whole map
-  TELEPORT_LEVEL: 700,  // Last resort: skip the floor entirely
+  DETECT_STAIRS: 300, // First intervention: just find the stairs
+  MAGIC_MAPPING: 500, // Second intervention: reveal whole map
+  TELEPORT_LEVEL: 700, // Last resort: skip the floor entirely
 } as const
 
 /**
@@ -639,10 +643,7 @@ const STUCK_THRESHOLDS = {
  *
  * This provides 3 escalating interventions before the 2000-turn circuit breaker.
  */
-export function getStuckExplorationAction(
-  game: GameState,
-  botState: BotState
-): GameAction | null {
+export function getStuckExplorationAction(game: GameState, botState: BotState): GameAction | null {
   const character = game.character
 
   // Don't use these scrolls while in combat

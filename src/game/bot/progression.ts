@@ -160,7 +160,14 @@ export function initializeSweepDirection(game: GameState, botState: BotState): v
  * Get the reason descent is blocked, or null if ready.
  */
 export function getDescentBlocker(
-  character: { depth: number; inventory: { template: { type: string; name: string; tier: number } }[]; hp: number; maxHp: number; level: number; classId?: string },
+  character: {
+    depth: number
+    inventory: { template: { type: string; name: string; tier: number } }[]
+    hp: number
+    maxHp: number
+    level: number
+    classId?: string
+  },
   caution: number
 ): string | null {
   const nextDepth = character.depth + 1
@@ -271,7 +278,11 @@ function findUnseenTileInTether(
  * 80% of floor tiles in radius must be SEEN THIS VISIT (not just explored).
  * Using seenThisVisit forces the bot to walk around on each flip, finding new spawns.
  */
-function isTetheredExplorationComplete(context: BotContext, origin: Point, radius: number): boolean {
+function isTetheredExplorationComplete(
+  context: BotContext,
+  origin: Point,
+  radius: number
+): boolean {
   const { game, botState } = context
   const level = game.currentLevel
 
@@ -294,7 +305,7 @@ function isTetheredExplorationComplete(context: BotContext, origin: Point, radiu
   }
 
   // Need 80% seen this visit to be "done" with this tether
-  return totalFloor === 0 || (seenFloor / totalFloor) >= 0.8
+  return totalFloor === 0 || seenFloor / totalFloor >= 0.8
 }
 
 // ============================================================================
@@ -370,12 +381,7 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
   if (!botState.knownStairsDown) return null
 
   // Check unique blockers (2+ living uniques blocks descent)
-  const uniqueBlocker = getUniqueBlocker(
-    character.depth,
-    nextDepth,
-    game.uniqueState,
-    MONSTERS
-  )
+  const uniqueBlocker = getUniqueBlocker(character.depth, nextDepth, game.uniqueState, MONSTERS)
   if (uniqueBlocker) {
     return null // Should hunt unique instead
   }
@@ -389,8 +395,7 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
     : config.exploration
 
   const shouldDescend =
-    explorationProgress >= explorationThreshold ||
-    botState.turnsOnLevel >= config.patience
+    explorationProgress >= explorationThreshold || botState.turnsOnLevel >= config.patience
 
   if (!shouldDescend) return null
 
@@ -491,7 +496,8 @@ export function getTownTripGoal(context: BotContext): BotGoal | null {
   if (!tpScroll) return null
 
   // Check gold and level requirements
-  const goldTarget = botState.farmGoldTarget || getGoldTarget(character.depth + 1, effectiveConfig.caution)
+  const goldTarget =
+    botState.farmGoldTarget || getGoldTarget(character.depth + 1, effectiveConfig.caution)
   const effectiveGold = getEffectiveGold(character)
 
   // Need enough gold to buy supplies
@@ -523,9 +529,11 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
   const pos = character.position
 
   // Early-game casters in sweep mode use sweep exploration instead of tethered farming
-  if (botState.sweepMode &&
-      SQUISHY_CLASSES.has(character.classId) &&
-      character.level < CASTER_STAIR_SURF_MIN_LEVEL) {
+  if (
+    botState.sweepMode &&
+    SQUISHY_CLASSES.has(character.classId) &&
+    character.level < CASTER_STAIR_SURF_MIN_LEVEL
+  ) {
     return null // Let sweep handle exploration
   }
 
@@ -534,7 +542,8 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
 
   // Under-leveled check: only matters if NOT already in farming mode
   // When farming (yo-yoing between depths), being under-leveled for current depth is expected
-  if (!botState.farmingMode && isUnderLeveled(character.level, character.depth, character.classId)) return null
+  if (!botState.farmingMode && isUnderLeveled(character.level, character.depth, character.classId))
+    return null
 
   // Tether constraints
   const isTethered = botState.tetheredOrigin !== null && botState.tetheredRadius > 0
@@ -542,8 +551,8 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
   const tetherRadius = botState.tetheredRadius
 
   // Priority 1: Nearest visible monster (within tether if tethered)
-  const tetheredMonsters = visibleMonsters.filter(m =>
-    m.hp > 0 && isWithinTether(m.position, tetherOrigin, tetherRadius)
+  const tetheredMonsters = visibleMonsters.filter(
+    (m) => m.hp > 0 && isWithinTether(m.position, tetherOrigin, tetherRadius)
   )
   if (tetheredMonsters.length > 0) {
     let closest = tetheredMonsters[0]!
@@ -567,7 +576,7 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
   }
 
   // Priority 2: Nearest valuable item (within tether if tethered)
-  const farmableItems = visibleItems.filter(item => {
+  const farmableItems = visibleItems.filter((item) => {
     // Skip consumables we want to keep
     if (item.template.type === 'potion' || item.template.type === 'scroll') {
       return false
@@ -625,15 +634,18 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
 function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   const { game, botState, effectiveConfig } = context
   const character = game.character
-  const goldTarget = botState.farmGoldTarget || getGoldTarget(botState.farmBlockedDepth, effectiveConfig.caution)
+  const goldTarget =
+    botState.farmGoldTarget || getGoldTarget(botState.farmBlockedDepth, effectiveConfig.caution)
 
   // Check if ready for blocked depth
-  const blockedReadiness = profile('farm.readiness', () => getDepthReadiness(
-    character,
-    character.inventory,
-    botState.farmBlockedDepth,
-    effectiveConfig.caution
-  ))
+  const blockedReadiness = profile('farm.readiness', () =>
+    getDepthReadiness(
+      character,
+      character.inventory,
+      botState.farmBlockedDepth,
+      effectiveConfig.caution
+    )
+  )
 
   if (!blockedReadiness) {
     // Ready for blocked depth - exit farming mode
@@ -681,7 +693,8 @@ function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   }
 
   // 4. Tether sweep - actively walk to unseen tiles within tether radius
-  const skipTetherForSweep = botState.sweepMode &&
+  const skipTetherForSweep =
+    botState.sweepMode &&
     SQUISHY_CLASSES.has(character.classId) &&
     character.level < CASTER_STAIR_SURF_MIN_LEVEL
   if (botState.tetheredOrigin && !skipTetherForSweep) {
@@ -732,7 +745,9 @@ function handleTetherSweep(context: BotContext, goldTarget: number): BotGoal | n
   // Keep advancing radius until we find unseen tiles or exhaust all radii
   while (flipCount < TETHER_RADII.length) {
     radius = TETHER_RADII[flipCount]!
-    const unseenTarget = profile('tether.findUnseen', () => findUnseenTileInTether(context, botState.tetheredOrigin!, radius, flowCosts))
+    const unseenTarget = profile('tether.findUnseen', () =>
+      findUnseenTileInTether(context, botState.tetheredOrigin!, radius, flowCosts)
+    )
 
     if (unseenTarget) {
       // Found unseen tiles - update state and return sweep goal
@@ -811,12 +826,9 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
   }
 
   // PROACTIVE CHECK: Descent blocked by consumable requirements?
-  const readinessIssue = profile('prog.depthReadiness', () => getDepthReadiness(
-    character,
-    character.inventory,
-    nextDepth,
-    effectiveConfig.caution
-  ))
+  const readinessIssue = profile('prog.depthReadiness', () =>
+    getDepthReadiness(character, character.inventory, nextDepth, effectiveConfig.caution)
+  )
   if (readinessIssue) {
     const farmingGoal = profile('prog.initFarm', () => initiateFarmingLoop(context))
     if (farmingGoal) return farmingGoal
@@ -891,15 +903,25 @@ export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
   if (!stairsUp) return null
 
   // Early-game casters use sweep instead of tethered exploration
-  const isCasterFarming = SQUISHY_CLASSES.has(character.classId) && character.level < CASTER_STAIR_SURF_MIN_LEVEL
+  const isCasterFarming =
+    SQUISHY_CLASSES.has(character.classId) && character.level < CASTER_STAIR_SURF_MIN_LEVEL
   if (isCasterFarming) {
     if (!botState.farmingMode) {
-      enterFarmingMode(botState, blockedDepth, getGoldTarget(blockedDepth, effectiveConfig.caution), game.turn)
+      enterFarmingMode(
+        botState,
+        blockedDepth,
+        getGoldTarget(blockedDepth, effectiveConfig.caution),
+        game.turn
+      )
     }
   } else {
     // Tethered exploration check
     if (botState.tetheredRadius > 0 && botState.tetheredOrigin) {
-      const done = isTetheredExplorationComplete(context, botState.tetheredOrigin, botState.tetheredRadius)
+      const done = isTetheredExplorationComplete(
+        context,
+        botState.tetheredOrigin,
+        botState.tetheredRadius
+      )
       if (!done) return null
 
       botState.tetheredFlipCount++
@@ -910,7 +932,12 @@ export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
       }
     } else if (botState.tetheredRadius === 0) {
       // Starting a new tether cycle
-      enterFarmingMode(botState, blockedDepth, getGoldTarget(blockedDepth, effectiveConfig.caution), game.turn)
+      enterFarmingMode(
+        botState,
+        blockedDepth,
+        getGoldTarget(blockedDepth, effectiveConfig.caution),
+        game.turn
+      )
       botState.tetheredRadius = TETHER_RADII[0]!
       botState.tetheredFlipCount = 0
     }

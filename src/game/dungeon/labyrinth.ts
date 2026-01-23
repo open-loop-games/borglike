@@ -55,11 +55,7 @@ export function generateLabyrinth(
  * Create anchor rooms - one in each half of the map minimum,
  * plus optional center and corner rooms
  */
-function createAnchorRooms(
-  tiles: Tile[][],
-  width: number,
-  height: number
-): RoomData[] {
+function createAnchorRooms(tiles: Tile[][], width: number, height: number): RoomData[] {
   const rooms: RoomData[] = []
   const midX = Math.floor(width / 2)
   const midY = Math.floor(height / 2)
@@ -186,12 +182,7 @@ function createRoom(
 /**
  * Connect all rooms with L-shaped corridors
  */
-function connectRooms(
-  tiles: Tile[][],
-  rooms: RoomData[],
-  _width: number,
-  _height: number
-): void {
+function connectRooms(tiles: Tile[][], rooms: RoomData[], _width: number, _height: number): void {
   if (rooms.length < 2) return
 
   // Connect each room to the next (creates a chain)
@@ -231,12 +222,7 @@ function carveCorridor(
   }
 }
 
-function carveHorizontalLine(
-  tiles: Tile[][],
-  x1: number,
-  x2: number,
-  y: number
-): void {
+function carveHorizontalLine(tiles: Tile[][], x1: number, x2: number, y: number): void {
   const minX = Math.min(x1, x2)
   const maxX = Math.max(x1, x2)
   for (let x = minX; x <= maxX; x++) {
@@ -245,12 +231,7 @@ function carveHorizontalLine(
   }
 }
 
-function carveVerticalLine(
-  tiles: Tile[][],
-  y1: number,
-  y2: number,
-  x: number
-): void {
+function carveVerticalLine(tiles: Tile[][], y1: number, y2: number, x: number): void {
   const minY = Math.min(y1, y2)
   const maxY = Math.max(y1, y2)
   for (let y = minY; y <= maxY; y++) {
@@ -262,11 +243,7 @@ function carveVerticalLine(
 /**
  * Fill empty areas with maze-like passages using recursive backtracking
  */
-function fillMazePassages(
-  tiles: Tile[][],
-  width: number,
-  height: number
-): void {
+function fillMazePassages(tiles: Tile[][], width: number, height: number): void {
   // Work on odd coordinates only for proper maze structure
   for (let y = 1; y < height - 1; y += 2) {
     for (let x = 1; x < width - 1; x += 2) {
@@ -343,11 +320,7 @@ function carveMazeFrom(
 /**
  * Connect any isolated floor sections to the main dungeon
  */
-function connectIsolatedSections(
-  tiles: Tile[][],
-  width: number,
-  height: number
-): void {
+function connectIsolatedSections(tiles: Tile[][], width: number, height: number): void {
   // Find all floor tiles and group them by connectivity
   const visited = new Set<string>()
   const regions: Array<Array<{ x: number; y: number }>> = []
@@ -430,12 +403,7 @@ function floodFill(
 /**
  * Add shortcuts by removing some walls between parallel passages
  */
-function addShortcuts(
-  tiles: Tile[][],
-  width: number,
-  height: number,
-  chance: number
-): void {
+function addShortcuts(tiles: Tile[][], width: number, height: number, chance: number): void {
   for (let y = 2; y < height - 2; y++) {
     for (let x = 2; x < width - 2; x++) {
       const tile = tiles[y]?.[x]

@@ -46,7 +46,8 @@ const POTION_EFFECTS: Array<{
 }> = [
   // Free Action - cure paralysis and slow
   {
-    match: (e) => e.toLowerCase().includes('cure paralysis') || e.toLowerCase().includes('free action'),
+    match: (e) =>
+      e.toLowerCase().includes('cure paralysis') || e.toLowerCase().includes('free action'),
     apply: (game) => {
       const curedParalyzed = hasStatusEffect(game.character, 'paralyzed')
       const curedSlowed = hasStatusEffect(game.character, 'slowed')
@@ -78,9 +79,7 @@ const POTION_EFFECTS: Array<{
     apply: (game) => {
       const curedDrained = hasStatusEffect(game.character, 'drained')
       removeStatusEffect(game.character, 'drained')
-      const message = curedDrained
-        ? 'You feel your strength return!'
-        : 'You feel restored!'
+      const message = curedDrained ? 'You feel your strength return!' : 'You feel restored!'
       return { success: true, message }
     },
   },
@@ -96,7 +95,10 @@ const POTION_EFFECTS: Array<{
       // Cure Light: cure blind
       // Cure Serious: cure blind, confusion
       // Cure Critical / Healing: cure all status
-      if (effect.toLowerCase().includes('cure all status') || effect.toLowerCase().includes('healing')) {
+      if (
+        effect.toLowerCase().includes('cure all status') ||
+        effect.toLowerCase().includes('healing')
+      ) {
         // Full healing potions cure all debuffs
         const removed = removeAllDebuffs(game.character)
         clearPoison(game.character)

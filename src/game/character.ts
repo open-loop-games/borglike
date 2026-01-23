@@ -588,7 +588,7 @@ function applyLevelUp(character: Character, levelupHpPercent = 100): void {
     const hitdie = calculateHitdie(race.hitdie, gameClass.hitdie)
     const conMod = getConModifier(character.stats.con)
     const baseHpGain = hitdie + conMod
-    const hpGain = Math.max(1, Math.floor(baseHpGain * levelupHpPercent / 100))
+    const hpGain = Math.max(1, Math.floor((baseHpGain * levelupHpPercent) / 100))
 
     // Heal the HP gained (don't lose current HP on level up)
     character.hp = Math.min(character.hp + hpGain, newCombat.maxHp)

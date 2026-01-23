@@ -343,7 +343,7 @@ const summon_wolf: SpellTemplate = {
   name: 'Summon Wolf',
   school: 'nature',
   level: 1,
-  manaCost: 5,  // Lowered to match Ranger starting mana
+  manaCost: 5, // Lowered to match Ranger starting mana
   cooldown: 20,
   effectType: 'summon',
   description: 'Call a loyal wolf companion to fight by your side.',
@@ -388,8 +388,8 @@ const summon_skeleton: SpellTemplate = {
   id: 'summon_skeleton',
   name: 'Raise Skeleton',
   school: 'shadow',
-  level: 1,  // Lowered to match Necromancer class-spell level
-  manaCost: 5,  // Lowered to match Necromancer starting mana
+  level: 1, // Lowered to match Necromancer class-spell level
+  manaCost: 5, // Lowered to match Necromancer starting mana
   cooldown: 15,
   effectType: 'summon',
   description: 'Raise a skeletal warrior from the bones of the fallen.',

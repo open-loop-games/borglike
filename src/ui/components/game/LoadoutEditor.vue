@@ -152,17 +152,34 @@ function handleCancel() {
         <!-- Race Description -->
         <div v-if="selectedRaceData" class="selection-details">
           <div class="details-stats">
-            <span :class="formatStatClass(selectedRaceData.stats.str)">STR {{ formatStat(selectedRaceData.stats.str) }}</span>
-            <span :class="formatStatClass(selectedRaceData.stats.int)">INT {{ formatStat(selectedRaceData.stats.int) }}</span>
-            <span :class="formatStatClass(selectedRaceData.stats.wis)">WIS {{ formatStat(selectedRaceData.stats.wis) }}</span>
-            <span :class="formatStatClass(selectedRaceData.stats.dex)">DEX {{ formatStat(selectedRaceData.stats.dex) }}</span>
-            <span :class="formatStatClass(selectedRaceData.stats.con)">CON {{ formatStat(selectedRaceData.stats.con) }}</span>
+            <span :class="formatStatClass(selectedRaceData.stats.str)"
+              >STR {{ formatStat(selectedRaceData.stats.str) }}</span
+            >
+            <span :class="formatStatClass(selectedRaceData.stats.int)"
+              >INT {{ formatStat(selectedRaceData.stats.int) }}</span
+            >
+            <span :class="formatStatClass(selectedRaceData.stats.wis)"
+              >WIS {{ formatStat(selectedRaceData.stats.wis) }}</span
+            >
+            <span :class="formatStatClass(selectedRaceData.stats.dex)"
+              >DEX {{ formatStat(selectedRaceData.stats.dex) }}</span
+            >
+            <span :class="formatStatClass(selectedRaceData.stats.con)"
+              >CON {{ formatStat(selectedRaceData.stats.con) }}</span
+            >
             <span class="stat-info">HD +{{ selectedRaceData.hitdie }}</span>
-            <span v-if="selectedRaceData.expPenalty !== 100" class="stat-xp">XP {{ selectedRaceData.expPenalty }}%</span>
+            <span v-if="selectedRaceData.expPenalty !== 100" class="stat-xp"
+              >XP {{ selectedRaceData.expPenalty }}%</span
+            >
           </div>
           <div class="details-desc">{{ selectedRaceData.description }}</div>
           <div v-if="selectedRaceData.abilities.length > 0" class="details-abilities">
-            <span v-for="ability in selectedRaceData.abilities" :key="ability.id" class="ability-tag" :title="ability.description">
+            <span
+              v-for="ability in selectedRaceData.abilities"
+              :key="ability.id"
+              class="ability-tag"
+              :title="ability.description"
+            >
               {{ ability.name }}
             </span>
           </div>
@@ -186,12 +203,24 @@ function handleCancel() {
         <!-- Class Description -->
         <div v-if="selectedClassData" class="selection-details">
           <div class="details-stats">
-            <span :class="formatStatClass(selectedClassData.stats.str)">STR {{ formatStat(selectedClassData.stats.str) }}</span>
-            <span :class="formatStatClass(selectedClassData.stats.int)">INT {{ formatStat(selectedClassData.stats.int) }}</span>
-            <span :class="formatStatClass(selectedClassData.stats.wis)">WIS {{ formatStat(selectedClassData.stats.wis) }}</span>
-            <span :class="formatStatClass(selectedClassData.stats.dex)">DEX {{ formatStat(selectedClassData.stats.dex) }}</span>
-            <span :class="formatStatClass(selectedClassData.stats.con)">CON {{ formatStat(selectedClassData.stats.con) }}</span>
-            <span class="stat-info">HD {{ selectedClassData.hitdie >= 0 ? '+' : '' }}{{ selectedClassData.hitdie }}</span>
+            <span :class="formatStatClass(selectedClassData.stats.str)"
+              >STR {{ formatStat(selectedClassData.stats.str) }}</span
+            >
+            <span :class="formatStatClass(selectedClassData.stats.int)"
+              >INT {{ formatStat(selectedClassData.stats.int) }}</span
+            >
+            <span :class="formatStatClass(selectedClassData.stats.wis)"
+              >WIS {{ formatStat(selectedClassData.stats.wis) }}</span
+            >
+            <span :class="formatStatClass(selectedClassData.stats.dex)"
+              >DEX {{ formatStat(selectedClassData.stats.dex) }}</span
+            >
+            <span :class="formatStatClass(selectedClassData.stats.con)"
+              >CON {{ formatStat(selectedClassData.stats.con) }}</span
+            >
+            <span class="stat-info"
+              >HD {{ selectedClassData.hitdie >= 0 ? '+' : '' }}{{ selectedClassData.hitdie }}</span
+            >
             <span class="stat-info">{{ selectedClassData.maxAttacks }} atk</span>
             <span v-if="selectedClassData.usesMagic" class="stat-magic">Magic</span>
           </div>

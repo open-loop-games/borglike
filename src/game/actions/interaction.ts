@@ -65,11 +65,7 @@ export function handleShopSell(
 /**
  * Handle spell casting
  */
-export function handleCast(
-  game: GameState,
-  spellId: string,
-  targetId?: string
-): ActionResult {
+export function handleCast(game: GameState, spellId: string, targetId?: string): ActionResult {
   const result = castSpell(game, spellId, targetId)
 
   if (result.message) {

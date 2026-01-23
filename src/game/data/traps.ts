@@ -12,7 +12,7 @@ export type TrapEffect = 'damage' | 'poison' | 'teleport' | 'alarm' | 'pit'
 export interface TrapTemplate {
   id: string
   name: string
-  char: string           // Always '^' when revealed
+  char: string // Always '^' when revealed
   color: number
   effect: TrapEffect
   /** Base damage dealt (0 for non-damage traps) */

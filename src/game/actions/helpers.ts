@@ -20,11 +20,7 @@ export const BASE_ENERGY_COST = 100
 /**
  * Add a message to the game log
  */
-export function addMessage(
-  game: GameState,
-  text: string,
-  type: GameMessage['type']
-): void {
+export function addMessage(game: GameState, text: string, type: GameMessage['type']): void {
   game.messages.push({
     turn: game.turn,
     text,

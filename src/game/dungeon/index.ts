@@ -107,9 +107,10 @@ export function generateLevelWithInfo(
 
   // Place doors at room entrances (not mid-corridor)
   // Labyrinths have few/no doors - the maze itself is the obstacle
-  const effectiveDoorChance = generatorType === 'labyrinth'
-    ? profile.doorChance * 0.15  // Greatly reduced for labyrinths
-    : profile.doorChance
+  const effectiveDoorChance =
+    generatorType === 'labyrinth'
+      ? profile.doorChance * 0.15 // Greatly reduced for labyrinths
+      : profile.doorChance
   const doorCandidates = findDoorCandidates(tiles, width, height, rooms)
   const placedDoors = placeDoors(tiles, doorCandidates, effectiveDoorChance)
 
@@ -152,7 +153,7 @@ function placeStairs(
   let stairsUp: Point | null = null
   let stairsDown: Point | null = null
 
-  const needsUp = depth >= 1  // Depth 1 needs stairs to town
+  const needsUp = depth >= 1 // Depth 1 needs stairs to town
   const needsDown = depth < MAX_DEPTH
 
   // Try room-based placement first (preferred)

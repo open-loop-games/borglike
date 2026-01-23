@@ -100,12 +100,7 @@ function isAdjacentToRoom(x: number, y: number, rooms: RoomData[]): boolean {
  * Check if position has a room-like space on one side (fallback when no room data)
  * A room-like space is at least 2 tiles wide perpendicular to the corridor direction
  */
-function hasRoomLikeSpace(
-  tiles: Tile[][],
-  x: number,
-  y: number,
-  isHorizontal: boolean
-): boolean {
+function hasRoomLikeSpace(tiles: Tile[][], x: number, y: number, isHorizontal: boolean): boolean {
   if (isHorizontal) {
     // Horizontal corridor (walls N/S): check if E or W side opens into wider space
     const eastOpen = hasWiderSpace(tiles, x + 1, y, 'horizontal')
@@ -152,11 +147,7 @@ function hasWiderSpace(
 /**
  * Place doors at candidate positions based on chance
  */
-export function placeDoors(
-  tiles: Tile[][],
-  candidates: Point[],
-  doorChance: number
-): Point[] {
+export function placeDoors(tiles: Tile[][], candidates: Point[], doorChance: number): Point[] {
   const placedDoors: Point[] = []
 
   // Shuffle candidates for random distribution

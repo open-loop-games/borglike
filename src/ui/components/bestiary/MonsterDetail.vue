@@ -116,13 +116,12 @@ const nextUnlock = computed(() => {
           <span :class="{ active: knowledgeBonus >= 25 }">25%</span>
         </div>
         <div class="knowledge-desc">
-          Deal +{{ knowledgeBonus.toFixed(1) }}% damage, take -{{ knowledgeBonus.toFixed(1) }}% damage
+          Deal +{{ knowledgeBonus.toFixed(1) }}% damage, take -{{ knowledgeBonus.toFixed(1) }}%
+          damage
         </div>
       </div>
 
-      <div v-if="firstKillDate" class="first-kill">
-        First killed: {{ firstKillDate }}
-      </div>
+      <div v-if="firstKillDate" class="first-kill">First killed: {{ firstKillDate }}</div>
 
       <!-- Stats (tier 2+) -->
       <div v-if="tier >= 2" class="stats-section">

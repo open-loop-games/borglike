@@ -117,7 +117,10 @@ function evaluateConsumable(item: Item, character: Character): ItemEvaluation {
   let reason = template.type === 'potion' ? 'Potion' : 'Scroll'
 
   // Healing potions are very valuable when HP is low
-  if (template.name.toLowerCase().includes('cure') || template.name.toLowerCase().includes('healing')) {
+  if (
+    template.name.toLowerCase().includes('cure') ||
+    template.name.toLowerCase().includes('healing')
+  ) {
     const hpRatio = character.hp / character.maxHp
     if (hpRatio < 0.5) {
       score *= 2
@@ -134,7 +137,10 @@ function evaluateConsumable(item: Item, character: Character): ItemEvaluation {
   }
 
   // Teleport scrolls are valuable for escape
-  if (template.name.toLowerCase().includes('teleport') || template.name.toLowerCase().includes('phase')) {
+  if (
+    template.name.toLowerCase().includes('teleport') ||
+    template.name.toLowerCase().includes('phase')
+  ) {
     score *= 1.3
     reason = 'Escape option'
   }
@@ -368,19 +374,19 @@ export function prioritizeItems(
   config: PersonalityConfig
 ): GroundItem[] {
   // Evaluate all items
-  const evaluated = items.map(item => ({
+  const evaluated = items.map((item) => ({
     item,
     evaluation: evaluateItem(item, character),
     shouldPickup: shouldPickup(item, character, config),
   }))
 
   // Filter to only items we want
-  const wanted = evaluated.filter(e => e.shouldPickup)
+  const wanted = evaluated.filter((e) => e.shouldPickup)
 
   // Sort by score (highest first)
   wanted.sort((a, b) => b.evaluation.score - a.evaluation.score)
 
-  return wanted.map(e => e.item)
+  return wanted.map((e) => e.item)
 }
 
 // ============================================================================
@@ -392,16 +398,26 @@ export function prioritizeItems(
  */
 function getEquipSlot(template: ItemTemplate): EquipSlot | null {
   switch (template.slot) {
-    case 'weapon': return 'weapon'
-    case 'body': return 'armor'
-    case 'shield': return 'shield'
-    case 'helm': return 'helm'
-    case 'gloves': return 'gloves'
-    case 'boots': return 'boots'
-    case 'ring': return 'ring1' // Default to first ring slot
-    case 'amulet': return 'amulet'
-    case 'light': return 'light'
-    default: return null
+    case 'weapon':
+      return 'weapon'
+    case 'body':
+      return 'armor'
+    case 'shield':
+      return 'shield'
+    case 'helm':
+      return 'helm'
+    case 'gloves':
+      return 'gloves'
+    case 'boots':
+      return 'boots'
+    case 'ring':
+      return 'ring1' // Default to first ring slot
+    case 'amulet':
+      return 'amulet'
+    case 'light':
+      return 'light'
+    default:
+      return null
   }
 }
 
@@ -489,23 +505,27 @@ export function getItemDisplayName(item: Item): string {
  * Optionally specify minimum tier (1-4) for stronger potions
  */
 export function findHealingPotion(character: Character, minTier: number = 1): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'potion') return false
-    if (item.template.tier < minTier) return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('cure') || name.includes('healing')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      if (item.template.tier < minTier) return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('cure') || name.includes('healing')
+    }) ?? null
+  )
 }
 
 /**
  * Find an escape scroll (teleport/phase door) in inventory
  */
 export function findEscapeScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('teleport') || name.includes('phase')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('teleport') || name.includes('phase')
+    }) ?? null
+  )
 }
 
 /**
@@ -513,11 +533,13 @@ export function findEscapeScroll(character: Character): Item | null {
  * Requires safety check before use
  */
 export function findPhaseDoorScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('phase door')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('phase door')
+    }) ?? null
+  )
 }
 
 /**
@@ -525,166 +547,188 @@ export function findPhaseDoorScroll(character: Character): Item | null {
  * Always "safe" since destination is random/far
  */
 export function findFullTeleportScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    // Match "teleportation" but not "phase door" or "teleport level"
-    return name.includes('teleportation')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      // Match "teleportation" but not "phase door" or "teleport level"
+      return name.includes('teleportation')
+    }) ?? null
+  )
 }
 
 /**
  * Find a speed potion in inventory
  */
 export function findSpeedPotion(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'potion') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('speed')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('speed')
+    }) ?? null
+  )
 }
 
 /**
  * Find a buff potion (heroism or berserk) in inventory
  */
 export function findBuffPotion(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'potion') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('heroism') || name.includes('berserk')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('heroism') || name.includes('berserk')
+    }) ?? null
+  )
 }
 
 /**
  * Find a resistance potion matching a damage type
  */
 export function findResistancePotion(character: Character, damageType?: string): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'potion') return false
-    const name = item.template.name.toLowerCase()
-    const effect = (item.template.effect || '').toLowerCase()
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      const name = item.template.name.toLowerCase()
+      const effect = (item.template.effect || '').toLowerCase()
 
-    // If specific type requested, match it
-    if (damageType) {
-      const type = damageType.toLowerCase()
-      if (type === 'fire' && (name.includes('heat') || effect.includes('fire'))) return true
-      if (type === 'cold' && (name.includes('cold') || effect.includes('cold'))) return true
-      if (type === 'poison' && name.includes('poison')) return true
-      return false
-    }
+      // If specific type requested, match it
+      if (damageType) {
+        const type = damageType.toLowerCase()
+        if (type === 'fire' && (name.includes('heat') || effect.includes('fire'))) return true
+        if (type === 'cold' && (name.includes('cold') || effect.includes('cold'))) return true
+        if (type === 'poison' && name.includes('poison')) return true
+        return false
+      }
 
-    // Any resistance potion
-    return name.includes('resist') && (
-      name.includes('heat') ||
-      name.includes('cold') ||
-      name.includes('poison')
-    )
-  }) ?? null
+      // Any resistance potion
+      return (
+        name.includes('resist') &&
+        (name.includes('heat') || name.includes('cold') || name.includes('poison'))
+      )
+    }) ?? null
+  )
 }
 
 /**
  * Find a neutralize poison potion
  */
 export function findNeutralizePoison(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'potion') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('neutralize') ||
-           (name.includes('poison') && !name.includes('resist'))
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('neutralize') || (name.includes('poison') && !name.includes('resist'))
+    }) ?? null
+  )
 }
 
 /**
  * Find a blessing scroll
  */
 export function findBlessingScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('blessing')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('blessing')
+    }) ?? null
+  )
 }
 
 /**
  * Find a protection from evil scroll
  */
 export function findProtectionScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('protection from evil')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('protection from evil')
+    }) ?? null
+  )
 }
 
 /**
  * Find a mapping scroll (magic mapping or light)
  */
 export function findMappingScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('magic mapping') || name.includes('light')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('magic mapping') || name.includes('light')
+    }) ?? null
+  )
 }
 
 /**
  * Find a Detect Stairs scroll in inventory
  */
 export function findDetectStairsScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('detect stairs')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('detect stairs')
+    }) ?? null
+  )
 }
 
 /**
  * Find a Teleport Level scroll in inventory
  */
 export function findTeleportLevelScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('teleport level')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('teleport level')
+    }) ?? null
+  )
 }
 
 /**
  * Find a Town Portal scroll in inventory
  */
 export function findTownPortalScroll(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('town portal')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('town portal')
+    }) ?? null
+  )
 }
 
 /**
  * Find an enchant scroll (weapon or armour)
  */
 export function findEnchantScroll(character: Character, type?: 'weapon' | 'armor'): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'scroll') return false
-    const name = item.template.name.toLowerCase()
-    if (type === 'weapon') return name.includes('enchant weapon')
-    if (type === 'armor') return name.includes('enchant armour') || name.includes('enchant armor')
-    return name.includes('enchant')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'scroll') return false
+      const name = item.template.name.toLowerCase()
+      if (type === 'weapon') return name.includes('enchant weapon')
+      if (type === 'armor') return name.includes('enchant armour') || name.includes('enchant armor')
+      return name.includes('enchant')
+    }) ?? null
+  )
 }
 
 /**
  * Check if character has active status effect of given type
  */
 export function hasStatusEffect(character: Character, type: string): boolean {
-  return character.statusEffects.some(e => e.type === type)
+  return character.statusEffects.some((e) => e.type === type)
 }
 
 /**
  * Check if character has active temp resistance of given type
  */
 export function hasTempResistance(character: Character, type: string): boolean {
-  return character.tempResistances.some(r => r.type === type)
+  return character.tempResistances.some((r) => r.type === type)
 }
 
 // ============================================================================
@@ -695,33 +739,39 @@ export function hasTempResistance(character: Character, type: string): boolean {
  * Find a Free Action potion (cures paralysis and slow)
  */
 export function findFreeActionPotion(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'potion') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('free action')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('free action')
+    }) ?? null
+  )
 }
 
 /**
  * Find a Clarity potion (cures confusion and blind)
  */
 export function findClarityPotion(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'potion') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('clarity')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('clarity')
+    }) ?? null
+  )
 }
 
 /**
  * Find a Restoration potion (cures drain)
  */
 export function findRestorationPotion(character: Character): Item | null {
-  return character.inventory.find(item => {
-    if (item.template.type !== 'potion') return false
-    const name = item.template.name.toLowerCase()
-    return name.includes('restoration')
-  }) ?? null
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      const name = item.template.name.toLowerCase()
+      return name.includes('restoration')
+    }) ?? null
+  )
 }
 
 /**
@@ -733,33 +783,35 @@ export function findCureFor(character: Character, status: string): Item | null {
     case 'paralyzed':
     case 'slowed':
       // Free Action potion, or Cure Critical/Healing
-      return findFreeActionPotion(character)
-        ?? findHealingPotion(character, 3) // Cure Critical or better
-        ?? null
+      return (
+        findFreeActionPotion(character) ??
+        findHealingPotion(character, 3) ?? // Cure Critical or better
+        null
+      )
 
     case 'confused':
     case 'blind':
       // Clarity potion, or Cure Serious/Critical/Healing
-      return findClarityPotion(character)
-        ?? findHealingPotion(character, 2) // Cure Serious or better
-        ?? null
+      return (
+        findClarityPotion(character) ??
+        findHealingPotion(character, 2) ?? // Cure Serious or better
+        null
+      )
 
     case 'terrified':
       // Heroism or Berserk potions cure fear
-      return findBuffPotion(character)
-        ?? findHealingPotion(character, 3) // Cure Critical or better
-        ?? null
+      return (
+        findBuffPotion(character) ??
+        findHealingPotion(character, 3) ?? // Cure Critical or better
+        null
+      )
 
     case 'drained':
       // Restoration potion, or Cure Critical/Healing
-      return findRestorationPotion(character)
-        ?? findHealingPotion(character, 3)
-        ?? null
+      return findRestorationPotion(character) ?? findHealingPotion(character, 3) ?? null
 
     case 'poison':
-      return findNeutralizePoison(character)
-        ?? findResistancePotion(character, 'poison')
-        ?? null
+      return findNeutralizePoison(character) ?? findResistancePotion(character, 'poison') ?? null
 
     default:
       return null

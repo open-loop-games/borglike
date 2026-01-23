@@ -30,7 +30,7 @@ export function calculateLightRadius(character: Character, depth: number): numbe
   if (depth === 0) return MAX_FOV_RADIUS
 
   // Blind characters can only see adjacent tiles
-  const isBlind = character.statusEffects.some(e => e.type === 'blind')
+  const isBlind = character.statusEffects.some((e) => e.type === 'blind')
   if (isBlind) return 1
 
   let radius = BASE_LIGHT_RADIUS

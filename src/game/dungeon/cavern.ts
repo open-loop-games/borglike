@@ -88,11 +88,7 @@ export function generateCavern(
  * floor cluster in each map quadrant. This ensures stair placement has
  * candidates spread across the map even when the cavern is fully connected.
  */
-function findOpenAreas(
-  tiles: Tile[][],
-  width: number,
-  height: number
-): RoomData[] {
+function findOpenAreas(tiles: Tile[][], width: number, height: number): RoomData[] {
   const midX = Math.floor(width / 2)
   const midY = Math.floor(height / 2)
 
@@ -162,8 +158,10 @@ function findBestClusterInRegion(
 
   // Create a small room around this point
   // Find actual bounds of floor around the best point
-  let minX = bestX, maxX = bestX
-  let minY = bestY, maxY = bestY
+  let minX = bestX,
+    maxX = bestX
+  let minY = bestY,
+    maxY = bestY
 
   // Expand bounds to find connected floor extent (limited to ~6 tiles each direction)
   for (let dy = -6; dy <= 6; dy++) {

@@ -66,14 +66,14 @@ export function useFountain(game: GameState): boolean {
 
   switch (template.effect) {
     case 'heal': {
-      const healAmount = Math.floor(char.maxHp * template.power / 100)
+      const healAmount = Math.floor((char.maxHp * template.power) / 100)
       const healed = Math.min(healAmount, char.maxHp - char.hp)
       char.hp += healed
       addMessage(game, `The ${template.name} heals you for ${healed} HP!`, 'good')
       break
     }
     case 'mana': {
-      const restored = Math.floor(char.maxMp * template.power / 100)
+      const restored = Math.floor((char.maxMp * template.power) / 100)
       char.mp = Math.min(char.maxMp, char.mp + restored)
       addMessage(game, `The ${template.name} restores your mana!`, 'good')
       break
@@ -81,7 +81,7 @@ export function useFountain(game: GameState): boolean {
     case 'buff': {
       // Apply blessing status effect
       const duration = 20 + Math.floor(template.power / 2)
-      char.statusEffects = char.statusEffects.filter(e => e.type !== 'blessing')
+      char.statusEffects = char.statusEffects.filter((e) => e.type !== 'blessing')
       char.statusEffects.push({
         type: 'blessing',
         turnsRemaining: duration,
@@ -234,7 +234,11 @@ export function useAltar(game: GameState): boolean {
       const weapon = char.equipment.weapon
       if (weapon) {
         weapon.enchantment += 1
-        addMessage(game, `Your ${weapon.template.name} glows! It is now +${weapon.enchantment}!`, 'good')
+        addMessage(
+          game,
+          `Your ${weapon.template.name} glows! It is now +${weapon.enchantment}!`,
+          'good'
+        )
       } else {
         addMessage(game, 'You have no weapon to enchant.', 'info')
         // Refund
@@ -488,10 +492,7 @@ export function pickupGold(game: GameState, item: Item): boolean {
 /**
  * Initialize a fountain from vault placement data
  */
-export function initializeFountain(
-  fountainId: string,
-  position: Point
-): FountainState | null {
+export function initializeFountain(fountainId: string, position: Point): FountainState | null {
   const template = getFountainById(fountainId)
   if (!template) return null
 
@@ -505,10 +506,7 @@ export function initializeFountain(
 /**
  * Initialize an altar from vault placement data
  */
-export function initializeAltar(
-  altarId: string,
-  position: Point
-): AltarState | null {
+export function initializeAltar(altarId: string, position: Point): AltarState | null {
   const template = getAltarById(altarId)
   if (!template) return null
 
@@ -545,10 +543,7 @@ export function initializeMerchant(
 /**
  * Initialize a trap from vault placement data
  */
-export function initializeTrap(
-  trapId: string,
-  position: Point
-): TrapState | null {
+export function initializeTrap(trapId: string, position: Point): TrapState | null {
   const template = getTrapById(trapId)
   if (!template) return null
 
@@ -565,10 +560,7 @@ export function initializeTrap(
  * Check for trap detection around the player
  * Returns true if any new traps were revealed
  */
-export function checkTrapDetection(
-  game: GameState,
-  trapVisionBonus: number = 0
-): boolean {
+export function checkTrapDetection(game: GameState, trapVisionBonus: number = 0): boolean {
   const pos = game.character.position
   const detectionRange = 1 + trapVisionBonus
   let anyRevealed = false
@@ -584,7 +576,8 @@ export function checkTrapDetection(
     if (distance <= detectionRange) {
       // Roll detection check
       // Base detection chance = 50% - trap difficulty + (character level * 2) + (trapVisionBonus * 10)
-      const baseChance = 50 - trap.template.baseDifficulty + game.character.level * 2 + trapVisionBonus * 10
+      const baseChance =
+        50 - trap.template.baseDifficulty + game.character.level * 2 + trapVisionBonus * 10
       const roll = random() * 100
 
       if (roll < baseChance) {
@@ -648,7 +641,11 @@ export function triggerTrap(game: GameState, position: Point): boolean {
         turnsRemaining: 3 + Math.floor(game.character.depth / 10),
       }
 
-      addMessage(game, `A ${template.name} hits you! You take ${damage} damage and are poisoned!`, 'danger')
+      addMessage(
+        game,
+        `A ${template.name} hits you! You take ${damage} damage and are poisoned!`,
+        'danger'
+      )
 
       if (char.hp <= 0) {
         char.hp = 0
@@ -667,7 +664,11 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       for (const monster of game.monsters) {
         monster.isAwake = true
       }
-      addMessage(game, `You trigger an ${template.name}! You hear shouts in the distance!`, 'danger')
+      addMessage(
+        game,
+        `You trigger an ${template.name}! You hear shouts in the distance!`,
+        'danger'
+      )
       break
     }
     case 'pit': {
@@ -676,14 +677,18 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       game.stats.damageTaken += damage
 
       // Apply stun (1-2 turns)
-      char.statusEffects = char.statusEffects.filter(e => e.type !== 'stun')
+      char.statusEffects = char.statusEffects.filter((e) => e.type !== 'stun')
       char.statusEffects.push({
         type: 'stun',
         turnsRemaining: randomInt(1, 2),
         value: 0,
       })
 
-      addMessage(game, `You fall into a ${template.name}! You take ${damage} damage and are stunned!`, 'danger')
+      addMessage(
+        game,
+        `You fall into a ${template.name}! You take ${damage} damage and are stunned!`,
+        'danger'
+      )
 
       if (char.hp <= 0) {
         char.hp = 0
@@ -708,7 +713,13 @@ export function getRevealedTrapAt(game: GameState, pos: Point): TrapState | null
     return trap
   }
   // Check if trap has rearmed
-  if (trap && trap.revealed && trap.triggered && trap.rearmTurn !== null && trap.rearmTurn <= game.turn) {
+  if (
+    trap &&
+    trap.revealed &&
+    trap.triggered &&
+    trap.rearmTurn !== null &&
+    trap.rearmTurn <= game.turn
+  ) {
     trap.triggered = false // Reset for next trigger
     return trap
   }
@@ -768,12 +779,7 @@ export function initializeFeaturesFromVault(
 
   // Initialize merchants
   for (const mp of vault.merchantPositions) {
-    const state = initializeMerchant(
-      mp.merchantId,
-      { x: mp.x, y: mp.y },
-      depth,
-      generateInventory
-    )
+    const state = initializeMerchant(mp.merchantId, { x: mp.x, y: mp.y }, depth, generateInventory)
     if (state) {
       merchants.push(state)
     }

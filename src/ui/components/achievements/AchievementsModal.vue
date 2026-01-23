@@ -32,16 +32,16 @@ const categoryOrder: Record<string, number> = {
 
 // Icon groups for sorting related achievements together
 const iconGroupOrder: Record<string, number> = {
-  '!': 0,  // First blood
-  'v': 1,  // Depth achievements
-  '*': 2,  // Victory
-  'M': 3,  // Massacre
-  '>': 4,  // Speed demon
-  '$': 5,  // Gold achievements
-  'k': 6,  // Kill achievements (centurion)
-  'K': 7,  // Kill achievements (higher tiers)
-  '#': 8,  // Run completion
-  'x': 9,  // Death achievements
+  '!': 0, // First blood
+  v: 1, // Depth achievements
+  '*': 2, // Victory
+  M: 3, // Massacre
+  '>': 4, // Speed demon
+  $: 5, // Gold achievements
+  k: 6, // Kill achievements (centurion)
+  K: 7, // Kill achievements (higher tiers)
+  '#': 8, // Run completion
+  x: 9, // Death achievements
 }
 
 // Get status priority for sorting (lower = higher priority)
@@ -74,9 +74,7 @@ const filteredAchievements = computed(() => {
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(
-      (a) =>
-        a.name.toLowerCase().includes(query) ||
-        a.description.toLowerCase().includes(query)
+      (a) => a.name.toLowerCase().includes(query) || a.description.toLowerCase().includes(query)
     )
   }
 
@@ -155,8 +153,7 @@ const selectedAchievement = ref<Achievement | null>(null)
 
 function selectAchievement(achievement: Achievement) {
   // For now, just toggle selection for potential detail view
-  selectedAchievement.value =
-    selectedAchievement.value?.id === achievement.id ? null : achievement
+  selectedAchievement.value = selectedAchievement.value?.id === achievement.id ? null : achievement
 }
 
 function claimAchievement(achievement: Achievement) {
@@ -169,9 +166,7 @@ function claimAchievement(achievement: Achievement) {
     <header class="modal-header">
       <div class="header-title">
         <h2>Achievements</h2>
-        <span class="achievement-count">
-          {{ stats.unlocked }}/{{ stats.total }} Unlocked
-        </span>
+        <span class="achievement-count"> {{ stats.unlocked }}/{{ stats.total }} Unlocked </span>
         <span class="essence-earned">
           <span class="essence-icon">&#x25C6;</span>
           {{ stats.essenceCollected }} earned
@@ -289,8 +284,13 @@ function claimAchievement(achievement: Achievement) {
 }
 
 @keyframes pulse-pending {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .essence-icon {

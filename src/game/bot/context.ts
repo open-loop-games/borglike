@@ -91,16 +91,20 @@ export function buildBotContext(
   const effectiveConfig = computeEffectiveConfig(config, classProfile)
 
   // Find visible monsters
-  const visibleMonsters = profile('ctx.monsters', () => game.monsters.filter((m) => {
-    const tile = getTile(game.currentLevel, m.position.x, m.position.y)
-    return tile?.visible ?? false
-  }))
+  const visibleMonsters = profile('ctx.monsters', () =>
+    game.monsters.filter((m) => {
+      const tile = getTile(game.currentLevel, m.position.x, m.position.y)
+      return tile?.visible ?? false
+    })
+  )
 
   // Find visible items
-  const visibleItems = profile('ctx.items', () => game.items.filter((item) => {
-    const tile = getTile(game.currentLevel, item.position.x, item.position.y)
-    return tile?.visible ?? false
-  }))
+  const visibleItems = profile('ctx.items', () =>
+    game.items.filter((item) => {
+      const tile = getTile(game.currentLevel, item.position.x, item.position.y)
+      return tile?.visible ?? false
+    })
+  )
 
   // Find visible altars (from Map values)
   const visibleAltars: AltarState[] = profile('ctx.altars', () => {
@@ -115,19 +119,21 @@ export function buildBotContext(
   })
 
   // Find visible merchants
-  const visibleMerchants = profile('ctx.merchants', () => game.merchants.filter((merchant) => {
-    const tile = getTile(game.currentLevel, merchant.position.x, merchant.position.y)
-    return tile?.visible ?? false
-  }))
+  const visibleMerchants = profile('ctx.merchants', () =>
+    game.merchants.filter((merchant) => {
+      const tile = getTile(game.currentLevel, merchant.position.x, merchant.position.y)
+      return tile?.visible ?? false
+    })
+  )
 
   // Find known stairs
   const knownStairs = findKnownStairs(game)
 
   // Find unexplored tiles (frontier) - use cached count for quick check
   // Full list is only computed lazily if actually needed
-  const unexploredTiles = profile('ctx.unexplored', () => botState
-    ? getCachedUnexploredTiles(game, botState)
-    : findUnexploredTiles(game))
+  const unexploredTiles = profile('ctx.unexplored', () =>
+    botState ? getCachedUnexploredTiles(game, botState) : findUnexploredTiles(game)
+  )
 
   return {
     game,
@@ -207,9 +213,11 @@ function getCachedUnexploredTiles(game: GameState, botState: BotState): Point[] 
   const currentTurn = game.turn
 
   // Fast path: if same depth and within interval, return cached result
-  if (unexploredCache &&
-      unexploredCache.depth === currentDepth &&
-      currentTurn - unexploredCache.turn < EXPLORED_RECOUNT_INTERVAL) {
+  if (
+    unexploredCache &&
+    unexploredCache.depth === currentDepth &&
+    currentTurn - unexploredCache.turn < EXPLORED_RECOUNT_INTERVAL
+  ) {
     // Return sentinel based on cached state
     const hasUnexplored = unexploredCache.exploredCount < level.width * level.height * 0.95
     return hasUnexplored ? [{ x: 0, y: 0 }] : []
@@ -226,7 +234,8 @@ function getCachedUnexploredTiles(game: GameState, botState: BotState): Point[] 
   }
 
   // Check if exploration state changed
-  const exploredChanged = unexploredCache === null ||
+  const exploredChanged =
+    unexploredCache === null ||
     unexploredCache.depth !== currentDepth ||
     unexploredCache.exploredCount !== exploredCount
 

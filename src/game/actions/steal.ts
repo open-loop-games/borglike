@@ -40,7 +40,7 @@ export function canSteal(game: GameState, monster: Monster): boolean {
  * @returns ActionResult with success/failure and message
  */
 export function handleSteal(game: GameState, targetId: string): ActionResult {
-  const monster = game.monsters.find(m => m.id === targetId && m.hp > 0)
+  const monster = game.monsters.find((m) => m.id === targetId && m.hp > 0)
 
   if (!monster) {
     return { success: false, message: 'No target found.', energyCost: 0 }

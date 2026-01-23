@@ -123,38 +123,34 @@ const shadowForm: ShapeformTemplate = {
 // FORM REGISTRY
 // ============================================================================
 
-export const SHAPEFORMS: ShapeformTemplate[] = [
-  bearForm,
-  ravenForm,
-  shadowForm,
-]
+export const SHAPEFORMS: ShapeformTemplate[] = [bearForm, ravenForm, shadowForm]
 
 /**
  * Get a shapeform by ID
  */
 export function getFormById(formId: string): ShapeformTemplate | undefined {
-  return SHAPEFORMS.find(f => f.id === formId)
+  return SHAPEFORMS.find((f) => f.id === formId)
 }
 
 /**
  * Get all forms available to a specific class
  */
 export function getFormsForClass(classId: string): ShapeformTemplate[] {
-  return SHAPEFORMS.filter(f => f.classId === classId)
+  return SHAPEFORMS.filter((f) => f.classId === classId)
 }
 
 /**
  * Get all forms available to a character (class + level check)
  */
 export function getAvailableForms(classId: string, level: number): ShapeformTemplate[] {
-  return SHAPEFORMS.filter(f => f.classId === classId && level >= f.minLevel)
+  return SHAPEFORMS.filter((f) => f.classId === classId && level >= f.minLevel)
 }
 
 /**
  * Check if a character can use shapeshifting at all
  */
 export function canShapeshift(classId: string): boolean {
-  return SHAPEFORMS.some(f => f.classId === classId)
+  return SHAPEFORMS.some((f) => f.classId === classId)
 }
 
 /**

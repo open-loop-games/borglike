@@ -136,9 +136,11 @@ export function findFrontierTiles(game: GameState): FrontierTile[] {
 
   // Check if we need to recompute the frontier positions
   let cachedTiles: Array<{ position: Point; unexploredNeighbors: number }>
-  if (frontierCache &&
-      frontierCache.exploredCount === exploredCount &&
-      frontierCache.levelDepth === game.character.depth) {
+  if (
+    frontierCache &&
+    frontierCache.exploredCount === exploredCount &&
+    frontierCache.levelDepth === game.character.depth
+  ) {
     // Use cached tiles
     cachedTiles = frontierCache.tiles
   } else {
@@ -152,7 +154,7 @@ export function findFrontierTiles(game: GameState): FrontierTile[] {
   }
 
   // Calculate distances and scores from current position (not cached)
-  const frontier: FrontierTile[] = cachedTiles.map(t => {
+  const frontier: FrontierTile[] = cachedTiles.map((t) => {
     const distance = chebyshevDistance(pos, t.position)
     const score = t.unexploredNeighbors * 10 - distance
     return {
@@ -187,10 +189,12 @@ export function getFrontierPositions(game: GameState): Point[] {
   }
 
   // Check cache
-  if (frontierCache &&
-      frontierCache.exploredCount === exploredCount &&
-      frontierCache.levelDepth === game.character.depth) {
-    return frontierCache.tiles.map(t => t.position)
+  if (
+    frontierCache &&
+    frontierCache.exploredCount === exploredCount &&
+    frontierCache.levelDepth === game.character.depth
+  ) {
+    return frontierCache.tiles.map((t) => t.position)
   }
 
   // Cache miss - compute and cache
@@ -200,7 +204,7 @@ export function getFrontierPositions(game: GameState): Point[] {
     exploredCount,
     levelDepth: game.character.depth,
   }
-  return tiles.map(t => t.position)
+  return tiles.map((t) => t.position)
 }
 
 /**
@@ -258,7 +262,9 @@ function findSweepFrontierTiles(game: GameState, botState: BotState): FrontierTi
 /**
  * Compute frontier positions (internal, for caching)
  */
-function computeFrontierPositions(game: GameState): Array<{ position: Point; unexploredNeighbors: number }> {
+function computeFrontierPositions(
+  game: GameState
+): Array<{ position: Point; unexploredNeighbors: number }> {
   const level = game.currentLevel
   const result: Array<{ position: Point; unexploredNeighbors: number }> = []
 
@@ -318,9 +324,7 @@ export function findExplorationTarget(
   const pos = game.character.position
 
   // Get frontier tiles - either unexplored (normal) or unseen-this-visit (sweep)
-  const frontier = sweepMode
-    ? findSweepFrontierTiles(game, botState)
-    : findFrontierTiles(game)
+  const frontier = sweepMode ? findSweepFrontierTiles(game, botState) : findFrontierTiles(game)
 
   if (frontier.length === 0) {
     return null
@@ -340,7 +344,7 @@ export function findExplorationTarget(
 
   // Check if good alternatives exist (for dead-end penalty logic)
   // Only penalize dead ends when there are better options available
-  const hasGoodAlternatives = frontier.some(f => f.unexploredNeighbors >= GOOD_FRONTIER_THRESHOLD)
+  const hasGoodAlternatives = frontier.some((f) => f.unexploredNeighbors >= GOOD_FRONTIER_THRESHOLD)
 
   for (const f of frontier) {
     // In sweep mode, the frontier tile IS the target (already walkable)
@@ -400,18 +404,30 @@ export function findExplorationTarget(
     // Dead-end penalty: penalize terminal frontiers in corridors when better options exist
     // Skip dead-end penalty in sweep mode (we want to cover everything)
     let deadEndPenalty = 0
-    if (!sweepMode && hasGoodAlternatives && isLikelyDeadEnd(level, f.position, target, f.unexploredNeighbors)) {
+    if (
+      !sweepMode &&
+      hasGoodAlternatives &&
+      isLikelyDeadEnd(level, f.position, target, f.unexploredNeighbors)
+    ) {
       deadEndPenalty = DEAD_END_PENALTY
     }
 
     // Short-distance penalty: discourage very close targets to reduce goal thrashing
     // Penalties: dist 1 = -48, dist 2 = -36, dist 3 = -24, dist 4 = -12
-    const shortDistancePenalty = distance < SHORT_DISTANCE_THRESHOLD
-      ? (SHORT_DISTANCE_THRESHOLD - distance) * SHORT_DISTANCE_PENALTY_MULTIPLIER
-      : 0
+    const shortDistancePenalty =
+      distance < SHORT_DISTANCE_THRESHOLD
+        ? (SHORT_DISTANCE_THRESHOLD - distance) * SHORT_DISTANCE_PENALTY_MULTIPLIER
+        : 0
 
     // Score: frontier potential + persistence + direction - distance - penalties
-    const finalScore = f.unexploredNeighbors * 15 + persistenceBonus + directionalBonus - distance - visitPenalty - deadEndPenalty - shortDistancePenalty
+    const finalScore =
+      f.unexploredNeighbors * 15 +
+      persistenceBonus +
+      directionalBonus -
+      distance -
+      visitPenalty -
+      deadEndPenalty -
+      shortDistancePenalty
 
     // Track current target's score for hysteresis
     if (currentGoalTarget && target.x === currentGoalTarget.x && target.y === currentGoalTarget.y) {
@@ -426,11 +442,11 @@ export function findExplorationTarget(
 
   // Apply hysteresis: only switch if new target is significantly better
   if (bestTarget && currentGoalTarget && currentTargetScore > -Infinity) {
-    const rawBestScore = bestScore - (
-      bestTarget.x === currentGoalTarget.x && bestTarget.y === currentGoalTarget.y
+    const rawBestScore =
+      bestScore -
+      (bestTarget.x === currentGoalTarget.x && bestTarget.y === currentGoalTarget.y
         ? CURRENT_TARGET_PERSISTENCE_BONUS
-        : 0
-    )
+        : 0)
     // If current target is still reasonable, stick with it
     if (rawBestScore < currentTargetScore + TARGET_SWITCH_THRESHOLD) {
       // Check if current target is still valid (not blacklisted, reachable)
@@ -445,7 +461,9 @@ export function findExplorationTarget(
 
   // Debug logging
   if (typeof process !== 'undefined' && process.env.DEBUG_EXPLORATION) {
-    console.log(`[EXPLORE] pos=(${pos.x},${pos.y}) frontier=${frontier.length} bestTarget=${bestTarget ? `(${bestTarget.x},${bestTarget.y})` : 'null'}`)
+    console.log(
+      `[EXPLORE] pos=(${pos.x},${pos.y}) frontier=${frontier.length} bestTarget=${bestTarget ? `(${bestTarget.x},${bestTarget.y})` : 'null'}`
+    )
   }
 
   return bestTarget
@@ -486,7 +504,7 @@ function getRecentVisitPenalty(botState: BotState, pos: Point): number {
     // Also penalize nearby positions
     const dist = chebyshevDistance(p, pos)
     if (dist <= 2) {
-      penalty += (5 - dist) * (recent.length - i) / recent.length
+      penalty += ((5 - dist) * (recent.length - i)) / recent.length
     }
   }
 
@@ -528,7 +546,7 @@ export function getExplorationStats(game: GameState): ExplorationStats {
 
   // Check if stairs are found
   const stairsFound = level.stairsDown
-    ? getTile(level, level.stairsDown.x, level.stairsDown.y)?.explored ?? false
+    ? (getTile(level, level.stairsDown.x, level.stairsDown.y)?.explored ?? false)
     : false
 
   return {
@@ -668,9 +686,10 @@ function floodFillCluster(
     }
   }
 
-  const center = clusterTiles.length > 0
-    ? { x: Math.floor(sumX / clusterTiles.length), y: Math.floor(sumY / clusterTiles.length) }
-    : start
+  const center =
+    clusterTiles.length > 0
+      ? { x: Math.floor(sumX / clusterTiles.length), y: Math.floor(sumY / clusterTiles.length) }
+      : start
 
   return {
     center,
@@ -682,10 +701,7 @@ function floodFillCluster(
 /**
  * Find the best cluster to explore
  */
-export function findBestCluster(
-  game: GameState,
-  botState: BotState
-): ExplorationCluster | null {
+export function findBestCluster(game: GameState, botState: BotState): ExplorationCluster | null {
   const clusters = findExplorationClusters(game)
   const pos = game.character.position
 
@@ -831,16 +847,19 @@ function isWalkableTile(level: DungeonLevel, x: number, y: number): boolean {
  * Prefers continuing in the same direction, then turning
  * Only returns targets with unexplored potential to avoid oscillation
  */
-export function findCorridorContinuation(
-  game: GameState,
-  botState: BotState
-): Point | null {
+export function findCorridorContinuation(game: GameState, botState: BotState): Point | null {
   const pos = game.character.position
   const level = game.currentLevel
   const facing = botState.corridorFacing
 
   // Get all walkable neighbors with exploration potential
-  const candidates: { pos: Point; dir: Direction; unexplored: number; isContinuation: boolean; isRecent: boolean }[] = []
+  const candidates: {
+    pos: Point
+    dir: Direction
+    unexplored: number
+    isContinuation: boolean
+    isRecent: boolean
+  }[] = []
 
   const cardinalDirs: Direction[] = ['n', 's', 'e', 'w']
 
@@ -923,10 +942,7 @@ export function findCorridorContinuation(
  * In labyrinths, prefer corridor-following over frontier optimization,
  * but exit corridor mode if there's a significantly better target elsewhere.
  */
-export function findLabyrinthExplorationTarget(
-  game: GameState,
-  botState: BotState
-): Point | null {
+export function findLabyrinthExplorationTarget(game: GameState, botState: BotState): Point | null {
   const pos = game.character.position
 
   // First, get the best frontier-based target for comparison

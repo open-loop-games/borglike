@@ -64,7 +64,7 @@ export const TOWN_SHOP_IDS = [
   'town_magic',
 ] as const
 
-export type TownShopId = typeof TOWN_SHOP_IDS[number]
+export type TownShopId = (typeof TOWN_SHOP_IDS)[number]
 
 /**
  * Shop positions indexed by shop ID
@@ -76,11 +76,11 @@ export type TownShopId = typeof TOWN_SHOP_IDS[number]
  * - Bottom-right building: Alchemy (4) and Magic (5)
  */
 export const TOWN_SHOP_POSITIONS: Record<TownShopId, Point> = {
-  town_general: { x: 4, y: 3 },   // Top-left building
-  town_armory: { x: 4, y: 11 },   // Bottom-left, upper floor
-  town_weapons: { x: 4, y: 12 },  // Bottom-left, lower floor
+  town_general: { x: 4, y: 3 }, // Top-left building
+  town_armory: { x: 4, y: 11 }, // Bottom-left, upper floor
+  town_weapons: { x: 4, y: 12 }, // Bottom-left, lower floor
   town_alchemy: { x: 43, y: 12 }, // Bottom-right, lower floor
-  town_magic: { x: 43, y: 11 },   // Bottom-right, upper floor
+  town_magic: { x: 43, y: 11 }, // Bottom-right, upper floor
 }
 
 // ============================================================================

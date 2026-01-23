@@ -88,13 +88,13 @@ export function reportProfile(): void {
   console.log(`Total tracked: ${totalTime.toFixed(1)}ms\n`)
 
   for (const [name, t] of sorted) {
-    const pct = (t.total / totalTime * 100).toFixed(1)
-    const avg = (t.total / t.calls * 1000).toFixed(1)
+    const pct = ((t.total / totalTime) * 100).toFixed(1)
+    const avg = ((t.total / t.calls) * 1000).toFixed(1)
     console.log(
       `${pct.padStart(5)}%  ${t.total.toFixed(1).padStart(8)}ms  ` +
-      `${t.calls.toString().padStart(7)} calls  ` +
-      `${avg.padStart(7)}µs avg  ` +
-      `[${t.min.toFixed(2)}-${t.max.toFixed(2)}ms]  ${name}`
+        `${t.calls.toString().padStart(7)} calls  ` +
+        `${avg.padStart(7)}µs avg  ` +
+        `[${t.min.toFixed(2)}-${t.max.toFixed(2)}ms]  ${name}`
     )
   }
 }

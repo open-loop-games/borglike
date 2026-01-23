@@ -87,14 +87,14 @@ const ITEM_CHARS: Record<string, string> = {
 
 // Item color by tier
 const TIER_COLORS: Record<number, number> = {
-  1: 0x94a3b8,  // gray (common)
-  2: 0x22c55e,  // green (uncommon)
-  3: 0x3b82f6,  // blue (rare)
-  4: 0xa855f7,  // purple (epic)
+  1: 0x94a3b8, // gray (common)
+  2: 0x22c55e, // green (uncommon)
+  3: 0x3b82f6, // blue (rare)
+  4: 0xa855f7, // purple (epic)
 }
 
 // Artifact color
-const ARTIFACT_COLOR = 0xf59e0b  // amber
+const ARTIFACT_COLOR = 0xf59e0b // amber
 
 // Monster colors (matching Angband color names to hex)
 const MONSTER_COLORS: Record<string, number> = {
@@ -127,7 +127,7 @@ function toDisplayItem(item: Item): DisplayItem {
     id: item.id,
     name: item.artifact?.name ?? item.template.name,
     char: ITEM_CHARS[item.template.type] ?? '*',
-    color: isArtifact ? ARTIFACT_COLOR : TIER_COLORS[item.template.tier] ?? 0x94a3b8,
+    color: isArtifact ? ARTIFACT_COLOR : (TIER_COLORS[item.template.tier] ?? 0x94a3b8),
     enchantment: item.enchantment,
     isArtifact,
     tier: item.template.tier,
@@ -163,9 +163,12 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
 
   // Create run config with defaults
   const settings = useSettingsStore()
-  const raceName = config?.race || availableRaces[randomInt(0, availableRaces.length - 1)] || 'Human'
-  const className = config?.class || availableClasses[randomInt(0, availableClasses.length - 1)] || 'Warrior'
-  const personality: BotPersonality = (config?.personality as BotPersonality) || settings.settings.defaultPersonality
+  const raceName =
+    config?.race || availableRaces[randomInt(0, availableRaces.length - 1)] || 'Human'
+  const className =
+    config?.class || availableClasses[randomInt(0, availableClasses.length - 1)] || 'Warrior'
+  const personality: BotPersonality =
+    (config?.personality as BotPersonality) || settings.settings.defaultPersonality
 
   const runConfig: RunConfig = {
     race: raceName,
@@ -324,7 +327,7 @@ function updateRunFromGame(runId: string, game: GameState, botState?: BotState):
     }
 
     // Sync status effects
-    run.statusEffects = game.character.statusEffects.map(effect => ({
+    run.statusEffects = game.character.statusEffects.map((effect) => ({
       type: effect.type,
       turnsRemaining: effect.turnsRemaining,
       value: effect.value,
@@ -350,11 +353,8 @@ function updateRunFromGame(runId: string, game: GameState, botState?: BotState):
 
     // Check depth blocker for next depth
     const nextDepth = game.character.depth + 1
-    run.depthBlocker = getDepthReadiness(
-      game.character,
-      game.character.inventory,
-      nextDepth
-    ) ?? undefined
+    run.depthBlocker =
+      getDepthReadiness(game.character, game.character.inventory, nextDepth) ?? undefined
   }
 }
 
@@ -406,7 +406,13 @@ function createLocalGrid(): LocalGridCell[][] {
 }
 
 // Set cell in local grid (bounds-checked)
-function setLocalCell(grid: LocalGridCell[][], row: number, col: number, char: string, color: number): void {
+function setLocalCell(
+  grid: LocalGridCell[][],
+  row: number,
+  col: number,
+  char: string,
+  color: number
+): void {
   if (row < 0 || row >= VIEWPORT_HEIGHT || col < 0 || col >= VIEWPORT_WIDTH) return
   const rowArray = grid[row]
   if (rowArray) rowArray[col] = { char, color }
@@ -432,7 +438,8 @@ function renderEntities<T>(
 
     const screenX = pos.x - offsetX
     const screenY = pos.y - offsetY
-    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT) continue
+    if (screenX < 0 || screenX >= VIEWPORT_WIDTH || screenY < 0 || screenY >= VIEWPORT_HEIGHT)
+      continue
 
     const display = getDisplay(entity)
     if (!display) continue
@@ -538,41 +545,71 @@ function renderGameToGrid(runId: string, game: GameState): void {
   }
 
   // Render fountains
-  renderEntities(grid, game.fountains.values(), level, offsetX, offsetY,
-    f => f.position,
-    f => ({ char: f.usesRemaining > 0 ? '≈' : '~', color: f.template.color })
+  renderEntities(
+    grid,
+    game.fountains.values(),
+    level,
+    offsetX,
+    offsetY,
+    (f) => f.position,
+    (f) => ({ char: f.usesRemaining > 0 ? '≈' : '~', color: f.template.color })
   )
 
   // Render altars
-  renderEntities(grid, game.altars.values(), level, offsetX, offsetY,
-    a => a.position,
-    a => ({ char: '_', color: a.template.color })
+  renderEntities(
+    grid,
+    game.altars.values(),
+    level,
+    offsetX,
+    offsetY,
+    (a) => a.position,
+    (a) => ({ char: '_', color: a.template.color })
   )
 
   // Render merchants
-  renderEntities(grid, game.merchants, level, offsetX, offsetY,
-    m => m.position,
+  renderEntities(
+    grid,
+    game.merchants,
+    level,
+    offsetX,
+    offsetY,
+    (m) => m.position,
     () => ({ char: 'P', color: 0xf59e0b }) // amber
   )
 
   // Render healer NPC (wrap single entity in array)
   if (game.healer) {
-    renderEntities(grid, [game.healer], level, offsetX, offsetY,
-      h => h.position,
+    renderEntities(
+      grid,
+      [game.healer],
+      level,
+      offsetX,
+      offsetY,
+      (h) => h.position,
       () => ({ char: 'H', color: 0x22c55e }) // green
     )
   }
 
   // Render revealed traps (filter in getDisplay)
-  renderEntities(grid, game.traps.values(), level, offsetX, offsetY,
-    t => t.position,
-    t => (!t.revealed || t.triggered) ? null : { char: '^', color: t.template.color }
+  renderEntities(
+    grid,
+    game.traps.values(),
+    level,
+    offsetX,
+    offsetY,
+    (t) => t.position,
+    (t) => (!t.revealed || t.triggered ? null : { char: '^', color: t.template.color })
   )
 
   // Render items
-  renderEntities(grid, game.items, level, offsetX, offsetY,
-    i => i.position,
-    item => {
+  renderEntities(
+    grid,
+    game.items,
+    level,
+    offsetX,
+    offsetY,
+    (i) => i.position,
+    (item) => {
       if (item.goldValue) return { char: '$', color: 0xfbbf24 }
       if (item.template.type === 'potion') return { char: '!', color: 0x8b5cf6 }
       if (item.template.type === 'scroll') return { char: '?', color: 0xffffff }
@@ -583,9 +620,14 @@ function renderGameToGrid(runId: string, game: GameState): void {
   )
 
   // Render monsters
-  renderEntities(grid, game.monsters, level, offsetX, offsetY,
-    m => m.position,
-    m => ({ char: m.template.char, color: MONSTER_COLORS[m.template.color] ?? 0xef4444 })
+  renderEntities(
+    grid,
+    game.monsters,
+    level,
+    offsetX,
+    offsetY,
+    (m) => m.position,
+    (m) => ({ char: m.template.char, color: MONSTER_COLORS[m.template.color] ?? 0xef4444 })
   )
 
   // Render player (convert world to screen coordinates)
@@ -593,7 +635,12 @@ function renderGameToGrid(runId: string, game: GameState): void {
   const playerScreenY = playerPos.y - offsetY
   let cursorX = 0
   let cursorY = 0
-  if (playerScreenX >= 0 && playerScreenX < VIEWPORT_WIDTH && playerScreenY >= 0 && playerScreenY < VIEWPORT_HEIGHT) {
+  if (
+    playerScreenX >= 0 &&
+    playerScreenX < VIEWPORT_WIDTH &&
+    playerScreenY >= 0 &&
+    playerScreenY < VIEWPORT_HEIGHT
+  ) {
     setLocalCell(grid, playerScreenY, playerScreenX, '@', 0x22c55e)
     cursorX = playerScreenX
     cursorY = playerScreenY
@@ -662,7 +709,12 @@ function startGameLoop(runId: string): void {
 /**
  * Handle game end
  */
-async function handleGameEnd(runId: string, result: RunResult, _config: RunConfig, slot: number): Promise<void> {
+async function handleGameEnd(
+  runId: string,
+  result: RunResult,
+  _config: RunConfig,
+  slot: number
+): Promise<void> {
   const runs = useRunsStore()
   const feed = useFeedStore()
 

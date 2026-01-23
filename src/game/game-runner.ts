@@ -8,7 +8,14 @@
 import type { GameState, GameEvent, GameEventListener, RunConfig, BotPersonality } from './types'
 import { MAX_DEPTH } from './types'
 import { createGame, processTurn } from './game-loop'
-import { runBotTick, buildBotContext, getBotStatus, evaluateDanger, createBotState, type BotState } from './bot'
+import {
+  runBotTick,
+  buildBotContext,
+  getBotStatus,
+  evaluateDanger,
+  createBotState,
+  type BotState,
+} from './bot'
 
 // ============================================================================
 // CONSTANTS

@@ -279,9 +279,7 @@ export function getAchievementById(id: string): Achievement | undefined {
 /**
  * Get achievements by category
  */
-export function getAchievementsByCategory(
-  category: Achievement['category']
-): Achievement[] {
+export function getAchievementsByCategory(category: Achievement['category']): Achievement[] {
   return achievements.filter((a) => a.category === category)
 }
 

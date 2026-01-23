@@ -48,7 +48,10 @@ export interface UpgradeLevels {
  * @param upgradePowerPercent - Power multiplier for upgrades (100 = normal)
  * @returns Computed bonuses ready to apply to gameplay
  */
-export function computeUpgradeBonuses(levels: UpgradeLevels, upgradePowerPercent = 100): UpgradeBonuses {
+export function computeUpgradeBonuses(
+  levels: UpgradeLevels,
+  upgradePowerPercent = 100
+): UpgradeBonuses {
   // Scale factor for upgrade power
   const scale = upgradePowerPercent / 100
 

@@ -47,18 +47,10 @@ function formatTimeAgo(timestamp: number): string {
     </header>
 
     <nav class="modal-tabs">
-      <button
-        :class="{ active: activeTab === 'recent' }"
-        @click="activeTab = 'recent'"
-      >
+      <button :class="{ active: activeTab === 'recent' }" @click="activeTab = 'recent'">
         Recent ({{ recentRuns.length }})
       </button>
-      <button
-        :class="{ active: activeTab === 'top' }"
-        @click="activeTab = 'top'"
-      >
-        Top Runs
-      </button>
+      <button :class="{ active: activeTab === 'top' }" @click="activeTab = 'top'">Top Runs</button>
     </nav>
 
     <div class="modal-content">

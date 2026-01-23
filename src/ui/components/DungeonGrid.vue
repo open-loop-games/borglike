@@ -46,7 +46,11 @@ function getCellType(char: string): string {
   const mapped = CELL_TYPE_MAP[char]
   if (mapped) return mapped
   // Monsters: letters except P (merchant)
-  if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'O') || (char >= 'Q' && char <= 'Z')) {
+  if (
+    (char >= 'a' && char <= 'z') ||
+    (char >= 'A' && char <= 'O') ||
+    (char >= 'Q' && char <= 'Z')
+  ) {
     return 'cell-monster'
   }
   return 'cell-unknown'

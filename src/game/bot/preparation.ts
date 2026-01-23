@@ -34,8 +34,8 @@ export interface DepthRequirement {
  * Exception: Depth 50 (Morgoth) requires buff potions for the extended boss fight.
  */
 export const DEPTH_REQUIREMENTS: Record<number, DepthRequirement> = {
-  1:  { healingPotions: 0, escapeScrolls: 0, townPortals: 0, minHpPercent: 30 },
-  5:  { healingPotions: 1, escapeScrolls: 1, townPortals: 1, minHpPercent: 50 },
+  1: { healingPotions: 0, escapeScrolls: 0, townPortals: 0, minHpPercent: 30 },
+  5: { healingPotions: 1, escapeScrolls: 1, townPortals: 1, minHpPercent: 50 },
   10: { healingPotions: 2, escapeScrolls: 2, townPortals: 1, minHpPercent: 60 },
   15: { healingPotions: 3, escapeScrolls: 2, townPortals: 1, minHpPercent: 65 },
   20: { healingPotions: 3, escapeScrolls: 3, townPortals: 2, minHpPercent: 70 },
@@ -55,11 +55,10 @@ export const DEPTH_REQUIREMENTS: Record<number, DepthRequirement> = {
  * Includes Cure Light, Cure Serious, Cure Critical, and Healing potions.
  */
 export function countHealingPotions(inventory: Item[]): number {
-  return inventory.filter(item =>
-    item.template.type === 'potion' && (
-      item.template.name.includes('Cure') ||
-      item.template.name.includes('Healing')
-    )
+  return inventory.filter(
+    (item) =>
+      item.template.type === 'potion' &&
+      (item.template.name.includes('Cure') || item.template.name.includes('Healing'))
   ).length
 }
 
@@ -68,10 +67,11 @@ export function countHealingPotions(inventory: Item[]): number {
  * Used for tier-based requirements (e.g., "need at least 1 T3+ potion").
  */
 export function countHealingPotionsByTier(inventory: Item[], minTier: number): number {
-  return inventory.filter(item =>
-    item.template.type === 'potion' &&
-    (item.template.name.includes('Cure') || item.template.name.includes('Healing')) &&
-    item.template.tier >= minTier
+  return inventory.filter(
+    (item) =>
+      item.template.type === 'potion' &&
+      (item.template.name.includes('Cure') || item.template.name.includes('Healing')) &&
+      item.template.tier >= minTier
   ).length
 }
 
@@ -80,12 +80,12 @@ export function countHealingPotionsByTier(inventory: Item[], minTier: number): n
  * Includes Phase Door, Teleportation, and Teleport Level scrolls.
  */
 export function countEscapeScrolls(inventory: Item[]): number {
-  return inventory.filter(item =>
-    item.template.type === 'scroll' && (
-      item.template.name.includes('Phase Door') ||
-      item.template.name.includes('Teleportation') ||
-      item.template.name.includes('Teleport Level')
-    )
+  return inventory.filter(
+    (item) =>
+      item.template.type === 'scroll' &&
+      (item.template.name.includes('Phase Door') ||
+        item.template.name.includes('Teleportation') ||
+        item.template.name.includes('Teleport Level'))
   ).length
 }
 
@@ -93,9 +93,7 @@ export function countEscapeScrolls(inventory: Item[]): number {
  * Count Town Portal scrolls in inventory.
  */
 export function countTownPortals(inventory: Item[]): number {
-  return inventory.filter(item =>
-    item.template.name === 'Scroll of Town Portal'
-  ).length
+  return inventory.filter((item) => item.template.name === 'Scroll of Town Portal').length
 }
 
 /**
@@ -103,12 +101,12 @@ export function countTownPortals(inventory: Item[]): number {
  * Includes Speed, Heroism, and Berserk Strength potions.
  */
 export function countBuffPotions(inventory: Item[]): number {
-  return inventory.filter(item =>
-    item.template.type === 'potion' && (
-      item.template.name.includes('Speed') ||
-      item.template.name.includes('Heroism') ||
-      item.template.name.includes('Berserk')
-    )
+  return inventory.filter(
+    (item) =>
+      item.template.type === 'potion' &&
+      (item.template.name.includes('Speed') ||
+        item.template.name.includes('Heroism') ||
+        item.template.name.includes('Berserk'))
   ).length
 }
 
@@ -120,9 +118,10 @@ export function countBuffPotions(inventory: Item[]): number {
  * Healing potion tiers and their minDepth thresholds.
  * Derived from POTIONS data in items.ts.
  */
-const HEALING_POTION_TIERS = POTIONS
-  .filter(p => p.name.includes('Cure') || p.name.includes('Healing'))
-  .map(p => ({ tier: p.tier, minDepth: p.minDepth ?? 0, name: p.name }))
+const HEALING_POTION_TIERS = POTIONS.filter(
+  (p) => p.name.includes('Cure') || p.name.includes('Healing')
+)
+  .map((p) => ({ tier: p.tier, minDepth: p.minDepth ?? 0, name: p.name }))
   .sort((a, b) => a.minDepth - b.minDepth)
 
 /**
@@ -189,7 +188,7 @@ export function scaleRequirement(req: DepthRequirement, caution: number): DepthR
 export function getDepthBracket(depth: number): DepthRequirement {
   const brackets = Object.keys(DEPTH_REQUIREMENTS)
     .map(Number)
-    .filter(d => d <= depth)
+    .filter((d) => d <= depth)
     .sort((a, b) => b - a)
 
   const bracketDepth = brackets[0] ?? 1
@@ -241,7 +240,11 @@ export function getDepthReadiness(
   if (req.healingPotions > 0 && requiredTier > 1) {
     const highTierCount = countHealingPotionsByTier(inventory, requiredTier)
     if (highTierCount < 1) {
-      const tierNames: Record<number, string> = { 2: 'Cure Serious+', 3: 'Cure Critical+', 4: 'Healing' }
+      const tierNames: Record<number, string> = {
+        2: 'Cure Serious+',
+        3: 'Cure Critical+',
+        4: 'Healing',
+      }
       return `Need 1+ ${tierNames[requiredTier] ?? `T${requiredTier}`} potion (have ${highTierCount})`
     }
   }
@@ -318,8 +321,8 @@ export function isUnderPrepared(
 
 /** Shop price multipliers from merchants.ts */
 const SHOP_MULTIPLIERS = {
-  potion: 1.8,   // town_alchemy priceMultiplier
-  scroll: 2.2,  // town_magic priceMultiplier
+  potion: 1.8, // town_alchemy priceMultiplier
+  scroll: 2.2, // town_magic priceMultiplier
 }
 
 /** Buffer for HP restoration at healer */
@@ -338,13 +341,13 @@ function getShopPrice(tier: number, type: 'potion' | 'scroll'): number {
  * Get Phase Door scroll from data (T1 escape scroll).
  * Used for escape scroll pricing - no tier scaling per user requirement.
  */
-const PHASE_DOOR = SCROLLS.find(s => s.name.includes('Phase Door'))
+const PHASE_DOOR = SCROLLS.find((s) => s.name.includes('Phase Door'))
 const PHASE_DOOR_PRICE = PHASE_DOOR ? getShopPrice(PHASE_DOOR.tier, 'scroll') : 110
 
 /**
  * Get Town Portal scroll from data.
  */
-const TOWN_PORTAL = SCROLLS.find(s => s.name.includes('Town Portal'))
+const TOWN_PORTAL = SCROLLS.find((s) => s.name.includes('Town Portal'))
 const TOWN_PORTAL_PRICE = TOWN_PORTAL ? getShopPrice(TOWN_PORTAL.tier, 'scroll') : 220
 
 /**
@@ -400,7 +403,17 @@ function estimateItemSellValue(item: Item): number {
   const template = item.template
 
   // Only equipment has meaningful sell value
-  const sellableTypes = ['weapon', 'bow', 'armor', 'shield', 'helm', 'gloves', 'boots', 'ring', 'amulet']
+  const sellableTypes = [
+    'weapon',
+    'bow',
+    'armor',
+    'shield',
+    'helm',
+    'gloves',
+    'boots',
+    'ring',
+    'amulet',
+  ]
   if (!sellableTypes.includes(template.type)) return 0
 
   // Base value = tier * 50
@@ -448,9 +461,12 @@ export function getEffectiveGold(character: Character): number {
  */
 function getClassLevelOffset(tier: ClassTier): number {
   switch (tier) {
-    case 'TANK': return -4    // level >= depth - 4
-    case 'MEDIUM': return 0   // level >= depth
-    case 'SQUISHY': return 5  // level >= depth + 5
+    case 'TANK':
+      return -4 // level >= depth - 4
+    case 'MEDIUM':
+      return 0 // level >= depth
+    case 'SQUISHY':
+      return 5 // level >= depth + 5
   }
 }
 
@@ -509,8 +525,8 @@ export function getUniqueBlocker(
 
   // Find uniques whose minDepth is between current and target (inclusive of target)
   // These are uniques the player "should" encounter before going deeper
-  const blockingUniques = livingUniques.filter(name => {
-    const template = monsterTemplates.find(m => m.name === name)
+  const blockingUniques = livingUniques.filter((name) => {
+    const template = monsterTemplates.find((m) => m.name === name)
     if (!template) return false
     // Unique is "blocking" if its natural depth is at or above current,
     // but the player encountered it and let it live
@@ -536,8 +552,8 @@ export function getRelevantLivingUniques(
 ): string[] {
   const livingUniques = getLivingUniques(uniqueState)
 
-  return livingUniques.filter(name => {
-    const template = monsterTemplates.find(m => m.name === name)
+  return livingUniques.filter((name) => {
+    const template = monsterTemplates.find((m) => m.name === name)
     return template && template.minDepth <= targetDepth
   })
 }
@@ -563,12 +579,7 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
   if (character.depth === 0) return null
 
   // Check for unique blocker
-  const uniqueBlocker = getUniqueBlocker(
-    character.depth,
-    nextDepth,
-    game.uniqueState,
-    MONSTERS
-  )
+  const uniqueBlocker = getUniqueBlocker(character.depth, nextDepth, game.uniqueState, MONSTERS)
 
   if (!uniqueBlocker) {
     // No blocker - clear hunt state if active
@@ -580,10 +591,8 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
   }
 
   // Check if the blocking unique is visible on current level
-  const uniqueMonster = visibleMonsters.find(m =>
-    m.template.name === uniqueBlocker &&
-    m.template.flags?.includes('UNIQUE') &&
-    m.hp > 0
+  const uniqueMonster = visibleMonsters.find(
+    (m) => m.template.name === uniqueBlocker && m.template.flags?.includes('UNIQUE') && m.hp > 0
   )
 
   if (uniqueMonster) {
@@ -598,8 +607,8 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
   }
 
   // Unique exists but not visible - check if level is fully explored
-  const hasUnexploredTiles = game.currentLevel.tiles.some(row =>
-    row.some(tile => !tile.explored && tile.type !== 'wall')
+  const hasUnexploredTiles = game.currentLevel.tiles.some((row) =>
+    row.some((tile) => !tile.explored && tile.type !== 'wall')
   )
 
   if (hasUnexploredTiles) {

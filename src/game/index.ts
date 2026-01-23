@@ -79,12 +79,7 @@ export {
 // Note: GroundItem is exported from './types'
 
 // Game Loop
-export {
-  createGame,
-  processTurn,
-  addMessage,
-  BASE_ENERGY_COST,
-} from './game-loop'
+export { createGame, processTurn, addMessage, BASE_ENERGY_COST } from './game-loop'
 
 // Action Handlers
 export {
@@ -165,11 +160,7 @@ export {
 } from './bot'
 
 // Bot AI Types
-export type {
-  BotState,
-  BotGoal,
-  PersonalityConfig,
-} from './bot'
+export type { BotState, BotGoal, PersonalityConfig } from './bot'
 
 // Game Runner
 export {
@@ -196,7 +187,11 @@ export { computeBoosterBonuses, DEFAULT_BOOSTER_BONUSES } from './booster-effect
 export type { BoosterBonuses } from './booster-effects'
 
 // Knowledge Effects
-export { getKnowledgeBonus, getKnowledgeBonuses, DEFAULT_KNOWLEDGE_BONUSES } from './knowledge-effects'
+export {
+  getKnowledgeBonus,
+  getKnowledgeBonuses,
+  DEFAULT_KNOWLEDGE_BONUSES,
+} from './knowledge-effects'
 export type { KnowledgeBonuses } from './knowledge-effects'
 
 // Booster Data

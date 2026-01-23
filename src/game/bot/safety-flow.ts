@@ -76,10 +76,7 @@ export function computeSafetyFlow(
  *
  * Each tile's value = distance to nearest monster
  */
-function computeMonsterDistanceMap(
-  level: DungeonLevel,
-  monsters: Monster[]
-): Map<string, number> {
+function computeMonsterDistanceMap(level: DungeonLevel, monsters: Monster[]): Map<string, number> {
   const distMap = new Map<string, number>()
   const queue: Array<{ pos: Point; dist: number }> = []
 

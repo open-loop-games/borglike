@@ -214,14 +214,19 @@ export function processPoison(
 
 /** List of debuff status types */
 export const DEBUFF_TYPES: StatusEffect['type'][] = [
-  'blind', 'confused', 'paralyzed', 'slowed', 'terrified', 'drained'
+  'blind',
+  'confused',
+  'paralyzed',
+  'slowed',
+  'terrified',
+  'drained',
 ]
 
 /**
  * Check if character has any debuff status effect
  */
 export function hasAnyDebuff(character: Character): boolean {
-  return character.statusEffects.some(e => DEBUFF_TYPES.includes(e.type))
+  return character.statusEffects.some((e) => DEBUFF_TYPES.includes(e.type))
 }
 
 /**
@@ -231,8 +236,8 @@ export function removeStatusEffectIfPresent(
   character: Character,
   type: StatusEffect['type']
 ): boolean {
-  const had = character.statusEffects.some(e => e.type === type)
-  character.statusEffects = character.statusEffects.filter(e => e.type !== type)
+  const had = character.statusEffects.some((e) => e.type === type)
+  character.statusEffects = character.statusEffects.filter((e) => e.type !== type)
   return had
 }
 
@@ -243,7 +248,7 @@ export function removeStatusEffectIfPresent(
 export function removeAllDebuffs(character: Character): StatusEffect['type'][] {
   const removed: StatusEffect['type'][] = []
 
-  character.statusEffects = character.statusEffects.filter(e => {
+  character.statusEffects = character.statusEffects.filter((e) => {
     if (DEBUFF_TYPES.includes(e.type)) {
       removed.push(e.type)
       return false

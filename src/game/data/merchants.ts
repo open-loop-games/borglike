@@ -6,7 +6,14 @@
 
 import { random, randomInt } from '../rng'
 
-export type ShopType = 'general' | 'weapon' | 'armor' | 'potion' | 'scroll' | 'mixed' | 'blackmarket'
+export type ShopType =
+  | 'general'
+  | 'weapon'
+  | 'armor'
+  | 'potion'
+  | 'scroll'
+  | 'mixed'
+  | 'blackmarket'
 
 export interface MerchantDialogue {
   greeting: string[]
@@ -73,7 +80,7 @@ export const MERCHANTS: MerchantTemplate[] = [
     color: 0x64748b, // slate
     shopType: 'armor',
     priceMultiplier: 2.0,
-    sellMultiplier: 0.40,
+    sellMultiplier: 0.4,
     inventorySize: [6, 10],
     tierRange: [1, 2],
     minDepth: 0,
@@ -85,8 +92,12 @@ export const MERCHANTS: MerchantTemplate[] = [
         'Looking to bolster your defenses?',
       ],
       purchase: ['May it turn aside many blows!', 'Solid choice!', 'Wear it well!'],
-      sell: ['Good craftsmanship here.', "I can repair and resell this.", 'Decent condition.'],
-      farewell: ['Stay protected!', 'Armor up before you head down!', 'Come back when you need repairs!'],
+      sell: ['Good craftsmanship here.', 'I can repair and resell this.', 'Decent condition.'],
+      farewell: [
+        'Stay protected!',
+        'Armor up before you head down!',
+        'Come back when you need repairs!',
+      ],
       tooExpensive: ['Quality protection costs gold.', 'Your life is worth the price.'],
       cantAfford: ['Bring me armor, not trinkets.', 'I deal in protective gear.'],
     },
@@ -98,7 +109,7 @@ export const MERCHANTS: MerchantTemplate[] = [
     color: 0xef4444, // red
     shopType: 'weapon',
     priceMultiplier: 2.0,
-    sellMultiplier: 0.40,
+    sellMultiplier: 0.4,
     inventorySize: [6, 10],
     tierRange: [1, 2],
     minDepth: 0,
@@ -123,7 +134,7 @@ export const MERCHANTS: MerchantTemplate[] = [
     color: 0x8b5cf6, // purple
     shopType: 'potion',
     priceMultiplier: 1.8,
-    sellMultiplier: 0.30,
+    sellMultiplier: 0.3,
     inventorySize: [10, 15],
     tierRange: [1, 2],
     minDepth: 0,
@@ -136,7 +147,11 @@ export const MERCHANTS: MerchantTemplate[] = [
       ],
       purchase: ['Drink responsibly!', 'One sip makes all the difference!', 'Excellent choice!'],
       sell: ['Hmm, I can recycle this.', 'The ingredients may be useful.', 'Acceptable quality.'],
-      farewell: ['Stay healthy!', "Don't forget your healing potions!", 'May your flasks never run dry!'],
+      farewell: [
+        'Stay healthy!',
+        "Don't forget your healing potions!",
+        'May your flasks never run dry!',
+      ],
       tooExpensive: ["Quality ingredients aren't cheap!", 'Alchemy is an expensive art.'],
       cantAfford: ['Bring me potions or gold.', 'Empty flasks are worthless.'],
     },
@@ -207,7 +222,10 @@ export const MERCHANTS: MerchantTemplate[] = [
     minDepth: 12,
     baseGold: 800,
     dialogue: {
-      greeting: ['Looking for something with an edge?', 'The finest blades this side of the dungeon!'],
+      greeting: [
+        'Looking for something with an edge?',
+        'The finest blades this side of the dungeon!',
+      ],
       purchase: ['May it serve you well in battle!', 'Strike true!'],
       sell: ["A warrior's blade deserves respect.", 'This has seen some action.'],
       farewell: ['Fight well!', 'May your enemies fall before you!'],
@@ -343,10 +361,7 @@ export function getMerchantById(id: string): MerchantTemplate | undefined {
 /**
  * Get a random dialogue line
  */
-export function getDialogue(
-  template: MerchantTemplate,
-  type: keyof MerchantDialogue
-): string {
+export function getDialogue(template: MerchantTemplate, type: keyof MerchantDialogue): string {
   const lines = template.dialogue[type]
   return lines[randomInt(0, lines.length - 1)] ?? ''
 }

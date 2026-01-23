@@ -83,7 +83,7 @@ export function getDiceMin(notation: string): number {
   if (!parsed) return 0
 
   const { count, modifier } = parsed
-  return Math.max(0, count + modifier)  // Minimum is rolling all 1s
+  return Math.max(0, count + modifier) // Minimum is rolling all 1s
 }
 
 // ============================================================================

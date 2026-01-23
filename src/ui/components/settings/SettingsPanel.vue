@@ -254,9 +254,7 @@ function cancelReset() {
               <span v-if="hasAutoRestartUpgrade" class="setting-desc"
                 >Automatically start new run on death</span
               >
-              <span v-else class="setting-desc locked-desc"
-                >Requires Auto Restart upgrade</span
-              >
+              <span v-else class="setting-desc locked-desc">Requires Auto Restart upgrade</span>
             </div>
             <label class="toggle">
               <input

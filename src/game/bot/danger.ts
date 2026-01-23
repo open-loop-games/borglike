@@ -9,7 +9,12 @@ import type { Point, GameState, Monster, Character } from '../types'
 import { getAdjacentPositions } from '../dungeon'
 import type { DangerMap, DangerResult, DangerTier, PersonalityConfig } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
-import { findHealingPotion, findEscapeScroll, findNeutralizePoison, findResistancePotion } from './items'
+import {
+  findHealingPotion,
+  findEscapeScroll,
+  findNeutralizePoison,
+  findResistancePotion,
+} from './items'
 import { getEffectiveDamage, countAdjacentMonsters } from './combat'
 import { getMonsterAverageDamage } from '../monster-combat'
 
@@ -56,9 +61,7 @@ export function computeDangerGrid(game: GameState): DangerResult {
   const monsterHash = hashMonsterState(game.monsters)
   const charPos = `${game.character.position.x},${game.character.position.y}`
 
-  if (cachedDangerResult &&
-      monsterHash === cachedMonsterHash &&
-      charPos === cachedCharPos) {
+  if (cachedDangerResult && monsterHash === cachedMonsterHash && charPos === cachedCharPos) {
     // Cache hit - return cached result with updated turn
     return {
       ...cachedDangerResult,
@@ -95,8 +98,8 @@ export function computeDangerGrid(game: GameState): DangerResult {
 
   // Add status effect danger to character's position
   const adjacentCount = countAdjacentMonsters(game, character.position)
-  const hasPoisonCure = findNeutralizePoison(character) !== null ||
-                        findResistancePotion(character, 'poison') !== null
+  const hasPoisonCure =
+    findNeutralizePoison(character) !== null || findResistancePotion(character, 'poison') !== null
   const statusDanger = getStatusEffectDanger(character, adjacentCount, hasPoisonCure)
 
   if (statusDanger > 0) {
@@ -143,7 +146,17 @@ export function getStatusEffectDanger(
   // Check status effects
   for (const effect of character.statusEffects) {
     // Skip buffs
-    if (['speed', 'heroism', 'berserk', 'blessing', 'protection', 'immunity_fear', 'active_form'].includes(effect.type)) {
+    if (
+      [
+        'speed',
+        'heroism',
+        'berserk',
+        'blessing',
+        'protection',
+        'immunity_fear',
+        'active_form',
+      ].includes(effect.type)
+    ) {
       continue
     }
 
@@ -153,7 +166,7 @@ export function getStatusEffectDanger(
     switch (effect.type) {
       case 'paralyzed':
         // Can't act = death sentence if monsters adjacent
-        danger = 150 + (adjacentMonsterCount * 50)
+        danger = 150 + adjacentMonsterCount * 50
         if (turnsLeft === 1) danger *= 0.5
         break
 
@@ -173,7 +186,7 @@ export function getStatusEffectDanger(
 
       case 'slowed':
         // Enemies get more actions
-        danger = 30 + (adjacentMonsterCount * 15)
+        danger = 30 + adjacentMonsterCount * 15
         break
 
       case 'terrified':
@@ -256,7 +269,7 @@ export function getMonsterThreat(
     // Spellcasters are more dangerous
     threat += template.spells.list.length * 3
     // Breath weapons are especially dangerous
-    if (template.spells.list.some(s => s.startsWith('BR_'))) {
+    if (template.spells.list.some((s) => s.startsWith('BR_'))) {
       threat += 15
     }
   }

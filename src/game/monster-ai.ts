@@ -70,7 +70,7 @@ export function resetMonsterIdCounter(): void {
  * @returns A new Monster instance
  */
 export function spawnMonster(template: MonsterTemplate, position: Point, hpPercent = 100): Monster {
-  const adjustedHp = Math.max(1, Math.floor(template.hp * hpPercent / 100))
+  const adjustedHp = Math.max(1, Math.floor((template.hp * hpPercent) / 100))
   return {
     id: generateMonsterId(),
     template,
@@ -111,7 +111,7 @@ export function spawnMonstersForLevel(
 
   // Filter out uniques that have already spawned this run
   if (uniqueState) {
-    templates = templates.filter(t => {
+    templates = templates.filter((t) => {
       if (t.flags?.includes('UNIQUE') && uniqueState.spawned.has(t.name)) {
         return false
       }
@@ -536,9 +536,9 @@ const ENERGY_THRESHOLD = 100
  */
 export function updateMonsterEnergy(monster: Monster): boolean {
   // Apply slow debuff to speed calculation
-  const slowDebuff = monster.debuffs.find(d => d.type === 'slow')
+  const slowDebuff = monster.debuffs.find((d) => d.type === 'slow')
   const effectiveSpeed = slowDebuff
-    ? Math.floor(monster.template.speed * (100 - slowDebuff.value) / 100)
+    ? Math.floor((monster.template.speed * (100 - slowDebuff.value)) / 100)
     : monster.template.speed
 
   monster.energy += effectiveSpeed
@@ -557,7 +557,7 @@ export function updateMonsterEnergy(monster: Monster): boolean {
  * @param monster - The monster to tick debuffs for
  */
 export function tickMonsterDebuffs(monster: Monster): void {
-  monster.debuffs = monster.debuffs.filter(debuff => {
+  monster.debuffs = monster.debuffs.filter((debuff) => {
     debuff.turnsRemaining--
     return debuff.turnsRemaining > 0
   })
@@ -707,7 +707,7 @@ function executeMonsterAction(
           // Apply monster damage balance modifier
           let damage = spellResult.damage
           if (game.balance.monsterDamagePercent !== 100) {
-            damage = Math.max(1, Math.floor(damage * game.balance.monsterDamagePercent / 100))
+            damage = Math.max(1, Math.floor((damage * game.balance.monsterDamagePercent) / 100))
           }
           applyDamage(game.character, damage)
           game.stats.damageTaken += damage
@@ -739,13 +739,20 @@ function executeMonsterAction(
     // Apply monster damage balance modifier
     let totalDamage = attackResult.totalDamage
     if (totalDamage > 0 && game.balance.monsterDamagePercent !== 100) {
-      totalDamage = Math.max(1, Math.floor(totalDamage * game.balance.monsterDamagePercent / 100))
+      totalDamage = Math.max(1, Math.floor((totalDamage * game.balance.monsterDamagePercent) / 100))
     }
 
     // Apply knowledge bonuses (bestiary damage reduction)
-    const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent)
+    const knowledgeBonuses = getKnowledgeBonuses(
+      monster.template.name,
+      game.bestiary,
+      game.balance.bestiaryBonusPercent
+    )
     if (knowledgeBonuses.reductionPercent > 0 && totalDamage > 0) {
-      totalDamage = Math.max(1, Math.floor(totalDamage * (100 - knowledgeBonuses.reductionPercent) / 100))
+      totalDamage = Math.max(
+        1,
+        Math.floor((totalDamage * (100 - knowledgeBonuses.reductionPercent)) / 100)
+      )
     }
 
     // Format and display message

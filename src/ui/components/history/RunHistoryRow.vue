@@ -25,7 +25,8 @@ const personalityAbbrev: Record<string, string> = {
 
 const personalityDisplay = computed(() => {
   if (!props.run.personality) return null
-  const abbrev = personalityAbbrev[props.run.personality] ?? props.run.personality.slice(0, 3).toUpperCase()
+  const abbrev =
+    personalityAbbrev[props.run.personality] ?? props.run.personality.slice(0, 3).toUpperCase()
   return abbrev
 })
 
@@ -34,8 +35,8 @@ const equipmentTooltip = computed(() => {
   if (!props.run.equipment || props.run.equipment.length === 0) {
     return 'No equipment'
   }
-  const weapon = props.run.equipment.find(e => e.slot === 'weapon')
-  const armor = props.run.equipment.find(e => e.slot === 'armor')
+  const weapon = props.run.equipment.find((e) => e.slot === 'weapon')
+  const armor = props.run.equipment.find((e) => e.slot === 'armor')
   const parts = []
   if (weapon) {
     const enchant = weapon.enchantment > 0 ? ` +${weapon.enchantment}` : ''
@@ -82,12 +83,7 @@ const duration = computed(() => {
 </script>
 
 <template>
-  <div
-    class="run-row"
-    :class="{ expanded }"
-    :title="equipmentTooltip"
-    @click="emit('toggle')"
-  >
+  <div class="run-row" :class="{ expanded }" :title="equipmentTooltip" @click="emit('toggle')">
     <div class="row-collapsed">
       <span v-if="rank" class="rank">#{{ rank }}</span>
       <span class="time-ago">{{ timeAgo }}</span>
@@ -125,7 +121,10 @@ const duration = computed(() => {
           </div>
           <div v-if="run.personality" class="detail">
             <span class="label">Personality:</span>
-            <span class="value personality-value">{{ personalityDisplay }} <span class="personality-full">({{ run.personality }})</span></span>
+            <span class="value personality-value"
+              >{{ personalityDisplay }}
+              <span class="personality-full">({{ run.personality }})</span></span
+            >
           </div>
           <div v-if="run.seed" class="detail">
             <span class="label">Seed:</span>
@@ -155,11 +154,9 @@ const duration = computed(() => {
       <div v-if="run.inventory && run.inventory.length > 0" class="expanded-section">
         <h4>Inventory ({{ run.inventory.length }})</h4>
         <div class="inventory-list">
-          <span
-            v-for="(item, index) in run.inventory"
-            :key="index"
-            class="inventory-item"
-          >{{ item }}</span>
+          <span v-for="(item, index) in run.inventory" :key="index" class="inventory-item">{{
+            item
+          }}</span>
         </div>
       </div>
     </div>

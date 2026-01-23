@@ -128,7 +128,15 @@ export const VAULTS: VaultTemplate[] = [
     minDepth: 20,
     width: 9,
     height: 7,
-    layout: ['#########', '#$.$.$.$#', '#.......#', '#M.$.$.M#', '#.......#', '#$.$.$.$#', '####.####'],
+    layout: [
+      '#########',
+      '#$.$.$.$#',
+      '#.......#',
+      '#M.$.$.M#',
+      '#.......#',
+      '#$.$.$.$#',
+      '####.####',
+    ],
     monsterDensity: 1.5,
   },
   {
@@ -137,7 +145,15 @@ export const VAULTS: VaultTemplate[] = [
     minDepth: 12,
     width: 9,
     height: 7,
-    layout: ['#########', '#$^$^$^$#', '#^.....^#', '#$..*..$#', '#^.....^#', '#$^$^$^$#', '####.####'],
+    layout: [
+      '#########',
+      '#$^$^$^$#',
+      '#^.....^#',
+      '#$..*..$#',
+      '#^.....^#',
+      '#$^$^$^$#',
+      '####.####',
+    ],
     monsterDensity: 0,
     features: { trapId: 'spike_trap' },
   },
@@ -180,7 +196,15 @@ export const VAULTS: VaultTemplate[] = [
     minDepth: 10,
     width: 9,
     height: 7,
-    layout: ['#########', '#.......#', '#..F.F..#', '#.......#', '#..F.F..#', '#.......#', '####.####'],
+    layout: [
+      '#########',
+      '#.......#',
+      '#..F.F..#',
+      '#.......#',
+      '#..F.F..#',
+      '#.......#',
+      '####.####',
+    ],
     monsterDensity: 0.2,
     features: { fountainId: 'mysterious_fountain' },
   },
@@ -213,7 +237,15 @@ export const VAULTS: VaultTemplate[] = [
     minDepth: 15,
     width: 9,
     height: 7,
-    layout: ['#########', '#].].].]#', '#.......#', '#...@...#', '#.......#', '#].].].]#', '####.####'],
+    layout: [
+      '#########',
+      '#].].].]#',
+      '#.......#',
+      '#...@...#',
+      '#.......#',
+      '#].].].]#',
+      '####.####',
+    ],
     monsterDensity: 0,
     safeZone: true,
     features: { merchantId: 'arms_dealer' },
@@ -224,7 +256,15 @@ export const VAULTS: VaultTemplate[] = [
     minDepth: 10,
     width: 9,
     height: 7,
-    layout: ['#########', '#!.!.!.!#', '#.......#', '#...@...#', '#.......#', '#!.!.!.!#', '####.####'],
+    layout: [
+      '#########',
+      '#!.!.!.!#',
+      '#.......#',
+      '#...@...#',
+      '#.......#',
+      '#!.!.!.!#',
+      '####.####',
+    ],
     monsterDensity: 0,
     safeZone: true,
     features: { merchantId: 'alchemist' },
@@ -278,7 +318,15 @@ export const VAULTS: VaultTemplate[] = [
     minDepth: 20,
     width: 9,
     height: 7,
-    layout: ['#########', '#?.?.?.?#', '#.......#', '#?.?.?.?#', '#.......#', '#?.?.?.?#', '####.####'],
+    layout: [
+      '#########',
+      '#?.?.?.?#',
+      '#.......#',
+      '#?.?.?.?#',
+      '#.......#',
+      '#?.?.?.?#',
+      '####.####',
+    ],
     monsterDensity: 0.2,
     features: { itemType: 'scroll', itemTier: 3 },
   },
@@ -290,7 +338,15 @@ export const VAULTS: VaultTemplate[] = [
     minDepth: 10,
     width: 9,
     height: 7,
-    layout: ['#########', '#].].].]#', '#.......#', '#].].].]+', '#.......#', '#].].].]#', '#########'],
+    layout: [
+      '#########',
+      '#].].].]#',
+      '#.......#',
+      '#].].].]+',
+      '#.......#',
+      '#].].].]#',
+      '#########',
+    ],
     monsterDensity: 0.8,
     features: { itemType: 'equipment' },
   },
@@ -463,8 +519,14 @@ function isValidVaultPosition(
 
   // Check we're not overlapping existing rooms too much
   for (const room of rooms) {
-    const overlapX = Math.max(0, Math.min(x + vault.width, room.x + room.width) - Math.max(x, room.x))
-    const overlapY = Math.max(0, Math.min(y + vault.height, room.y + room.height) - Math.max(y, room.y))
+    const overlapX = Math.max(
+      0,
+      Math.min(x + vault.width, room.x + room.width) - Math.max(x, room.x)
+    )
+    const overlapY = Math.max(
+      0,
+      Math.min(y + vault.height, room.y + room.height) - Math.max(y, room.y)
+    )
     const overlapArea = overlapX * overlapY
 
     if (overlapArea > room.width * room.height * 0.3) {

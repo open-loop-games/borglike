@@ -24,7 +24,9 @@ const monsterTypes = computed(() => {
   const types = new Set<string>()
   for (const m of monsters) {
     for (const flag of m.flags) {
-      if (['DRAGON', 'ORC', 'TROLL', 'UNDEAD', 'DEMON', 'ANIMAL', 'GIANT', 'UNIQUE'].includes(flag)) {
+      if (
+        ['DRAGON', 'ORC', 'TROLL', 'UNDEAD', 'DEMON', 'ANIMAL', 'GIANT', 'UNIQUE'].includes(flag)
+      ) {
         types.add(flag)
       }
     }
@@ -38,13 +40,13 @@ const filteredMonsters = computed(() => {
 
   // Apply type filter
   if (typeFilter.value !== 'all') {
-    result = result.filter(m => m.flags.includes(typeFilter.value))
+    result = result.filter((m) => m.flags.includes(typeFilter.value))
   }
 
   // Apply search filter
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
-    result = result.filter(m => m.name.toLowerCase().includes(query))
+    result = result.filter((m) => m.name.toLowerCase().includes(query))
   }
 
   // Sort
@@ -71,7 +73,7 @@ const filteredMonsters = computed(() => {
 const discoveryStats = computed(() => ({
   discovered: Object.keys(progression.bestiary).length,
   total: monsters.length,
-  fullyUnlocked: Object.values(progression.bestiary).filter(e => e.kills >= 30).length,
+  fullyUnlocked: Object.values(progression.bestiary).filter((e) => e.kills >= 30).length,
 }))
 
 function selectMonster(monster: MonsterTemplate) {

@@ -59,7 +59,7 @@ const categoryColor = computed(() => {
       collected: isCollected,
       claimable: canClaim,
       locked: !isUnlocked,
-      hidden: isHidden
+      hidden: isHidden,
     }"
     @click="emit('click')"
   >
@@ -140,8 +140,13 @@ const categoryColor = computed(() => {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.3); }
-  50% { box-shadow: 0 0 16px rgba(139, 92, 246, 0.6); }
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(139, 92, 246, 0.6);
+  }
 }
 
 .card-content {

@@ -50,7 +50,7 @@ const activeResistances = computed(() => {
     .map(([type, value]) => ({
       type,
       value: value as number,
-      ...RESIST_CONFIG[type] || { label: type[0], color: '#94a3b8' }
+      ...(RESIST_CONFIG[type] || { label: type[0], color: '#94a3b8' }),
     }))
 })
 
@@ -65,9 +65,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 // Computed: formatted status effects
 const activeStatuses = computed(() => {
-  return props.run.statusEffects.map(effect => ({
+  return props.run.statusEffects.map((effect) => ({
     ...effect,
-    ...STATUS_CONFIG[effect.type] || { label: effect.type.toUpperCase(), color: '#94a3b8' }
+    ...(STATUS_CONFIG[effect.type] || { label: effect.type.toUpperCase(), color: '#94a3b8' }),
   }))
 })
 
@@ -236,21 +236,45 @@ function formatGoal(goal: string | undefined): string {
         >
           <div class="resource-row">
             <span class="stat-label">HP</span>
-            <ProgressBar :current="run.hp" :max="run.maxHp" variant="hp" :show-text="true" size="md" />
+            <ProgressBar
+              :current="run.hp"
+              :max="run.maxHp"
+              variant="hp"
+              :show-text="true"
+              size="md"
+            />
           </div>
           <div v-if="run.maxMp > 0" class="resource-row">
             <span class="stat-label">MP</span>
-            <ProgressBar :current="run.mp" :max="run.maxMp" variant="mp" :show-text="true" size="md" />
+            <ProgressBar
+              :current="run.mp"
+              :max="run.maxMp"
+              variant="mp"
+              :show-text="true"
+              size="md"
+            />
           </div>
           <div class="stats-row">
-            <span class="stat-item">Lvl <span class="val level">{{ run.level }}</span></span>
-            <span class="stat-item">XP <span class="val xp">{{ run.xp }}</span></span>
-            <span class="stat-item">Gold <span class="val gold">{{ run.gold }}</span></span>
+            <span class="stat-item"
+              >Lvl <span class="val level">{{ run.level }}</span></span
+            >
+            <span class="stat-item"
+              >XP <span class="val xp">{{ run.xp }}</span></span
+            >
+            <span class="stat-item"
+              >Gold <span class="val gold">{{ run.gold }}</span></span
+            >
           </div>
           <div class="stats-row">
-            <span class="stat-item">D:<span class="val depth">{{ run.depth }}</span></span>
-            <span class="stat-item">T:<span class="val">{{ run.turns.toLocaleString() }}</span></span>
-            <span class="stat-item">K:<span class="val kills">{{ run.kills }}</span></span>
+            <span class="stat-item"
+              >D:<span class="val depth">{{ run.depth }}</span></span
+            >
+            <span class="stat-item"
+              >T:<span class="val">{{ run.turns.toLocaleString() }}</span></span
+            >
+            <span class="stat-item"
+              >K:<span class="val kills">{{ run.kills }}</span></span
+            >
           </div>
         </CollapsibleSection>
 
@@ -305,7 +329,10 @@ function formatGoal(goal: string | undefined): string {
             </div>
             <div class="combat-row">
               <span class="combat-label">SPD</span>
-              <span class="combat-val speed" :class="{ buffed: run.combat.speed > 100, debuffed: run.combat.speed < 100 }">
+              <span
+                class="combat-val speed"
+                :class="{ buffed: run.combat.speed > 100, debuffed: run.combat.speed < 100 }"
+              >
                 {{ run.combat.speed }}
               </span>
             </div>
@@ -332,7 +359,10 @@ function formatGoal(goal: string | undefined): string {
               :title="`${resist.type}: ${resist.value}%`"
             >
               <span class="resist-label" :style="{ color: resist.color }">{{ resist.label }}</span>
-              <span class="resist-val" :class="{ immune: resist.value >= 100, vuln: resist.value < 0 }">
+              <span
+                class="resist-val"
+                :class="{ immune: resist.value >= 100, vuln: resist.value < 0 }"
+              >
                 {{ resist.value }}
               </span>
             </div>
@@ -367,7 +397,12 @@ function formatGoal(goal: string | undefined): string {
           @toggle="togglePanel('equipment')"
         >
           <div class="equip-grid">
-            <div v-for="slot in equipSlots" :key="slot.id" class="equip-slot" :title="getSlotTooltip(slot.id)">
+            <div
+              v-for="slot in equipSlots"
+              :key="slot.id"
+              class="equip-slot"
+              :title="getSlotTooltip(slot.id)"
+            >
               <span class="slot-char" :style="{ color: getSlotColor(slot.id) }">
                 {{ getSlotChar(slot.id) }}
               </span>
@@ -385,7 +420,11 @@ function formatGoal(goal: string | undefined): string {
         >
           <div class="inventory-list">
             <div v-for="item in run.inventory" :key="item.id" class="inv-item">
-              <span class="item-char" :style="{ color: '#' + item.color.toString(16).padStart(6, '0') }">{{ item.char }}</span>
+              <span
+                class="item-char"
+                :style="{ color: '#' + item.color.toString(16).padStart(6, '0') }"
+                >{{ item.char }}</span
+              >
               <span class="item-name" :class="{ artifact: item.isArtifact }">
                 {{ formatItemName(item) }}
               </span>
@@ -635,7 +674,8 @@ function formatGoal(goal: string | undefined): string {
   font-size: 10px;
 }
 
-.ai-goal, .ai-blocker {
+.ai-goal,
+.ai-blocker {
   display: flex;
   gap: 6px;
   align-items: baseline;
@@ -723,11 +763,21 @@ function formatGoal(goal: string | undefined): string {
   font-weight: bold;
   color: var(--text-primary);
 }
-.stat-item .val.depth { color: var(--purple); }
-.stat-item .val.kills { color: var(--red); }
-.stat-item .val.gold { color: var(--amber); }
-.stat-item .val.xp { color: var(--cyan); }
-.stat-item .val.level { color: var(--green); }
+.stat-item .val.depth {
+  color: var(--purple);
+}
+.stat-item .val.kills {
+  color: var(--red);
+}
+.stat-item .val.gold {
+  color: var(--amber);
+}
+.stat-item .val.xp {
+  color: var(--cyan);
+}
+.stat-item .val.level {
+  color: var(--green);
+}
 
 /* Equipment grid */
 .equip-grid {
@@ -791,7 +841,8 @@ function formatGoal(goal: string | undefined): string {
   text-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
 }
 
-.inv-empty, .inv-more {
+.inv-empty,
+.inv-more {
   font-size: 10px;
   color: var(--text-dim);
   font-style: italic;
@@ -887,11 +938,21 @@ function formatGoal(goal: string | undefined): string {
   color: var(--text-primary);
 }
 
-.core-val.str { color: var(--red); }
-.core-val.dex { color: var(--green); }
-.core-val.con { color: var(--amber); }
-.core-val.int { color: var(--cyan); }
-.core-val.wis { color: var(--purple); }
+.core-val.str {
+  color: var(--red);
+}
+.core-val.dex {
+  color: var(--green);
+}
+.core-val.con {
+  color: var(--amber);
+}
+.core-val.int {
+  color: var(--cyan);
+}
+.core-val.wis {
+  color: var(--purple);
+}
 
 /* Combat Stats */
 .combat-stats {
@@ -916,13 +977,27 @@ function formatGoal(goal: string | undefined): string {
   color: var(--text-primary);
 }
 
-.combat-val.armor { color: var(--cyan); }
-.combat-val.evasion { color: var(--green); }
-.combat-val.damage { color: var(--red); }
-.combat-val.accuracy { color: var(--amber); }
-.combat-val.speed { color: var(--text-secondary); }
-.combat-val.speed.buffed { color: var(--green); }
-.combat-val.speed.debuffed { color: var(--red); }
+.combat-val.armor {
+  color: var(--cyan);
+}
+.combat-val.evasion {
+  color: var(--green);
+}
+.combat-val.damage {
+  color: var(--red);
+}
+.combat-val.accuracy {
+  color: var(--amber);
+}
+.combat-val.speed {
+  color: var(--text-secondary);
+}
+.combat-val.speed.buffed {
+  color: var(--green);
+}
+.combat-val.speed.debuffed {
+  color: var(--red);
+}
 
 /* Resistances Grid */
 .resist-grid {

@@ -92,7 +92,9 @@ function handleUnlock() {
   >
     <div class="unlock-badge">
       <span v-if="isUnlocked" class="badge-icon unlocked">&#x2713;</span>
-      <span v-else-if="prestige && meetsCondition === false" class="badge-icon locked">&#x1F512;</span>
+      <span v-else-if="prestige && meetsCondition === false" class="badge-icon locked"
+        >&#x1F512;</span
+      >
       <span v-else-if="prestige" class="badge-icon prestige">&#x2605;</span>
       <span v-else class="badge-icon locked">&#x25CF;</span>
     </div>
@@ -103,7 +105,10 @@ function handleUnlock() {
         <span v-if="prestige" class="prestige-tag">Prestige</span>
       </div>
       <div class="unlock-desc">{{ description }}</div>
-      <div v-if="prestige && !isUnlocked && meetsCondition === false && unlockCondition" class="unlock-condition">
+      <div
+        v-if="prestige && !isUnlocked && meetsCondition === false && unlockCondition"
+        class="unlock-condition"
+      >
         {{ unlockCondition }}
       </div>
     </div>
@@ -159,7 +164,9 @@ function handleUnlock() {
         <template v-if="type === 'class'">
           <div class="tooltip-row">
             <span class="tooltip-label">Hit Die:</span>
-            <span class="tooltip-value">{{ hitdie !== undefined && hitdie >= 0 ? '+' : '' }}{{ hitdie }}</span>
+            <span class="tooltip-value"
+              >{{ hitdie !== undefined && hitdie >= 0 ? '+' : '' }}{{ hitdie }}</span
+            >
           </div>
           <div class="tooltip-row">
             <span class="tooltip-label">Max Attacks:</span>

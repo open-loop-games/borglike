@@ -44,11 +44,20 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
   }
 
   // Compute knowledge bonuses from bestiary (or override for testing)
-  const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent)
+  const knowledgeBonuses = getKnowledgeBonuses(
+    monster.template.name,
+    game.bestiary,
+    game.balance.bestiaryBonusPercent
+  )
 
   // Resolve multi-attack with knowledge bonuses and armor penetration
   // Number of attacks scales with level, STR, and class cap
-  const attackResult = meleeAttack(game.character, monster, knowledgeBonuses, game.balance.armorPenetration)
+  const attackResult = meleeAttack(
+    game.character,
+    monster,
+    knowledgeBonuses,
+    game.balance.armorPenetration
+  )
   const message = formatMultiAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 
@@ -122,11 +131,21 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
   const distance = Math.max(dx, dy)
 
   // Compute knowledge bonuses from bestiary (or override for testing)
-  const knowledgeBonuses = getKnowledgeBonuses(monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent)
+  const knowledgeBonuses = getKnowledgeBonuses(
+    monster.template.name,
+    game.bestiary,
+    game.balance.bestiaryBonusPercent
+  )
 
   // Resolve multi-shot ranged attack with knowledge bonuses and armor penetration
   // FAST_SHOT: Rangers get +1 shot per 3 levels
-  const attackResult = multiRangedAttack(game.character, monster, distance, knowledgeBonuses, game.balance.armorPenetration)
+  const attackResult = multiRangedAttack(
+    game.character,
+    monster,
+    distance,
+    knowledgeBonuses,
+    game.balance.armorPenetration
+  )
   const message = formatMultiRangedAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 
@@ -172,7 +191,7 @@ export function handleMonsterKill(
   const bonuses = game.upgradeBonuses ?? DEFAULT_BONUSES
   const baseXP = monster.template.experience
   const upgradedXP = applyXPBonus(baseXP, bonuses)
-  const xpToAward = Math.floor(upgradedXP * game.balance.xpRatePercent / 100)
+  const xpToAward = Math.floor((upgradedXP * game.balance.xpRatePercent) / 100)
   const { leveledUp, newLevel } = gainXP(game.character, xpToAward, game.balance.levelupHpPercent)
   game.stats.kills++
 
@@ -189,10 +208,7 @@ export function handleMonsterKill(
   }
 
   // Check for victory (killed Morgoth)
-  if (
-    monster.template.flags.includes('UNIQUE') &&
-    monster.template.name === VICTORY_BOSS_NAME
-  ) {
+  if (monster.template.flags.includes('UNIQUE') && monster.template.name === VICTORY_BOSS_NAME) {
     game.isVictory = true
   }
 }

@@ -24,11 +24,7 @@ export function useRunDuration(
 
   const duration = computed(() => {
     const start = typeof startTime === 'function' ? startTime() : startTime.value
-    const end = endTime
-      ? typeof endTime === 'function'
-        ? endTime()
-        : endTime.value
-      : undefined
+    const end = endTime ? (typeof endTime === 'function' ? endTime() : endTime.value) : undefined
 
     // Use end time if available (completed run), otherwise use current time
     const elapsed = (end ?? now.value.getTime()) - start

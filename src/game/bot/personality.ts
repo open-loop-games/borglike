@@ -30,32 +30,32 @@ import type { PersonalityConfig } from './types'
  */
 export const PERSONALITIES: Record<BotPersonality, PersonalityConfig> = {
   cautious: {
-    aggression: 30,    // Avoids unnecessary fights
-    greed: 40,         // Moderate item interest
-    caution: 50,       // Retreat at 50% HP
-    exploration: 80,   // Explore 80% before descending
-    patience: 200,     // Wait up to 200 turns
+    aggression: 30, // Avoids unnecessary fights
+    greed: 40, // Moderate item interest
+    caution: 50, // Retreat at 50% HP
+    exploration: 80, // Explore 80% before descending
+    patience: 200, // Wait up to 200 turns
   },
   aggressive: {
-    aggression: 80,    // Seeks out combat
-    greed: 30,         // Low item interest
-    caution: 20,       // Fight to 20% HP
-    exploration: 60,   // Moderate exploration
-    patience: 150,     // Move on after 150 turns
+    aggression: 80, // Seeks out combat
+    greed: 30, // Low item interest
+    caution: 20, // Fight to 20% HP
+    exploration: 60, // Moderate exploration
+    patience: 150, // Move on after 150 turns
   },
   greedy: {
-    aggression: 50,    // Balanced combat approach
-    greed: 80,         // High item interest - detour far for items
-    caution: 40,       // Moderate retreat threshold
-    exploration: 90,   // Explore thoroughly for loot
-    patience: 300,     // Very patient - look for all items
+    aggression: 50, // Balanced combat approach
+    greed: 80, // High item interest - detour far for items
+    caution: 40, // Moderate retreat threshold
+    exploration: 90, // Explore thoroughly for loot
+    patience: 300, // Very patient - look for all items
   },
   speedrunner: {
-    aggression: 40,    // Avoid fights when possible
-    greed: 20,         // Ignore most items
-    caution: 35,       // Moderate retreat threshold
-    exploration: 30,   // Minimal exploration - beeline for stairs
-    patience: 100,     // Very impatient - descend quickly
+    aggression: 40, // Avoid fights when possible
+    greed: 20, // Ignore most items
+    caution: 35, // Moderate retreat threshold
+    exploration: 30, // Minimal exploration - beeline for stairs
+    patience: 100, // Very impatient - descend quickly
   },
 }
 

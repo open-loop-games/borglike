@@ -14,10 +14,7 @@ import type {
   DungeonLevel,
   Point,
 } from '../types'
-import {
-  DIRECTION_VECTORS as DirectionVectors,
-  MAX_DEPTH,
-} from '../types'
+import { DIRECTION_VECTORS as DirectionVectors, MAX_DEPTH } from '../types'
 import { calculateLightRadius } from '../lighting'
 import {
   generateLevel,
@@ -30,11 +27,7 @@ import {
 import { spawnMonstersForLevel } from '../monster-ai'
 import { spawnItemsForLevel, generateMerchantInventory } from '../items'
 import { triggerTrap, checkTrapDetection, initializeFeaturesFromVault } from '../features'
-import {
-  touchLevelCache,
-  evictOldLevels,
-  LEVEL_CACHE_MAX_SIZE,
-} from '../level-cache'
+import { touchLevelCache, evictOldLevels, LEVEL_CACHE_MAX_SIZE } from '../level-cache'
 import { isInTown, initializeTown } from '../town'
 import { addMessage } from './helpers'
 import { handleAttack } from './combat'
@@ -86,9 +79,7 @@ export function handleMove(game: GameState, direction: Direction): ActionResult 
   const newY = game.character.position.y + delta.y
 
   // Check for monster at target position (bump attack)
-  const monsterAtTarget = game.monsters.find(
-    (m) => m.position.x === newX && m.position.y === newY
-  )
+  const monsterAtTarget = game.monsters.find((m) => m.position.x === newX && m.position.y === newY)
 
   if (monsterAtTarget) {
     return handleAttack(game, monsterAtTarget.id)
@@ -155,16 +146,14 @@ export function handleDescend(game: GameState): ActionResult {
 
   // Allow descending from stairs_down OR dungeon_entrance (town exit)
   const canDescend =
-    currentTile &&
-    (currentTile.type === 'stairs_down' || currentTile.type === 'dungeon_entrance')
+    currentTile && (currentTile.type === 'stairs_down' || currentTile.type === 'dungeon_entrance')
 
   if (!canDescend) {
     return { success: false, message: 'There are no stairs here.', energyCost: 0 }
   }
 
   // From dungeon_entrance (town, depth 0), always go to depth 1
-  const newDepth =
-    currentTile?.type === 'dungeon_entrance' ? 1 : game.character.depth + 1
+  const newDepth = currentTile?.type === 'dungeon_entrance' ? 1 : game.character.depth + 1
 
   if (newDepth > MAX_DEPTH) {
     return { success: false, message: 'You cannot go any deeper.', energyCost: 0 }
@@ -200,8 +189,19 @@ export function handleDescend(game: GameState): ActionResult {
   // ENTITY REGENERATION: Always spawn fresh entities on level entry
   // Layout is cached, but monsters/items regenerate (Angband-style)
   // UniqueState ensures unique monsters don't respawn
-  game.monsters = spawnMonstersForLevel(newLevel, newDepth, game.balance.monsterHpPercent, game.uniqueState)
-  game.items = spawnItemsForLevel(newLevel, newDepth, game.balance.potionRatePercent, game.balance.enchantRatePercent, game.balance.itemRatePercent)
+  game.monsters = spawnMonstersForLevel(
+    newLevel,
+    newDepth,
+    game.balance.monsterHpPercent,
+    game.uniqueState
+  )
+  game.items = spawnItemsForLevel(
+    newLevel,
+    newDepth,
+    game.balance.potionRatePercent,
+    game.balance.enchantRatePercent,
+    game.balance.itemRatePercent
+  )
 
   // Reset features for level entry
   game.fountains = new Map<string, FountainState>()
@@ -319,8 +319,19 @@ export function handleAscend(game: GameState): ActionResult {
     // ENTITY REGENERATION: Always spawn fresh entities on level entry
     // Layout is cached, but monsters/items regenerate (Angband-style)
     // UniqueState ensures unique monsters don't respawn
-    game.monsters = spawnMonstersForLevel(previousLevel, newDepth, game.balance.monsterHpPercent, game.uniqueState)
-    game.items = spawnItemsForLevel(previousLevel, newDepth, game.balance.potionRatePercent, game.balance.enchantRatePercent, game.balance.itemRatePercent)
+    game.monsters = spawnMonstersForLevel(
+      previousLevel,
+      newDepth,
+      game.balance.monsterHpPercent,
+      game.uniqueState
+    )
+    game.items = spawnItemsForLevel(
+      previousLevel,
+      newDepth,
+      game.balance.potionRatePercent,
+      game.balance.enchantRatePercent,
+      game.balance.itemRatePercent
+    )
 
     // Reset features for level entry
     game.fountains = new Map<string, FountainState>()
@@ -348,4 +359,3 @@ export function handleAscend(game: GameState): ActionResult {
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }
-

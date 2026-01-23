@@ -130,7 +130,7 @@ function findAdjacentEnemy(game: GameState, minion: Minion): Monster | null {
     if (monster.hp <= 0) continue
     const dx = Math.abs(monster.position.x - minion.position.x)
     const dy = Math.abs(monster.position.y - minion.position.y)
-    if (dx <= 1 && dy <= 1 && (dx + dy) > 0) {
+    if (dx <= 1 && dy <= 1 && dx + dy > 0) {
       return monster
     }
   }
@@ -208,12 +208,12 @@ function canMinionMoveTo(game: GameState, pos: Point): boolean {
   if (pos.x === game.character.position.x && pos.y === game.character.position.y) return false
 
   // Check for monsters
-  if (game.monsters.some(m => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0)) {
+  if (game.monsters.some((m) => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0)) {
     return false
   }
 
   // Check for other minions
-  if (game.minions.some(m => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0)) {
+  if (game.minions.some((m) => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0)) {
     return false
   }
 
@@ -235,7 +235,7 @@ function chebyshevDistance(a: Point, b: Point): number {
  * Handle minion taking damage (called from monster-ai when monsters attack minions)
  */
 export function damageMinionById(game: GameState, minionId: string, damage: number): boolean {
-  const minion = game.minions.find(m => m.id === minionId)
+  const minion = game.minions.find((m) => m.id === minionId)
   if (!minion) return false
 
   minion.hp -= damage
@@ -254,5 +254,7 @@ export function damageMinionById(game: GameState, minionId: string, damage: numb
  * Get minion at a position (for monster targeting)
  */
 export function getMinionAtPosition(game: GameState, pos: Point): Minion | null {
-  return game.minions.find(m => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0) ?? null
+  return (
+    game.minions.find((m) => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0) ?? null
+  )
 }

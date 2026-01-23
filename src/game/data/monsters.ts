@@ -121,9 +121,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 24,
     experience: 8,
     flags: [],
-    attacks: [
-      { method: 'HIT', dice: '1d5', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '1d5', effect: { type: 'HURT' } }],
   },
   {
     name: 'Floating Eye',
@@ -135,9 +133,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 7,
     experience: 22,
     flags: [],
-    attacks: [
-      { method: 'GAZE', dice: '0d0', effect: { type: 'PARALYZE' } },
-    ],
+    attacks: [{ method: 'GAZE', dice: '0d0', effect: { type: 'PARALYZE' } }],
   },
   {
     name: 'Wild Dog',
@@ -149,9 +145,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 3,
     experience: 2,
     flags: ['ANIMAL'],
-    attacks: [
-      { method: 'BITE', dice: '1d2', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'BITE', dice: '1d2', effect: { type: 'HURT' } }],
   },
 
   // Depth 2
@@ -165,9 +159,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 24,
     experience: 7,
     flags: [],
-    attacks: [
-      { method: 'HIT', dice: '1d8', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '1d8', effect: { type: 'HURT' } }],
   },
   {
     name: 'Cave Spider',
@@ -179,9 +171,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 19,
     experience: 9,
     flags: ['ANIMAL'],
-    attacks: [
-      { method: 'BITE', dice: '1d4', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'BITE', dice: '1d4', effect: { type: 'HURT' } }],
   },
   {
     name: 'White Jelly',
@@ -193,9 +183,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 1,
     experience: 12,
     flags: [],
-    attacks: [
-      { method: 'TOUCH', dice: '1d4', effect: { type: 'ELEMENTAL', element: 'POISON' } },
-    ],
+    attacks: [{ method: 'TOUCH', dice: '1d4', effect: { type: 'ELEMENTAL', element: 'POISON' } }],
     immune: ['POISON'],
   },
 
@@ -210,9 +198,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 15,
     experience: 5,
     flags: ['ANIMAL'],
-    attacks: [
-      { method: 'BITE', dice: '1d3', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'BITE', dice: '1d3', effect: { type: 'HURT' } }],
   },
   {
     name: 'Centipede',
@@ -224,9 +210,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 20,
     experience: 7,
     flags: ['ANIMAL'],
-    attacks: [
-      { method: 'STING', dice: '1d4', effect: { type: 'ELEMENTAL', element: 'POISON' } },
-    ],
+    attacks: [{ method: 'STING', dice: '1d4', effect: { type: 'ELEMENTAL', element: 'POISON' } }],
     immune: ['POISON'],
   },
 
@@ -241,9 +225,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 18,
     experience: 8,
     flags: ['ANIMAL'],
-    attacks: [
-      { method: 'BITE', dice: '1d4', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'BITE', dice: '1d4', effect: { type: 'HURT' } }],
   },
   {
     name: 'Orc',
@@ -255,9 +237,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 30,
     experience: 12,
     flags: ['ORC'],
-    attacks: [
-      { method: 'HIT', dice: '1d6', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '1d6', effect: { type: 'HURT' } }],
   },
 
   // Depth 5
@@ -287,9 +267,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 48,
     experience: 25,
     flags: [],
-    attacks: [
-      { method: 'HIT', dice: '1d10', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '1d10', effect: { type: 'HURT' } }],
   },
   {
     name: 'Green Jelly',
@@ -301,9 +279,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 1,
     experience: 18,
     flags: [],
-    attacks: [
-      { method: 'TOUCH', dice: '1d4', effect: { type: 'ELEMENTAL', element: 'ACID' } },
-    ],
+    attacks: [{ method: 'TOUCH', dice: '1d4', effect: { type: 'ELEMENTAL', element: 'ACID' } }],
     immune: ['ACID'],
   },
 
@@ -318,9 +294,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 48,
     experience: 15,
     flags: ['ORC'],
-    attacks: [
-      { method: 'HIT', dice: '1d8', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '1d8', effect: { type: 'HURT' } }],
   },
   {
     name: 'Manes',
@@ -349,9 +323,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 40,
     experience: 18,
     flags: ['ORC'],
-    attacks: [
-      { method: 'HIT', dice: '2d4', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '2d4', effect: { type: 'HURT' } }],
   },
   {
     name: 'Skeleton',
@@ -363,9 +335,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 35,
     experience: 15,
     flags: ['UNDEAD'],
-    attacks: [
-      { method: 'HIT', dice: '1d8', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '1d8', effect: { type: 'HURT' } }],
   },
   {
     name: 'Blue Jelly',
@@ -377,9 +347,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 1,
     experience: 14,
     flags: [],
-    attacks: [
-      { method: 'TOUCH', dice: '1d6', effect: { type: 'ELEMENTAL', element: 'COLD' } },
-    ],
+    attacks: [{ method: 'TOUCH', dice: '1d6', effect: { type: 'ELEMENTAL', element: 'COLD' } }],
     immune: ['COLD'],
   },
 
@@ -462,9 +430,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 45,
     experience: 30,
     flags: ['ANIMAL'],
-    attacks: [
-      { method: 'BITE', dice: '1d6', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'BITE', dice: '1d6', effect: { type: 'HURT' } }],
   },
   {
     name: 'Grishnakh, the Hill Orc',
@@ -581,9 +547,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 35,
     experience: 45,
     flags: ['ORC'],
-    attacks: [
-      { method: 'HIT', dice: '2d4', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '2d4', effect: { type: 'HURT' } }],
     spells: { freq: 4, list: ['HEAL'] },
   },
 
@@ -645,9 +609,7 @@ export const monsters: MonsterTemplate[] = [
     armor: 45,
     experience: 50,
     flags: [],
-    attacks: [
-      { method: 'HIT', dice: '2d8', effect: { type: 'HURT' } },
-    ],
+    attacks: [{ method: 'HIT', dice: '2d8', effect: { type: 'HURT' } }],
   },
 
   // Depth 16
@@ -1373,7 +1335,7 @@ export function parseDice(dice: string): { count: number; sides: number; modifie
  */
 export function getDiceAverage(dice: string): number {
   const { count, sides, modifier } = parseDice(dice)
-  return count * (sides + 1) / 2 + modifier
+  return (count * (sides + 1)) / 2 + modifier
 }
 
 /**
@@ -1393,11 +1355,13 @@ export function getAverageDamage(template: MonsterTemplate): number {
  */
 export function hasAbility(template: MonsterTemplate, ability: string): boolean {
   // Check attack effects
-  const attackAbility = template.attacks?.some(attack => {
-    if (attack.effect.type === ability.toUpperCase()) return true
-    if (attack.effect.type === 'ELEMENTAL' && attack.effect.element === ability.toUpperCase()) return true
-    return false
-  }) ?? false
+  const attackAbility =
+    template.attacks?.some((attack) => {
+      if (attack.effect.type === ability.toUpperCase()) return true
+      if (attack.effect.type === 'ELEMENTAL' && attack.effect.element === ability.toUpperCase())
+        return true
+      return false
+    }) ?? false
 
   if (attackAbility) return true
 
@@ -1406,27 +1370,27 @@ export function hasAbility(template: MonsterTemplate, ability: string): boolean 
     const spellAbility = ability.toUpperCase()
     // Map old ability names to spell names
     const abilityToSpell: Record<string, string[]> = {
-      'BREATH': ['BR_FIRE', 'BR_COLD', 'BR_ELEC', 'BR_ACID', 'BR_POISON', 'BR_DARK'],
-      'FIRE': ['BR_FIRE', 'BO_FIRE'],
-      'COLD': ['BR_COLD', 'BO_COLD'],
-      'ELEC': ['BR_ELEC', 'BO_ELEC'],
-      'ELECTRIC': ['BR_ELEC', 'BO_ELEC'],
-      'ACID': ['BR_ACID', 'BO_ACID'],
-      'POISON': ['BR_POISON'],
-      'DARK': ['BR_DARK'],
-      'HEAL': ['HEAL'],
-      'SUMMON': ['SUMMON'],
-      'BLINK': ['BLINK'],
-      'HASTE': ['HASTE'],
-      'BRAIN_SMASH': ['BRAIN_SMASH'],
-      'HOLD': ['HOLD'],
-      'CONFUSE': ['CONFUSE'],
-      'SCARE': ['SCARE'],
-      'BLIND': ['BLIND'],
-      'SLOW': ['SLOW'],
+      BREATH: ['BR_FIRE', 'BR_COLD', 'BR_ELEC', 'BR_ACID', 'BR_POISON', 'BR_DARK'],
+      FIRE: ['BR_FIRE', 'BO_FIRE'],
+      COLD: ['BR_COLD', 'BO_COLD'],
+      ELEC: ['BR_ELEC', 'BO_ELEC'],
+      ELECTRIC: ['BR_ELEC', 'BO_ELEC'],
+      ACID: ['BR_ACID', 'BO_ACID'],
+      POISON: ['BR_POISON'],
+      DARK: ['BR_DARK'],
+      HEAL: ['HEAL'],
+      SUMMON: ['SUMMON'],
+      BLINK: ['BLINK'],
+      HASTE: ['HASTE'],
+      BRAIN_SMASH: ['BRAIN_SMASH'],
+      HOLD: ['HOLD'],
+      CONFUSE: ['CONFUSE'],
+      SCARE: ['SCARE'],
+      BLIND: ['BLIND'],
+      SLOW: ['SLOW'],
     }
     const matchingSpells = abilityToSpell[spellAbility] ?? [spellAbility]
-    if (template.spells.list.some(s => matchingSpells.includes(s))) return true
+    if (template.spells.list.some((s) => matchingSpells.includes(s))) return true
   }
 
   return false
@@ -1440,7 +1404,7 @@ export function getAbilities(template: MonsterTemplate): string[] {
   const abilities: string[] = []
 
   // Collect unique effect types from attacks
-  template.attacks?.forEach(attack => {
+  template.attacks?.forEach((attack) => {
     if (attack.effect.type === 'ELEMENTAL') {
       abilities.push(attack.effect.element)
     } else if (attack.effect.type !== 'HURT') {
@@ -1449,7 +1413,7 @@ export function getAbilities(template: MonsterTemplate): string[] {
   })
 
   // Collect spell names
-  template.spells?.list.forEach(spell => {
+  template.spells?.list.forEach((spell) => {
     abilities.push(spell)
   })
 

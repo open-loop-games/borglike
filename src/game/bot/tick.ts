@@ -16,7 +16,15 @@ import { isBossOrUnique } from '../types'
 import { getTile } from '../dungeon'
 import { canRangedAttack } from '../combat'
 
-import type { BotState, BotGoal, BotContext, FlowMap, DangerResult, DangerTier, PersonalityConfig } from './types'
+import type {
+  BotState,
+  BotGoal,
+  BotContext,
+  FlowMap,
+  DangerResult,
+  DangerTier,
+  PersonalityConfig,
+} from './types'
 import { MAX_FLOW_COST, SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from './types'
 import {
   createBotState,
@@ -28,7 +36,13 @@ import {
   incrementTurn,
   cleanupBlacklist,
 } from './state'
-import { computeFlow, computeExplorationFlow, createFlowResult, isFlowValid, getFlowCost } from './flow'
+import {
+  computeFlow,
+  computeExplorationFlow,
+  createFlowResult,
+  isFlowValid,
+  getFlowCost,
+} from './flow'
 import { selectStep, isSamePosition } from './movement'
 import { buildBotContext } from './context'
 import {
@@ -52,10 +66,22 @@ import { selectGoal } from './goals'
 import { invalidateFrontierCache, getFrontierPositions } from './exploration'
 import { initializeSweepDirection } from './progression'
 import { recordVisibleTiles } from './progression'
-import { findAdjacentMonster, hasRangedWeapon, findBestRangedTarget, findKitePosition, shouldAvoidMelee, findClosestMonster } from './combat'
+import {
+  findAdjacentMonster,
+  hasRangedWeapon,
+  findBestRangedTarget,
+  findKitePosition,
+  shouldAvoidMelee,
+  findClosestMonster,
+} from './combat'
 import { getBowRange } from '../combat'
 import { findEquipmentUpgrades } from './items'
-import { getSurvivalConsumableAction, getCombatBuffAction, getPreCombatBuffAction, getUtilityConsumableAction } from './survival'
+import {
+  getSurvivalConsumableAction,
+  getCombatBuffAction,
+  getPreCombatBuffAction,
+  getUtilityConsumableAction,
+} from './survival'
 import {
   getHealingSpellAction,
   getDamageSpellAction,
@@ -239,7 +265,11 @@ function handleCriticalTier(
 
   // 2. Try escape consumable (teleport scroll, phase door)
   const survivalAction = getSurvivalConsumableAction(
-    game, config, dangerResult.dangers, botState, personality
+    game,
+    config,
+    dangerResult.dangers,
+    botState,
+    personality
   )
   if (survivalAction) {
     recordProgress(botState, game.turn)
@@ -363,7 +393,11 @@ function handleDangerTier(
 
   // 4. Survival consumables (healing potion, antidote)
   const survivalAction = getSurvivalConsumableAction(
-    game, config, dangerResult.dangers, botState, personality
+    game,
+    config,
+    dangerResult.dangers,
+    botState,
+    personality
   )
   if (survivalAction) {
     recordProgress(botState, game.turn)
@@ -524,7 +558,11 @@ function handleCautionTier(
     // Only use consumables if no spell available and quite hurt
     if (hpRatio < 0.5) {
       const survivalAction = getSurvivalConsumableAction(
-        game, config, dangerResult.dangers, botState, personality
+        game,
+        config,
+        dangerResult.dangers,
+        botState,
+        personality
       )
       if (survivalAction) {
         recordProgress(botState, game.turn)
@@ -589,9 +627,7 @@ function handleSafeTier(
   }
 
   // 1. Pick up items at current position
-  const itemHere = game.items.find((item) =>
-    isSamePosition(item.position, game.character.position)
-  )
+  const itemHere = game.items.find((item) => isSamePosition(item.position, game.character.position))
   if (itemHere && localDanger < dangerThreshold) {
     recordProgress(botState, game.turn)
     return { type: 'pickup', itemId: itemHere.id }
@@ -617,7 +653,11 @@ function handleSafeTier(
     // Only use potions if quite hurt and safe
     if (hpRatio < 0.4) {
       const survivalAction = getSurvivalConsumableAction(
-        game, config, dangerResult.dangers, botState, personality
+        game,
+        config,
+        dangerResult.dangers,
+        botState,
+        personality
       )
       if (survivalAction) {
         recordProgress(botState, game.turn)
@@ -682,7 +722,12 @@ function handleSafeTier(
 
   // 5. Utility consumables (enchants, mapping)
   if (localDanger < dangerThreshold) {
-    const utilityAction = getUtilityConsumableAction(game, config, dangerResult.dangers, personality)
+    const utilityAction = getUtilityConsumableAction(
+      game,
+      config,
+      dangerResult.dangers,
+      personality
+    )
     if (utilityAction) {
       recordProgress(botState, game.turn)
       return utilityAction
@@ -707,12 +752,16 @@ function handleFallback(
 ): GameAction {
   // Stuck recovery (skip in town)
   if (game.character.depth > 0) {
-    const stuckAction = profile('fallback.stuckRecovery', () => handleStuckRecovery(game, context, botState))
+    const stuckAction = profile('fallback.stuckRecovery', () =>
+      handleStuckRecovery(game, context, botState)
+    )
     if (stuckAction) return stuckAction
   }
 
   // Goal selection and movement
-  return profile('fallback.goalMovement', () => handleGoalMovement(game, context, botState, dangerResult))
+  return profile('fallback.goalMovement', () =>
+    handleGoalMovement(game, context, botState, dangerResult)
+  )
 }
 
 // ============================================================================
@@ -783,7 +832,9 @@ function handleGoalMovement(
   const dangerThreshold = getDangerThreshold(effectiveConfig.aggression, effectiveConfig.caution)
 
   // Select goal
-  const goal = profile('selectGoal', () => selectGoal(context, botState, dangerResult.dangers, dangerThreshold))
+  const goal = profile('selectGoal', () =>
+    selectGoal(context, botState, dangerResult.dangers, dangerThreshold)
+  )
 
   if (!goal || !goal.target) {
     return { type: 'wait' }
@@ -796,14 +847,18 @@ function handleGoalMovement(
   if (isSamePosition(pos, goal.target)) {
     recordProgress(botState, game.turn)
     updateTownState(botState, goal, game)
-    return profile('fallback.executeGoal', () => executeGoalAction(goal, game, botState, context.config))
+    return profile('fallback.executeGoal', () =>
+      executeGoalAction(goal, game, botState, context.config)
+    )
   }
 
   // Build avoid set (skip when fleeing)
   const avoidSet =
     goal.type === 'FLEE'
       ? new Set<string>()
-      : profile('fallback.buildAvoidSet', () => buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character))
+      : profile('fallback.buildAvoidSet', () =>
+          buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character)
+        )
 
   // Compute or reuse flow
   let flowCosts: FlowMap | undefined = botState.cachedFlow?.costs
@@ -812,14 +867,17 @@ function handleGoalMovement(
   // This eliminates target selection thrashing - bot just "rolls downhill"
   if (goal.type === 'EXPLORE') {
     // Check if this is sweep mode (casters re-exploring visited levels)
-    const isSweepExplore = botState.sweepMode &&
+    const isSweepExplore =
+      botState.sweepMode &&
       SQUISHY_CLASSES.has(game.character.classId) &&
       game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
 
     if (isSweepExplore) {
       // Sweep mode: use single-target flow to the sweep target
       // (sweep targets are tiles not seen this visit, not unexplored frontiers)
-      flowCosts = profile('flow.sweep', () => computeFlow(game.currentLevel, goal.target!, avoidSet))
+      flowCosts = profile('flow.sweep', () =>
+        computeFlow(game.currentLevel, goal.target!, avoidSet)
+      )
       botState.cachedFlow = { costs: flowCosts, goal: goal.target, computedAt: game.turn }
     } else {
       // Normal exploration: use multi-target Dijkstra to all frontiers
@@ -837,7 +895,8 @@ function handleGoalMovement(
       const cache = botState.cachedExplorationFlow
 
       // Reuse cache if: same depth, same explored count, recent enough (within 5 turns)
-      const cacheValid = cache &&
+      const cacheValid =
+        cache &&
         cache.depth === game.character.depth &&
         cache.exploredCount === exploredCount &&
         game.turn - cache.computedAt < 5
@@ -845,7 +904,9 @@ function handleGoalMovement(
       if (cacheValid) {
         flowCosts = cache.costs
       } else {
-        flowCosts = profile('flow.exploration', () => computeExplorationFlow(game.currentLevel, frontiers, avoidSet))
+        flowCosts = profile('flow.exploration', () =>
+          computeExplorationFlow(game.currentLevel, frontiers, avoidSet)
+        )
         botState.cachedExplorationFlow = {
           costs: flowCosts,
           frontierCount: frontiers.length,
@@ -860,7 +921,9 @@ function handleGoalMovement(
     // Standard single-target flow for other goal types
     const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)
     if (needsRecompute) {
-      flowCosts = profile('flow.singleTarget', () => computeFlow(game.currentLevel, goal.target!, avoidSet))
+      flowCosts = profile('flow.singleTarget', () =>
+        computeFlow(game.currentLevel, goal.target!, avoidSet)
+      )
       botState.cachedFlow = createFlowResult(goal.target!, flowCosts, game.turn)
     }
   }
@@ -873,9 +936,8 @@ function handleGoalMovement(
       if (goal.type === 'EXPLORE') {
         // For EXPLORE, recompute exploration flow without avoidance
         const frontiers = getFrontierPositions(game)
-        flowCosts = frontiers.length > 0
-          ? computeExplorationFlow(game.currentLevel, frontiers)
-          : new Map()
+        flowCosts =
+          frontiers.length > 0 ? computeExplorationFlow(game.currentLevel, frontiers) : new Map()
       } else {
         flowCosts = computeFlow(game.currentLevel, goal.target)
         botState.cachedFlow = createFlowResult(goal.target, flowCosts, game.turn)
@@ -900,7 +962,7 @@ function handleGoalMovement(
   // For KILL goals with ranged classes: check if we should shoot instead of approaching
   if (goal.type === 'KILL' && goal.targetId) {
     const { classProfile } = context
-    const targetMonster = game.monsters.find(m => m.id === goal.targetId && m.hp > 0)
+    const targetMonster = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
 
     if (targetMonster && classProfile.prefersRanged && hasRangedWeapon(game)) {
       const dx = Math.abs(targetMonster.position.x - pos.x)
@@ -979,7 +1041,12 @@ function updateTownState(botState: BotState, goal: BotGoal, _game: GameState): v
   }
 }
 
-function executeGoalAction(goal: BotGoal, game: GameState, botState: BotState, config: PersonalityConfig): GameAction {
+function executeGoalAction(
+  goal: BotGoal,
+  game: GameState,
+  botState: BotState,
+  config: PersonalityConfig
+): GameAction {
   switch (goal.type) {
     case 'DESCEND':
       // Goal system already verified readiness during goal selection

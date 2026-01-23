@@ -4,7 +4,16 @@
  * All bot-specific types in one place for easy importing.
  */
 
-import type { Point, GameState, Monster, GroundItem, BotPersonality, Direction, AltarState, MerchantState } from '../types'
+import type {
+  Point,
+  GameState,
+  Monster,
+  GroundItem,
+  BotPersonality,
+  Direction,
+  AltarState,
+  MerchantState,
+} from '../types'
 import type { ClassBehaviorProfile } from './class-profiles'
 
 // ============================================================================
@@ -21,19 +30,19 @@ export type GoalType =
   | 'RECOVER'
   | 'WAIT'
   | 'KITE'
-  | 'HUNT_UNIQUE'      // Hunt unique monsters blocking descent
-  | 'USE_ALTAR'        // Use dungeon altars (gold sink)
-  | 'VISIT_MERCHANT'   // Visit dungeon merchants
+  | 'HUNT_UNIQUE' // Hunt unique monsters blocking descent
+  | 'USE_ALTAR' // Use dungeon altars (gold sink)
+  | 'VISIT_MERCHANT' // Visit dungeon merchants
   // Town-related goals (order: sell → heal → buy)
   | 'SELL_TO_MERCHANT' // Sell loot first to get gold
-  | 'VISIT_HEALER'     // Heal with gold from selling
+  | 'VISIT_HEALER' // Heal with gold from selling
   | 'BUY_FROM_MERCHANT' // Buy consumables after healing
-  | 'RETURN_PORTAL'    // Return through portal
-  | 'EXIT_TOWN'        // Use dungeon entrance (fallback)
+  | 'RETURN_PORTAL' // Return through portal
+  | 'EXIT_TOWN' // Use dungeon entrance (fallback)
   // Farming loop goals (when descent blocked by consumable requirements)
-  | 'FARM'             // Farm current level for gold/XP
-  | 'ASCEND_TO_FARM'   // Go up to easier levels when under-leveled
-  | 'TOWN_TRIP'        // Use town portal when ready for shopping
+  | 'FARM' // Farm current level for gold/XP
+  | 'ASCEND_TO_FARM' // Go up to easier levels when under-leveled
+  | 'TOWN_TRIP' // Use town portal when ready for shopping
 
 /** A bot's current goal */
 export interface BotGoal {
@@ -153,8 +162,8 @@ export interface BotState {
   healerVisited: boolean
 
   // Multi-shop tracking (per-shop visited state)
-  shopsVisitedForSelling: Set<string>  // Shop IDs where we sold items
-  shopsVisitedForBuying: Set<string>   // Shop IDs where we bought items
+  shopsVisitedForSelling: Set<string> // Shop IDs where we sold items
+  shopsVisitedForBuying: Set<string> // Shop IDs where we bought items
 
   // Labyrinth/corridor exploration mode
   /** Whether we're actively following a corridor (for labyrinth exploration) */
@@ -315,8 +324,21 @@ export function getClassTier(classId: string): ClassTier {
 
 /** Caster classes that use sweep exploration instead of stair surfing */
 export const SQUISHY_CLASSES = new Set(
-  ['mage', 'archmage', 'necromancer', 'ranger', 'rogue', 'monk', 'bard', 'paladin', 'priest', 'druid', 'warrior', 'berserker', 'blackguard']
-    .filter(classId => getClassTier(classId) === 'SQUISHY')
+  [
+    'mage',
+    'archmage',
+    'necromancer',
+    'ranger',
+    'rogue',
+    'monk',
+    'bard',
+    'paladin',
+    'priest',
+    'druid',
+    'warrior',
+    'berserker',
+    'blackguard',
+  ].filter((classId) => getClassTier(classId) === 'SQUISHY')
 )
 
 /** Minimum character level before casters can safely stair surf */

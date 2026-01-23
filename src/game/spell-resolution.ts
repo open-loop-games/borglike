@@ -108,12 +108,14 @@ export function getAvailableSpells(
   currentTurn: number
 ): { spell: SpellTemplate; canCast: boolean; reason?: string }[] {
   const known = getKnownSpells(character)
-  return known.map((spellId) => {
-    const spell = getSpellById(spellId)
-    if (!spell) return { spell: undefined as unknown as SpellTemplate, canCast: false }
-    const result = canCast(character, spell, currentTurn)
-    return { spell, canCast: result.canCast, reason: result.reason }
-  }).filter((entry) => entry.spell !== undefined)
+  return known
+    .map((spellId) => {
+      const spell = getSpellById(spellId)
+      if (!spell) return { spell: undefined as unknown as SpellTemplate, canCast: false }
+      const result = canCast(character, spell, currentTurn)
+      return { spell, canCast: result.canCast, reason: result.reason }
+    })
+    .filter((entry) => entry.spell !== undefined)
 }
 
 // ============================================================================
@@ -173,10 +175,7 @@ export function calculateSpellPower(
 /**
  * Select up to N nearest visible monsters for AOE spells
  */
-export function selectAOETargets(
-  game: GameState,
-  maxTargets: number
-): Monster[] {
+export function selectAOETargets(game: GameState, maxTargets: number): Monster[] {
   const charPos = game.character.position
 
   // Get all visible monsters
@@ -281,11 +280,7 @@ export function calculateBeamChance(
  * @param target - Target point (primary target position)
  * @returns Array of monsters hit by the beam, in order
  */
-export function findMonstersInBeam(
-  game: GameState,
-  origin: Point,
-  target: Point
-): Monster[] {
+export function findMonstersInBeam(game: GameState, origin: Point, target: Point): Monster[] {
   const hitMonsters: Monster[] = []
 
   // Calculate direction vector
@@ -330,10 +325,7 @@ export function findMonstersInBeam(
 /**
  * Find a valid teleport destination
  */
-export function findTeleportDestination(
-  game: GameState,
-  range: number
-): Point {
+export function findTeleportDestination(game: GameState, range: number): Point {
   const charPos = game.character.position
 
   if (range === 0) {
@@ -380,11 +372,7 @@ export function findTeleportDestination(
  * @param targetId - Optional target monster ID (for single-target spells)
  * @returns Result of the spell cast
  */
-export function castSpell(
-  game: GameState,
-  spellId: string,
-  targetId?: string
-): ActionResult {
+export function castSpell(game: GameState, spellId: string, targetId?: string): ActionResult {
   const spell = getSpellById(spellId)
   if (!spell) {
     return { success: false, message: 'Unknown spell.' }
@@ -449,11 +437,7 @@ export function castSpell(
 /**
  * Cast a single-target damage spell (may become beam at higher levels)
  */
-function castDamageSpell(
-  game: GameState,
-  spell: SpellTemplate,
-  targetId?: string
-): ActionResult {
+function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: string): ActionResult {
   // Find primary target
   let target: Monster | null = null
   if (targetId) {
@@ -523,13 +507,15 @@ function castDamageSpell(
     message: `You cast ${spell.name} at ${target.template.name} for ${damage} damage.${killedStr}`,
     damage,
     targets: [target.id],
-    events: [{
-      type: 'attack',
-      attackerId: game.character.id,
-      defenderId: target.id,
-      damage,
-      killed,
-    }],
+    events: [
+      {
+        type: 'attack',
+        attackerId: game.character.id,
+        defenderId: target.id,
+        damage,
+        killed,
+      },
+    ],
   }
 }
 
@@ -650,7 +636,7 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
 
   // If spell has drain, heal
   if (spell.drainPercent) {
-    const healAmount = Math.floor(totalDamage * spell.drainPercent / 100)
+    const healAmount = Math.floor((totalDamage * spell.drainPercent) / 100)
     game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
   }
 
@@ -723,11 +709,7 @@ function castBuffSpell(game: GameState, spell: SpellTemplate): ActionResult {
 /**
  * Cast a debuff spell
  */
-function castDebuffSpell(
-  game: GameState,
-  spell: SpellTemplate,
-  targetId?: string
-): ActionResult {
+function castDebuffSpell(game: GameState, spell: SpellTemplate, targetId?: string): ActionResult {
   if (!spell.debuff) {
     return { success: true, message: `You cast ${spell.name}.` }
   }
@@ -786,7 +768,7 @@ function castLifedrainSpell(
 
   // Heal based on drain percent
   const drainPercent = spell.drainPercent ?? 50
-  const healAmount = Math.floor(damage * drainPercent / 100)
+  const healAmount = Math.floor((damage * drainPercent) / 100)
   const oldHp = game.character.hp
   game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
   const actualHeal = game.character.hp - oldHp
@@ -802,13 +784,15 @@ function castLifedrainSpell(
     damage,
     healed: actualHeal,
     targets: [target.id],
-    events: [{
-      type: 'attack',
-      attackerId: game.character.id,
-      defenderId: target.id,
-      damage,
-      killed,
-    }],
+    events: [
+      {
+        type: 'attack',
+        attackerId: game.character.id,
+        defenderId: target.id,
+        damage,
+        killed,
+      },
+    ],
   }
 }
 
@@ -850,15 +834,16 @@ function castSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
   // Wolf: 30 base + 2 per level (32 at L1, 70 at L20)
   // Skeleton: 20 base + 2 per level (22 at L1, 60 at L20)
   // Bear: 60 base + 3 per level (63 at L1, 120 at L20)
-  const scaledMaxHp = (minionType === 'wolf' || minionType === 'skeleton')
-    ? template.maxHp + game.character.level * 2
-    : minionType === 'bear'
-      ? template.maxHp + game.character.level * 3
-      : template.maxHp
+  const scaledMaxHp =
+    minionType === 'wolf' || minionType === 'skeleton'
+      ? template.maxHp + game.character.level * 2
+      : minionType === 'bear'
+        ? template.maxHp + game.character.level * 3
+        : template.maxHp
 
   // For permanent pets (wolf), check if one already exists
   if (template.permanent) {
-    const existingPet = game.minions.find(m => m.type === minionType)
+    const existingPet = game.minions.find((m) => m.type === minionType)
     if (existingPet && existingPet.hp > 0) {
       // Update maxHp in case character leveled up, then heal to full
       existingPet.maxHp = scaledMaxHp
@@ -874,7 +859,7 @@ function castSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
 
   // For temporary summons, check limit (max 2)
   if (!template.permanent) {
-    const existingSummons = game.minions.filter(m => !MINION_TEMPLATES[m.type].permanent)
+    const existingSummons = game.minions.filter((m) => !MINION_TEMPLATES[m.type].permanent)
     if (existingSummons.length >= 2) {
       // Replace oldest summon
       const oldest = existingSummons[0]
@@ -920,8 +905,14 @@ function castSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
 function findMinionSpawnPosition(game: GameState): Point | null {
   const charPos = game.character.position
   const directions = [
-    { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
-    { dx: 1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: -1, dy: -1 },
+    { dx: 1, dy: 0 },
+    { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: 0, dy: -1 },
+    { dx: 1, dy: 1 },
+    { dx: 1, dy: -1 },
+    { dx: -1, dy: 1 },
+    { dx: -1, dy: -1 },
   ]
 
   for (const dir of directions) {
@@ -932,11 +923,11 @@ function findMinionSpawnPosition(game: GameState): Point | null {
     if (!tile || !isWalkable(tile)) continue
 
     // Check no monster at position
-    const hasMonster = game.monsters.some(m => m.position.x === x && m.position.y === y)
+    const hasMonster = game.monsters.some((m) => m.position.x === x && m.position.y === y)
     if (hasMonster) continue
 
     // Check no minion at position
-    const hasMinion = game.minions.some(m => m.position.x === x && m.position.y === y)
+    const hasMinion = game.minions.some((m) => m.position.x === x && m.position.y === y)
     if (hasMinion) continue
 
     return { x, y }
@@ -953,16 +944,11 @@ function findMinionSpawnPosition(game: GameState): Point | null {
  * Apply a debuff to a monster
  * Replaces existing debuff of the same type
  */
-function applyMonsterDebuff(
-  monster: Monster,
-  type: string,
-  value: number,
-  duration: number
-): void {
+function applyMonsterDebuff(monster: Monster, type: string, value: number, duration: number): void {
   const debuffType = type as 'slow' | 'weaken' | 'blind'
 
   // Remove existing debuff of same type
-  monster.debuffs = monster.debuffs.filter(d => d.type !== debuffType)
+  monster.debuffs = monster.debuffs.filter((d) => d.type !== debuffType)
 
   // Add new debuff
   monster.debuffs.push({

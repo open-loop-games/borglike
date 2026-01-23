@@ -18,7 +18,17 @@ export interface ItemTemplate {
     | 'light'
     | 'potion'
     | 'scroll'
-  slot?: 'weapon' | 'bow' | 'body' | 'shield' | 'helm' | 'gloves' | 'boots' | 'ring' | 'amulet' | 'light'
+  slot?:
+    | 'weapon'
+    | 'bow'
+    | 'body'
+    | 'shield'
+    | 'helm'
+    | 'gloves'
+    | 'boots'
+    | 'ring'
+    | 'amulet'
+    | 'light'
   /** Ranged weapon range (tiles) - only for bows */
   range?: number
   /** Launcher multiplier for bows (damage × multiplier) */

@@ -132,7 +132,9 @@ function getPrereqNames(boosterId: string): string[] {
           @unlock="handleUnlock"
         />
 
-        <div v-if="currentUnlocks.length === 0" class="no-unlocks">All {{ activeTab }} unlocked!</div>
+        <div v-if="currentUnlocks.length === 0" class="no-unlocks">
+          All {{ activeTab }} unlocked!
+        </div>
       </template>
 
       <!-- Booster Unlocks -->

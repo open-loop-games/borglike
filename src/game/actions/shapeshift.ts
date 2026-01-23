@@ -137,7 +137,7 @@ export function getUsableForms(game: GameState) {
   const character = game.character
   const availableForms = getAvailableForms(character.classId, character.level)
 
-  return availableForms.filter(form => {
+  return availableForms.filter((form) => {
     // If already in this form, can always revert
     if (character.activeFormId === form.id) return true
     // Otherwise check mana

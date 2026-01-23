@@ -65,10 +65,7 @@ export function shouldCastSpell(monster: Monster): boolean {
  * @param monster - The casting monster
  * @returns Result of the spell
  */
-export function executeMonsterSpell(
-  game: GameState,
-  monster: Monster
-): SpellResult {
+export function executeMonsterSpell(game: GameState, monster: Monster): SpellResult {
   const spells = monster.template.spells
   if (!spells || spells.list.length === 0) {
     return { success: false, damage: 0, statusInflicted: null, message: '' }
@@ -83,11 +80,7 @@ export function executeMonsterSpell(
 /**
  * Execute a specific spell
  */
-function executeSpell(
-  game: GameState,
-  monster: Monster,
-  spell: MonsterSpell
-): SpellResult {
+function executeSpell(game: GameState, monster: Monster, spell: MonsterSpell): SpellResult {
   const character = game.character
 
   // Breath weapons
@@ -319,7 +312,7 @@ function executeSummon(game: GameState, monster: Monster): SpellResult {
   // Get monsters that can spawn at this depth (but weaker than summoner)
   const depth = game.character.depth
   const candidates = getSpawnableMonsters(Math.max(1, depth - 5)).filter(
-    t => t.hp < monster.template.hp * 0.7 && !t.flags.includes('UNIQUE')
+    (t) => t.hp < monster.template.hp * 0.7 && !t.flags.includes('UNIQUE')
   )
 
   if (candidates.length === 0) {
@@ -426,7 +419,8 @@ function executeBrainSmash(monster: Monster, character: Character): SpellResult 
     statusInflicted = 'confused'
   }
 
-  const message = `${monster.template.name} blasts your mind for ${damage} damage!` +
+  const message =
+    `${monster.template.name} blasts your mind for ${damage} damage!` +
     (statusInflicted ? ' You are confused!' : '')
 
   return {
@@ -444,11 +438,7 @@ function executeBrainSmash(monster: Monster, character: Character): SpellResult 
 /**
  * Apply elemental resistance to damage
  */
-function applyElementResistance(
-  damage: number,
-  element: Element,
-  character: Character
-): number {
+function applyElementResistance(damage: number, element: Element, character: Character): number {
   const resistMap: Record<Element, string> = {
     FIRE: 'FIRE',
     COLD: 'COLD',
@@ -464,11 +454,11 @@ function applyElementResistance(
   const permResist = (character.resistances as Record<string, number | undefined>)[resistType] ?? 0
 
   // Check temp resistance
-  const tempResist = character.tempResistances.find(r => r.type === resistType)
+  const tempResist = character.tempResistances.find((r) => r.type === resistType)
   const tempValue = tempResist?.value ?? 0
 
   // Combine resistances (cap at 90%)
   const totalResist = Math.min(90, permResist + tempValue)
 
-  return Math.floor(damage * (100 - totalResist) / 100)
+  return Math.floor((damage * (100 - totalResist)) / 100)
 }

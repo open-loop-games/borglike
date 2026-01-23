@@ -19,15 +19,24 @@ import { countHealingPotions } from './preparation'
  */
 function getSlotPriority(slot: string): number {
   switch (slot) {
-    case 'weapon': return 1.0   // Weapons are highest priority
-    case 'armor': return 0.95   // Body armor second
-    case 'shield': return 0.85  // Shield important for defense
-    case 'helm': return 0.8
-    case 'gloves': return 0.75
-    case 'boots': return 0.75
-    case 'ring': return 0.7
-    case 'amulet': return 0.7
-    default: return 0.6
+    case 'weapon':
+      return 1.0 // Weapons are highest priority
+    case 'armor':
+      return 0.95 // Body armor second
+    case 'shield':
+      return 0.85 // Shield important for defense
+    case 'helm':
+      return 0.8
+    case 'gloves':
+      return 0.75
+    case 'boots':
+      return 0.75
+    case 'ring':
+      return 0.7
+    case 'amulet':
+      return 0.7
+    default:
+      return 0.6
   }
 }
 
@@ -109,9 +118,15 @@ export function botBuySupplies(game: GameState): number {
 
     if (name.includes('Town Portal')) {
       tpScrollCount++
-    } else if (item.template.type === 'potion' && (effect.includes('Cure') || effect.includes('Heal'))) {
+    } else if (
+      item.template.type === 'potion' &&
+      (effect.includes('Cure') || effect.includes('Heal'))
+    ) {
       healingPotionCount++
-    } else if (item.template.type === 'scroll' && (effect.includes('Teleport') || name.includes('Phase Door'))) {
+    } else if (
+      item.template.type === 'scroll' &&
+      (effect.includes('Teleport') || name.includes('Phase Door'))
+    ) {
       escapeScrollCount++
     }
   }
@@ -122,9 +137,9 @@ export function botBuySupplies(game: GameState): number {
   const baseEscape = 2
   const goldBonus = Math.min(2, Math.floor(char.gold / 3000))
 
-  const wantedTP = Math.max(0, (baseTP + goldBonus) - tpScrollCount)              // max 4
-  const wantedHealing = Math.max(0, (baseHealing + goldBonus) - healingPotionCount) // max 5
-  const wantedEscape = Math.max(0, (baseEscape + Math.floor(goldBonus / 2)) - escapeScrollCount) // max 3
+  const wantedTP = Math.max(0, baseTP + goldBonus - tpScrollCount) // max 4
+  const wantedHealing = Math.max(0, baseHealing + goldBonus - healingPotionCount) // max 5
+  const wantedEscape = Math.max(0, baseEscape + Math.floor(goldBonus / 2) - escapeScrollCount) // max 3
 
   // Build priority buy list
   interface BuyCandidate {
@@ -162,7 +177,10 @@ export function botBuySupplies(game: GameState): number {
       }
     }
     // Phase Door / Escape scrolls - third priority
-    else if (template.type === 'scroll' && (effect.includes('Teleport') || name.includes('Phase Door'))) {
+    else if (
+      template.type === 'scroll' &&
+      (effect.includes('Teleport') || name.includes('Phase Door'))
+    ) {
       if (wantedEscape > 0) {
         const phaseDoorBonus = name.includes('Phase Door') ? 0.1 : 0
         candidates.push({ index: i, category: 'escape', priority: 3 - phaseDoorBonus, price, name })
@@ -173,7 +191,7 @@ export function botBuySupplies(game: GameState): number {
       const slotKey = template.slot as keyof typeof char.equipment
       const currentGear = char.equipment[slotKey]
       const currentValue = currentGear
-        ? (currentGear.template.tier * 10 + currentGear.enchantment * 5)
+        ? currentGear.template.tier * 10 + currentGear.enchantment * 5
         : 0
       const newValue = template.tier * 10 + item.enchantment * 5
 
@@ -187,7 +205,7 @@ export function botBuySupplies(game: GameState): number {
         candidates.push({
           index: i,
           category: 'gear',
-          priority: 4 - (upgradeValue * 0.1) - ((1 - slotPriority) * 0.5),
+          priority: 4 - upgradeValue * 0.1 - (1 - slotPriority) * 0.5,
           price,
           name,
         })
@@ -218,7 +236,8 @@ export function botBuySupplies(game: GameState): number {
 
     // Find current index (may have shifted)
     const currentIndex = merchant.inventory.findIndex(
-      (item) => item && item.template.name === candidate.name && (item.shopPrice ?? 0) === candidate.price
+      (item) =>
+        item && item.template.name === candidate.name && (item.shopPrice ?? 0) === candidate.price
     )
     if (currentIndex < 0) continue
 
@@ -226,9 +245,15 @@ export function botBuySupplies(game: GameState): number {
     if (success) {
       boughtCount++
       switch (candidate.category) {
-        case 'tp': boughtTP++; break
-        case 'healing': boughtHealing++; break
-        case 'escape': boughtEscape++; break
+        case 'tp':
+          boughtTP++
+          break
+        case 'healing':
+          boughtHealing++
+          break
+        case 'escape':
+          boughtEscape++
+          break
       }
     }
   }
@@ -312,7 +337,7 @@ export function getUseAltarGoal(
       case 'identify': {
         // Knowledge altar: Identify all items
         // Use if we have 3+ unidentified items
-        const unidentifiedCount = character.inventory.filter(item => !item.identified).length
+        const unidentifiedCount = character.inventory.filter((item) => !item.identified).length
         if (unidentifiedCount >= 3) {
           priority = 20
           reason = `Identifying ${unidentifiedCount} items`
@@ -366,7 +391,7 @@ export function getVisitMerchantGoal(
   if (visibleMonsters.length > 0) return null
   if (localDanger > dangerThreshold * 0.3) return null
   if (visibleMerchants.length === 0) return null
-  if (game.character.depth === 0) return null  // Town handled separately
+  if (game.character.depth === 0) return null // Town handled separately
 
   // Score each merchant
   let bestMerchant = null

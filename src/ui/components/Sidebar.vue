@@ -95,15 +95,21 @@ const totalBoosters = boosters.length
             </div>
             <div class="summary-row">
               <span class="summary-label">Races</span>
-              <span class="summary-value">{{ progression.availableRaces.length }} / {{ totalRaces }}</span>
+              <span class="summary-value"
+                >{{ progression.availableRaces.length }} / {{ totalRaces }}</span
+              >
             </div>
             <div class="summary-row">
               <span class="summary-label">Classes</span>
-              <span class="summary-value">{{ progression.availableClasses.length }} / {{ totalClasses }}</span>
+              <span class="summary-value"
+                >{{ progression.availableClasses.length }} / {{ totalClasses }}</span
+              >
             </div>
             <div class="summary-row">
               <span class="summary-label">Boosters</span>
-              <span class="summary-value">{{ progression.unlocks.boosters.size }} / {{ totalBoosters }}</span>
+              <span class="summary-value"
+                >{{ progression.unlocks.boosters.size }} / {{ totalBoosters }}</span
+              >
             </div>
           </PanelFrame>
         </section>

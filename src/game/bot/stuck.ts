@@ -18,10 +18,10 @@ import { isSamePoint, manhattanDistance } from '../types'
 
 /** Turns without progress before twitch level increases */
 export const TWITCH_THRESHOLDS = {
-  LEVEL_1: 5,   // Start wall following quickly
-  LEVEL_2: 12,  // Clear history and retry
-  LEVEL_3: 25,  // Force descent if stairs known
-  LEVEL_4: 50,  // Wait briefly
+  LEVEL_1: 5, // Start wall following quickly
+  LEVEL_2: 12, // Clear history and retry
+  LEVEL_3: 25, // Force descent if stairs known
+  LEVEL_4: 50, // Wait briefly
   LEVEL_5: 100, // Clear goals - forget current objective
   LEVEL_6: 200, // Clear blacklist - try previously unreachable targets
 }
@@ -192,16 +192,14 @@ export function getStuckResponse(
  * Uses right-hand rule: keep wall on right side
  * Returns the direction to move to follow the wall
  */
-export function getWallFollowDirection(
-  game: GameState,
-  state: BotState
-): Direction | null {
+export function getWallFollowDirection(game: GameState, state: BotState): Direction | null {
   const pos = game.character.position
 
   // Determine current facing based on last move
-  const lastPos = state.recentPositions.length > 0
-    ? state.recentPositions[state.recentPositions.length - 1]!
-    : null
+  const lastPos =
+    state.recentPositions.length > 0
+      ? state.recentPositions[state.recentPositions.length - 1]!
+      : null
 
   // If no last position, pick initial direction based on nearby walls
   let facing = getInitialFacing(game, pos)
@@ -274,7 +272,7 @@ function getRightHandOrder(facing: Direction): Direction[] {
   // Right, Forward, Left, Back
   return [
     cardinals[(idx + 1) % 4]!, // Right
-    cardinals[idx]!,           // Forward
+    cardinals[idx]!, // Forward
     cardinals[(idx + 3) % 4]!, // Left
     cardinals[(idx + 2) % 4]!, // Back
   ]
@@ -282,8 +280,14 @@ function getRightHandOrder(facing: Direction): Direction[] {
 
 function oppositeDirection(dir: Direction): Direction {
   const opposites: Record<Direction, Direction> = {
-    n: 's', s: 'n', e: 'w', w: 'e',
-    ne: 'sw', nw: 'se', se: 'nw', sw: 'ne',
+    n: 's',
+    s: 'n',
+    e: 'w',
+    w: 'e',
+    ne: 'sw',
+    nw: 'se',
+    se: 'nw',
+    sw: 'ne',
     wait: 'wait',
   }
   return opposites[dir]
@@ -291,10 +295,14 @@ function oppositeDirection(dir: Direction): Direction {
 
 function directionToDelta(dir: Direction): Point {
   const deltas: Record<Direction, Point> = {
-    n: { x: 0, y: -1 }, s: { x: 0, y: 1 },
-    e: { x: 1, y: 0 }, w: { x: -1, y: 0 },
-    ne: { x: 1, y: -1 }, nw: { x: -1, y: -1 },
-    se: { x: 1, y: 1 }, sw: { x: -1, y: 1 },
+    n: { x: 0, y: -1 },
+    s: { x: 0, y: 1 },
+    e: { x: 1, y: 0 },
+    w: { x: -1, y: 0 },
+    ne: { x: 1, y: -1 },
+    nw: { x: -1, y: -1 },
+    se: { x: 1, y: 1 },
+    sw: { x: -1, y: 1 },
     wait: { x: 0, y: 0 },
   }
   return deltas[dir]
@@ -337,10 +345,7 @@ export function resetBotState(botState: BotState, turn: number): void {
 /**
  * Handle wall_follow strategy - follow walls to find new areas
  */
-export function handleWallFollowStrategy(
-  game: GameState,
-  botState: BotState
-): GameAction | null {
+export function handleWallFollowStrategy(game: GameState, botState: BotState): GameAction | null {
   const wallDir = getWallFollowDirection(game, botState)
   if (wallDir) {
     // Record position for history
@@ -357,20 +362,14 @@ export function handleWallFollowStrategy(
 /**
  * Handle clear_history strategy - clear history and re-evaluate
  */
-export function handleClearHistoryStrategy(
-  botState: BotState,
-  turn: number
-): void {
+export function handleClearHistoryStrategy(botState: BotState, turn: number): void {
   resetBotState(botState, turn)
 }
 
 /**
  * Handle force_descent strategy - head to stairs ignoring exploration
  */
-export function handleForceDescentStrategy(
-  game: GameState,
-  botState: BotState
-): GameAction | null {
+export function handleForceDescentStrategy(game: GameState, botState: BotState): GameAction | null {
   if (!botState.knownStairsDown) return null
 
   const pos = game.character.position
@@ -417,8 +416,8 @@ export function handleStopFleeingStrategy(
   // Find nearest monster and set as kill goal
   const pos = game.character.position
   const nearestMonster = game.monsters
-    .filter(m => m.hp > 0)
-    .map(m => ({ m, dist: manhattanDistance(pos, m.position) }))
+    .filter((m) => m.hp > 0)
+    .map((m) => ({ m, dist: manhattanDistance(pos, m.position) }))
     .sort((a, b) => a.dist - b.dist)[0]?.m
 
   if (nearestMonster) {
@@ -443,10 +442,7 @@ export function handleStopFleeingStrategy(
  * Handle clear_goals strategy - forget current objective and re-evaluate
  * At ~100 turns stuck, clear goals to allow fresh evaluation
  */
-export function handleClearGoalsStrategy(
-  botState: BotState,
-  turn: number
-): void {
+export function handleClearGoalsStrategy(botState: BotState, turn: number): void {
   // Clear current goal but preserve blacklist and stairs knowledge
   botState.currentGoal = null
   botState.goalTarget = null
@@ -460,10 +456,7 @@ export function handleClearGoalsStrategy(
  * Handle clear_blacklist strategy - clear exploration blacklist
  * At ~200 turns stuck, forget unreachable targets and retry them
  */
-export function handleClearBlacklistStrategy(
-  botState: BotState,
-  turn: number
-): void {
+export function handleClearBlacklistStrategy(botState: BotState, turn: number): void {
   // Clear everything - full reset
   botState.blacklistedTargets.clear()
   botState.currentGoal = null
