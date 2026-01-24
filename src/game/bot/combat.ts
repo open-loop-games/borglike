@@ -449,6 +449,7 @@ export function getClosestMonsterDistance(monsters: Monster[], pos: Point): numb
  * Get effective damage based on class profile and distance
  *
  * For ranged classes with a bow at distance >= 2, use ranged damage.
+ * For caster classes without melee preference, estimate spell damage.
  * Otherwise fall back to melee damage.
  */
 export function getEffectiveDamage(
@@ -456,10 +457,48 @@ export function getEffectiveDamage(
   classProfile: ClassBehaviorProfile,
   distance: number = 1
 ): number {
+  // Ranged classes use bow at distance
   if (classProfile.prefersRanged && character.equipment.bow && distance >= 2) {
     return Math.max(character.combat.rangedDamage, 1)
   }
+
+  // Caster classes: estimate spell damage if they prefer ranged but not melee
+  // This means they're spell-focused, not bow-focused
+  if (classProfile.prefersRanged && !classProfile.prefersMelee && !character.equipment.bow) {
+    const spellDamage = estimateCasterDamage(character)
+    if (spellDamage > character.combat.meleeDamage) {
+      return spellDamage
+    }
+  }
+
   return Math.max(character.combat.meleeDamage, 1)
+}
+
+/**
+ * Estimate average spell damage for a caster.
+ * Used for danger calculations - casters kill faster with spells than melee.
+ *
+ * Uses a simplified formula based on INT and level, plus spell power from staff.
+ */
+function estimateCasterDamage(character: Character): number {
+  // Base: assume average damage spell does 2d6 (7 average)
+  const baseDamage = 7
+
+  // INT modifier (every 2 points above 10)
+  const intMod = Math.floor((character.stats.int - 10) / 2)
+
+  // Level scaling (level / 3)
+  const levelBonus = Math.floor(character.level / 3)
+
+  let damage = baseDamage + intMod + levelBonus
+
+  // Apply spell power from staff
+  const weapon = character.equipment.weapon
+  if (weapon?.template.spellPower) {
+    damage = Math.floor(damage * (1 + weapon.template.spellPower / 100))
+  }
+
+  return Math.max(damage, 1)
 }
 
 // ============================================================================

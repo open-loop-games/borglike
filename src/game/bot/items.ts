@@ -65,6 +65,38 @@ const SLOT_IMPORTANCE: Record<EquipSlot, number> = {
   bow: 40,
 }
 
+/**
+ * Class weapon affinity - multipliers for weapon/staff scoring
+ * Determines how much each class values weapons vs staves
+ */
+const WEAPON_CLASS_AFFINITY: Record<
+  string,
+  { staff: number; weapon: number; edgedPenalty?: number }
+> = {
+  // Pure casters - love staves, hate melee weapons
+  mage: { staff: 3.0, weapon: 0.3 },
+  archmage: { staff: 3.5, weapon: 0.2 },
+  necromancer: { staff: 3.0, weapon: 0.3 },
+
+  // Pure melee - hate staves, love weapons
+  warrior: { staff: 0.3, weapon: 1.2 },
+  berserker: { staff: 0.2, weapon: 1.5 },
+  blackguard: { staff: 0.3, weapon: 1.2 },
+
+  // Holy casters - like staves and blunt, cannot use edged (Angband theme)
+  priest: { staff: 2.0, weapon: 1.0, edgedPenalty: 0.1 },
+  druid: { staff: 2.0, weapon: 0.8, edgedPenalty: 0.3 },
+
+  // Hybrids - moderate preferences
+  paladin: { staff: 0.5, weapon: 1.0 },
+  ranger: { staff: 0.5, weapon: 1.0 },
+
+  // Skill classes
+  rogue: { staff: 0.4, weapon: 1.0 },
+  monk: { staff: 0.8, weapon: 0.8 },
+  bard: { staff: 1.5, weapon: 0.8 },
+}
+
 // ============================================================================
 // ITEM EVALUATION
 // ============================================================================
@@ -171,10 +203,10 @@ function evaluateEquipment(item: Item, character: Character): ItemEvaluation {
     }
   }
 
-  // Calculate equipment score
-  const itemScore = calculateEquipmentScore(item)
+  // Calculate equipment score with class preferences
+  const itemScore = calculateEquipmentScore(item, character.classId)
   const currentItem = getEquippedItem(character, slot)
-  const currentScore = currentItem ? calculateEquipmentScore(currentItem) : 0
+  const currentScore = currentItem ? calculateEquipmentScore(currentItem, character.classId) : 0
   const isUpgrade = itemScore > currentScore
 
   // Base value from tier
@@ -264,10 +296,15 @@ export function shouldPickup(
 
 /**
  * Compare two equipment items for the same slot
+ * @param classId - Optional class ID for class-specific weapon preferences
  */
-export function compareEquipment(newItem: Item, currentItem: Item | null): EquipmentComparison {
-  const newScore = calculateEquipmentScore(newItem)
-  const currentScore = currentItem ? calculateEquipmentScore(currentItem) : 0
+export function compareEquipment(
+  newItem: Item,
+  currentItem: Item | null,
+  classId?: string
+): EquipmentComparison {
+  const newScore = calculateEquipmentScore(newItem, classId)
+  const currentScore = currentItem ? calculateEquipmentScore(currentItem, classId) : 0
   const scoreDiff = newScore - currentScore
 
   if (!currentItem) {
@@ -301,22 +338,29 @@ export function shouldEquip(item: Item, character: Character): boolean {
   if (!slot) return false
 
   const currentItem = getEquippedItem(character, slot)
-  const comparison = compareEquipment(item, currentItem)
+  const comparison = compareEquipment(item, currentItem, character.classId)
 
   return comparison.shouldEquip
 }
 
 /**
  * Calculate a score for equipment based on its stats
+ * @param item - The item to score
+ * @param classId - Optional class ID for class-specific weapon preferences
  */
-export function calculateEquipmentScore(item: Item): number {
+export function calculateEquipmentScore(item: Item, classId?: string): number {
   const template = item.template
   let score = 0
 
-  // Weapon: damage is primary
-  if (template.type === 'weapon' && template.damage) {
+  // Weapon/Staff: damage is primary
+  if ((template.type === 'weapon' || template.type === 'staff') && template.damage) {
     const avgDamage = parseDiceAverage(template.damage)
     score += avgDamage * 10
+  }
+
+  // Spell power bonus (staves) - casters value this highly
+  if (template.spellPower) {
+    score += template.spellPower * 2
   }
 
   // Armor/protection
@@ -343,6 +387,22 @@ export function calculateEquipmentScore(item: Item): number {
   // Light radius bonus (lantern > torch)
   if (template.lightRadius) {
     score += template.lightRadius * 10
+  }
+
+  // Apply class affinity for weapons/staves
+  if (classId && (template.type === 'weapon' || template.type === 'staff')) {
+    const affinity = WEAPON_CLASS_AFFINITY[classId]
+    if (affinity) {
+      // Get base multiplier for this weapon type
+      let mult = template.type === 'staff' ? affinity.staff : affinity.weapon
+
+      // Apply edged weapon penalty for priests/druids
+      if (template.type === 'weapon' && template.isEdged && affinity.edgedPenalty !== undefined) {
+        mult = affinity.edgedPenalty
+      }
+
+      score = Math.floor(score * mult)
+    }
   }
 
   return score
@@ -439,9 +499,10 @@ export function getBestRingSlot(character: Character, newRing: Item): EquipSlot 
   if (!ring2) return 'ring2'
 
   // Compare scores and replace weaker one
-  const score1 = calculateEquipmentScore(ring1)
-  const score2 = calculateEquipmentScore(ring2)
-  const newScore = calculateEquipmentScore(newRing)
+  const classId = character.classId
+  const score1 = calculateEquipmentScore(ring1, classId)
+  const score2 = calculateEquipmentScore(ring2, classId)
+  const newScore = calculateEquipmentScore(newRing, classId)
 
   // Only replace if new is better than one of them
   if (newScore > score1 && score1 <= score2) return 'ring1'

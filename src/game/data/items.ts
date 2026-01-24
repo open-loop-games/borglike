@@ -7,6 +7,7 @@ export interface ItemTemplate {
   name: string
   type:
     | 'weapon'
+    | 'staff'
     | 'bow'
     | 'armor'
     | 'shield'
@@ -43,6 +44,10 @@ export interface ItemTemplate {
   minDepth?: number // minimum depth to find
   /** Light radius in tiles (only for light sources) */
   lightRadius?: number
+  /** Spell power bonus percentage (staves) - adds to spell damage and healing */
+  spellPower?: number
+  /** True for edged weapons (swords, axes, daggers) - priests cannot use */
+  isEdged?: boolean
 }
 
 // ============================================================================
@@ -59,6 +64,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '1d4',
     weight: 12,
     minDepth: 0,
+    isEdged: true,
   },
   {
     name: 'Short Sword',
@@ -68,6 +74,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '1d7',
     weight: 80,
     minDepth: 5,
+    isEdged: true,
   },
   {
     name: 'Mace',
@@ -97,6 +104,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '2d5',
     weight: 130,
     minDepth: 10,
+    isEdged: true,
   },
   {
     name: 'Broad Axe',
@@ -106,6 +114,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '2d6',
     weight: 160,
     minDepth: 15,
+    isEdged: true,
   },
   {
     name: 'Morning Star',
@@ -133,6 +142,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '3d4',
     weight: 140,
     minDepth: 15,
+    isEdged: true,
   },
 
   // Tier 3 - Deep Game (depth 25-40)
@@ -144,6 +154,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '3d5',
     weight: 120,
     minDepth: 20,
+    isEdged: true,
   },
   {
     name: 'Battle Axe',
@@ -153,6 +164,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '2d8',
     weight: 170,
     minDepth: 15,
+    isEdged: true,
   },
   {
     name: 'Two-Handed Great Flail',
@@ -171,6 +183,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '3d5',
     weight: 190,
     minDepth: 25,
+    isEdged: true,
   },
 
   // Tier 4 - Endgame (depth 40+)
@@ -182,6 +195,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '4d5',
     weight: 260,
     minDepth: 40,
+    isEdged: true,
   },
   {
     name: 'Great Axe',
@@ -191,6 +205,7 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '4d4',
     weight: 230,
     minDepth: 40,
+    isEdged: true,
   },
   {
     name: 'Mace of Disruption',
@@ -211,6 +226,7 @@ export const WEAPONS: ItemTemplate[] = [
     weight: 180,
     effect: 'Resist Chaos',
     minDepth: 70,
+    isEdged: true,
   },
   {
     name: 'Scythe of Slicing',
@@ -220,6 +236,82 @@ export const WEAPONS: ItemTemplate[] = [
     damage: '8d4',
     weight: 250,
     minDepth: 60,
+    isEdged: true,
+  },
+]
+
+// ============================================================================
+// STAVES - Caster Weapons
+// ============================================================================
+
+export const STAVES: ItemTemplate[] = [
+  // Tier 1 - Early Game (depth 0-10)
+  {
+    name: 'Wooden Staff',
+    type: 'staff',
+    slot: 'weapon',
+    tier: 1,
+    damage: '1d2',
+    weight: 40,
+    minDepth: 0,
+    spellPower: 10,
+  },
+
+  // Tier 2 - Mid Game (depth 10-25)
+  {
+    name: 'Crystal Staff',
+    type: 'staff',
+    slot: 'weapon',
+    tier: 2,
+    damage: '1d3',
+    weight: 35,
+    minDepth: 10,
+    spellPower: 15,
+  },
+  {
+    name: 'Runed Staff',
+    type: 'staff',
+    slot: 'weapon',
+    tier: 2,
+    damage: '1d3',
+    weight: 35,
+    minDepth: 15,
+    spellPower: 18,
+  },
+
+  // Tier 3 - Deep Game (depth 25-40)
+  {
+    name: 'Enchanted Staff',
+    type: 'staff',
+    slot: 'weapon',
+    tier: 3,
+    damage: '1d4',
+    weight: 30,
+    minDepth: 25,
+    spellPower: 20,
+  },
+  {
+    name: 'Staff of Wizardry',
+    type: 'staff',
+    slot: 'weapon',
+    tier: 3,
+    damage: '1d4',
+    weight: 30,
+    minDepth: 30,
+    spellPower: 22,
+  },
+
+  // Tier 4 - Endgame (depth 40+)
+  {
+    name: 'Staff of Power',
+    type: 'staff',
+    slot: 'weapon',
+    tier: 4,
+    damage: '1d4',
+    weight: 30,
+    minDepth: 40,
+    spellPower: 25,
+    effect: '+25% spell power',
   },
 ]
 
@@ -1276,6 +1368,7 @@ export const SCROLLS: ItemTemplate[] = [
 
 export const ALL_EQUIPMENT: ItemTemplate[] = [
   ...WEAPONS,
+  ...STAVES,
   ...BOWS,
   ...ARMOR,
   ...SHIELDS,

@@ -140,6 +140,7 @@ function rollDice(notation: string): number {
 /**
  * Calculate spell power (damage or heal) based on character stats
  * Formula: basePower + (primaryStat - 10) * scaling + level * scaling/3
+ * Then apply spell power bonus from equipped staff
  */
 export function calculateSpellPower(
   character: Character,
@@ -165,7 +166,15 @@ export function calculateSpellPower(
   // Calculate bonus from level (level / 3)
   const levelBonus = Math.floor(character.level / 3) * scaling
 
-  return Math.max(1, basePower + statBonus + levelBonus)
+  let finalPower = Math.max(1, basePower + statBonus + levelBonus)
+
+  // Apply spell power bonus from equipped weapon (staves)
+  const weapon = character.equipment.weapon
+  if (weapon?.template.spellPower) {
+    finalPower = Math.floor(finalPower * (1 + weapon.template.spellPower / 100))
+  }
+
+  return finalPower
 }
 
 // ============================================================================

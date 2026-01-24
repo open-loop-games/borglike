@@ -612,11 +612,11 @@ function getStartingWeaponForClass(classId: string): string {
     case 'berserker':
     case 'blackguard':
       return 'Short Sword'
-    // Casters - dagger
+    // Casters - wooden staff
     case 'mage':
     case 'necromancer':
     case 'archmage':
-      return 'Dagger'
+      return 'Wooden Staff'
     // Holy classes - mace
     case 'priest':
     case 'druid':
