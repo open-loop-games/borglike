@@ -191,10 +191,7 @@ const bonuses = computed(() => {
       </div>
 
       <!-- Abilities section (artifacts) -->
-      <div
-        v-if="isArtifactTemplate(item) && item.abilities.length > 0"
-        class="abilities-section"
-      >
+      <div v-if="isArtifactTemplate(item) && item.abilities.length > 0" class="abilities-section">
         <h4>Abilities</h4>
         <ul class="abilities-list">
           <li v-for="ability in item.abilities" :key="ability">{{ ability }}</li>
