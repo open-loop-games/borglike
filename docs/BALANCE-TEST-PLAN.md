@@ -6,7 +6,7 @@
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
-| **Warrior** | 40.9 | 50 | 48% | 397 | Endgame |
+| **Warrior** | 46.4 | 50 | 11% | 476 | Endgame ⬆️ |
 | **Blackguard** | 40.3 | 50 | 40% | 408 | Endgame |
 | **Berserker** | 40.3 | 50 | 45% | 403 | Endgame |
 | **Paladin** | 39.9 | 50 | 39% | 510 | Endgame |
@@ -14,30 +14,17 @@
 | **Rogue** | 38.3 | 50 | 45% | 478 | Endgame |
 | **Ranger** | 38.2 | 50 | 36% | 485 | Endgame |
 | **Druid** | 34.5 | 45 | 30% | 424 | Endgame |
-| **Necromancer** | 30.9 | 43 | 23% | 563 | Endgame |
-| **Archmage** | 29.7 | 45 | 34% | 539 | Mid |
-| **Mage** | 28.7 | 42 | 39% | 535 | Mid |
+| **Necromancer** | 32.9 | 44 | 24% | 588 | Endgame |
+| **Archmage** | 32.7 | 44 | 36% | 578 | Endgame |
+| **Mage** | 31.9 | 43 | 39% | 574 | Endgame |
 
-**Summary:** 9 classes endgame-viable (30+ avg), 2 classes mid-tier (28-30 avg). Ranger achieved first Morgoth kill.
+**Summary:** All 11 classes endgame-viable (30+ avg depth). Vault feature fixes reduced warrior CB rate from 48% to 11%.
 
 ---
 
 ## Known Issues
 
-### Pure Casters (Mage, Archmage, Necromancer)
-
-At 29-31 avg depth, casters are approaching endgame viability. Necromancer now endgame-viable at 30.9. Remaining issues:
-
-1. **Mage/Archmage still mid-tier** - 28.7/29.7 avg depth, close but not quite 30+
-2. **Higher CB rates than expected** - Mage 39%, Archmage 34% (vs Necro 23%)
-
-Previous fixes (see BALANCE-PASS-3.md):
-- Vision buff spells (Light Orb, Shadow Sight) - +6-10 avg depth
-- Earlier stair-surfing (level 10 vs 15) - +3-4 avg depth
-- Conditional Phase Door at DANGER tier - +4 avg depth for Archmage
-- Sweep flow optimization - reduced context spikes
-
-#### Investigated: Post-Teleport Goal Reset
+### Investigated: Post-Teleport Goal Reset (disabled)
 
 Attempted to reset EXPLORE goals after phase door/teleport to prevent bot from backtracking to distant pre-teleport targets. Implementation in `state.ts:resetAfterTeleport()` with hooks in `tick.ts` (currently disabled).
 
@@ -45,14 +32,17 @@ Attempted to reset EXPLORE goals after phase door/teleport to prevent bot from b
 
 ### Endgame Circuit Breakers
 
-36-48% CB rate at depths 32-50 for melee/hybrid classes (improved from 30-63%). Possible causes:
+11-45% CB rate at depths 32-50 for melee/hybrid classes. Vault feature fixes reduced warrior from 48% to 11%. Remaining causes:
 - Goal oscillation at high depths
 - Pathfinding issues in complex late-game dungeons
 - Decision paralysis with many available options
 
 ---
 
-## RESOLVED: "No Goal" Stuck Pattern (2026-01-23)
+## RESOLVED: "No Goal" Stuck Pattern
+
+**Status:** ✅ Complete (2026-01-23)
+**Commit:** `2424f1c` fix(bot): Fall back to normal exploration when sweep flow unreachable
 
 ### Problem Statement
 
@@ -100,12 +90,15 @@ if (sweepCost < MAX_FLOW_COST) {
 // Sweep flow unreachable - fall through to normal exploration
 ```
 
-### Results (100 runs, seed=1000)
+### Results (100 runs, seed=1000, max-upgrades, 30k turns)
 
-| Class | CB Rate Before | CB Rate After | Change |
-|-------|----------------|---------------|--------|
-| Mage | ~27% | **0%** | ✅ Fixed |
-| Archmage | ~31% | **0%** | ✅ Fixed |
+| Class | Avg Depth Before | Avg Depth After | Change |
+|-------|------------------|-----------------|--------|
+| Mage | 28.7 | **31.9** | +3.2 ✅ |
+| Archmage | 29.7 | **32.7** | +3.0 ✅ |
+| Necromancer | 30.9 | **32.9** | +2.0 ✅ |
+
+All three casters now endgame-viable (30+ avg depth).
 
 ### Additional Fixes
 
@@ -123,6 +116,49 @@ New `frontier` analyzer tracks:
 
 ---
 
+## RESOLVED: Vault Feature Interaction Bugs
+
+**Status:** ✅ Complete (2026-01-23)
+**Commit:** `2a39a7d` fix(bot): Resolve stuck patterns causing circuit breakers
+
+### Problem Statement
+
+Warrior batch runs showed 48% circuit breaker rate with bot getting stuck indefinitely on vault-related features. Three distinct failure modes all stemmed from vault room generation introducing features the bot couldn't properly interact with.
+
+### Combined Results (100 runs, seed=1000, max-upgrades, 30k turns)
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Warrior Avg Depth | 40.9 | **46.4** | +5.5 ⬆️ |
+| Warrior CB Rate | 48% | **11%** | -37% ⬆️ |
+| Victories | 0 | **1** | +1 |
+
+### Fix 1: Disconnected Stairs
+
+**Seeds:** 1019, 1089 (CB @ depth 9)
+
+Dungeon generation order caused stairs to spawn in regions disconnected by vault placement. Vault walls could isolate previously connected areas.
+
+**Fix:** Reordered generation - vault placement now happens BEFORE connectivity validation. Stairs excluded from vault regions.
+
+### Fix 2: Dungeon Merchant Loop
+
+**Seeds:** 1029, 1090 (CB @ depths 8-9)
+
+`VISIT_MERCHANT` goal handler never actually traded - bot walked to merchant, returned `wait`, goal recreated, infinite loop.
+
+**Fix:** Call `botSellItems()` and `botBuySupplies()` when at dungeon merchant. Track visited merchants in `visitedDungeonMerchants` set.
+
+### Fix 3: Altar Infinite Loop
+
+**Seeds:** 1082, 1050, 1074, 1095 (CB @ depths 21-37)
+
+Altar tiles are impassable. Bot targeted altar position directly, circled around it for 800+ turns unable to reach it.
+
+**Fix:** Changed altar interaction to adjacent (like merchants). `useAltar()` now uses `findAdjacentAltar()`. Goal targets adjacent walkable tile.
+
+---
+
 ## Future
 
 ### Evaluate Upgrades and Nerf Swiftness Upgrade
@@ -130,6 +166,8 @@ New `frontier` analyzer tracks:
 - 25% evasion is scaled far too high
 - Upgrades need to be meaningful
 - Bot upgrades to unlock or improve features: Preparedness consumables, farming patterns, sweep, stair surf, kiting?, Town usage?
+- bot upgrade/unlock settings expose more settings in full loadout
+- full loadout bot personality is bot settings levers defaults
 
 ---
 
@@ -144,7 +182,7 @@ New `frontier` analyzer tracks:
 
 **Standard command:**
 ```bash
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 > /tmp/[name].txt 2>&1
 ```
 
 **Full baseline (all 11 classes):**
@@ -166,14 +204,14 @@ npx tsx scripts/diagnose.ts quick --seed=12345 --class=warrior
 npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior --map
 
 # Standard batch test
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 > /tmp/[name].txt 2>&1
 
 # Find problematic seeds
-npx tsx scripts/diagnose.ts find --runs=500 --seed=1000 --class=mage --turns=30000
+npx tsx scripts/diagnose.ts find --runs=100 --seed=1000 --class=mage --turns=30000 > /tmp/[name].txt 2>&1
 
 # Full baseline across all 11 classes (100 runs, 30k turns, max-upgrades)
 # ~15 min runtime
-npx tsx scripts/diagnose.ts baseline --seed=1000
+npx tsx scripts/diagnose.ts baseline --seed=1000  > /tmp/[name].txt 2>&1
 ```
 
 ### Balance Flags
@@ -199,13 +237,13 @@ npx tsx scripts/diagnose.ts baseline --seed=1000
 
 ```bash
 # Baseline (seeded for reproducibility)
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000  > /tmp/[name].txt 2>&1
 
 # With change (same seed for A/B comparison)
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 [flags]
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 [flags]  > /tmp/[name].txt 2>&1
 
 # Verify no regression on warrior
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 [flags]
+npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 [flags]  > /tmp/[name].txt 2>&1
 ```
 
 **Success criteria:**

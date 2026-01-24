@@ -1333,8 +1333,13 @@ function executeGoalAction(
       return { type: 'use_altar' }
 
     case 'VISIT_MERCHANT':
-      // Reached merchant - wait for next tick to re-evaluate and handle shop interaction
-      // (Shop interaction requires more complex state than just reaching position)
+      // Trade with dungeon merchant (same as town merchants)
+      botSellItems(game)
+      botBuySupplies(game)
+      // Mark merchant as visited so we don't re-target it
+      if (goal.targetId) {
+        botState.visitedDungeonMerchants.add(goal.targetId)
+      }
       return { type: 'wait' }
 
     case 'HUNT_UNIQUE':

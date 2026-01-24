@@ -43,6 +43,7 @@ function createMinimalBotState(): BotState {
     // Multi-shop tracking
     shopsVisitedForSelling: new Set(),
     shopsVisitedForBuying: new Set(),
+    visitedDungeonMerchants: new Set(),
     // Corridor exploration
     corridorFollowingMode: false,
     corridorFacing: null,

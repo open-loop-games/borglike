@@ -4,14 +4,29 @@
  * Handles bot selling and buying at merchants (town or traveling).
  */
 
-import type { GameState } from '../types'
+import type { GameState, Point } from '../types'
 import type { BotGoal, BotContext } from './types'
 import { findAdjacentMerchant, sellToMerchant, buyFromMerchant } from '../features'
 import { countHealingPotions } from './preparation'
+import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Find an adjacent walkable position to a target (for impassable features like altars)
+ */
+function findAdjacentWalkable(game: GameState, target: Point): Point | null {
+  const adjacent = getAdjacentPositions(target)
+  for (const pos of adjacent) {
+    const tile = getTile(game.currentLevel, pos.x, pos.y)
+    if (tile && isWalkable(tile)) {
+      return pos
+    }
+  }
+  return null
+}
 
 /**
  * Get slot priority multiplier for gear buying decisions
@@ -361,9 +376,13 @@ export function getUseAltarGoal(
 
   if (!bestAltar || bestPriority <= 0) return null
 
+  // Find adjacent walkable position (altars are impassable)
+  const adjacentPos = findAdjacentWalkable(game, bestAltar.position)
+  if (!adjacentPos) return null
+
   return {
     type: 'USE_ALTAR',
-    target: bestAltar.position,
+    target: adjacentPos,
     targetId: bestAltar.template.id,
     reason: bestReason,
     startTurn: game.turn,
@@ -399,6 +418,9 @@ export function getVisitMerchantGoal(
   let bestReason = ''
 
   for (const merchant of visibleMerchants) {
+    // Skip merchants we've already visited this level
+    if (context.botState.visitedDungeonMerchants.has(merchant.template.id)) continue
+
     let score = 0
     let reason = ''
 

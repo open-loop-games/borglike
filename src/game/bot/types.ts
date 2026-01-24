@@ -176,6 +176,7 @@ export interface BotState {
   // Multi-shop tracking (per-shop visited state)
   shopsVisitedForSelling: Set<string> // Shop IDs where we sold items
   shopsVisitedForBuying: Set<string> // Shop IDs where we bought items
+  visitedDungeonMerchants: Set<string> // Dungeon merchant IDs visited this level
 
   // Labyrinth/corridor exploration mode
   /** Whether we're actively following a corridor (for labyrinth exploration) */

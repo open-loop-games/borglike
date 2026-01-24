@@ -97,13 +97,14 @@ export function generateLevelWithInfo(
     }
   }
 
-  // Ensure connectivity before other processing
+  // Try to place a vault (depth-dependent chance)
+  // Must happen BEFORE connectivity validation so corridors connect to vault entrances
+  const vault = tryPlaceVault(tiles, rooms, width, height, depth, profile.vaultChance)
+
+  // Ensure connectivity after vault placement
   if (!validateConnectivity(tiles, width, height)) {
     ensureConnectivity(tiles, width, height)
   }
-
-  // Try to place a vault (depth-dependent chance)
-  const vault = tryPlaceVault(tiles, rooms, width, height, depth, profile.vaultChance)
 
   // Place doors at room entrances (not mid-corridor)
   // Labyrinths have few/no doors - the maze itself is the obstacle
@@ -115,7 +116,8 @@ export function generateLevelWithInfo(
   const placedDoors = placeDoors(tiles, doorCandidates, effectiveDoorChance)
 
   // Place stairs (prefer room centers in different map quadrants)
-  const { stairsUp, stairsDown } = placeStairs(tiles, rooms, width, height, depth)
+  // Exclude vault area from stair placement
+  const { stairsUp, stairsDown } = placeStairs(tiles, rooms, width, height, depth, vault)
 
   const level: DungeonLevel = {
     depth,
@@ -142,13 +144,15 @@ export function generateLevelWithInfo(
  * Prefers placing stairs in room centers in different map halves (left/right).
  * This ensures stairs are in accessible open areas rather than random corridors,
  * and encourages level traversal by spacing them apart.
+ * Excludes vault areas from stair placement.
  */
 function placeStairs(
   tiles: Tile[][],
   rooms: RoomData[],
   width: number,
   height: number,
-  depth: number
+  depth: number,
+  vault: VaultPlacement | null
 ): { stairsUp: Point | null; stairsDown: Point | null } {
   let stairsUp: Point | null = null
   let stairsDown: Point | null = null
@@ -156,10 +160,13 @@ function placeStairs(
   const needsUp = depth >= 1 // Depth 1 needs stairs to town
   const needsDown = depth < MAX_DEPTH
 
+  // Filter out rooms that overlap with vault
+  const validRooms = vault ? rooms.filter((room) => !roomOverlapsVault(room, vault)) : rooms
+
   // Try room-based placement first (preferred)
-  if (rooms.length >= 2) {
+  if (validRooms.length >= 2) {
     // Sort rooms by x position to find left/right halves
-    const sortedByX = [...rooms].sort((a, b) => a.center.x - b.center.x)
+    const sortedByX = [...validRooms].sort((a, b) => a.center.x - b.center.x)
     const leftRoom = sortedByX[0]!
     const rightRoom = sortedByX[sortedByX.length - 1]!
 
@@ -171,9 +178,9 @@ function placeStairs(
     if (needsDown && rightRoom) {
       stairsDown = placeStairInRoom(tiles, rightRoom, 'stairs_down')
     }
-  } else if (rooms.length === 1) {
+  } else if (validRooms.length === 1) {
     // Single room: place both stairs in it (different positions)
-    const room = rooms[0]!
+    const room = validRooms[0]!
     if (needsUp) {
       stairsUp = placeStairInRoom(tiles, room, 'stairs_up')
     }
@@ -184,7 +191,7 @@ function placeStairs(
 
   // Fallback to random floor placement if room-based failed
   if ((needsUp && !stairsUp) || (needsDown && !stairsDown)) {
-    const floorPositions = collectFloorPositions(tiles, width, height)
+    const floorPositions = collectFloorPositions(tiles, width, height, vault)
     shuffleArray(floorPositions)
 
     if (needsUp && !stairsUp && floorPositions.length > 0) {
@@ -203,6 +210,23 @@ function placeStairs(
   }
 
   return { stairsUp, stairsDown }
+}
+
+/**
+ * Check if a room overlaps with the vault area
+ */
+function roomOverlapsVault(room: RoomData, vault: VaultPlacement): boolean {
+  const vaultRight = vault.position.x + vault.vault.width
+  const vaultBottom = vault.position.y + vault.vault.height
+  const roomRight = room.x + room.width
+  const roomBottom = room.y + room.height
+
+  return !(
+    room.x >= vaultRight ||
+    roomRight <= vault.position.x ||
+    room.y >= vaultBottom ||
+    roomBottom <= vault.position.y
+  )
 }
 
 /**
@@ -238,13 +262,22 @@ function placeStairInRoom(
 
 /**
  * Collect all floor positions for fallback stair placement
+ * Excludes vault area if provided
  */
-function collectFloorPositions(tiles: Tile[][], width: number, height: number): Point[] {
+function collectFloorPositions(
+  tiles: Tile[][],
+  width: number,
+  height: number,
+  vault: VaultPlacement | null
+): Point[] {
   const positions: Point[] = []
   for (let y = 0; y < height; y++) {
     const row = tiles[y]
     if (!row) continue
     for (let x = 0; x < width; x++) {
+      // Skip vault area
+      if (vault && isInVault(x, y, vault)) continue
+
       const tile = row[x]
       if (tile && tile.type === 'floor') {
         positions.push({ x, y })
@@ -252,6 +285,18 @@ function collectFloorPositions(tiles: Tile[][], width: number, height: number): 
     }
   }
   return positions
+}
+
+/**
+ * Check if a position is inside the vault area
+ */
+function isInVault(x: number, y: number, vault: VaultPlacement): boolean {
+  return (
+    x >= vault.position.x &&
+    x < vault.position.x + vault.vault.width &&
+    y >= vault.position.y &&
+    y < vault.position.y + vault.vault.height
+  )
 }
 
 /**

@@ -179,15 +179,30 @@ export function getFountainAt(game: GameState, pos: Point): FountainState | null
 // ============================================================================
 
 /**
- * Use an altar at the player's current position
+ * Find altar adjacent to player
+ */
+export function findAdjacentAltar(game: GameState): AltarState | null {
+  const pos = game.character.position
+
+  for (const altar of game.altars.values()) {
+    const dx = Math.abs(altar.position.x - pos.x)
+    const dy = Math.abs(altar.position.y - pos.y)
+    if (dx <= 1 && dy <= 1) {
+      return altar
+    }
+  }
+
+  return null
+}
+
+/**
+ * Use an altar adjacent to the player
  */
 export function useAltar(game: GameState): boolean {
-  const pos = game.character.position
-  const key = `${pos.x},${pos.y}`
-  const altar = game.altars.get(key)
+  const altar = findAdjacentAltar(game)
 
   if (!altar) {
-    addMessage(game, 'There is no altar here.', 'info')
+    addMessage(game, 'There is no altar nearby.', 'info')
     return false
   }
 
@@ -335,6 +350,10 @@ export function buyFromMerchant(
   merchant.gold += basePrice // Merchant receives full price
   merchant.inventory.splice(itemIndex, 1)
 
+  // Track stats
+  game.stats.goldSpent += price
+  game.stats.itemsBought++
+
   // Remove shop price before adding to inventory
   const purchasedItem = { ...item }
   delete purchasedItem.shopPrice
@@ -386,6 +405,9 @@ export function sellToMerchant(
   game.character.gold += sellPrice
   merchant.gold -= baseSellPrice // Merchant pays base price
   game.character.inventory.splice(inventoryIndex, 1)
+
+  // Track stats
+  game.stats.itemsSold++
 
   addMessage(game, `Sold ${item.template.name} for ${sellPrice} gold.`, 'item')
   addMessage(game, getDialogue(merchant.template, 'sell'), 'info')

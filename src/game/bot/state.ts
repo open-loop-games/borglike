@@ -34,6 +34,7 @@ export function createBotState(): BotState {
     // Multi-shop tracking
     shopsVisitedForSelling: new Set(),
     shopsVisitedForBuying: new Set(),
+    visitedDungeonMerchants: new Set(),
     // Corridor exploration
     corridorFollowingMode: false,
     corridorFacing: null,
@@ -91,6 +92,8 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   // Multi-shop tracking - reset on town entry
   state.shopsVisitedForSelling.clear()
   state.shopsVisitedForBuying.clear()
+  // Dungeon merchants - reset on level change
+  state.visitedDungeonMerchants.clear()
   // Corridor exploration - reset on level change
   state.corridorFollowingMode = false
   state.corridorFacing = null
