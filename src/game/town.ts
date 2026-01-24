@@ -749,6 +749,8 @@ export function useHealer(game: GameState): ActionResult {
     if (affordableHp <= 0) {
       return { success: false, message: 'You cannot afford healing', energyCost: 0 }
     }
+    const goldSpent = character.gold
+    game.stats.goldSpent += goldSpent
     character.hp += affordableHp
     character.gold = 0
     return {
@@ -761,6 +763,7 @@ export function useHealer(game: GameState): ActionResult {
   // Full heal
   character.hp = character.maxHp
   character.gold -= cost
+  game.stats.goldSpent += cost
 
   return {
     success: true,

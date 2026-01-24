@@ -68,6 +68,7 @@ export function handleShapeshift(game: GameState, formId: string): ActionResult 
   if (character.activeFormId === formId) {
     character.activeFormId = null
     recalculateCombatStats(character)
+    game.stats.abilitiesUsed++
     addMessage(game, `You revert to your normal form.`, 'info')
     return {
       success: true,
@@ -93,6 +94,7 @@ export function handleShapeshift(game: GameState, formId: string): ActionResult 
   // Transform into the new form
   character.activeFormId = formId
   recalculateCombatStats(character)
+  game.stats.abilitiesUsed++
   addMessage(game, `You transform into ${form.name}!`, 'good')
 
   return {

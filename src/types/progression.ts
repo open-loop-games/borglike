@@ -75,6 +75,13 @@ export interface ArmoryEntry {
   isArtifact: boolean
 }
 
+/** Snapshot of the monster that killed the player */
+export interface KillerMonsterSnapshot {
+  name: string
+  level: number // Monster's effective depth level
+  hp: number // Monster's max HP
+}
+
 export interface RunStats {
   id: string
   startTime: number
@@ -93,6 +100,22 @@ export interface RunStats {
   turns?: number // Total turns played
   personality?: string // Bot personality used
   seed?: number // RNG seed for reproducibility
+  // Combat stats
+  level?: number // Character level at death
+  damageDealt?: number
+  damageTaken?: number
+  // Economy stats
+  goldSpent?: number
+  itemsBought?: number
+  itemsSold?: number
+  // Ability usage
+  spellsCast?: number
+  abilitiesUsed?: number
+  // Death details
+  killerMonster?: KillerMonsterSnapshot
+  deathDepth?: number // Depth where death occurred (may differ from maxDepth)
+  // Loadout
+  boosters?: string[] // Booster names used this run
 }
 
 export interface GlobalStats {

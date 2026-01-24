@@ -394,6 +394,9 @@ export function castSpell(game: GameState, spellId: string, targetId?: string): 
     character.spellCooldowns[spellId] = game.turn + spell.cooldown
   }
 
+  // Track spell cast
+  game.stats.spellsCast++
+
   // Handle Dark Pact HP cost
   if (spell.id === 'dark_pact') {
     character.hp -= 10

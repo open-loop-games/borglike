@@ -571,9 +571,14 @@ export function isUniqueAlive(state: UniqueState, name: string): boolean {
 export interface RunStats {
   kills: number
   goldCollected: number
+  goldSpent: number
   damageDealt: number
   damageTaken: number
   itemsFound: number
+  itemsBought: number
+  itemsSold: number
+  spellsCast: number
+  abilitiesUsed: number
   turnsPlayed: number
   deepestDepth: number
   startTime: number
@@ -699,6 +704,10 @@ export interface GameState {
 
   // Per-run booster bonuses
   boosterBonuses?: BoosterBonuses
+
+  // Run configuration (for history tracking)
+  personality?: BotPersonality
+  boosterIds?: string[]
 
   // Second Wind tracking (auto-heal once when critical)
   usedSecondWind?: boolean
@@ -891,6 +900,7 @@ export interface RunConfig {
   botPersonality?: BotPersonality
   upgradeBonuses?: UpgradeBonuses // Meta-progression bonuses
   boosterBonuses?: BoosterBonuses // Per-run booster bonuses
+  boosterIds?: string[] // Booster IDs for run history
   bestiary?: Record<string, BestiaryEntry> // Lifetime kill data for knowledge bonuses
   balanceOverrides?: Partial<BalanceOverrides> // A/B testing overrides
   maxDepthEver?: number // Permanent progression: deepest level ever reached (for merchant scaling)

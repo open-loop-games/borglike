@@ -6,9 +6,11 @@
  */
 
 import type { RunResult } from '@/game/game-runner'
-import type { RunStats, EquipmentSnapshot } from '@/types/progression'
+import type { RunStats, EquipmentSnapshot, KillerMonsterSnapshot } from '@/types/progression'
 import { useProgressionStore } from '@stores/progression'
 import { saveRun } from '@stores/persistence'
+import { getMonsterByName } from '@/game/data/monsters'
+import { getBoosterById } from '@/game/data/boosters'
 
 // ============================================================================
 // TYPES
@@ -128,6 +130,15 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
   // Extract inventory item names
   const inventory = char.inventory.map((item) => item.artifact?.name ?? item.template.name)
 
+  // Get death cause and extract killer monster info
+  const deathCause = isVictory ? undefined : getDeathCause(game)
+  const killerMonster = isVictory ? undefined : extractKillerMonsterInfo(deathCause)
+
+  // Get booster names from IDs
+  const boosters = game.boosterIds
+    ?.map((id) => getBoosterById(id)?.name)
+    .filter((name): name is string => !!name)
+
   return {
     id: game.runId,
     startTime: game.stats.startTime,
@@ -138,14 +149,30 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
     kills: result.kills,
     goldEarned: game.stats.goldCollected,
     xpEarned: char.xp,
-    deathCause: isVictory ? undefined : getDeathCause(game),
+    deathCause,
     essenceEarned: 0, // Will be filled in after calculation
     // Extended fields
     equipment,
     inventory,
     turns: game.turn,
-    personality: game.upgradeBonuses ? undefined : undefined, // Note: personality not stored on GameState
+    personality: game.personality,
     seed: game.seed,
+    // Combat stats
+    level: char.level,
+    damageDealt: game.stats.damageDealt,
+    damageTaken: game.stats.damageTaken,
+    // Economy stats
+    goldSpent: game.stats.goldSpent,
+    itemsBought: game.stats.itemsBought,
+    itemsSold: game.stats.itemsSold,
+    // Ability usage
+    spellsCast: game.stats.spellsCast,
+    abilitiesUsed: game.stats.abilitiesUsed,
+    // Death details
+    killerMonster,
+    deathDepth: isVictory ? undefined : char.depth,
+    // Loadout
+    boosters,
   }
 }
 
@@ -177,6 +204,30 @@ function extractKillerMonster(deathCause: string): string | null {
     return killMatch[1]
   }
   return null
+}
+
+/**
+ * Extract full killer monster info from death cause
+ * Looks up the monster template to get level and HP stats
+ */
+function extractKillerMonsterInfo(deathCause?: string): KillerMonsterSnapshot | undefined {
+  if (!deathCause) return undefined
+
+  const monsterName = extractKillerMonster(deathCause)
+  if (!monsterName) return undefined
+
+  // Look up the monster template to get stats
+  const template = getMonsterByName(monsterName)
+  if (!template) {
+    // Return basic info if template not found
+    return { name: monsterName, level: 1, hp: 0 }
+  }
+
+  return {
+    name: monsterName,
+    level: template.minDepth ?? 1,
+    hp: template.hp,
+  }
 }
 
 // ============================================================================

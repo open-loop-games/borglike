@@ -74,6 +74,7 @@ export function handleSteal(game: GameState, targetId: string): ActionResult {
     const goldAmount = randomInt(5, 15) * Math.max(1, monsterDepth)
     game.character.gold += goldAmount
     game.stats.goldCollected += goldAmount
+    game.stats.abilitiesUsed++
 
     addMessage(game, `You steal ${goldAmount} gold from the ${monster.template.name}!`, 'good')
 
