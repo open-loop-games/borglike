@@ -1028,16 +1028,24 @@ function computeSingleTargetFlow(
   return flowCosts
 }
 
+/** Max path length to bullrush through danger for cautious DESCEND */
+const CAUTIOUS_BULLRUSH_THRESHOLD = 6
+
 /**
  * Ensure goal is reachable, trying without avoidance if blocked.
  * Returns updated flow map or null if truly unreachable.
+ *
+ * For cautious personalities with DESCEND blocked by danger:
+ * - If path is short (<= CAUTIOUS_BULLRUSH_THRESHOLD), allow bullrush
+ * - If path is long, set dangerBlockedDescent flag (triggers retreat)
  */
 function ensureFlowReachable(
   game: GameState,
   botState: BotState,
   goal: BotGoal,
   flowCosts: FlowMap,
-  avoidSet: Set<string>
+  avoidSet: Set<string>,
+  caution: number
 ): FlowMap | null {
   const pos = game.character.position
   const currentCost = getFlowCost(flowCosts, pos)
@@ -1053,7 +1061,7 @@ function ensureFlowReachable(
     return null
   }
 
-  // Try without avoidance
+  // Try without avoidance first to check path length
   let fallbackFlow: FlowMap
   if (goal.type === 'EXPLORE') {
     const frontiers = getFrontierPositions(game)
@@ -1068,6 +1076,18 @@ function ensureFlowReachable(
   if (fallbackCost >= MAX_FLOW_COST) {
     clearUnreachableGoal(botState)
     return null
+  }
+
+  // Cautious DESCEND blocked by danger: retreat if path is long, bullrush if short
+  // Short path = close to stairs, worth pushing through
+  // Long path = far from stairs, retreat to safer depth
+  if (goal.type === 'DESCEND' && caution >= 50 && game.character.depth > 1) {
+    if (fallbackCost > CAUTIOUS_BULLRUSH_THRESHOLD) {
+      botState.dangerBlockedDescent = true
+      clearUnreachableGoal(botState)
+      return null
+    }
+    // Short path - allow bullrush through danger
   }
 
   return fallbackFlow
@@ -1216,7 +1236,14 @@ function handleGoalMovement(
   }
 
   // 5. Ensure reachable
-  const reachableFlow = ensureFlowReachable(game, botState, goal, flowCosts, avoidSet)
+  const reachableFlow = ensureFlowReachable(
+    game,
+    botState,
+    goal,
+    flowCosts,
+    avoidSet,
+    effectiveConfig.caution
+  )
   if (!reachableFlow) {
     return { type: 'wait' }
   }

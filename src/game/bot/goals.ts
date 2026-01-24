@@ -150,6 +150,25 @@ export function selectGoal(
   const turn = game.turn
   const pos = game.character.position
 
+  // DANGER RETREAT: If DESCEND was blocked by danger (cautious), retreat up
+  // This prevents oscillation between cautious avoidance and bullrush fallback
+  if (botState.dangerBlockedDescent) {
+    botState.dangerBlockedDescent = false // Clear flag - consumed
+    const stairsUp = botState.knownStairsUp
+
+    // If we have stairs up and not at depth 1, retreat
+    if (stairsUp && game.character.depth > 1) {
+      return {
+        type: 'ASCEND_TO_FARM',
+        target: stairsUp,
+        targetId: null,
+        reason: 'Descent blocked by danger - retreating to safer depth',
+        startTurn: turn,
+      }
+    }
+    // At depth 1 or no stairs up - fall through to normal goal selection
+  }
+
   // Check if current goal is still valid and high priority
   const currentGoal = botState.currentGoal
   if (currentGoal && isGoalStillValid(currentGoal, context, botState)) {

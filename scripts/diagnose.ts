@@ -115,6 +115,7 @@ const ALL_ANALYZERS: AnalyzerName[] = [
   'oscillation',
   'frontier',
   'stats',
+  'step-debug',
 ]
 
 function parseArgs(): Args {

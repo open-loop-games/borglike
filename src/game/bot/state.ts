@@ -68,6 +68,8 @@ export function createBotState(): BotState {
     cachedExplorationFlow: null,
     cachedSweepFlow: null,
     lastExploredCount: 0,
+    // Danger retreat
+    dangerBlockedDescent: false,
   }
 }
 

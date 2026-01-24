@@ -243,6 +243,10 @@ export interface BotState {
   cachedSweepFlow: SweepFlowCache | null
   /** Cached unexplored tile count (for invalidation detection) */
   lastExploredCount: number
+
+  // Danger retreat state (cautious personality)
+  /** DESCEND blocked by danger, cautious bot should retreat (ascend) instead of bullrush */
+  dangerBlockedDescent: boolean
 }
 
 // ============================================================================

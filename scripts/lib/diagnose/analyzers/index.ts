@@ -44,6 +44,9 @@ export type { FrontierAnalyzerConfig } from './frontier'
 export { FarmingAnalyzer, createFarmingAnalyzer } from './farming'
 export type { FarmingAnalyzerConfig } from './farming'
 
+export { StepDebugAnalyzer, createStepDebugAnalyzer } from './step-debug'
+export type { StepDebugConfig } from './step-debug'
+
 // Personality comparison (standalone utility)
 export { comparePersonalities, formatPersonalityComparison } from './personality'
 export type { PersonalityCompareConfig, PersonalityMetrics, PersonalityCompareResult } from './personality'
@@ -62,6 +65,7 @@ import { createOscillationAnalyzer } from './oscillation'
 import { createStatsAnalyzer } from './stats'
 import { createFrontierAnalyzer } from './frontier'
 import { createFarmingAnalyzer } from './farming'
+import { createStepDebugAnalyzer } from './step-debug'
 
 /** All available analyzer names */
 export type AnalyzerName =
@@ -78,6 +82,7 @@ export type AnalyzerName =
   | 'stats'
   | 'frontier'
   | 'farming'
+  | 'step-debug'
 
 /** Create all standard analyzers */
 export function createAllAnalyzers(): Analyzer[] {
@@ -132,6 +137,7 @@ export function createAnalyzers(names: AnalyzerName[]): Analyzer[] {
     stats: createStatsAnalyzer,
     frontier: createFrontierAnalyzer,
     farming: createFarmingAnalyzer,
+    'step-debug': createStepDebugAnalyzer,
   }
 
   return names.map((name) => factories[name]())
