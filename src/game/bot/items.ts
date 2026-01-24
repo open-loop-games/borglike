@@ -844,7 +844,7 @@ export function findCureFor(character: Character, status: string): Item | null {
  * Pure query function for goal selection - returns best pickup target or null.
  */
 export function findBestItem(context: BotContext, maxDistance: number): GroundItem | null {
-  const { game, visibleItems, config } = context
+  const { game, visibleItems, config, botState } = context
   const pos = game.character.position
   const character = game.character
 
@@ -852,6 +852,9 @@ export function findBestItem(context: BotContext, maxDistance: number): GroundIt
   let bestScore = -Infinity
 
   for (const item of visibleItems) {
+    // Skip items blacklisted due to danger (caused flee oscillation)
+    if (botState.dangerousItemBlacklist.has(item.id)) continue
+
     const dx = Math.abs(item.position.x - pos.x)
     const dy = Math.abs(item.position.y - pos.y)
     const distance = dx + dy

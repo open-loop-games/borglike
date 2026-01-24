@@ -2,7 +2,25 @@
 
 ## Current State (2026-01-23)
 
-### Class Performance (100 runs, 30k turns, seed=1000, max-upgrades)
+### Class Performance (30 runs, 30k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
+|-------|-----------|-----------|---------|-------|--------|
+| **Berserker** | 48.0 | 50 | 7% | 507 | Endgame ⬆️ |
+| **Warrior** | 47.4 | 50 | 1% | 478 | Endgame ⬆️ |
+| **Blackguard** | 46.9 | 50 | 7% | 498 | Endgame |
+| **Paladin** | 45.5 | 50 | 0% | 580 | Endgame |
+| **Rogue** | 44.4 | 50 | 10% | 550 | Endgame |
+| **Priest** | 43.9 | 50 | 0% | 542 | Endgame |
+| **Ranger** | 42.2 | 50 | 3% | 533 | Endgame ⬆️ |
+| **Druid** | 39.0 | 45 | 0% | 477 | Endgame |
+| **Mage** | 37.5 | 44 | 13% | 639 | Endgame |
+| **Archmage** | 36.7 | 43 | 13% | 615 | Endgame |
+| **Necromancer** | 35.2 | 43 | 7% | 611 | Endgame |
+
+**Summary:** All 11 classes endgame-viable (35+ avg depth). CB rates dropped dramatically (0-13%). 2 more Morgoth kills (berserker, ranger) ⬆️.
+
+### Previous Baseline (100 runs, 30k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
@@ -32,10 +50,122 @@ Attempted to reset EXPLORE goals after phase door/teleport to prevent bot from b
 
 ### Endgame Circuit Breakers
 
-11-45% CB rate at depths 32-50 for melee/hybrid classes. Vault feature fixes reduced warrior from 48% to 11%. Remaining causes:
-- Goal oscillation at high depths
+0-7% CB rate at depths 35-50. FLEE/TAKE and FLEE/DESCEND oscillation fixes reduced CB causes significantly. Remaining:
+- Exploration/flee oscillation at depth 50 (rare, 1% warrior)
 - Pathfinding issues in complex late-game dungeons
-- Decision paralysis with many available options
+
+---
+
+## RESOLVED: FLEE/TAKE Goal Oscillation
+
+**Status:** ✅ Complete (2026-01-23)
+
+### Problem Statement
+
+Warrior batch runs (100 seeds) showed 11% circuit breaker rate with bot stuck oscillating between FLEE and TAKE goals for 800+ turns at depths 35-45.
+
+**Problem seeds:** 1061, 1073 (both CB @ depth 37)
+
+### Root Cause Found
+
+Bot enters high-danger area to pick up item → FLEE triggers → flees 1-2 tiles → danger drops/monsters leave vision → FLEE clears → TAKE resumes → re-enters danger → FLEE triggers → loop forever.
+
+Turn log pattern:
+```
+Turn 12342: pos=(51,33) goal=FLEE@(44,24) [MOVED]
+Turn 12343: pos=(50,32) goal=FLEE@(44,23) [MOVED]
+Turn 12344: pos=(49,32) goal=TAKE@(51,34) [MOVED]  ← FLEE cleared, back to item
+Turn 12345: pos=(49,33) goal=TAKE@(51,34) [MOVED]
+...
+Turn 12349: pos=(50,33) goal=FLEE@(44,24) [MOVED]  ← FLEE triggers again
+```
+
+Two issues:
+1. **Hardcoded 70% HP threshold** for "high danger area" retreat was too aggressive. Bot at 58% HP (level 50, 920/1570 HP) kept fleeing from areas it could easily handle.
+2. **No memory of dangerous items** - bot kept re-targeting the same item that triggered flee.
+
+### Fix Applied
+
+**1. Personality-scaled HP threshold** (`survival-retreat.ts:213`):
+```typescript
+// HP threshold scales with personality: cautious (50%) → 70%, aggressive (20%) → 40%
+const dangerHpThreshold = cautionThreshold + 0.2
+```
+
+**2. Dangerous item blacklist** - prevent re-targeting items that caused flee:
+- Added `dangerousItemBlacklist: Set<string>` to BotState
+- When FLEE triggers from "High danger area" with active TAKE goal, blacklist that item ID
+- `findBestItem()` skips blacklisted items
+- Blacklist clears on level change
+
+### Results (100 runs, seed=1000, max-upgrades, 30k turns)
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Warrior Avg Depth | 46.4 | **47.2** | +0.8 ⬆️ |
+| Warrior CB Rate | 11% | **7%** | -4% ⬆️ |
+
+**Specific seeds:**
+- 1061: CB@37 → Death@45 (+8 depth)
+- 1073: CB@37 → Death@50 (+13 depth, reached Morgoth's level)
+
+---
+
+## RESOLVED: FLEE/DESCEND Goal Oscillation
+
+**Status:** ✅ Complete (2026-01-23)
+
+### Problem Statement
+
+Warrior batch runs (100 seeds) showed 7% circuit breaker rate with bot stuck oscillating between FLEE and DESCEND goals for 700+ turns at depths 39-50.
+
+**Problem seeds:** 1001, 1031, 1054, 1074, 1077, 1091, 1092
+
+### Root Cause Found
+
+Bot approaches stairs with DESCEND goal → enters "high danger area" → FLEE triggers → flees 1-2 tiles → monsters leave vision → FLEE clears → DESCEND resumes → re-enters danger → FLEE triggers → loop forever.
+
+Turn log pattern (seed 1054, depth 39):
+```
+Turn 11340: pos=(62,25) HP=916 depth=39 goal=DESCEND@(76,13) [MOVED]
+Turn 11341: pos=(61,25) HP=916 depth=39 goal=FLEE@(56,20) [MOVED]
+Turn 11342: pos=(62,26) HP=916 depth=39 goal=DESCEND@(76,13) [MOVED]
+Turn 11343: pos=(61,26) HP=916 depth=39 goal=FLEE@(56,20) [MOVED]
+... (700+ turns of oscillation)
+```
+
+Unlike FLEE/TAKE, can't blacklist stairs. Bot at 51-58% HP kept fleeing from areas it could handle because `dangerHpThreshold = 70%` for cautious personality.
+
+### Fix Applied
+
+**Bullrush for DESCEND** (`survival-retreat.ts:751-755`):
+```typescript
+// Bullrush: When committed to DESCEND, push through "high danger area" to reach stairs
+// Other flee triggers (HP critical, outnumbered, losing fight, status) still apply
+if (retreatEval.reason === 'High danger area' && botState.currentGoal?.type === 'DESCEND') {
+  return null
+}
+```
+
+Bot commits to descent and ignores "high danger area" flee. Critical flee triggers still work:
+- HP < cautionThreshold (50% for cautious)
+- Outnumbered (2+ adjacent monsters)
+- Losing fight badly (combat advantage < -20)
+- Dangerous status effects
+
+### Results (100 runs, seed=1000, max-upgrades, 30k turns)
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Warrior Avg Depth | 47.0 | **47.4** | +0.4 ⬆️ |
+| Warrior CB Rate | 7% | **1%** | -6% ⬆️ |
+
+**Specific seeds:**
+- 1054: CB@39 → Death@41 (+2 depth)
+- 1074: CB@39 → Death@50 (+11 depth, reached Morgoth's level)
+- 1077: CB@50 → Death@50 (fixed)
+- 1091: CB@50 → Death@50 (fixed)
+- 1092: CB@44 → Death@47 (+3 depth)
 
 ---
 
@@ -182,12 +312,12 @@ Altar tiles are impassable. Bot targeted altar position directly, circled around
 
 **Standard command:**
 ```bash
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 > /tmp/[name].txt 2>&1
 ```
 
 **Full baseline (all 11 classes):**
 ```bash
-npx tsx scripts/diagnose.ts baseline --seed=1000  # ~15 min
+pnpm diagnose baseline --seed=1000  # ~15 min
 ```
 
 **Parallel execution:** Run only 2 batch commands simultaneously (8 threads each = 16 total).
@@ -198,20 +328,20 @@ npx tsx scripts/diagnose.ts baseline --seed=1000  # ~15 min
 
 ```bash
 # Quick single run
-npx tsx scripts/diagnose.ts quick --seed=12345 --class=warrior
+pnpm diagnose quick --seed=12345 --class=warrior
 
 # Deep dive with turn log
-npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior --map
+pnpm diagnose deep --seed=12345 --class=warrior --map
 
 # Standard batch test
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 > /tmp/[name].txt 2>&1
 
 # Find problematic seeds
-npx tsx scripts/diagnose.ts find --runs=100 --seed=1000 --class=mage --turns=30000 > /tmp/[name].txt 2>&1
+pnpm diagnose find --runs=100 --seed=1000 --class=mage --turns=30000 > /tmp/[name].txt 2>&1
 
 # Full baseline across all 11 classes (100 runs, 30k turns, max-upgrades)
 # ~15 min runtime
-npx tsx scripts/diagnose.ts baseline --seed=1000  > /tmp/[name].txt 2>&1
+pnpm diagnose baseline --seed=1000  > /tmp/[name].txt 2>&1
 ```
 
 ### Balance Flags
@@ -237,13 +367,13 @@ npx tsx scripts/diagnose.ts baseline --seed=1000  > /tmp/[name].txt 2>&1
 
 ```bash
 # Baseline (seeded for reproducibility)
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000  > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000  > /tmp/[name].txt 2>&1
 
 # With change (same seed for A/B comparison)
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 [flags]  > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 [flags]  > /tmp/[name].txt 2>&1
 
 # Verify no regression on warrior
-npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 [flags]  > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 [flags]  > /tmp/[name].txt 2>&1
 ```
 
 **Success criteria:**

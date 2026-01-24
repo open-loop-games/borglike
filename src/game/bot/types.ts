@@ -188,6 +188,10 @@ export interface BotState {
   /** Targets that couldn't be reached - blacklisted until turn expires */
   blacklistedTargets: Map<string, number> // "x,y" -> expiry turn
 
+  // Item blacklist (items that caused danger)
+  /** Items that triggered flee due to high danger area - avoid re-targeting */
+  dangerousItemBlacklist: Set<string> // Item IDs
+
   // Farming loop state (depth preparation system)
   /** Whether bot is in farming mode (blocked from descent, farming for gold/XP) */
   farmingMode: boolean

@@ -49,6 +49,8 @@ function createMinimalBotState(): BotState {
     corridorFacing: null,
     // Exploration blacklist
     blacklistedTargets: new Map(),
+    // Item blacklist (items that caused danger)
+    dangerousItemBlacklist: new Set(),
     // Farming loop state
     farmingMode: false,
     farmBlockedDepth: 0,

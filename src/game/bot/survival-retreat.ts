@@ -210,7 +210,9 @@ export function shouldRetreat(
   // Check local danger (even if not in combat)
   const localDanger = getLocalDanger(dangers, character.position)
   const dangerThreshold = 100 + config.aggression // Higher aggression = tolerate more danger
-  if (localDanger > dangerThreshold && hpRatio < 0.7) {
+  // HP threshold scales with personality: cautious (50%) → 70%, aggressive (20%) → 40%
+  const dangerHpThreshold = cautionThreshold + 0.2
+  if (localDanger > dangerThreshold && hpRatio < dangerHpThreshold) {
     return {
       shouldRetreat: true,
       urgency: Math.floor((localDanger / dangerThreshold) * 50),
@@ -736,6 +738,21 @@ export function getFleeGoal(
   // Check if retreat warranted (PASS HP RATE)
   const retreatEval = shouldRetreat(game, config, dangers, hpRate)
   if (!retreatEval.shouldRetreat) return null
+
+  // If fleeing due to high danger area while pursuing TAKE goal, blacklist that item
+  // This prevents oscillation: approach item → danger → flee → approach → danger...
+  if (retreatEval.reason === 'High danger area' && botState.currentGoal?.type === 'TAKE') {
+    const itemId = botState.currentGoal.targetId
+    if (itemId) {
+      botState.dangerousItemBlacklist.add(itemId)
+    }
+  }
+
+  // Bullrush: When committed to DESCEND, push through "high danger area" to reach stairs
+  // Other flee triggers (HP critical, outnumbered, losing fight, status) still apply
+  if (retreatEval.reason === 'High danger area' && botState.currentGoal?.type === 'DESCEND') {
+    return null
+  }
 
   // Exit corridor-following mode
   resetCorridorFollowing(botState)

@@ -40,6 +40,8 @@ export function createBotState(): BotState {
     corridorFacing: null,
     // Exploration blacklist
     blacklistedTargets: new Map(),
+    // Item blacklist (items that caused danger)
+    dangerousItemBlacklist: new Set(),
     // Farming loop state
     farmingMode: false,
     farmBlockedDepth: 0,
@@ -99,6 +101,8 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.corridorFacing = null
   // Exploration blacklist - clear on level change
   state.blacklistedTargets.clear()
+  // Item blacklist - clear on level change
+  state.dangerousItemBlacklist.clear()
   // Tethered exploration - reset seen tiles for this visit
   state.seenThisVisit.clear()
   // Performance caches - clear on level change

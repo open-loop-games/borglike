@@ -24,6 +24,7 @@ pnpm run lint         # ESLint check
 pnpm run format       # Prettier write
 
 pnpm run knip         # Find unused exports/dependencies
+pnpm diagnose [mode]  # Bot diagnostics (deep, quick, batch, find, baseline)
 ```
 
 ## Skills
@@ -32,10 +33,23 @@ pnpm run knip         # Find unused exports/dependencies
 
 ## Path Aliases
 
-- `@/*` → `src/*`
-- `@game/*` → `src/game/*`
-- `@stores/*` → `src/stores/*`
-- `@ui/*` → `src/ui/*`
+```
+@/*       → src/*           # Fallback for anything
+@game/*   → src/game/*      # Core roguelike engine
+@bot/*    → src/game/bot/*  # Bot AI module
+@stores/* → src/stores/*    # Pinia stores
+@types/*  → src/types/*     # Shared type definitions
+@engine/* → src/engine/*    # Instance manager
+@core/*   → src/core/*      # Formulas, bridges
+@ui/*     → src/ui/*        # Vue components
+```
+
+**Import rules:**
+- Use specific alias when available: `@game/types` not `@/game/types`
+- Bot files import game via `@game/`: `@game/types`, `@game/dungeon`
+- Vue siblings can use relative: `../common/ProgressBar.vue` is fine
+- Scripts use aliases too: `@game/types` not `../../../../src/game/types`
+- Convert to aliases when touching a file (progressive migration)
 
 ## Module Map
 
@@ -68,7 +82,9 @@ src/
 - Block main thread (use requestAnimationFrame for heavy work)
 - Store full game state in Pinia (only extracted stats)
 - Over-engineer the roguelike
-- Git revert without checking last commit time and diff for other work
+
+**MUST NEVER NOT**
+- Git revert or checkout without checking last commit time and diff for other work
 
 ## File Size Guidelines
 **Based on this philosophy:**

@@ -196,7 +196,8 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
 
   // Get upgrade bonuses and booster bonuses
   const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
-  const boosterBonuses = computeBoosterBonuses(progression.getActiveBoosterIds())
+  const boosterIds = progression.getActiveBoosterIds()
+  const boosterBonuses = computeBoosterBonuses(boosterIds)
 
   // Get bestiary data for knowledge bonuses
   const bestiary = progression.bestiary
@@ -211,6 +212,7 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     botPersonality: personality,
     upgradeBonuses: bonuses,
     boosterBonuses,
+    boosterIds,
     bestiary,
     maxDepthEver,
     maxTurns: 0, // Unlimited

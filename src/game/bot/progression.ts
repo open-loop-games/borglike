@@ -875,17 +875,24 @@ export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
     }
   }
 
-  // Find the "blocked depth" - scan forward until readiness fails
-  let blockedDepth = character.depth + 1
-  while (blockedDepth <= MAX_DEPTH) {
-    const readinessIssue = getDepthReadiness(
-      character,
-      character.inventory,
-      blockedDepth,
-      effectiveConfig.caution
-    )
-    if (readinessIssue) break
-    blockedDepth++
+  // Find the "blocked depth" - use stored value when farming, else scan forward
+  let blockedDepth: number
+  if (botState.farmingMode && botState.farmBlockedDepth > 0) {
+    // In farming mode: use the depth we're blocked at (don't recalculate)
+    blockedDepth = botState.farmBlockedDepth
+  } else {
+    // Not farming: scan forward until readiness fails
+    blockedDepth = character.depth + 1
+    while (blockedDepth <= MAX_DEPTH) {
+      const readinessIssue = getDepthReadiness(
+        character,
+        character.inventory,
+        blockedDepth,
+        effectiveConfig.caution
+      )
+      if (readinessIssue) break
+      blockedDepth++
+    }
   }
 
   // Only ascend if under-leveled for the BLOCKED depth
