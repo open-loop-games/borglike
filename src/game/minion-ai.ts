@@ -93,16 +93,20 @@ function processSingleMinionTurn(game: GameState, minion: Minion): GameEvent[] {
     return events
   }
 
-  // Priority 2: Move toward nearest visible enemy
+  // Priority 2: Move toward nearest visible enemy (must be in player's FOV)
+  const distToPlayer = chebyshevDistance(minion.position, game.character.position)
   const nearestEnemy = findNearestVisibleEnemy(game, minion)
-  if (nearestEnemy) {
-    const moved = moveToward(game, minion, nearestEnemy.position)
-    if (moved) return events
+  if (nearestEnemy && distToPlayer <= 5) {
+    // Only chase if staying within 5 tiles of player
+    const enemyDistToPlayer = chebyshevDistance(nearestEnemy.position, game.character.position)
+    if (enemyDistToPlayer <= 5) {
+      const moved = moveToward(game, minion, nearestEnemy.position)
+      if (moved) return events
+    }
   }
 
-  // Priority 3: Follow player if too far away (more than 5 tiles)
-  const distToPlayer = chebyshevDistance(minion.position, game.character.position)
-  if (distToPlayer > 5) {
+  // Priority 3: Follow player - stay within 2 tiles, never exceed 5
+  if (distToPlayer > 2) {
     moveToward(game, minion, game.character.position)
   }
 

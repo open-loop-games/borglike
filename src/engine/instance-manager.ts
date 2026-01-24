@@ -24,6 +24,7 @@ import {
 import { randomInt } from '@/game/rng'
 import { handleRunCompletion } from '@/core/run-completion-service'
 import type { RunConfig } from '@/types'
+import type { MinionType } from '@/game'
 
 interface GameInstance {
   runId: string
@@ -116,6 +117,20 @@ const MONSTER_COLORS: Record<string, number> = {
   lightPurple: 0xc084fc,
   lightSlate: 0x94a3b8,
   black: 0x1f2937,
+}
+
+// Minion display characters
+const MINION_CHARS: Record<MinionType, string> = {
+  wolf: 'C', // Canine
+  skeleton: 's', // skeleton
+  bear: 'q', // quadruped
+}
+
+// Minion colors (friendly tones to distinguish from hostile monsters)
+const MINION_COLORS: Record<MinionType, number> = {
+  wolf: 0x22c55e, // green (friendly)
+  skeleton: 0x94a3b8, // slate gray
+  bear: 0x92400e, // umber
 }
 
 /**
@@ -628,6 +643,17 @@ function renderGameToGrid(runId: string, game: GameState): void {
     offsetY,
     (m) => m.position,
     (m) => ({ char: m.template.char, color: MONSTER_COLORS[m.template.color] ?? 0xef4444 })
+  )
+
+  // Render minions
+  renderEntities(
+    grid,
+    game.minions,
+    level,
+    offsetX,
+    offsetY,
+    (m) => m.position,
+    (m) => ({ char: MINION_CHARS[m.type], color: MINION_COLORS[m.type] })
   )
 
   // Render player (convert world to screen coordinates)

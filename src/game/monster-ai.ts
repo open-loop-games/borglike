@@ -33,6 +33,8 @@ import {
 } from './dungeon'
 import { resolveMonsterAttacks, formatMonsterAttackMessage } from './monster-combat'
 import { shouldCastSpell, executeMonsterSpell } from './monster-spells'
+import { damageMinionById } from './minion-ai'
+import { rollDice } from './dice'
 
 /** Victory boss name */
 const VICTORY_BOSS_NAME = 'Morgoth, Lord of Darkness'
@@ -316,23 +318,40 @@ export function wakeNearbyMonsters(monsters: Monster[], playerPos: Point, radius
 export function decideAction(monster: Monster, game: GameState): GameAction | null {
   const playerPos = game.character.position
 
-  // If asleep, check if we should wake up
+  // If asleep, check if we should wake up (player or minion in sight)
   if (!monster.isAwake) {
-    if (canSeePlayer(monster, playerPos, game.currentLevel)) {
+    let shouldWake = canSeePlayer(monster, playerPos, game.currentLevel)
+    if (!shouldWake) {
+      // Also wake if any minion is visible
+      for (const minion of game.minions) {
+        if (minion.hp > 0 && canSeePlayer(monster, minion.position, game.currentLevel)) {
+          shouldWake = true
+          break
+        }
+      }
+    }
+    if (shouldWake) {
       monster.isAwake = true
     } else {
       return null // Stay asleep
     }
   }
 
-  // Check if adjacent to player (can attack)
-  if (isAdjacentTo(monster.position, playerPos)) {
+  // Find nearest target (player or minion)
+  const target = findNearestTarget(monster, game)
+  if (!target) return { type: 'wait' }
+
+  // Check if adjacent to target (can attack)
+  if (isAdjacentTo(monster.position, target.position)) {
+    if (target.isMinion && target.minionId) {
+      return { type: 'attack', targetId: target.minionId }
+    }
     return { type: 'attack', targetId: game.character.id }
   }
 
-  // Try to move toward player if we can see them
-  if (canSeePlayer(monster, playerPos, game.currentLevel)) {
-    const movePos = findMoveTowardPlayer(monster, playerPos, game.currentLevel, game.monsters)
+  // Try to move toward target if we can see them
+  if (canSeePlayer(monster, target.position, game.currentLevel)) {
+    const movePos = findMoveTowardPlayer(monster, target.position, game.currentLevel, game.monsters)
     if (movePos) {
       const direction = getDirectionToward(monster.position, movePos)
       if (direction) {
@@ -365,6 +384,35 @@ function isAdjacentTo(a: Point, b: Point): boolean {
   const dx = Math.abs(a.x - b.x)
   const dy = Math.abs(a.y - b.y)
   return dx <= 1 && dy <= 1 && (dx > 0 || dy > 0)
+}
+
+/**
+ * Find the nearest valid target (player or minion) for a monster.
+ * Prefers minion on tie (makes minions useful as tanks).
+ */
+function findNearestTarget(
+  monster: Monster,
+  game: GameState
+): { position: Point; isMinion: boolean; minionId?: string } | null {
+  const playerPos = game.character.position
+  const playerDist = distance(monster.position, playerPos)
+
+  // Find nearest alive minion
+  let nearestMinion: { position: Point; id: string; dist: number } | null = null
+  for (const minion of game.minions) {
+    if (minion.hp <= 0) continue
+    const dist = distance(monster.position, minion.position)
+    if (!nearestMinion || dist < nearestMinion.dist) {
+      nearestMinion = { position: minion.position, id: minion.id, dist }
+    }
+  }
+
+  // Prefer minion on tie (tank value)
+  if (nearestMinion && nearestMinion.dist <= playerDist) {
+    return { position: nearestMinion.position, isMinion: true, minionId: nearestMinion.id }
+  }
+
+  return { position: playerPos, isMinion: false }
 }
 
 /**
@@ -658,7 +706,7 @@ export function processMonsterTurns(game: GameState): GameEvent[] {
 function getMonsterAction(
   game: GameState,
   monster: Monster
-): { type: 'move'; direction: Direction } | { type: 'attack' } | null {
+): { type: 'move'; direction: Direction } | { type: 'attack'; targetId?: string } | null {
   // Mark monster as seen if visible to player (for UI purposes)
   const tile = getTile(game.currentLevel, monster.position.x, monster.position.y)
   if (tile?.visible && !monster.seen) {
@@ -675,7 +723,7 @@ function getMonsterAction(
 
   // Convert GameAction to the expected format
   if (action.type === 'attack') {
-    return { type: 'attack' }
+    return { type: 'attack', targetId: action.targetId }
   }
 
   if (action.type === 'move') {
@@ -691,11 +739,46 @@ function getMonsterAction(
 function executeMonsterAction(
   game: GameState,
   monster: Monster,
-  action: { type: 'move'; direction: Direction } | { type: 'attack' }
+  action: { type: 'move'; direction: Direction } | { type: 'attack'; targetId?: string }
 ): GameEvent[] {
   const events: GameEvent[] = []
 
   if (action.type === 'attack') {
+    // Check if targeting a minion
+    if (action.targetId && action.targetId !== game.character.id) {
+      const minion = game.minions.find((m) => m.id === action.targetId)
+      if (minion && minion.hp > 0) {
+        // Roll damage using monster's first attack dice (or fallback to 1d6)
+        const attackDice = monster.template.attacks?.[0]?.dice ?? '1d6'
+        let damage = Math.max(1, rollDice(attackDice))
+
+        // Apply monster damage balance modifier
+        if (game.balance.monsterDamagePercent !== 100) {
+          damage = Math.max(1, Math.floor((damage * game.balance.monsterDamagePercent) / 100))
+        }
+
+        const killed = damageMinionById(game, minion.id, damage)
+        addMessage(
+          game,
+          `The ${monster.template.name} attacks your ${minion.name} for ${damage} damage!`,
+          'combat'
+        )
+
+        if (killed) {
+          addMessage(game, `Your ${minion.name} is slain!`, 'danger')
+        }
+
+        events.push({
+          type: 'attack',
+          attackerId: monster.id,
+          defenderId: minion.id,
+          damage,
+          killed,
+        })
+        return events
+      }
+    }
+
     // Check if monster should cast a spell instead of melee
     if (shouldCastSpell(monster)) {
       const spellResult = executeMonsterSpell(game, monster)

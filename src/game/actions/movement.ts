@@ -23,6 +23,7 @@ import {
   computeFOV,
   setAllTilesVisible,
   findOpenPosition,
+  getAdjacentPositions,
 } from '../dungeon'
 import { spawnMonstersForLevel } from '../monster-ai'
 import { spawnItemsForLevel, generateMerchantInventory } from '../items'
@@ -58,6 +59,39 @@ function findDungeonEntrance(level: DungeonLevel): Point | null {
     }
   }
   return null
+}
+
+/**
+ * Teleport minions to positions adjacent to the player on level transition
+ */
+function teleportMinionsToPlayer(game: GameState): void {
+  if (game.minions.length === 0) return
+
+  const playerPos = game.character.position
+  const adjacentPositions = getAdjacentPositions(playerPos)
+
+  // Filter to walkable, unoccupied positions
+  const validPositions: Point[] = []
+  for (const pos of adjacentPositions) {
+    const tile = getTile(game.currentLevel, pos.x, pos.y)
+    if (!tile || !isWalkable(tile)) continue
+    // Check not occupied by monster
+    if (game.monsters.some((m) => m.position.x === pos.x && m.position.y === pos.y)) continue
+    validPositions.push(pos)
+  }
+
+  // Place each minion in an available position
+  let posIndex = 0
+  for (const minion of game.minions) {
+    if (posIndex < validPositions.length) {
+      const pos = validPositions[posIndex]!
+      minion.position = { x: pos.x, y: pos.y }
+      posIndex++
+    } else {
+      // No room - place on player position (will move next turn)
+      minion.position = { x: playerPos.x, y: playerPos.y }
+    }
+  }
 }
 
 // ============================================================================
@@ -203,6 +237,9 @@ export function handleDescend(game: GameState): ActionResult {
     game.balance.itemRatePercent
   )
 
+  // Teleport minions to follow player
+  teleportMinionsToPlayer(game)
+
   // Reset features for level entry
   game.fountains = new Map<string, FountainState>()
   game.altars = new Map<string, AltarState>()
@@ -314,6 +351,9 @@ export function handleAscend(game: GameState): ActionResult {
     // Town is always fully visible
     setAllTilesVisible(previousLevel)
 
+    // Teleport minions to follow player
+    teleportMinionsToPlayer(game)
+
     addMessage(game, 'You return to town.', 'info')
   } else {
     // ENTITY REGENERATION: Always spawn fresh entities on level entry
@@ -332,6 +372,9 @@ export function handleAscend(game: GameState): ActionResult {
       game.balance.enchantRatePercent,
       game.balance.itemRatePercent
     )
+
+    // Teleport minions to follow player
+    teleportMinionsToPlayer(game)
 
     // Reset features for level entry
     game.fountains = new Map<string, FountainState>()
