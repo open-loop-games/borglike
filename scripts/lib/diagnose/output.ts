@@ -29,14 +29,6 @@ function section(title: string): string {
   return `\n${title}\n${line('-', title.length)}`
 }
 
-function indent(text: string, spaces: number = 2): string {
-  const prefix = ' '.repeat(spaces)
-  return text
-    .split('\n')
-    .map((l) => prefix + l)
-    .join('\n')
-}
-
 // ============================================================================
 // SINGLE RUN OUTPUT
 // ============================================================================
@@ -249,6 +241,19 @@ export function formatBatchResult(result: BatchResult): string {
       lines.push(`  ... (${result.problemRuns.length - 10} more)`)
     }
   }
+
+  // Summary table (markdown format for easy copy-paste)
+  const className = result.config.classId ?? 'warrior'
+  const avgDepth = depth?.avg.toFixed(1) ?? '?'
+  const maxDepthVal = depth?.max.toFixed(0) ?? '?'
+  const cbRate = ((circuitBreakers / result.totalRuns) * 100).toFixed(0)
+  const avgKills = kills?.avg.toFixed(0) ?? '?'
+  const victories = result.victoryCount
+
+  lines.push(section('Summary'))
+  lines.push('| Class | Avg Depth | Max Depth | CB Rate | Kills | Victories |')
+  lines.push('|-------|-----------|-----------|---------|-------|-----------|')
+  lines.push(`| **${className.charAt(0).toUpperCase() + className.slice(1)}** | ${avgDepth} | ${maxDepthVal} | ${cbRate}% | ${avgKills} | ${victories} |`)
 
   return lines.join('\n')
 }

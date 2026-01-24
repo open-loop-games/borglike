@@ -4,8 +4,8 @@
  * Shared type definitions for the bot diagnostic framework.
  */
 
-import type { GameState, GameAction, Point, BotPersonality, BalanceOverrides } from '../../../src/game/types'
-import type { BotState } from '../../../src/game/bot/types'
+import type { GameState, GameAction, Point, BotPersonality, BalanceOverrides } from '@game/types'
+import type { BotState } from '@bot/types'
 
 // ============================================================================
 // ANALYZER INTERFACE

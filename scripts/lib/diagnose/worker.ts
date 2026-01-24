@@ -2,6 +2,7 @@
  * Worker thread for parallel diagnosis runs
  *
  * Tinypool worker that executes runDiagnosis in parallel.
+ * NOTE: Uses relative imports because workers can't resolve path aliases.
  */
 
 import { createGame, processTurn } from '../../../src/game/game-loop'

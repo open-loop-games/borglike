@@ -27,10 +27,10 @@ Without `--seed`, the start is `Date.now()` — different each run. For reproduc
 
 ```bash
 # Before code change
-npx tsx scripts/diagnose.ts batch --seed=1000 --runs=100 > before.txt
+pnpm diagnose batch --seed=1000 --runs=100 > before.txt
 
 # After code change
-npx tsx scripts/diagnose.ts batch --seed=1000 --runs=100 > after.txt
+pnpm diagnose batch --seed=1000 --runs=100 > after.txt
 
 # Compare results on identical seeds
 diff before.txt after.txt
@@ -45,7 +45,7 @@ diff before.txt after.txt
 ## Quick Reference
 
 ```bash
-npx tsx scripts/diagnose.ts [mode] [options]
+pnpm diagnose [mode] [options]
 ```
 
 ### Modes
@@ -65,11 +65,11 @@ npx tsx scripts/diagnose.ts [mode] [options]
 
 ```bash
 # Correct
-npx tsx scripts/diagnose.ts deep --seed=1768965560201 --map
-npx tsx scripts/diagnose.ts batch --seed=1000 --runs=100
+pnpm diagnose deep --seed=1768965560201 --map
+pnpm diagnose batch --seed=1000 --runs=100
 
 # Wrong - don't use positional seeds
-npx tsx scripts/diagnose.ts deep 1768965560201 --map
+pnpm diagnose deep 1768965560201 --map
 ```
 
 ### Common Options
@@ -99,43 +99,43 @@ npx tsx scripts/diagnose.ts deep 1768965560201 --map
 
 1. **Reproduce with deep mode**: Get full turn log for the problematic seed
    ```bash
-   npx tsx scripts/diagnose.ts deep <seed> --map
+   pnpm diagnose deep <seed> --map
    ```
 
 2. **Narrow the turn range**: Focus on specific turns where issue occurs
    ```bash
-   npx tsx scripts/diagnose.ts deep <seed> --from=500 --to=600
+   pnpm diagnose deep <seed> --from=500 --to=600
    ```
 
 3. **Check specific analyzers**: Isolate the detection mechanism
    ```bash
-   npx tsx scripts/diagnose.ts deep <seed> --analyzers=stuck,movement
+   pnpm diagnose deep <seed> --analyzers=stuck,movement
    ```
 
 ### Finding New Issues
 
 1. **Run batch search**: Find problematic seeds automatically
    ```bash
-   npx tsx scripts/diagnose.ts find --runs=500
+   pnpm diagnose find --runs=500
    ```
 
 2. **Deep dive on flagged seeds**: Investigate each problem
    ```bash
-   npx tsx scripts/diagnose.ts deep <flagged-seed> --map
+   pnpm diagnose deep <flagged-seed> --map
    ```
 
 ### Comparing Bot Behavior
 
 Compare performance across all personalities:
 ```bash
-npx tsx scripts/diagnose.ts compare --runs=50
+pnpm diagnose compare --runs=50
 ```
 
 ### Running a Full Baseline
 
 Generate baseline metrics for all 11 classes (100 runs, 30k turns each):
 ```bash
-npx tsx scripts/diagnose.ts baseline
+pnpm diagnose baseline
 ```
 
 Output includes a markdown table ready to paste into `docs/BALANCE-TEST-PLAN.md`. Classes tested: archmage, berserker, blackguard, druid, mage, necromancer, paladin, priest, ranger, rogue, warrior.
@@ -178,7 +178,7 @@ Results include `hasErrors` and `hasWarnings` for quick checks.
 
 Override balance parameters for testing:
 ```bash
-npx tsx scripts/diagnose.ts batch --runs=100 \
+pnpm diagnose batch --runs=100 \
   --monster-hp=80 --monster-damage=90 \
   --potion-rate=120 --max-upgrades
 ```

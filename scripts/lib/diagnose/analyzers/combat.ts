@@ -16,8 +16,8 @@ import type {
   PostTurnContext,
   EndReason,
 } from '../types'
-import type { GameState } from '../../../../src/game/types'
-import type { BotState, GoalType } from '../../../../src/game/bot/types'
+import type { GameState } from '@game/types'
+import type { BotState, GoalType } from '@bot/types'
 
 /** Configuration for combat analysis */
 export interface CombatAnalyzerConfig {

@@ -15,9 +15,9 @@ import type {
   TurnContext,
   EndReason,
 } from '../types'
-import type { GameState } from '../../../../src/game/types'
-import type { BotState } from '../../../../src/game/bot/types'
-import { getExplorationStats } from '../../../../src/game/bot/exploration'
+import type { GameState } from '@game/types'
+import type { BotState } from '@bot/types'
+import { getExplorationStats } from '@bot/exploration'
 
 /** Configuration for exploration analysis */
 export interface ExplorationAnalyzerConfig {

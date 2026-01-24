@@ -16,9 +16,9 @@ import type {
   TurnContext,
   EndReason,
 } from '../types'
-import type { GameState, Point, DungeonLevel } from '../../../../src/game/types'
-import type { BotState } from '../../../../src/game/bot/types'
-import { findFrontierTiles } from '../../../../src/game/bot/exploration'
+import type { GameState, Point, DungeonLevel } from '@game/types'
+import type { BotState } from '@bot/types'
+import { findFrontierTiles } from '@bot/exploration'
 
 /** Configuration for map visualization */
 export interface MapVisualizerConfig {

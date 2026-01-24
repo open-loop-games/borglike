@@ -10,7 +10,7 @@
  * - Item collection bias
  */
 
-import type { BotPersonality } from '../../../../src/game/types'
+import type { BotPersonality } from '@game/types'
 import type { DiagnoseConfig, DiagnoseResult, BatchResult } from '../types'
 import { runBatchDiagnosis } from '../runner'
 import { createAllAnalyzers } from './index'

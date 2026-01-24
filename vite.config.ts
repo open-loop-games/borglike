@@ -7,6 +7,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@game': fileURLToPath(new URL('./src/game', import.meta.url)),
+      '@bot': fileURLToPath(new URL('./src/game/bot', import.meta.url)),
       '@stores': fileURLToPath(new URL('./src/stores', import.meta.url)),
       '@types': fileURLToPath(new URL('./src/types', import.meta.url)),
       '@engine': fileURLToPath(new URL('./src/engine', import.meta.url)),

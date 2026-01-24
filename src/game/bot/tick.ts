@@ -35,7 +35,7 @@ import {
   recordProgress,
   incrementTurn,
   cleanupBlacklist,
-  resetAfterTeleport,
+  resetAfterTeleport as _resetAfterTeleport,
 } from './state'
 import {
   computeFlow,
@@ -81,7 +81,7 @@ import {
   countAdjacentMonsters,
 } from './combat'
 import { getBowRange } from '../combat'
-import { findEquipmentUpgrades, isTeleportAction } from './items'
+import { findEquipmentUpgrades, isTeleportAction as _isTeleportAction } from './items'
 import {
   getSurvivalConsumableAction,
   getCombatBuffAction,

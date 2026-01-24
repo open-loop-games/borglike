@@ -19,8 +19,8 @@ import type {
   TurnContext,
   EndReason,
 } from '../types'
-import type { GameState } from '../../../../src/game/types'
-import type { BotState, GoalType } from '../../../../src/game/bot/types'
+import type { GameState } from '@game/types'
+import type { BotState, GoalType } from '@bot/types'
 
 /** Configuration for goal distance analysis */
 export interface GoalDistanceAnalyzerConfig {

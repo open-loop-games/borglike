@@ -16,10 +16,10 @@ import type {
   PostTurnContext,
   EndReason,
 } from '../types'
-import type { GameState, Point } from '../../../../src/game/types'
-import type { BotState } from '../../../../src/game/bot/types'
-import { computeFlow, getFlowCost } from '../../../../src/game/bot/flow'
-import { MAX_FLOW_COST } from '../../../../src/game/bot/types'
+import type { GameState, Point } from '@game/types'
+import type { BotState } from '@bot/types'
+import { computeFlow, getFlowCost } from '@bot/flow'
+import { MAX_FLOW_COST } from '@bot/types'
 
 /** Configuration for pathing analysis */
 export interface PathingAnalyzerConfig {

@@ -16,8 +16,8 @@ import type {
   PostTurnContext,
   EndReason,
 } from '../types'
-import type { GameState } from '../../../../src/game/types'
-import type { BotState } from '../../../../src/game/bot/types'
+import type { GameState } from '@game/types'
+import type { BotState } from '@bot/types'
 
 /** Configuration for stuck detection thresholds */
 export interface StuckAnalyzerConfig {

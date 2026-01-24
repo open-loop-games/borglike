@@ -16,8 +16,8 @@ import type {
   MovementPattern,
   EndReason,
 } from '../types'
-import type { GameState, Point } from '../../../../src/game/types'
-import type { BotState } from '../../../../src/game/bot/types'
+import type { GameState, Point } from '@game/types'
+import type { BotState } from '@bot/types'
 
 /** Configuration for movement analysis */
 export interface MovementAnalyzerConfig {

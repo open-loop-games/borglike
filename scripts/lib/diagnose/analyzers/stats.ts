@@ -13,9 +13,9 @@ import type {
   DiagnosticIssue,
   EndReason,
 } from '../types'
-import type { GameState } from '../../../../src/game/types'
-import type { BotState } from '../../../../src/game/bot/types'
-import { calculateCombatStats, calculateStats } from '../../../../src/game/character'
+import type { GameState } from '@game/types'
+import type { BotState } from '@bot/types'
+import { calculateCombatStats, calculateStats } from '@game/character'
 
 interface FinalStats {
   // Character level

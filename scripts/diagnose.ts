@@ -5,7 +5,7 @@
  * Unified diagnostic toolkit for investigating bot behavior issues.
  *
  * Usage:
- *   npx tsx scripts/diagnose.ts [mode] [options]
+ *   pnpm diagnose [mode] [options]
  *
  * Modes:
  *   deep [seed]     - Deep dive on a single seed with full turn log and map
@@ -14,7 +14,6 @@
  *   find            - Find problematic seeds
  *   compare         - Compare behavior across personalities
  *   baseline        - Run full baseline test across all classes (100 runs, 30k turns)
- *   debug-explore   - Debug EXPLORE goal breakdown at a specific turn
  *   help            - Show this help message
  *
  * Options:
@@ -31,11 +30,11 @@
  *   --log-only      - Only show turn log, skip analyzer output (deep mode)
  *
  * Examples:
- *   npx tsx scripts/diagnose.ts deep 1768965560201
- *   npx tsx scripts/diagnose.ts quick --seed=12345
- *   npx tsx scripts/diagnose.ts batch --runs=100 --personality=aggressive
- *   npx tsx scripts/diagnose.ts find --runs=500
- *   npx tsx scripts/diagnose.ts compare --runs=20
+ *   pnpm diagnose deep 1768965560201
+ *   pnpm diagnose quick --seed=12345
+ *   pnpm diagnose batch --runs=100 --personality=aggressive
+ *   pnpm diagnose find --runs=500
+ *   pnpm diagnose compare --runs=20
  */
 
 import {
@@ -54,17 +53,16 @@ import {
   formatPersonalityComparison,
   MapVisualizer,
   runBaseline,
-  runDebugExplore,
 } from './lib/diagnose'
 import type { AnalyzerName } from './lib/diagnose'
-import type { BotPersonality } from '../src/game/types'
+import type { BotPersonality } from '@game/types'
 
 // ============================================================================
 // ARGUMENT PARSING
 // ============================================================================
 
 interface Args {
-  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'help' | 'debug-explore'
+  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'help'
   seed?: number
   runs: number
   turns: number
@@ -87,8 +85,6 @@ interface Args {
   maxUpgrades: boolean
   /** Randomize race/class/personality per run */
   randomize: boolean
-  /** Target turn for debug-explore mode */
-  targetTurn?: number
   // Balance overrides (Tier 1)
   monsterHp: number
   monsterDamage: number
@@ -161,8 +157,7 @@ function parseArgs(): Args {
     mode === 'find' ||
     mode === 'compare' ||
     mode === 'baseline' ||
-    mode === 'help' ||
-    mode === 'debug-explore'
+    mode === 'help'
   ) {
     result.mode = mode
   } else if (mode && !mode.startsWith('--')) {
@@ -206,9 +201,6 @@ function parseArgs(): Args {
       result.to = parseInt(arg.slice(5), 10)
     } else if (arg === '--log-only') {
       result.logOnly = true
-    } else if (arg.startsWith('--target-turn=') || arg.startsWith('--target=')) {
-      const value = arg.includes('target-turn') ? arg.slice(14) : arg.slice(9)
-      result.targetTurn = parseInt(value, 10)
     } else if (arg.startsWith('--threads=')) {
       result.threads = parseInt(arg.slice(10), 10)
     } else if (arg === '--max-upgrades') {
@@ -260,7 +252,7 @@ Bot Diagnostic CLI
 Unified toolkit for investigating bot behavior issues.
 
 USAGE:
-  npx tsx scripts/diagnose.ts [mode] [options]
+  pnpm diagnose [mode] [options]
 
 MODES:
   deep [seed]     Deep dive on a single seed with full turn log
@@ -291,25 +283,25 @@ OPTIONS:
 
 EXAMPLES:
   # Deep dive on a specific problematic seed with explored map
-  npx tsx scripts/diagnose.ts deep 1768965560201 --map
+  pnpm diagnose deep 1768965560201 --map
 
   # Deep dive with full map (all tiles revealed) for dungeon layout analysis
-  npx tsx scripts/diagnose.ts deep 1768965560201 --full-map
+  pnpm diagnose deep 1768965560201 --full-map
 
   # Deep dive showing only turns 500-600
-  npx tsx scripts/diagnose.ts deep 1768965560201 --from=500 --to=600
+  pnpm diagnose deep 1768965560201 --from=500 --to=600
 
   # Quick check with custom config
-  npx tsx scripts/diagnose.ts quick --seed=12345 --class=mage
+  pnpm diagnose quick --seed=12345 --class=mage
 
   # Batch analysis across 100 runs
-  npx tsx scripts/diagnose.ts batch --runs=100
+  pnpm diagnose batch --runs=100
 
   # Find problematic seeds for aggressive personality
-  npx tsx scripts/diagnose.ts find --runs=500 --personality=aggressive
+  pnpm diagnose find --runs=500 --personality=aggressive
 
   # Compare all personalities
-  npx tsx scripts/diagnose.ts compare --runs=20
+  pnpm diagnose compare --runs=20
 
 ANALYZERS:
   stuck       - Detects repeated actions, waits, twitch counter issues
@@ -507,16 +499,6 @@ async function main(): Promise<void> {
       break
     }
 
-    case 'debug-explore': {
-      await runDebugExplore({
-        seed: args.seed,
-        targetTurn: args.targetTurn,
-        race: args.race,
-        classId: args.classId,
-        personality: args.personality,
-      })
-      break
-    }
   }
 }
 

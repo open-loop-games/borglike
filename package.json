@@ -13,7 +13,8 @@
     "format": "prettier --write src",
     "format:check": "prettier --check src",
     "check": "pnpm run format && pnpm run typecheck && pnpm run lint",
-    "knip": "knip"
+    "knip": "knip",
+    "diagnose": "tsx --tsconfig tsconfig.scripts.json scripts/diagnose.ts"
   },
   "dependencies": {
     "@vueuse/core": "^14.1.0",

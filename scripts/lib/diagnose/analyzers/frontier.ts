@@ -17,20 +17,20 @@ import type {
   TurnContext,
   EndReason,
 } from '../types'
-import type { GameState, Tile } from '../../../../src/game/types'
-import type { BotState } from '../../../../src/game/bot/types'
+import type { GameState, Tile } from '@game/types'
+import type { BotState } from '@bot/types'
 import {
   findFrontierTiles,
   getExplorationStats,
   findExplorationTarget,
   getFrontierPositions,
   getSweepFrontierPositions,
-} from '../../../../src/game/bot/exploration'
-import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from '../../../../src/game/bot/types'
-import { computeExplorationFlow, getFlowCost, isReachable } from '../../../../src/game/bot/flow'
-import { getTile, getAdjacentPositions, isWalkable } from '../../../../src/game/dungeon'
-import { computeDangerGrid, buildAvoidSet, getDangerThreshold } from '../../../../src/game/bot/danger'
-import { buildBotContext } from '../../../../src/game/bot/context'
+} from '@bot/exploration'
+import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from '@bot/types'
+import { computeExplorationFlow, getFlowCost, isReachable } from '@bot/flow'
+import { getTile, getAdjacentPositions, isWalkable } from '@game/dungeon'
+import { computeDangerGrid, buildAvoidSet, getDangerThreshold } from '@bot/danger'
+import { buildBotContext } from '@bot/context'
 
 // MAX_FLOW_COST from flow.ts (not exported, so we duplicate)
 const MAX_FLOW_COST = 255
