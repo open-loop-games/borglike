@@ -1,26 +1,44 @@
 # Balance Test Plan
 
-## Current State (2026-01-23)
+## Current State (2026-01-24)
 
-### Class Performance (30 runs, 30k turns, seed=1000, max-upgrades)
+### Quick Run @ `HEAD` (30 runs, 30k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
-| **Berserker** | 48.0 | 50 | 7% | 507 | Endgame ⬆️ |
-| **Warrior** | 47.4 | 50 | 1% | 478 | Endgame ⬆️ |
-| **Blackguard** | 46.9 | 50 | 7% | 498 | Endgame |
-| **Paladin** | 45.5 | 50 | 0% | 580 | Endgame |
-| **Rogue** | 44.4 | 50 | 10% | 550 | Endgame |
-| **Priest** | 43.9 | 50 | 0% | 542 | Endgame |
-| **Ranger** | 42.2 | 50 | 3% | 533 | Endgame ⬆️ |
-| **Druid** | 39.0 | 45 | 0% | 477 | Endgame |
-| **Mage** | 37.5 | 44 | 13% | 639 | Endgame |
-| **Archmage** | 36.7 | 43 | 13% | 615 | Endgame |
-| **Necromancer** | 35.2 | 43 | 7% | 611 | Endgame |
+| **Berserker** | 48.8 | 50 | 0% | 511 | Endgame |
+| **Warrior** | 48.3 | 50 | 10% | 501 | Endgame |
+| **Blackguard** | 47.3 | 50 | 7% | 503 | Endgame |
+| **Ranger** | 45.6 | 50 | 27% | 618 | Endgame |
+| **Rogue** | 45.0 | 50 | 23% | 605 | Endgame |
+| **Paladin** | 43.3 | 49 | 17% | 571 | Endgame |
+| **Priest** | 38.5 | 47 | 47% | 517 | Endgame |
+| **Druid** | 38.1 | 44 | 3% | 472 | Endgame |
+| **Necromancer** | 36.0 | 44 | 10% | 656 | Endgame |
+| **Archmage** | 33.4 | 41 | 0% | 625 | Endgame |
+| **Mage** | 33.4 | 38 | 7% | 630 | Endgame |
 
-**Summary:** All 11 classes endgame-viable (35+ avg depth). CB rates dropped dramatically (0-13%). 2 more Morgoth kills (berserker, ranger) ⬆️.
+**Summary:** All 11 classes now endgame-viable (30+ avg depth). Blessed Mace starting weapon and reduced staff affinity fixed druid (+10.1 depth). Priest CB rate elevated (47%) needs investigation.
 
-### Previous Baseline (100 runs, 30k turns, seed=1000, max-upgrades)
+### Quick Run @ `5879186` (30 runs, 30k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
+|-------|-----------|-----------|---------|-------|--------|
+| **Berserker** | 48.3 | 50 | 3% | 504 | Endgame |
+| **Ranger** | 47.2 | 50 | 10% | 559 | Endgame |
+| **Warrior** | 47.0 | 50 | 0% | 471 | Endgame |
+| **Blackguard** | 46.0 | 50 | 0% | 481 | Endgame |
+| **Paladin** | 45.2 | 50 | 0% | 550 | Endgame |
+| **Rogue** | 44.7 | 50 | 7% | 527 | Endgame |
+| **Priest** | 40.2 | 48 | 0% | 474 | Endgame |
+| **Druid** | 37.8 | 47 | 0% | 431 | Endgame |
+| **Mage** | 37.3 | 43 | 20% | 631 | Endgame |
+| **Necromancer** | 36.3 | 43 | 0% | 634 | Endgame |
+| **Archmage** | 36.3 | 43 | 17% | 610 | Endgame |
+
+**Summary:** All 11 classes endgame-viable (36+ avg depth). CB rates 0-20%. Mage/Archmage CB rates higher than other classes.
+
+### Long Run @ `0934bf6` (100 runs, 30k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
@@ -54,11 +72,71 @@ Attempted to reset EXPLORE goals after phase door/teleport to prevent bot from b
 - Exploration/flee oscillation at depth 50 (rare, 1% warrior)
 - Pathfinding issues in complex late-game dungeons
 
+### Mage ASCEND_TO_FARM/FARM Oscillation
+
+**Status:** Open (2026-01-24)
+
+Extended mage runs (100 seeds, 50k turns, seed=1000) show **97% circuit breaker rate** with bot stuck oscillating between ASCEND_TO_FARM and FARM goals at depths 22-43.
+
+**Problem seeds:** Nearly all - 1000-1099 (97 of 100 hit CB)
+
+**Root Cause:**
+
+Bot enters farming mode → approaches stairs with ASCEND_TO_FARM goal → reaches stairs position → FARM goal generated (higher priority 72 vs 66) → bot moves away toward FARM target → FARM completes → ASCEND_TO_FARM regenerates → cycle repeats.
+
+Turn log pattern (seed 1044, depth 22):
+```
+Turn 25501: pos=(11,22) goal=ASCEND_TO_FARM@(11,22) action=move:ne [MOVED]
+Turn 25502: pos=(12,22) goal=FARM@(18,17) action=move:e [MOVED]
+Turn 25503: pos=(12,22) action=wait
+Turn 25504: pos=(12,23) goal=ASCEND_TO_FARM@(11,22) action=move:s [MOVED]
+... (800+ turns of oscillation at depth 22)
+```
+
+**Contributing Factors:**
+
+1. **Aggressive level requirement**: Mages need level = depth + 5 (SQUISHY tier). At depth 22, needs level 27. Bot reaches level 33 but farming mode keeps it stuck.
+
+2. **Goal priority mismatch**: FARM (72) > ASCEND_TO_FARM (66). When bot reaches stairs, next tick evaluates goals fresh and FARM wins if any farmable target exists.
+
+3. **Farming mode persistence**: `farmBlockedDepth` stored when entering farming mode isn't recalculated as bot levels up. Bot may be "ready" to descend but farming logic doesn't recognize it.
+
+4. **Proactive caster kiting**: `handleSafeTier` checks for monsters at distance 2 and kites away BEFORE goal execution in `handleFallback`. This compounds the oscillation but isn't root cause.
+
+**Attempted Fix (reverted):**
+
+Skip kiting when bot has ASCEND_TO_FARM/DESCEND goal and is at target position. Didn't help because FARM goal still wins on priority after kite is skipped.
+
+**Metrics (seed 1044):**
+
+| Metric | Warrior | Mage |
+|--------|---------|------|
+| Farming % | 88.7% | 94% |
+| ASCEND_TO_FARM goals | 88 | 571 (6.5x) |
+| Completion rate | 48% | 37% |
+| Actual ascends | 46 | 144 |
+| Avg distance to stairs | 4.2 tiles | 16.5 tiles |
+| Max depth | 48 | 22 |
+| End | Death @ 15k | CB @ 25k |
+
+High farming % is expected and healthy for both classes. The issue is mage **thrashes** - generating 6.5x more ASCEND_TO_FARM goals with lower completion. Goals get interrupted by FARM before completing, then regenerate endlessly.
+
+**Potential Fixes (not yet attempted):**
+
+1. Increase ASCEND_TO_FARM priority above FARM when at stairs position
+2. Add "committed to stairs" state that blocks FARM evaluation
+3. Recalculate `farmBlockedDepth` periodically as bot levels
+4. Reduce SQUISHY level offset from +5 to +3
+5. Add circuit breaker detection for ASCEND/FARM oscillation specifically
+
+**Impact:** Mage avg depth ~37 in 30k turn runs, but 97% CB in 50k turn runs. The farming system eventually traps mages in infinite loops.
+
 ---
 
 ## RESOLVED: FLEE/TAKE Goal Oscillation
 
-**Status:** ✅ Complete (2026-01-23)
+**Status:** ✅ Complete (2026-01-24)
+**Commit:** `5879186` fix(bot): Resolve FLEE/TAKE oscillation and improve retreat logic
 
 ### Problem Statement
 
@@ -113,7 +191,8 @@ const dangerHpThreshold = cautionThreshold + 0.2
 
 ## RESOLVED: FLEE/DESCEND Goal Oscillation
 
-**Status:** ✅ Complete (2026-01-23)
+**Status:** ✅ Complete (2026-01-24)
+**Commit:** `5879186` fix(bot): Resolve FLEE/TAKE oscillation and improve retreat logic
 
 ### Problem Statement
 
@@ -286,6 +365,88 @@ Dungeon generation order caused stairs to spawn in regions disconnected by vault
 Altar tiles are impassable. Bot targeted altar position directly, circled around it for 800+ turns unable to reach it.
 
 **Fix:** Changed altar interaction to adjacent (like merchants). `useAltar()` now uses `findAdjacentAltar()`. Goal targets adjacent walkable tile.
+
+---
+
+## NEW: Staves and Class Weapon Preferences
+
+**Status:** Implemented (2026-01-24)
+**Commit:** `0103aea` feat(items): Add staves and class weapon preferences
+
+### Problem Statement
+
+Caster classes (Mage, Archmage, Necromancer) were equipping heavy melee weapons like Bastard Swords because bot scoring only considered raw damage output. A Bastard Sword (3d4 = 7.5 avg, score 85) always beat a Dagger (1d4 = 2.5 avg, score 25) regardless of class.
+
+### Implementation
+
+**1. Staves as Caster Weapons**
+
+Added 6 staves with spell power bonus (applies to both damage AND healing):
+
+| Staff | Tier | Damage | Spell Power | Min Depth |
+|-------|------|--------|-------------|-----------|
+| Wooden Staff | 1 | 1d2 | +10% | 0 |
+| Crystal Staff | 2 | 1d3 | +15% | 10 |
+| Runed Staff | 2 | 1d3 | +18% | 15 |
+| Enchanted Staff | 3 | 1d4 | +20% | 25 |
+| Staff of Wizardry | 3 | 1d4 | +22% | 30 |
+| Staff of Power | 4 | 1d4 | +25% | 40 |
+
+**2. Class Weapon Affinity Scoring**
+
+Bot now applies class-specific multipliers to weapon/staff scores:
+
+| Class | Staff Mult | Weapon Mult | Notes |
+|-------|------------|-------------|-------|
+| Mage | 3.0x | 0.3x | Pure caster |
+| Archmage | 3.5x | 0.2x | Glass cannon |
+| Necromancer | 3.0x | 0.3x | Summoner caster |
+| Warrior | 0.3x | 1.2x | Heavy melee |
+| Berserker | 0.2x | 1.5x | All-in melee |
+| Priest | 2.0x | 1.0x | Edged penalty 0.1x |
+| Druid | 2.0x | 0.8x | Edged penalty 0.3x |
+
+**3. Priest Edged Weapon Restriction**
+
+Following Angband theme, priests/druids cannot effectively use edged weapons (swords, axes, daggers). Added `isEdged` flag to 12 weapons. Priests score edged weapons at 0.1x (effectively unusable).
+
+**4. Starting Equipment**
+
+Mage/Necromancer/Archmage now start with Wooden Staff instead of Dagger.
+
+**5. Danger Calculation Updates**
+
+Added `estimateCasterDamage()` to properly estimate caster kill speed:
+- Factors INT modifier, level scaling, and spell power from staff
+- Used by `getEffectiveDamage()` for danger calculations
+- Casters with staves show lower "turns to kill" estimates
+
+### Score Examples
+
+| Item | Base | Mage (×3.0) | Warrior (×1.2) | Priest |
+|------|------|-------------|----------------|--------|
+| Dagger (1d4, edged) | 25 | 7 | 30 | 2 |
+| Bastard Sword (3d4, edged) | 85 | 25 | 102 | 8 |
+| Wooden Staff (+10%) | 45 | 135 | 13 | 90 |
+| Staff of Power (+25%) | 100 | 350 | 30 | 200 |
+| Mace (2d4, blunt) | 50 | 15 | 60 | 50 |
+
+### Expected Impact
+
+- Mages should now prefer staves over swords
+- Priests should prefer maces/staves, avoid swords
+- Caster spell damage increased by 10-25% with appropriate staff
+- Danger calculations more accurate for casters (less unnecessary fleeing)
+
+### Testing Required
+
+```bash
+# Baseline before staves
+pnpm diagnose batch --runs=100 --seed=1000 --class=mage --max-upgrades --turns=30000
+
+# After staves - expect similar or improved depth, fewer CB from spell power boost
+pnpm diagnose batch --runs=100 --seed=1000 --class=mage --max-upgrades --turns=30000
+```
 
 ---
 

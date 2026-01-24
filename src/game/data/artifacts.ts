@@ -100,9 +100,98 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'A ridged helmet made of steel and embossed with scenes of valor. It grants the wearer nobility and understanding.',
   },
 
+  {
+    name: 'Eriril',
+    baseType: 'Quarterstaff',
+    slot: 'weapon',
+    minDepth: 15,
+    damage: '1d9',
+    weight: 150,
+    bonuses: {
+      INT: 4,
+      WIS: 4,
+      LIGHT: 1,
+      toHit: 13,
+      toDam: 15,
+    },
+    abilities: ['Slay Evil', 'Resist Light', 'See Invisible', 'Activation: Detect Objects'],
+    description:
+      'The radiant golden staff of an Istar of legend, this wizard\'s companion grants keen sight and clear knowledge of many hidden things.',
+  },
+
   // ============================================================================
   // MID GAME (depth 20-35)
   // ============================================================================
+
+  {
+    name: 'Totila',
+    baseType: 'Flail',
+    slot: 'weapon',
+    minDepth: 20,
+    damage: '3d6',
+    weight: 150,
+    bonuses: {
+      STEALTH: 2,
+      SPEED: 2,
+      toHit: 16,
+      toDam: 12,
+    },
+    abilities: [
+      'Slay Evil',
+      'Brand Fire',
+      'Resist Fire',
+      'Protection from Confusion',
+      'Activation: Confuse Monsters',
+    ],
+    description:
+      'A flail whose head befuddles those who stare as you whirl it round and becomes a fiery comet as you bring it down.',
+  },
+
+  {
+    name: 'Firestar',
+    baseType: 'Morning Star',
+    slot: 'weapon',
+    minDepth: 20,
+    damage: '2d6',
+    weight: 150,
+    bonuses: {
+      toHit: 15,
+      toDam: 17,
+      toAC: 2,
+    },
+    abilities: ['Brand Fire', 'Resist Fire x3', 'Activation: Fire Ball (72 damage)'],
+    description:
+      'A famed battle-lord of old with a head as ruddy as embers that can yet rise up in wrath.',
+  },
+
+  {
+    name: 'Staff of Olorin',
+    baseType: 'Quarterstaff',
+    slot: 'weapon',
+    minDepth: 30,
+    damage: '2d9',
+    weight: 150,
+    bonuses: {
+      INT: 4,
+      WIS: 4,
+      toHit: 10,
+      toDam: 13,
+    },
+    abilities: [
+      'Slay Evil',
+      'Slay Demon x5',
+      'Slay Troll x3',
+      'Slay Orc x3',
+      'Brand Fire',
+      'Resist Fire',
+      'Resist Nether',
+      'Hold Life',
+      'See Invisible',
+      'Activation: Probing',
+    ],
+    description:
+      'The mighty staff of Gandalf the Grey, imbued with the power of the Istari. It blazes with fire against the servants of darkness.',
+  },
 
   {
     name: 'Glamdring',

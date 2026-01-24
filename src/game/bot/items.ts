@@ -83,9 +83,9 @@ const WEAPON_CLASS_AFFINITY: Record<
   berserker: { staff: 0.2, weapon: 1.5 },
   blackguard: { staff: 0.3, weapon: 1.2 },
 
-  // Holy casters - like staves and blunt, cannot use edged (Angband theme)
-  priest: { staff: 2.0, weapon: 1.0, edgedPenalty: 0.1 },
-  druid: { staff: 2.0, weapon: 0.8, edgedPenalty: 0.3 },
+  // Holy melee - prefer blunt weapons, can use staves, cannot use edged (Angband theme)
+  priest: { staff: 1.2, weapon: 1.0, edgedPenalty: 0.1 },
+  druid: { staff: 1.0, weapon: 1.0, edgedPenalty: 0.1 },
 
   // Hybrids - moderate preferences
   paladin: { staff: 0.5, weapon: 1.0 },

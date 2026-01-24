@@ -617,10 +617,10 @@ function getStartingWeaponForClass(classId: string): string {
     case 'necromancer':
     case 'archmage':
       return 'Wooden Staff'
-    // Holy classes - mace
+    // Holy classes - blessed mace
     case 'priest':
     case 'druid':
-      return 'Mace'
+      return 'Blessed Mace'
     // Dex-based classes - dagger
     case 'rogue':
     case 'ranger':
