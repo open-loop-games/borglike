@@ -2,8 +2,9 @@
 import { ref, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { ALL_ITEMS, type ItemTemplate } from '@/game/data/items'
-import { ARTIFACTS } from '@/game/data/artifacts'
+import { ARTIFACTS, type ArtifactTemplate } from '@/game/data/artifacts'
 import ItemCard from './ItemCard.vue'
+import ItemDetailPanel from './ItemDetailPanel.vue'
 
 const progression = useProgressionStore()
 
@@ -18,6 +19,19 @@ const searchQuery = ref('')
 
 // Tab state (items vs artifacts)
 const activeTab = ref<'items' | 'artifacts'>('items')
+
+// Selected item for detail panel
+const selectedItem = ref<{ item: ItemTemplate | ArtifactTemplate; isArtifact: boolean } | null>(
+  null
+)
+
+function selectItem(item: ItemTemplate | ArtifactTemplate, isArtifact: boolean) {
+  selectedItem.value = { item, isArtifact }
+}
+
+function clearSelection() {
+  selectedItem.value = null
+}
 
 // Item categories for filtering
 const itemCategories = computed(() => {
@@ -170,28 +184,43 @@ const artifactStats = computed(() => {
       />
     </div>
 
-    <div class="modal-content">
-      <!-- Items Grid -->
-      <div v-if="activeTab === 'items'" class="item-grid">
-        <ItemCard
-          v-for="item in filteredItems"
-          :key="item.name"
-          :item="item"
-          :entry="progression.itemArmory[item.name]"
-          :is-artifact="false"
-        />
+    <div class="modal-body">
+      <div class="modal-content">
+        <!-- Items Grid -->
+        <div v-if="activeTab === 'items'" class="item-grid">
+          <ItemCard
+            v-for="item in filteredItems"
+            :key="item.name"
+            :item="item"
+            :entry="progression.itemArmory[item.name]"
+            :is-artifact="false"
+            :class="{ selected: selectedItem?.item.name === item.name }"
+            @click="selectItem(item, false)"
+          />
+        </div>
+
+        <!-- Artifacts Grid -->
+        <div v-else class="item-grid">
+          <ItemCard
+            v-for="artifact in filteredArtifacts"
+            :key="artifact.name"
+            :item="artifact"
+            :entry="progression.itemArmory[artifact.name]"
+            :is-artifact="true"
+            :class="{ selected: selectedItem?.item.name === artifact.name }"
+            @click="selectItem(artifact, true)"
+          />
+        </div>
       </div>
 
-      <!-- Artifacts Grid -->
-      <div v-else class="item-grid">
-        <ItemCard
-          v-for="artifact in filteredArtifacts"
-          :key="artifact.name"
-          :item="artifact"
-          :entry="progression.itemArmory[artifact.name]"
-          :is-artifact="true"
-        />
-      </div>
+      <!-- Detail Panel -->
+      <ItemDetailPanel
+        v-if="selectedItem"
+        :item="selectedItem.item"
+        :entry="progression.itemArmory[selectedItem.item.name]"
+        :is-artifact="selectedItem.isArtifact"
+        @close="clearSelection"
+      />
     </div>
   </div>
 </template>
@@ -339,6 +368,12 @@ const artifactStats = computed(() => {
   color: var(--text-dim);
 }
 
+.modal-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
 .modal-content {
   flex: 1;
   overflow-y: auto;
@@ -349,5 +384,15 @@ const artifactStats = computed(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 12px;
+}
+
+/* Selected item highlight */
+.item-grid :deep(.item-card.selected) {
+  outline: 2px solid var(--purple);
+  outline-offset: -2px;
+}
+
+.item-grid :deep(.item-card.selected.artifact) {
+  outline-color: #fbbf24;
 }
 </style>
