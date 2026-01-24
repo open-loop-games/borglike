@@ -85,6 +85,9 @@ interface FrontierSnapshot {
   sweepFrontierCount: number
   sweepFlowReachable: boolean
   sweepFlowCost: number
+  // Farming mode state
+  farmingMode: boolean
+  tetheredRadius: number
 }
 
 export class FrontierAnalyzer implements Analyzer {
@@ -106,6 +109,8 @@ export class FrontierAnalyzer implements Analyzer {
   // Aggregates
   private noGoalWhileFrontierExists = 0
   private doorBlockingEvents = 0
+  private noGoalDuringFarming = 0
+  private noGoalDuringSweep = 0
 
   constructor(config: Partial<FrontierAnalyzerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -122,6 +127,8 @@ export class FrontierAnalyzer implements Analyzer {
     this.lastSnapshotTurn = -1
     this.noGoalWhileFrontierExists = 0
     this.doorBlockingEvents = 0
+    this.noGoalDuringFarming = 0
+    this.noGoalDuringSweep = 0
   }
 
   onTurn(ctx: TurnContext): void {
@@ -147,6 +154,14 @@ export class FrontierAnalyzer implements Analyzer {
     // Detect "no goal but frontier exists" pattern
     if (!hasGoal && frontierAnalysis.total > 0) {
       this.noGoalWhileFrontierExists++
+
+      // Track farming-related no-goal separately
+      if (botState.farmingMode) {
+        this.noGoalDuringFarming++
+      }
+      if (botState.sweepMode) {
+        this.noGoalDuringSweep++
+      }
 
       if (frontierAnalysis.withEntryPoint === 0 && frontierAnalysis.blockedByDoor > 0) {
         this.doorBlockingEvents++
@@ -321,6 +336,8 @@ export class FrontierAnalyzer implements Analyzer {
         sweepFrontierCount: sweepFrontiers.length,
         sweepFlowReachable,
         sweepFlowCost,
+        farmingMode: botState.farmingMode,
+        tetheredRadius: botState.tetheredRadius,
       })
       this.lastSnapshotTurn = ctx.turn
     }
@@ -347,12 +364,25 @@ export class FrontierAnalyzer implements Analyzer {
     const noGoalRate =
       this.totalTurns > 0 ? (this.totalNoGoalTurns / this.totalTurns) * 100 : 0
 
+    // Calculate how many no-goal events are farming-related vs real issues
+    const realNoGoalIssues = this.noGoalWhileFrontierExists - this.noGoalDuringFarming - this.noGoalDuringSweep
+    const hasSignificantFarmingNoGoal = this.noGoalDuringFarming > 0 || this.noGoalDuringSweep > 0
+
     const details: string[] = [
       `No-goal turns: ${this.totalNoGoalTurns}/${this.totalTurns} (${noGoalRate.toFixed(1)}%)`,
       `Max no-goal streak: ${this.maxNoGoalStreak}`,
       `No-goal while frontier exists: ${this.noGoalWhileFrontierExists}`,
       `Door blocking events: ${this.doorBlockingEvents}`,
     ]
+
+    // Add farming context if relevant
+    if (hasSignificantFarmingNoGoal) {
+      details.push('')
+      details.push('No-goal breakdown:')
+      details.push(`  During farming mode: ${this.noGoalDuringFarming}`)
+      details.push(`  During sweep mode: ${this.noGoalDuringSweep}`)
+      details.push(`  Real issues (non-farming): ${Math.max(0, realNoGoalIssues)}`)
+    }
 
     // Add snapshot summary if we captured any
     if (this.snapshots.length > 0) {
@@ -389,6 +419,10 @@ export class FrontierAnalyzer implements Analyzer {
             : `sweepFrontiers=${snap.sweepFrontierCount} SWEEP_FLOW_BLOCKED cost=${snap.sweepFlowCost}`
           details.push(`    SWEEP_MODE: ${sweepInfo}`)
         }
+        // Show farming mode info
+        if (snap.farmingMode) {
+          details.push(`    FARMING_MODE: tetheredRadius=${snap.tetheredRadius}`)
+        }
       }
       if (this.snapshots.length > 5) {
         details.push(`  ... and ${this.snapshots.length - 5} more snapshots`)
@@ -402,6 +436,9 @@ export class FrontierAnalyzer implements Analyzer {
         noGoalRate: Math.round(noGoalRate * 10) / 10,
         maxNoGoalStreak: this.maxNoGoalStreak,
         noGoalWhileFrontierExists: this.noGoalWhileFrontierExists,
+        noGoalDuringFarming: this.noGoalDuringFarming,
+        noGoalDuringSweep: this.noGoalDuringSweep,
+        realNoGoalIssues: Math.max(0, realNoGoalIssues),
         doorBlockingEvents: this.doorBlockingEvents,
         snapshotCount: this.snapshots.length,
       },
