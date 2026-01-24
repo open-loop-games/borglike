@@ -5,7 +5,7 @@
  * Determines when to pick up items and whether to equip them.
  */
 
-import type { Item, GroundItem, Character, EquipSlot, ItemTemplate } from '../types'
+import type { Item, GroundItem, Character, EquipSlot, ItemTemplate, GameAction } from '../types'
 import type { PersonalityConfig, BotContext, BotGoal, DangerMap } from './types'
 import { getLocalDanger } from './danger'
 import { isSamePosition } from './movement'
@@ -560,6 +560,18 @@ export function findFullTeleportScroll(character: Character): Item | null {
       return name.includes('teleportation')
     }) ?? null
   )
+}
+
+/**
+ * Check if action is a teleport consumable (phase door or teleport scroll).
+ * Used to trigger exploration state reset after teleport.
+ */
+export function isTeleportAction(character: Character, action: GameAction): boolean {
+  if (action.type !== 'use') return false
+  const item = character.inventory.find((i) => i.id === action.itemId)
+  if (!item) return false
+  const name = item.template.name.toLowerCase()
+  return name.includes('phase door') || name.includes('teleport')
 }
 
 /**

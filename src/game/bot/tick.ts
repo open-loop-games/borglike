@@ -35,6 +35,7 @@ import {
   recordProgress,
   incrementTurn,
   cleanupBlacklist,
+  resetAfterTeleport,
 } from './state'
 import {
   computeFlow,
@@ -80,7 +81,7 @@ import {
   countAdjacentMonsters,
 } from './combat'
 import { getBowRange } from '../combat'
-import { findEquipmentUpgrades } from './items'
+import { findEquipmentUpgrades, isTeleportAction } from './items'
 import {
   getSurvivalConsumableAction,
   getCombatBuffAction,
@@ -266,6 +267,8 @@ function handleCriticalTier(
   // 1. Try escape spell first (renewable resource)
   const escapeSpell = getEscapeSpellAction(game, config, dangerResult.dangers)
   if (escapeSpell) {
+    // TODO: resetAfterTeleport causes regression, disabled pending investigation
+    // resetAfterTeleport(botState)
     recordProgress(botState, game.turn)
     return escapeSpell
   }
@@ -279,6 +282,10 @@ function handleCriticalTier(
     personality
   )
   if (survivalAction) {
+    // TODO: resetAfterTeleport causes regression, disabled pending investigation
+    // if (isTeleportAction(game.character, survivalAction)) {
+    //   resetAfterTeleport(botState)
+    // }
     recordProgress(botState, game.turn)
     return survivalAction
   }
@@ -373,6 +380,8 @@ function handleDangerTier(
         if (hpRatio < 0.5 || adjacentCount >= 2) {
           const phaseDoorAction = getPhaseDoorSpellAction(game)
           if (phaseDoorAction) {
+            // TODO: resetAfterTeleport causes regression, disabled pending investigation
+            // resetAfterTeleport(botState)
             recordProgress(botState, game.turn)
             return phaseDoorAction
           }
@@ -444,10 +453,12 @@ function handleDangerTier(
   }
 
   // 7. Escape spell as fallback
-  const escapeSpell = getEscapeSpellAction(game, config, dangerResult.dangers)
-  if (escapeSpell) {
+  const escapeSpellFallback = getEscapeSpellAction(game, config, dangerResult.dangers)
+  if (escapeSpellFallback) {
+    // TODO: resetAfterTeleport causes regression, disabled pending investigation
+    // resetAfterTeleport(botState)
     recordProgress(botState, game.turn)
-    return escapeSpell
+    return escapeSpellFallback
   }
 
   return null

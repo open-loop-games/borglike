@@ -148,6 +148,25 @@ export function clearGoal(state: BotState): void {
   state.cachedFlow = null
 }
 
+/**
+ * Reset exploration state after teleport (position discontinuity).
+ * Only clears EXPLORE goals - combat/item goals may still be valid.
+ * Clears flow caches since they're computed from old position.
+ */
+export function resetAfterTeleport(state: BotState): void {
+  // Only clear exploration goals - KILL/TAKE/FLEE may still be valid
+  if (state.currentGoal?.type === 'EXPLORE') {
+    state.currentGoal = null
+    state.goalTarget = null
+  }
+
+  // Clear flow caches (now invalid from new position)
+  state.cachedFlow = null
+  state.cachedExplorationFlow = null
+  state.cachedSweepFlow = null
+  state.cachedSafetyFlow = null
+}
+
 /** Duration (in turns) to blacklist unreachable targets */
 const BLACKLIST_DURATION = 100
 
