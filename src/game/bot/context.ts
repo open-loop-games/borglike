@@ -204,6 +204,15 @@ let unexploredCache: {
 } | null = null
 
 /**
+ * Invalidate the unexplored cache.
+ * MUST be called at the start of each diagnostic run to prevent stale cache
+ * from persisting across runs (module-level cache survives between games).
+ */
+export function invalidateUnexploredCache(): void {
+  unexploredCache = null
+}
+
+/**
  * Get unexplored tiles indicator.
  * Returns sentinel array - only `.length === 0` matters to callers.
  * Uses shared explored count from frontier cache to avoid redundant scans.

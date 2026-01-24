@@ -4,26 +4,50 @@
 
 ```
 scripts/
-├── diagnose.ts              # CLI entry point
+├── diagnose.ts              # CLI entry point (keep thin!)
 └── lib/diagnose/
     ├── index.ts             # Main exports
     ├── types.ts             # Analyzer interface, config types
     ├── runner.ts            # Game loop with analyzer hooks
     ├── output.ts            # Formatting utilities
+    ├── baseline.ts          # Baseline mode implementation
+    ├── debug-explore.ts     # Debug-explore mode implementation
     └── analyzers/
         ├── index.ts         # Factory functions
         ├── stuck.ts
         ├── movement.ts
         ├── pathing.ts
-        ├── exploration.ts   # Includes frontier tracking
+        ├── exploration.ts
         ├── combat.ts
         ├── goal.ts
         ├── goal-distance.ts # Detects short-distance goal thrashing
         ├── oscillation.ts   # Detects directional oscillation
         ├── jitter.ts
+        ├── frontier.ts      # Frontier reachability analysis
+        ├── stats.ts         # Worker metrics aggregation
         ├── map.ts
         └── personality.ts   # Cross-personality comparison
 ```
+
+**Keep the entrypoint thin!** New functionality belongs in `lib/diagnose/`, not `diagnose.ts`. The entrypoint should only handle CLI argument parsing and dispatch to lib functions.
+
+## Current Analyzers
+
+All analyzers in `scripts/lib/diagnose/analyzers/`:
+
+- **stuck** - Repeated actions, waits, twitch counter issues
+- **movement** - Oscillation (A-B-A-B patterns), move rate
+- **pathing** - Path efficiency, unreachable targets, goal completion
+- **exploration** - Stairs discovery, exploration %, frontier stagnation
+- **combat** - Damage, kills, retreats, death causes
+- **goal** - Goal lifecycle, persistence, type distribution
+- **goal-distance** - Short-distance goal thrashing detection
+- **oscillation** - Direction reversals, position revisits
+- **jitter** - Bot confined to small area (bounding box analysis)
+- **frontier** - Frontier reachability, door blocking patterns, goal generation failures
+- **stats** - Worker metrics aggregation for parallel batch runs
+- **map** - Dungeon map snapshots (ASCII visualization)
+- **personality** - Cross-personality comparison (not a standard analyzer)
 
 ## Adding a New Analyzer
 
@@ -102,8 +126,9 @@ export type { MyAnalyzerConfig } from './myanalyzer'
 ### Step 3: Update CLI
 
 Update `diagnose.ts`:
-- Add to `ALL_ANALYZERS` array
-- Update help text
+- Add to `ALL_ANALYZERS` array (if it should run by default)
+- Update help text (if it's user-facing)
+- Keep the entrypoint thin - complex logic belongs in lib!
 
 ## Analyzer Lifecycle
 
@@ -201,3 +226,39 @@ interface DiagnosticIssue {
 - Include counts and rates where applicable
 - Add turn numbers to issues for debugging
 - Keep summary concise but informative
+
+## Adding New Modes
+
+When adding specialized modes (like `baseline`, `debug-explore`):
+
+1. **Create a new file** in `lib/diagnose/` (e.g., `baseline.ts`, `debug-explore.ts`)
+2. **Export a main function** that handles the mode logic
+3. **Import and call** from `diagnose.ts` entrypoint
+4. **Update types** if needed in `types.ts`
+
+Example structure for a new mode:
+
+```typescript
+// lib/diagnose/mymode.ts
+export interface MyModeConfig {
+  runs: number
+  // ... other config
+}
+
+export async function runMyMode(config: MyModeConfig): Promise<void> {
+  // Mode implementation here
+}
+```
+
+Then in `diagnose.ts`:
+```typescript
+import { runMyMode } from './lib/diagnose/mymode'
+
+// In main() switch statement:
+case 'mymode': {
+  await runMyMode({ runs: args.runs })
+  break
+}
+```
+
+This keeps the entrypoint focused on CLI parsing and dispatch.

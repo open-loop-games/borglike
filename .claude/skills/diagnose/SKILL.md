@@ -1,6 +1,6 @@
 ---
 name: diagnose
-description: This skill should be used when the user asks to "diagnose bot behavior", "debug the bot", "find stuck bots", "analyze bot runs", "run diagnostics", "check bot performance", "find problematic seeds", "compare personalities", or mentions bot issues like "stuck", "oscillating", "jittering", or "not progressing".
+description: Investigate bot behavior issues. Use when user mentions "stuck", "oscillating", "jittering", performance problems, or wants to analyze/debug bot runs.
 ---
 
 # Bot Diagnostic Toolkit
@@ -153,6 +153,8 @@ Output includes a markdown table ready to paste into `docs/BALANCE-TEST-PLAN.md`
 | `goal-distance` | Short-distance goal thrashing |
 | `oscillation` | Direction reversals, position revisits |
 | `jitter` | Bot confined to small area (bounding box) |
+| `frontier` | Frontier reachability, door blocking, goal generation failures |
+| `stats` | Worker metrics aggregation (internal use) |
 | `map` | Dungeon map snapshots |
 
 ## Turn Log Format
@@ -185,10 +187,20 @@ Tier 1: `--monster-hp`, `--monster-damage`, `--start-potions`, `--potion-rate`, 
 Tier 2: `--enchant-rate`, `--item-rate`, `--levelup-hp`
 Tier 3: `--xp-rate`, `--upgrade-power`, `--bestiary`
 
+## Extending the Toolkit
+
+**Want to add a new analyzer or mode?** See `references/extending.md` for the complete guide on:
+- Adding new analyzers with full lifecycle hooks
+- Code structure and best practices
+- Programmatic usage patterns
+- Integrating new functionality into the CLI
+
+The diagnostic toolkit is designed to be extended. All new functionality should be added to `scripts/lib/diagnose/` rather than the entrypoint.
+
 ## Additional Resources
 
 ### Reference Files
 
-For detailed documentation on using and extending the toolkit:
+For detailed documentation:
+- **`references/extending.md`** - Adding analyzers, modes, code structure, lifecycle hooks (read this first when extending!)
 - **`references/navigation.md`** - Grep patterns, turn ranges, and workflow examples for navigating diagnostic output
-- **`references/extending.md`** - Adding new analyzers, code structure, lifecycle hooks

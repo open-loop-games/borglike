@@ -52,6 +52,87 @@ Attempted to reset EXPLORE goals after phase door/teleport to prevent bot from b
 
 ---
 
+## RESOLVED: "No Goal" Stuck Pattern (2026-01-23)
+
+### Problem Statement
+
+Extended find runs (500 seeds, 30k turns) revealed a common failure mode across Mage/Archmage:
+
+| Metric | Mage | Archmage |
+|--------|------|----------|
+| CB Rate (before fix) | 27.2% | 31.0% |
+| Deaths | 5 | 10 |
+
+**Shared depth-1 stuck seeds:** 1020, 1055, 1071, 1204, 1395, 1487
+
+### Root Cause Found
+
+Primary failure mode was **sweep flow unreachability**:
+
+1. Mage/Archmage at level < 10 uses **sweep mode** (re-explores visited tiles)
+2. Sweep flow is computed from "seen-this-visit" tiles, not unexplored frontiers
+3. When bot explores a corridor, sweep frontiers may be in a different area
+4. Sweep flow becomes **unreachable** (separated by unexplored tiles)
+5. Game doesn't fall back to normal exploration → goal cleared → wait loop
+
+Example seed 1020 frontier analyzer output:
+```
+Turn 17 @ (13,7): frontier=19 flowOK cost=4 avoid=0 candidates=4/8 target=(16,23)
+  SWEEP_MODE: sweepFrontiers=74 SWEEP_FLOW_BLOCKED cost=255
+```
+
+The normal exploration flow IS reachable (cost=4), but sweep flow is blocked (cost=255).
+
+### Fix Applied
+
+In `tick.ts:computeExploreGoalFlow()`:
+- Added reachability check for sweep flow before returning
+- If sweep flow unreachable, falls back to normal exploration flow
+- Prevents goal from being cleared when sweep frontiers are isolated
+
+```typescript
+// Check if sweep flow is reachable from bot's position
+// If not reachable, fall through to normal exploration
+const sweepCost = getFlowCost(flowCosts, pos)
+if (sweepCost < MAX_FLOW_COST) {
+  return flowCosts  // Sweep flow reachable - use it
+}
+// Sweep flow unreachable - fall through to normal exploration
+```
+
+### Results (100 runs, seed=1000)
+
+| Class | CB Rate Before | CB Rate After | Change |
+|-------|----------------|---------------|--------|
+| Mage | ~27% | **0%** | ✅ Fixed |
+| Archmage | ~31% | **0%** | ✅ Fixed |
+
+### Additional Fixes
+
+Also fixed module-level cache pollution in diagnostic runner:
+- Added `invalidateFrontierCache()` and `invalidateUnexploredCache()` exports
+- Called at start of each diagnostic run to prevent stale cache between runs
+
+### Diagnostic Tooling Added
+
+New `frontier` analyzer tracks:
+- Frontier tile availability vs reachability
+- Sweep mode state (casters at level < 10)
+- Sweep flow reachability separate from normal flow
+- Cache state debugging
+
+---
+
+## Future
+
+### Evaluate Upgrades and Nerf Swiftness Upgrade
+
+- 25% evasion is scaled far too high
+- Upgrades need to be meaningful
+- Bot upgrades to unlock or improve features: Preparedness consumables, farming patterns, sweep, stair surf, kiting?, Town usage?
+
+---
+
 ## Standard Test Parameters
 
 | Parameter | Value | Rationale |

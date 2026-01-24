@@ -53,6 +53,8 @@ import {
   comparePersonalities,
   formatPersonalityComparison,
   MapVisualizer,
+  runBaseline,
+  runDebugExplore,
 } from './lib/diagnose'
 import type { AnalyzerName } from './lib/diagnose'
 import type { BotPersonality } from '../src/game/types'
@@ -115,6 +117,8 @@ const ALL_ANALYZERS: AnalyzerName[] = [
   'jitter',
   'goal-distance',
   'oscillation',
+  'frontier',
+  'stats',
 ]
 
 function parseArgs(): Args {
@@ -315,151 +319,17 @@ ANALYZERS:
   combat      - Tracks damage, kills, retreats, death causes
   goal        - Tracks goal lifecycle, persistence, type distribution
   jitter      - Detects bot confined to small area (bounding box analysis)
+  frontier    - Frontier reachability, door blocking, goal generation failures
+  stats       - Worker metrics aggregation (used internally for batch runs)
   map         - Captures dungeon map snapshots (use --map flag for deep mode)
 `)
 }
 
 // ============================================================================
-// BASELINE MODE
+// CLI-SPECIFIC HELPERS
 // ============================================================================
 
-/** Standard classes for baseline testing (alphabetical) */
-const BASELINE_CLASSES = [
-  'archmage',
-  'berserker',
-  'blackguard',
-  'druid',
-  'mage',
-  'necromancer',
-  'paladin',
-  'priest',
-  'ranger',
-  'rogue',
-  'warrior',
-] as const
-
-/** Standard baseline parameters */
-const BASELINE_DEFAULTS = {
-  runs: 100,
-  turns: 30000,
-  seed: 1000,
-  threads: 20,
-}
-
-interface BaselineResult {
-  classId: string
-  avgDepth: number
-  maxDepth: number
-  cbRate: number
-  avgKills: number
-  morgothKills: number
-  avgTurns: number
-}
-
-async function runBaseline(args: Args): Promise<void> {
-  const runs = args.runs !== 50 ? args.runs : BASELINE_DEFAULTS.runs
-  const turns = args.turns !== 5000 ? args.turns : BASELINE_DEFAULTS.turns
-  const seed = args.seed ?? BASELINE_DEFAULTS.seed
-  const threads = args.threads !== 8 ? args.threads : BASELINE_DEFAULTS.threads
-
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('BASELINE TEST')
-  console.log('='.repeat(60))
-  console.log(`Parameters: ${runs} runs, ${turns} turns, seed=${seed}, ${threads} threads`)
-  console.log(`Classes: ${BASELINE_CLASSES.length}`)
-  console.log('='.repeat(60))
-
-  const results: BaselineResult[] = []
-  const startTime = Date.now()
-
-  // Build balance config
-  const effectiveBestiary = args.bestiary > 0 ? args.bestiary : 25 // Always use max bestiary for baseline
-  const balance = {
-    monsterHpPercent: args.monsterHp,
-    monsterDamagePercent: args.monsterDamage,
-    startingPotions: args.startPotions,
-    potionRatePercent: args.potionRate,
-    regenPer10Turns: args.regen,
-    armorPenetration: args.armorPen,
-    enchantRatePercent: args.enchantRate,
-    itemRatePercent: args.itemRate,
-    levelupHpPercent: args.levelupHp,
-    xpRatePercent: args.xpRate,
-    upgradePowerPercent: args.upgradePower,
-    bestiaryBonusPercent: effectiveBestiary,
-  }
-
-  for (const classId of BASELINE_CLASSES) {
-    const classStart = Date.now()
-    process.stdout.write(`\n${classId.padEnd(12)} `)
-
-    const batchResult = await runBatchDiagnosisParallel({
-      raceId: args.race,
-      classId,
-      personality: args.personality,
-      maxTurns: turns,
-      analyzers: createAllAnalyzers(),
-      maxUpgrades: true, // Always use max upgrades for baseline
-      balance,
-      runs,
-      startSeed: seed,
-      threads,
-      onProgress: (completed, total) => {
-        const pct = Math.floor((completed / total) * 20)
-        process.stdout.write(`\r${classId.padEnd(12)} [${'█'.repeat(pct)}${'░'.repeat(20 - pct)}] ${completed}/${total}`)
-      },
-    })
-
-    const depthMetrics = batchResult.aggregateMetrics['worker-metrics.maxDepth']
-    const killMetrics = batchResult.aggregateMetrics['worker-metrics.kills']
-    const turnMetrics = batchResult.aggregateMetrics['worker-metrics.totalTurns']
-
-    const result: BaselineResult = {
-      classId,
-      avgDepth: depthMetrics?.avg ?? 0,
-      maxDepth: depthMetrics?.max ?? 0,
-      cbRate: (batchResult.circuitBreakerCount / runs) * 100,
-      avgKills: killMetrics?.avg ?? 0,
-      morgothKills: batchResult.morgothKillCount,
-      avgTurns: turnMetrics?.avg ?? 0,
-    }
-    results.push(result)
-
-    const elapsed = ((Date.now() - classStart) / 1000).toFixed(1)
-    process.stdout.write(`\r${classId.padEnd(12)} [${'█'.repeat(20)}] done (${elapsed}s)\n`)
-  }
-
-  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
-
-  // Sort by avg depth descending
-  results.sort((a, b) => b.avgDepth - a.avgDepth)
-
-  // Print results table
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('BASELINE RESULTS')
-  console.log('='.repeat(60))
-  console.log(`\n| Class | Avg Depth | Max Depth | CB Rate | Kills | Morgoth |`)
-  console.log('|-------|-----------|-----------|---------|-------|---------|')
-  for (const r of results) {
-    const status = r.avgDepth >= 30 ? '✅' : r.avgDepth >= 10 ? '⚠️' : '❌'
-    console.log(
-      `| ${status} ${r.classId.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
-    )
-  }
-
-  console.log(`\nTotal time: ${totalTime}s`)
-  console.log(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
-  console.log('```')
-  console.log(`| Class | Avg Depth | Max Depth | CB Rate | Kills | Status |`)
-  console.log('|-------|-----------|-----------|---------|-------|--------|')
-  for (const r of results) {
-    const status = r.avgDepth >= 30 ? '✅ Endgame' : r.avgDepth >= 10 ? '⚠️ Mid' : '⚠️ Early'
-    console.log(
-      `| **${r.classId.charAt(0).toUpperCase() + r.classId.slice(1)}** | ${r.avgDepth.toFixed(1)} | ${r.maxDepth} | ${r.cbRate.toFixed(0)}% | ${r.avgKills.toFixed(0)} | ${status} |`
-    )
-  }
-  console.log('```')
-}
+// (Kept minimal - complex logic lives in lib/)
 
 // ============================================================================
 // MAIN
@@ -488,7 +358,26 @@ async function main(): Promise<void> {
 
   // Handle baseline mode - run all classes with standard parameters
   if (args.mode === 'baseline') {
-    await runBaseline(args)
+    await runBaseline({
+      runs: args.runs !== 50 ? args.runs : undefined,
+      turns: args.turns !== 5000 ? args.turns : undefined,
+      seed: args.seed,
+      threads: args.threads !== 8 ? args.threads : undefined,
+      race: args.race,
+      personality: args.personality,
+      monsterHp: args.monsterHp,
+      monsterDamage: args.monsterDamage,
+      startPotions: args.startPotions,
+      potionRate: args.potionRate,
+      regen: args.regen,
+      armorPen: args.armorPen,
+      enchantRate: args.enchantRate,
+      itemRate: args.itemRate,
+      levelupHp: args.levelupHp,
+      xpRate: args.xpRate,
+      upgradePower: args.upgradePower,
+      bestiary: args.bestiary,
+    })
     return
   }
 
@@ -619,96 +508,13 @@ async function main(): Promise<void> {
     }
 
     case 'debug-explore': {
-      const seed = args.seed ?? Date.now()
-      const targetTurn = args.targetTurn ?? 1000
-      console.log(`\nDEBUG EXPLORE: seed=${seed} target=${targetTurn}\n`)
-
-      // Import needed functions dynamically
-      const { createGame, processTurn } = await import('../src/game/game-loop.js')
-      const { runBotTick, createBotState } = await import('../src/game/bot/index.js')
-      const { buildBotContext } = await import('../src/game/bot/context.js')
-      const { getExploreGoal, getFrontierPositions } = await import('../src/game/bot/exploration.js')
-      const { computeFlow, getFlowCost } = await import('../src/game/bot/flow.js')
-      const { MAX_FLOW_COST } = await import('../src/game/bot/types.js')
-
-      // Create and run game to target turn
-      const game = createGame({
-        seed,
-        raceId: args.race as any,
-        classId: args.classId as any,
+      await runDebugExplore({
+        seed: args.seed,
+        targetTurn: args.targetTurn,
+        race: args.race,
+        classId: args.classId,
+        personality: args.personality,
       })
-
-      let botState = createBotState()
-      for (let turn = 0; turn < targetTurn; turn++) {
-        const action = runBotTick(game, args.personality, botState)
-
-        processTurn(game, action)
-
-        if (!game.isRunning) {
-          console.log(`Game ended at turn ${turn}`)
-          break
-        }
-      }
-
-      // Debug at target turn
-      console.log('=== GAME STATE ===')
-      console.log(`Position: (${game.character.position.x}, ${game.character.position.y})`)
-      console.log(`Depth: ${game.character.depth}`)
-      console.log(`HP: ${game.character.hp}/${game.character.maxHp}`)
-      console.log(`Turn: ${game.turn}`)
-
-      const context = buildBotContext(game, args.personality, botState)
-
-      console.log('\n=== UNEXPLORED TILES (from context) ===')
-      console.log(`unexploredTiles.length: ${context.unexploredTiles.length}`)
-      if (context.unexploredTiles.length > 0) {
-        console.log('First 10 unexplored:', context.unexploredTiles.slice(0, 10).map(p => `(${p.x},${p.y})`).join(', '))
-      }
-
-      console.log('\n=== FRONTIERS (from getFrontierPositions) ===')
-      const frontiers = getFrontierPositions(game)
-      console.log(`frontiers.length: ${frontiers.length}`)
-      if (frontiers.length > 0) {
-        console.log('First 10 frontiers:', frontiers.slice(0, 10).map(p => `(${p.x},${p.y})`).join(', '))
-      }
-
-      console.log('\n=== EXPLORE GOAL ===')
-      const exploreGoal = getExploreGoal(context)
-      if (exploreGoal) {
-        console.log(`Goal type: ${exploreGoal.type}`)
-        console.log(`Target: (${exploreGoal.target?.x}, ${exploreGoal.target?.y})`)
-        console.log(`Reason: ${exploreGoal.reason}`)
-      } else {
-        console.log('NO EXPLORE GOAL RETURNED')
-      }
-
-      if (botState) {
-        console.log('\n=== BOT STATE ===')
-        console.log(`currentGoal: ${botState.currentGoal?.type ?? 'null'}`)
-        if (botState.currentGoal?.target) {
-          console.log(`  target: (${botState.currentGoal.target.x}, ${botState.currentGoal.target.y})`)
-        }
-        console.log(`blacklistedTargets.size: ${botState.blacklistedTargets?.size ?? 0}`)
-        if (botState.blacklistedTargets && botState.blacklistedTargets.size > 0) {
-          const blacklisted = Array.from(botState.blacklistedTargets.entries())
-          console.log('First 10 blacklisted:', blacklisted.slice(0, 10).map(([key, turn]) => `${key} (expires:${turn})`).join(', '))
-        }
-      }
-
-      // Check reachability of first 5 frontiers
-      if (frontiers.length > 0) {
-        console.log('\n=== REACHABILITY CHECK ===')
-        const pos = game.character.position
-        const sampleFrontiers = frontiers.slice(0, 5)
-
-        for (const frontier of sampleFrontiers) {
-          const flow = computeFlow(game.currentLevel, frontier)
-          const cost = getFlowCost(flow, pos)
-          const unreachable = cost >= MAX_FLOW_COST
-          console.log(`  (${frontier.x},${frontier.y}): cost=${cost} ${unreachable ? '[UNREACHABLE]' : ''}`)
-        }
-      }
-
       break
     }
   }

@@ -38,6 +38,9 @@ export type { OscillationAnalyzerConfig } from './oscillation'
 
 export { StatsAnalyzer, createStatsAnalyzer } from './stats'
 
+export { FrontierAnalyzer, createFrontierAnalyzer } from './frontier'
+export type { FrontierAnalyzerConfig } from './frontier'
+
 // Personality comparison (standalone utility)
 export { comparePersonalities, formatPersonalityComparison } from './personality'
 export type { PersonalityCompareConfig, PersonalityMetrics, PersonalityCompareResult } from './personality'
@@ -54,6 +57,7 @@ import { createJitterAnalyzer } from './jitter'
 import { createGoalDistanceAnalyzer } from './goal-distance'
 import { createOscillationAnalyzer } from './oscillation'
 import { createStatsAnalyzer } from './stats'
+import { createFrontierAnalyzer } from './frontier'
 
 /** All available analyzer names */
 export type AnalyzerName =
@@ -68,6 +72,7 @@ export type AnalyzerName =
   | 'goal-distance'
   | 'oscillation'
   | 'stats'
+  | 'frontier'
 
 /** Create all standard analyzers */
 export function createAllAnalyzers(): Analyzer[] {
@@ -82,6 +87,7 @@ export function createAllAnalyzers(): Analyzer[] {
     createGoalDistanceAnalyzer(),
     createOscillationAnalyzer(),
     createStatsAnalyzer(),
+    createFrontierAnalyzer(),
     // Note: MapVisualizer not included by default (produces large output)
   ]
 }
@@ -118,6 +124,7 @@ export function createAnalyzers(names: AnalyzerName[]): Analyzer[] {
     'goal-distance': createGoalDistanceAnalyzer,
     oscillation: createOscillationAnalyzer,
     stats: createStatsAnalyzer,
+    frontier: createFrontierAnalyzer,
   }
 
   return names.map((name) => factories[name]())

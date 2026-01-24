@@ -934,21 +934,38 @@ function computeExploreGoalFlow(
         game.turn - cache.computedAt < 5
 
       if (cacheValid) {
-        return cache.costs
+        // Also check if cached sweep flow is reachable
+        const pos = game.character.position
+        const cachedCost = getFlowCost(cache.costs, pos)
+        if (cachedCost < MAX_FLOW_COST) {
+          return cache.costs
+        }
+        // Cached sweep flow unreachable - need to recompute or fall through
       }
 
       // Compute fresh sweep flow
       const flowCosts = profile('flow.sweep', () =>
         computeExplorationFlow(game.currentLevel, sweepFrontiers, avoidSet)
       )
-      botState.cachedSweepFlow = {
-        costs: flowCosts,
-        seenCount,
-        computedAt: game.turn,
-        depth: game.character.depth,
+
+      // Check if sweep flow is reachable from bot's position
+      // If not reachable, fall through to normal exploration
+      // This handles the case where sweep frontiers are separated from bot by unexplored tiles
+      const pos = game.character.position
+      const sweepCost = getFlowCost(flowCosts, pos)
+      if (sweepCost < MAX_FLOW_COST) {
+        // Sweep flow is reachable - use it
+        botState.cachedSweepFlow = {
+          costs: flowCosts,
+          seenCount,
+          computedAt: game.turn,
+          depth: game.character.depth,
+        }
+        botState.cachedFlow = null // Don't use single-target cache for sweep
+        return flowCosts
       }
-      botState.cachedFlow = null // Don't use single-target cache for sweep
-      return flowCosts
+      // Sweep flow unreachable - fall through to normal exploration
+      // This is common when bot has explored a corridor and sweep frontiers are elsewhere
     }
   }
 

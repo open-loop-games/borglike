@@ -13,6 +13,8 @@ import { computeMaxUpgradeBonuses } from '../../../src/game/upgrade-effects'
 import { DEFAULT_BALANCE, type BalanceOverrides } from '../../../src/game/types'
 import { runBotTick, createBotState } from '../../../src/game/bot'
 import { reportProfile } from '../../../src/game/bot/profiler'
+import { invalidateFrontierCache } from '../../../src/game/bot/exploration'
+import { invalidateUnexploredCache } from '../../../src/game/bot/context'
 import type { GameState } from '../../../src/game/types'
 import type { BotState } from '../../../src/game/bot/types'
 import type {
@@ -477,6 +479,11 @@ export function runDeepDiagnosis(
   const cfg = { ...DEFAULT_CONFIG, ...config }
   const analyzers = config.analyzers ?? []
   const turnLog: TurnLogEntry[] = []
+
+  // CRITICAL: Invalidate module-level caches before each run
+  // These caches persist across runs and can cause "no goal" bugs when stale
+  invalidateFrontierCache()
+  invalidateUnexploredCache()
 
   // Create game
   const game: GameState = createGame({

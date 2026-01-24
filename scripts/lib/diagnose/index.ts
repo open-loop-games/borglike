@@ -17,6 +17,12 @@
 export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis } from './runner'
 export type { TurnLogEntry, ParallelBatchConfig } from './runner'
 
+// Modes
+export { runBaseline, BASELINE_CLASSES, BASELINE_DEFAULTS } from './baseline'
+export type { BaselineConfig, BaselineResult } from './baseline'
+export { runDebugExplore } from './debug-explore'
+export type { DebugExploreConfig } from './debug-explore'
+
 // Types
 export type {
   Analyzer,
