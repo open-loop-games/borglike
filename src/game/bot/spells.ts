@@ -438,7 +438,8 @@ export function getPhaseDoorSpellAction(game: GameState): GameAction | null {
 
   // Find phase door specifically (teleportRange > 0 means short-range)
   const phaseDoor = available.find(
-    (entry) => entry.canCast && entry.spell.effectType === 'teleport' && (entry.spell.teleportRange ?? 0) > 0
+    (entry) =>
+      entry.canCast && entry.spell.effectType === 'teleport' && (entry.spell.teleportRange ?? 0) > 0
   )
 
   if (phaseDoor) {

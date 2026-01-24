@@ -21,9 +21,7 @@ pnpm run preview      # Preview production build
 pnpm run check        # Full check: typecheck + lint + format
 pnpm run typecheck    # TypeScript check only
 pnpm run lint         # ESLint check
-pnpm run lint:fix     # ESLint with autofix
 pnpm run format       # Prettier write
-pnpm run format:check # Prettier check only
 
 pnpm run knip         # Find unused exports/dependencies
 ```
