@@ -409,24 +409,6 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
 }
 
 /**
- * Get ASCEND_TO_FARM goal if under-leveled.
- */
-export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
-  const { game, botState } = context
-  const character = game.character
-
-  if (!shouldAscendToFarm(character, botState.knownStairsUp)) return null
-
-  return {
-    type: 'ASCEND_TO_FARM',
-    target: botState.knownStairsUp!,
-    targetId: null,
-    reason: `Under-leveled (L${character.level} at depth ${character.depth})`,
-    startTurn: game.turn,
-  }
-}
-
-/**
  * Get DESCEND goal to return to unique hunt depth after level flip.
  *
  * When hunting a unique blocker, bot may flip levels (ascend/descend) to trigger
@@ -479,45 +461,6 @@ export function getReturnToUniqueHuntGoal(context: BotContext): BotGoal | null {
   }
 
   return null
-}
-
-/**
- * Get TOWN_TRIP goal if ready to portal to town.
- */
-export function getTownTripGoal(context: BotContext): BotGoal | null {
-  const { game, botState, effectiveConfig } = context
-  const character = game.character
-
-  // Can't trip from town
-  if (character.depth === 0) return null
-
-  // Need portal scroll
-  const tpScroll = findTownPortalScroll(character)
-  if (!tpScroll) return null
-
-  // Check gold and level requirements
-  const goldTarget =
-    botState.farmGoldTarget || getGoldTarget(character.depth + 1, effectiveConfig.caution)
-  const effectiveGold = getEffectiveGold(character)
-
-  // Need enough gold to buy supplies
-  if (effectiveGold < goldTarget) return null
-
-  // Need at least depth level to ensure XP gains
-  if (character.level < character.depth) return null
-
-  // Casters in sweep mode should complete sweep before town trip
-  if (botState.sweepMode && SQUISHY_CLASSES.has(character.classId)) {
-    if (!isSweepComplete(game, botState)) return null
-  }
-
-  return {
-    type: 'TOWN_TRIP',
-    target: character.position, // Use in place
-    targetId: tpScroll.id,
-    reason: `Town trip (${character.gold}g, need ${goldTarget}g)`,
-    startTurn: game.turn,
-  }
 }
 
 /**
@@ -654,7 +597,7 @@ function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   }
 
   // 1. If ready for town trip, use portal (unless at depth 1 - just walk)
-  const townTrip = profile('farm.townTrip', () => evaluateTownTrip(context))
+  const townTrip = profile('farm.townTrip', () => getTownTripGoal(context))
   if (townTrip) return townTrip
 
   // 1b. At depth 1 and ready for town? Walk up stairs instead of using TP
@@ -677,7 +620,7 @@ function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   }
 
   // 2. If under-leveled, ascend to farm easier content
-  const ascend = profile('farm.ascend', () => evaluateAscendToFarm(context))
+  const ascend = profile('farm.ascend', () => getAscendToFarmGoal(context))
   if (ascend) return ascend
 
   // 3. Farm on current level (monsters/items within tether)
@@ -787,11 +730,11 @@ function initiateFarmingLoop(context: BotContext): BotGoal | null {
   }
 
   // 1. If ready for town trip, use portal
-  const townTrip = evaluateTownTrip(context)
+  const townTrip = getTownTripGoal(context)
   if (townTrip) return townTrip
 
   // 2. If under-leveled, ascend to farm easier content
-  const ascend = evaluateAscendToFarm(context)
+  const ascend = getAscendToFarmGoal(context)
   if (ascend) return ascend
 
   // 3. Farm on current level for gold/XP
@@ -811,7 +754,7 @@ function initiateFarmingLoop(context: BotContext): BotGoal | null {
 
 /**
  * Main entry point for progression goals.
- * Replaces evaluateDescend with cleaner dispatch logic.
+ * Handles farming mode, sweep mode, and standard descent.
  */
 export function getProgressionGoal(context: BotContext): BotGoal | null {
   const { game, botState, effectiveConfig } = context
@@ -847,7 +790,7 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
 }
 
 // ============================================================================
-// ASCEND TO FARM EVALUATOR
+// ASCEND TO FARM GOAL
 // ============================================================================
 
 /**
@@ -859,7 +802,7 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
  * Casters skip stair-surfing in early game (Angband borg-inspired) since
  * it resets spawns, which is deadly for low-HP classes. They use sweep instead.
  */
-export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
+export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
   const { game, botState, effectiveConfig } = context
   const character = game.character
 
@@ -966,13 +909,13 @@ export function evaluateAscendToFarm(context: BotContext): BotGoal | null {
 }
 
 // ============================================================================
-// TOWN TRIP EVALUATOR
+// TOWN TRIP GOAL
 // ============================================================================
 
 /**
  * Use town portal when gold/level targets met and have TP scroll.
  */
-export function evaluateTownTrip(context: BotContext): BotGoal | null {
+export function getTownTripGoal(context: BotContext): BotGoal | null {
   const { game, effectiveConfig, botState } = context
   const character = game.character
 
@@ -1059,48 +1002,6 @@ export function getSweepGoal(context: BotContext): BotGoal | null {
     reason: `Sweep exploration (${progress}% seen)`,
     startTurn: game.turn,
   }
-}
-
-/**
- * Evaluate sweep goal - alias for backward compatibility.
- */
-export function evaluateSweep(context: BotContext): BotGoal | null {
-  return getSweepGoal(context)
-}
-
-// ============================================================================
-// FARM EVALUATOR (public wrapper)
-// ============================================================================
-
-/**
- * Farm monsters/items within tether radius to accumulate gold.
- * Public wrapper that ensures farming state is set.
- */
-export function evaluateFarm(context: BotContext, goldTarget: number): BotGoal | null {
-  const { botState, game } = context
-
-  // Ensure farming state is set
-  if (!botState.farmingMode) {
-    botState.farmingMode = true
-    botState.farmGoldTarget = goldTarget
-    if (botState.farmStartTurn === 0) {
-      botState.farmStartTurn = game.turn
-    }
-  }
-
-  return getFarmGoal(context, goldTarget)
-}
-
-// ============================================================================
-// DESCEND EVALUATOR (main entry point)
-// ============================================================================
-
-/**
- * PROACTIVE readiness check triggers farming BEFORE reaching stairs.
- * Main entry point that dispatches to getProgressionGoal().
- */
-export function evaluateDescend(context: BotContext, _botState: BotState): BotGoal | null {
-  return getProgressionGoal(context)
 }
 
 // ============================================================================

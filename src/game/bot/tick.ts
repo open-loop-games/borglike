@@ -166,7 +166,7 @@ export function runBotTick(
     } else if (wasInFarmingMode && inDungeon) {
       // Set tethered origin for non-casters in farming mode
       // Origin = current position (where we entered the level)
-      // The tether check in evaluateAscendToFarm will block flipping until exploration is done
+      // The tether check in getAscendToFarmGoal will block flipping until exploration is done
       botState.tetheredOrigin = { x: game.character.position.x, y: game.character.position.y }
     }
   }

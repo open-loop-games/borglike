@@ -22,71 +22,12 @@ import { getKiteGoal, getKillGoal } from './combat'
 import { getTakeGoal, findBestItem } from './items'
 import { getExploreGoal } from './exploration'
 import { getUseAltarGoal, getVisitMerchantGoal } from './merchant'
-import { evaluateDescend, getReturnToUniqueHuntGoal } from './progression'
+import { getProgressionGoal, getReturnToUniqueHuntGoal } from './progression'
 import { getEffectiveGold, getHuntUniqueGoal } from './preparation'
 import { profile } from './profiler'
 
-// Wrapper functions to maintain backward compatibility with evaluateX naming
-function evaluateFlee(
-  context: BotContext,
-  dangers: DangerMap,
-  _t: number,
-  _l: number,
-  _h: number
-): BotGoal | null {
-  return getFleeGoal(context, dangers, context.botState.hpRate)
-}
-function evaluateHuntUnique(context: BotContext): BotGoal | null {
-  return getHuntUniqueGoal(context)
-}
-function evaluateKite(context: BotContext, _d: DangerMap, _t: number): BotGoal | null {
-  return getKiteGoal(context)
-}
-function evaluateRecover(
-  context: BotContext,
-  dangerThreshold: number,
-  localDanger: number,
-  hpRatio: number
-): BotGoal | null {
-  return getRecoverGoal(context, dangerThreshold, localDanger, hpRatio)
-}
-function evaluateKill(context: BotContext, hpRatio: number): BotGoal | null {
-  return getKillGoal(context, hpRatio)
-}
-function evaluateTake(
-  context: BotContext,
-  dangers: DangerMap,
-  dangerThreshold: number
-): BotGoal | null {
-  return getTakeGoal(context, dangers, dangerThreshold)
-}
-function evaluateExplore(context: BotContext): BotGoal | null {
-  return getExploreGoal(context)
-}
-function evaluateUseAltar(
-  context: BotContext,
-  dangerThreshold: number,
-  localDanger: number
-): BotGoal | null {
-  return getUseAltarGoal(context, dangerThreshold, localDanger)
-}
-function evaluateVisitMerchant(
-  context: BotContext,
-  dangerThreshold: number,
-  localDanger: number
-): BotGoal | null {
-  return getVisitMerchantGoal(context, dangerThreshold, localDanger)
-}
-
 // Re-export for external use
-export { findBestItem, evaluateHuntUnique }
-export {
-  evaluateDescend,
-  evaluateFarm,
-  evaluateAscendToFarm,
-  evaluateTownTrip,
-  evaluateSweep,
-} from './progression'
+export { findBestItem, getHuntUniqueGoal }
 
 // ============================================================================
 // CONSTANTS
@@ -220,19 +161,19 @@ export function selectGoal(
 
   // 1. FLEE - HP critical and in danger (skip for Berserker)
   if (!classProfile.neverRetreats) {
-    const fleeGoal = evaluateFlee(context, dangers, dangerThreshold, localDanger, hpRatio)
+    const fleeGoal = getFleeGoal(context, dangers, botState.hpRate)
     if (fleeGoal) return fleeGoal
   }
 
   // 1.5 KITE - Ranged classes maintain distance and attack from range
   // Works for bow users (rangers) AND ranged casters (mage, archmage, necromancer)
   if (classProfile.prefersRanged) {
-    const kiteGoal = evaluateKite(context, dangers, dangerThreshold)
+    const kiteGoal = getKiteGoal(context)
     if (kiteGoal) return kiteGoal
   }
 
   // 2. RECOVER - Low HP but safe
-  const recoverGoal = evaluateRecover(context, dangerThreshold, localDanger, hpRatio)
+  const recoverGoal = getRecoverGoal(context, dangerThreshold, localDanger, hpRatio)
   if (recoverGoal) return recoverGoal
 
   // 2.3 RETURN_TO_UNIQUE_HUNT - Return to depth after level flip for unique hunting
@@ -240,31 +181,31 @@ export function selectGoal(
   if (returnToHuntGoal) return returnToHuntGoal
 
   // 2.5 HUNT_UNIQUE - Hunt uniques blocking descent (priority over regular KILL)
-  const huntUniqueGoal = evaluateHuntUnique(context)
+  const huntUniqueGoal = getHuntUniqueGoal(context)
   if (huntUniqueGoal) return huntUniqueGoal
 
   // 3. KILL - Adjacent monster or hunting
-  const killGoal = evaluateKill(context, hpRatio)
+  const killGoal = getKillGoal(context, hpRatio)
   if (killGoal) return killGoal
 
   // 4. TAKE - Valuable item nearby
-  const takeGoal = evaluateTake(context, dangers, dangerThreshold)
+  const takeGoal = getTakeGoal(context, dangers, dangerThreshold)
   if (takeGoal) return takeGoal
 
   // 4.5 USE_ALTAR - Use dungeon altars when safe (gold sink)
-  const altarGoal = evaluateUseAltar(context, dangerThreshold, localDanger)
+  const altarGoal = getUseAltarGoal(context, dangerThreshold, localDanger)
   if (altarGoal) return altarGoal
 
   // 4.6 VISIT_MERCHANT - Visit dungeon merchants when safe
-  const merchantGoal = evaluateVisitMerchant(context, dangerThreshold, localDanger)
+  const merchantGoal = getVisitMerchantGoal(context, dangerThreshold, localDanger)
   if (merchantGoal) return merchantGoal
 
   // 5. DESCEND - Ready to go down (may trigger FARM, ASCEND_TO_FARM, TOWN_TRIP)
-  const descendGoal = profile('goal.descend', () => evaluateDescend(context, botState))
+  const descendGoal = profile('goal.descend', () => getProgressionGoal(context))
   if (descendGoal) return descendGoal
 
   // 6. EXPLORE - Default
-  const exploreGoal = profile('goal.explore', () => evaluateExplore(context))
+  const exploreGoal = profile('goal.explore', () => getExploreGoal(context))
   if (exploreGoal) return exploreGoal
 
   // 7. WAIT - Nothing possible
@@ -477,7 +418,7 @@ function checkHighPriorityOverride(
 
   // Check FLEE (priority 100)
   if (currentPriority < GOAL_PRIORITY.FLEE) {
-    const fleeGoal = evaluateFlee(context, dangers, dangerThreshold, localDanger, hpRatio)
+    const fleeGoal = getFleeGoal(context, dangers, context.botState.hpRate)
     if (fleeGoal) return fleeGoal
   }
 
@@ -486,14 +427,14 @@ function checkHighPriorityOverride(
   if (currentPriority < GOAL_PRIORITY.KITE) {
     const { classProfile } = context
     if (classProfile.prefersRanged) {
-      const kiteGoal = evaluateKite(context, dangers, dangerThreshold)
+      const kiteGoal = getKiteGoal(context)
       if (kiteGoal) return kiteGoal
     }
   }
 
   // Check RECOVER (priority 80)
   if (currentPriority < GOAL_PRIORITY.RECOVER) {
-    const recoverGoal = evaluateRecover(context, dangerThreshold, localDanger, hpRatio)
+    const recoverGoal = getRecoverGoal(context, dangerThreshold, localDanger, hpRatio)
     if (recoverGoal) return recoverGoal
   }
 

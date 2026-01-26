@@ -346,23 +346,7 @@ export function getClassTier(classId: string): ClassTier {
 }
 
 /** Caster classes that use sweep exploration instead of stair surfing */
-export const SQUISHY_CLASSES = new Set(
-  [
-    'mage',
-    'archmage',
-    'necromancer',
-    'ranger',
-    'rogue',
-    'monk',
-    'bard',
-    'paladin',
-    'priest',
-    'druid',
-    'warrior',
-    'berserker',
-    'blackguard',
-  ].filter((classId) => getClassTier(classId) === 'SQUISHY')
-)
+export const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
 
 /** Minimum character level before casters can safely stair surf */
 export const CASTER_STAIR_SURF_MIN_LEVEL = 10
