@@ -14,6 +14,8 @@ import type {
   ActionResult,
   Minion,
   MinionType,
+  Element,
+  SpellDamageType,
 } from './types'
 import { MINION_TEMPLATES } from './types'
 import { randomInt, random } from './rng'
@@ -26,6 +28,50 @@ import { addStatusEffect, addTempResistance } from './status-effects'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 
 // SpellCastResult has been unified into ActionResult in types.ts
+
+// ============================================================================
+// ELEMENTAL DAMAGE HELPERS
+// ============================================================================
+
+/**
+ * Convert spell damage type to monster element type
+ */
+function spellDamageTypeToElement(damageType: SpellDamageType): Element | null {
+  const mapping: Partial<Record<SpellDamageType, Element>> = {
+    fire: 'FIRE',
+    cold: 'COLD',
+    lightning: 'ELEC',
+    // holy, dark, nature, arcane don't map to monster elements
+  }
+  return mapping[damageType] ?? null
+}
+
+/**
+ * Apply monster resistance/immunity to spell damage
+ * Returns modified damage and whether monster is immune
+ */
+function applyMonsterResistance(
+  damage: number,
+  monster: Monster,
+  damageType: SpellDamageType | undefined
+): { damage: number; isImmune: boolean; isResistant: boolean } {
+  if (!damageType) return { damage, isImmune: false, isResistant: false }
+
+  const element = spellDamageTypeToElement(damageType)
+  if (!element) return { damage, isImmune: false, isResistant: false }
+
+  // Check immunity first
+  if (monster.template.immune?.includes(element)) {
+    return { damage: 0, isImmune: true, isResistant: false }
+  }
+
+  // Check resistance
+  if (monster.template.resist?.includes(element)) {
+    return { damage: Math.floor(damage * 0.5), isImmune: false, isResistant: true }
+  }
+
+  return { damage, isImmune: false, isResistant: false }
+}
 
 // ============================================================================
 // SPELL AVAILABILITY
@@ -498,6 +544,10 @@ function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: strin
     damage *= 2
   }
 
+  // Apply monster resistance/immunity
+  const resistResult = applyMonsterResistance(damage, target, spell.damageType)
+  damage = resistResult.damage
+
   // Apply debuff if spell has one
   if (spell.debuff) {
     applyMonsterDebuff(target, spell.debuff.type, spell.debuff.value, spell.debuff.duration)
@@ -513,10 +563,17 @@ function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: strin
     handleMonsterKill(game, target)
   }
 
+  // Build result message
+  let resultStr = ''
+  if (resistResult.isImmune) {
+    resultStr = ` ${target.template.name} is immune!`
+  } else if (resistResult.isResistant) {
+    resultStr = ` ${target.template.name} resists!`
+  }
   const killedStr = killed ? ' It dies!' : ''
   return {
     success: true,
-    message: `You cast ${spell.name} at ${target.template.name} for ${damage} damage.${killedStr}`,
+    message: `You cast ${spell.name} at ${target.template.name} for ${damage} damage.${resultStr}${killedStr}`,
     damage,
     targets: [target.id],
     events: [
@@ -615,6 +672,9 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
   const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
   baseDamage = Math.floor(baseDamage * (1 + bonuses.damagePercent / 100))
 
+  let immuneCount = 0
+  let resistCount = 0
+
   for (const target of targets) {
     let damage = baseDamage
 
@@ -622,6 +682,12 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
     if (spell.doubleVsEvil && target.template.flags.includes('EVIL')) {
       damage *= 2
     }
+
+    // Apply monster resistance/immunity
+    const resistResult = applyMonsterResistance(damage, target, spell.damageType)
+    damage = resistResult.damage
+    if (resistResult.isImmune) immuneCount++
+    if (resistResult.isResistant) resistCount++
 
     // Apply damage
     const killed = applyDamage(target, damage)
@@ -652,10 +718,13 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
     game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
   }
 
+  // Build result message
+  const resistStr =
+    immuneCount > 0 ? ` (${immuneCount} immune)` : resistCount > 0 ? ` (${resistCount} resist)` : ''
   const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
   return {
     success: true,
-    message: `You cast ${spell.name} hitting ${targets.length} enemies for ${totalDamage} total damage.${killedStr}`,
+    message: `You cast ${spell.name} hitting ${targets.length} enemies for ${totalDamage} total damage.${resistStr}${killedStr}`,
     damage: totalDamage,
     targets: targetIds,
     events,

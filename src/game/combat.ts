@@ -5,7 +5,7 @@
  * Functions are pure where possible - actual state mutation happens in the game loop.
  */
 
-import type { Character, Monster, ResistanceType, Point } from './types'
+import type { Character, Monster, ResistanceType, Point, Item, Element } from './types'
 import type { KnowledgeBonuses } from './knowledge-effects'
 import { random } from './rng'
 import { rollDice } from './dice'
@@ -67,6 +67,54 @@ export function isCharacter(entity: Character | Monster): entity is Character {
  */
 export function isMonster(entity: Character | Monster): entity is Monster {
   return 'template' in entity
+}
+
+// ============================================================================
+// WEAPON BRANDS
+// ============================================================================
+
+/**
+ * Calculate damage multiplier from weapon brand against a monster
+ *
+ * Brands apply elemental damage bonuses:
+ * - 2.0x damage if monster has no resistance
+ * - 1.5x damage if monster has resistance
+ * - 1.0x damage if monster is immune
+ *
+ * @param weapon - Equipped weapon (may be null)
+ * @param target - Monster being attacked
+ * @returns Damage multiplier (1.0 if no applicable brand)
+ */
+export function calculateBrandMultiplier(weapon: Item | undefined, target: Monster): number {
+  if (!weapon?.artifact?.abilities) return 1
+
+  // Map brand abilities to element types
+  const brandMap: Record<string, Element> = {
+    'Brand Fire': 'FIRE',
+    'Brand Cold': 'COLD',
+    'Brand Acid': 'ACID',
+    'Brand Poison': 'POISON',
+  }
+
+  for (const ability of weapon.artifact.abilities) {
+    const element = brandMap[ability]
+    if (!element) continue
+
+    // Check target immunity
+    if (target.template.immune?.includes(element)) {
+      continue // No bonus vs immune targets
+    }
+
+    // Check target resistance
+    if (target.template.resist?.includes(element)) {
+      return 1.5 // Reduced bonus vs resistant targets
+    }
+
+    // Full bonus vs vulnerable targets
+    return 2.0
+  }
+
+  return 1
 }
 
 // ============================================================================
@@ -607,6 +655,12 @@ export function attack(
       if (gameClass?.canShieldBash && random() < 0.2) {
         baseDamage = Math.floor(baseDamage * 1.5)
       }
+    }
+
+    // WEAPON BRANDS: Apply elemental damage multiplier
+    if (isMonster(defender)) {
+      const brandMult = calculateBrandMultiplier(attacker.equipment.weapon, defender)
+      baseDamage = Math.floor(baseDamage * brandMult)
     }
   } else {
     // Monster attacks use pre-calculated average (actual dice rolled in monster-combat.ts)
@@ -1180,6 +1234,7 @@ export function formatMultiRangedAttackMessage(
  * Calculate lifesteal amount for a character based on damage dealt
  *
  * Sources of lifesteal:
+ * - VAMPIRE: Vampires heal 20% of melee damage dealt (race ability)
  * - COMBAT_REGEN: Blackguard heals 10% of melee damage dealt (class ability)
  * - SHAPESHIFTING: Shadow Form grants 10% lifedrain (form ability)
  *
@@ -1189,6 +1244,11 @@ export function formatMultiRangedAttackMessage(
  */
 export function calculateLifesteal(character: Character, damage: number): number {
   let lifestealPercent = 0
+
+  // VAMPIRE: Race ability - 20% lifesteal
+  if (character.raceId === 'vampire') {
+    lifestealPercent += 20
+  }
 
   // COMBAT_REGEN: Blackguard class ability
   const gameClass = getClassById(character.classId)

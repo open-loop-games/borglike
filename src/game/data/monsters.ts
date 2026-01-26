@@ -310,6 +310,7 @@ export const monsters: MonsterTemplate[] = [
       { method: 'CLAW', dice: '1d4', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '1d4', effect: { type: 'HURT' } },
     ],
+    resist: ['FIRE'],
   },
 
   // Depth 7
@@ -336,6 +337,8 @@ export const monsters: MonsterTemplate[] = [
     experience: 15,
     flags: ['UNDEAD'],
     attacks: [{ method: 'HIT', dice: '1d8', effect: { type: 'HURT' } }],
+    resist: ['COLD'],
+    immune: ['POISON'],
   },
   {
     name: 'Blue Jelly',
@@ -487,6 +490,7 @@ export const monsters: MonsterTemplate[] = [
       { method: 'BITE', dice: '1d6', effect: { type: 'HURT' } },
     ],
     spells: { freq: 4, list: ['BR_FIRE', 'BR_COLD', 'BR_ELEC', 'BR_ACID', 'BR_POISON'] },
+    resist: ['FIRE', 'COLD', 'ELEC', 'ACID', 'POISON'],
   },
 
   // Depth 12
@@ -519,6 +523,8 @@ export const monsters: MonsterTemplate[] = [
       { method: 'HIT', dice: '2d4', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '2d4', effect: { type: 'HURT' } },
     ],
+    resist: ['COLD'],
+    immune: ['POISON'],
   },
 
   // Depth 13
@@ -536,6 +542,8 @@ export const monsters: MonsterTemplate[] = [
       { method: 'TOUCH', dice: '2d4', effect: { type: 'DRAIN' } },
       { method: 'TOUCH', dice: '2d4', effect: { type: 'DRAIN' } },
     ],
+    resist: ['COLD'],
+    immune: ['POISON'],
   },
   {
     name: 'Orc Shaman',
@@ -566,6 +574,8 @@ export const monsters: MonsterTemplate[] = [
       { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
       { method: 'TOUCH', dice: '1d6', effect: { type: 'DRAIN' } },
     ],
+    resist: ['COLD'],
+    immune: ['POISON'],
   },
   {
     name: 'Black Orc',

@@ -1235,6 +1235,14 @@ export const POTIONS: ItemTemplate[] = [
     effect: 'Cure drain, restore stats',
     minDepth: 20,
   },
+  {
+    name: 'Potion of Purity',
+    type: 'potion',
+    tier: 2,
+    weight: 4,
+    effect: 'Cures all ailments',
+    minDepth: 15,
+  },
   // Phase 4-5: Needs invisible system
   // {
   //   name: 'Potion of True Seeing',

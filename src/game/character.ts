@@ -5,7 +5,15 @@
  * All functions are pure where possible and properly typed.
  */
 
-import type { Character, Stats, CombatStats, Item, EquipSlot, Resistances } from './types'
+import type {
+  Character,
+  Stats,
+  CombatStats,
+  Item,
+  EquipSlot,
+  Resistances,
+  ResistanceType,
+} from './types'
 import type { Race } from './data/races'
 import { getRaceById, getClassById, calculateHitdie } from './data/index'
 import { xpForLevel } from '../core/formulas'
@@ -244,6 +252,10 @@ export function createCharacter(config: {
 
     // SHAPESHIFTING: No active form at start
     activeFormId: null,
+
+    // ACTIVATIONS: Cooldown tracking for artifact/racial abilities
+    activationCooldowns: {},
+    racialAbilityLastUse: 0,
   }
 
   return character
@@ -337,10 +349,65 @@ export function calculateResistances(character: Character): Resistances {
   // Start with racial resistances
   const resistances = calculateResistancesFromRace(race)
 
-  // Equipment resistances could be parsed from item effects/artifacts here
-  // For now, we only have racial resistances implemented
+  // Sum resistances from equipped artifacts
+  for (const item of Object.values(character.equipment)) {
+    if (item?.artifact?.abilities) {
+      for (const ability of item.artifact.abilities) {
+        const parsed = parseResistanceAbility(ability)
+        if (parsed) {
+          resistances[parsed.type] = (resistances[parsed.type] ?? 0) + parsed.value
+        }
+      }
+    }
+  }
 
   return resistances
+}
+
+/**
+ * Parse an artifact ability string for resistance
+ * Returns the resistance type and value, or null if not a resistance ability
+ *
+ * Examples:
+ *   "Resist Fire" -> { type: 'FIRE', value: 50 }
+ *   "Resist Cold x3" -> { type: 'COLD', value: 75 }
+ *   "Slay Evil" -> null
+ */
+function parseResistanceAbility(ability: string): { type: ResistanceType; value: number } | null {
+  if (!ability.startsWith('Resist ')) return null
+
+  const content = ability.replace('Resist ', '')
+
+  // Check for multiplier (x3 = 75% resist, x2 = 66%, default = 50%)
+  let multiplier = 1
+  let element = content
+  if (content.includes(' x')) {
+    const parts = content.split(' x')
+    element = parts[0] ?? content
+    multiplier = parseInt(parts[1] ?? '1', 10)
+  }
+
+  // Map element name to ResistanceType
+  const elementMap: Record<string, ResistanceType> = {
+    Fire: 'FIRE',
+    Cold: 'COLD',
+    Acid: 'ACID',
+    Lightning: 'LIGHTNING',
+    Poison: 'POISON',
+    Light: 'LIGHT',
+    Dark: 'DARK',
+    // Additional elements that don't have ResistanceType equivalents are skipped
+    // (Shards, Nexus, Nether, Disenchantment - could be added later)
+  }
+
+  const type = elementMap[element]
+  if (!type) return null
+
+  // Calculate resistance value based on multiplier
+  // x1 (default) = 50%, x2 = 66%, x3 = 75%
+  const value = multiplier === 3 ? 75 : multiplier === 2 ? 66 : 50
+
+  return { type, value }
 }
 
 /**

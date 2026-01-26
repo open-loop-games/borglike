@@ -66,6 +66,15 @@ export function handleShopSell(
  * Handle spell casting
  */
 export function handleCast(game: GameState, spellId: string, targetId?: string): ActionResult {
+  // GOLEM RESTRICTION: Cannot cast spells
+  if (game.character.raceId === 'golem') {
+    return {
+      success: false,
+      message: 'Golems cannot cast spells.',
+      energyCost: 0,
+    }
+  }
+
   const result = castSpell(game, spellId, targetId)
 
   if (result.message) {

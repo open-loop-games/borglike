@@ -83,6 +83,39 @@ const POTION_EFFECTS: Array<{
       return { success: true, message }
     },
   },
+  // Purity - cure all ailments (debuffs + poison)
+  {
+    match: (e) => e.toLowerCase().includes('purity') || e.toLowerCase().includes('all ailments'),
+    apply: (game) => {
+      const debuffTypes: (
+        | 'blind'
+        | 'confused'
+        | 'paralyzed'
+        | 'slowed'
+        | 'terrified'
+        | 'drained'
+      )[] = ['blind', 'confused', 'paralyzed', 'slowed', 'terrified', 'drained']
+      const cured: string[] = []
+
+      for (const type of debuffTypes) {
+        if (hasStatusEffect(game.character, type)) {
+          removeStatusEffect(game.character, type)
+          cured.push(type)
+        }
+      }
+
+      // Also cure poison
+      if (game.character.poison) {
+        game.character.poison = null
+        cured.push('poison')
+      }
+
+      if (cured.length === 0) {
+        return { success: true, message: 'You feel pure, but nothing changes.' }
+      }
+      return { success: true, message: `You are cured of ${cured.join(', ')}!` }
+    },
+  },
   // Healing potions - cure status based on tier + heal
   {
     match: (e) => e.includes('Cure') || e.includes('Heal'),
@@ -459,6 +492,28 @@ export function handleUse(game: GameState, itemId: string): ActionResult {
   }
 
   const effect = item.template.effect || ''
+
+  // VAMPIRE RESTRICTION: Cannot drink healing potions
+  if (
+    game.character.raceId === 'vampire' &&
+    item.template.type === 'potion' &&
+    (effect.includes('Heal') || effect.includes('Cure'))
+  ) {
+    return {
+      success: false,
+      message: 'Vampires cannot drink healing potions.',
+      energyCost: 0,
+    }
+  }
+
+  // GOLEM RESTRICTION: Cannot use scrolls (no magic)
+  if (game.character.raceId === 'golem' && item.template.type === 'scroll') {
+    return {
+      success: false,
+      message: 'Golems cannot use scrolls.',
+      energyCost: 0,
+    }
+  }
 
   // Apply effect based on item type
   let result: EffectResult | null = null

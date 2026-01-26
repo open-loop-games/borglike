@@ -5,7 +5,7 @@
  * Determines when to cast healing, damage, buff, and escape spells.
  */
 
-import type { GameState, GameAction, Monster } from '../types'
+import type { GameState, GameAction, Monster, Character } from '../types'
 import { MINION_TEMPLATES } from '../types'
 import type { PersonalityConfig, DangerMap } from './types'
 import type { SpellTemplate } from '../data/spells'
@@ -14,6 +14,18 @@ import { getLocalDanger } from './danger'
 import { countAdjacentMonsters } from './combat'
 import { hasStatusEffect } from './items'
 import { hasAbility, getAverageDamage } from '../data/monsters'
+
+// ============================================================================
+// RACE RESTRICTIONS
+// ============================================================================
+
+/**
+ * Check if character can cast spells
+ * GOLEM RESTRICTION: Golems cannot cast spells
+ */
+function canCastSpells(character: Character): boolean {
+  return character.raceId !== 'golem'
+}
 
 // ============================================================================
 // HEALING SPELLS
@@ -38,6 +50,10 @@ export function getHealingSpellAction(
   healsPriority: boolean = false
 ): GameAction | null {
   const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
   const hpRatio = character.hp / character.maxHp
   const hpDown = character.maxHp - character.hp
 
@@ -164,6 +180,9 @@ export function getDamageSpellAction(
 ): GameAction | null {
   const character = game.character
 
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
   if (visibleMonsters.length === 0) {
     return null
   }
@@ -286,6 +305,9 @@ export function getBuffSpellAction(
 ): GameAction | null {
   const character = game.character
 
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
   // Get available buff spells
   const available = getAvailableSpells(character, game.turn)
   const buffSpells = available.filter((entry) => entry.canCast && entry.spell.effectType === 'buff')
@@ -367,6 +389,10 @@ export function getEscapeSpellAction(
   dangers: DangerMap
 ): GameAction | null {
   const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
   const hpRatio = character.hp / character.maxHp
   const pos = character.position
 
@@ -421,6 +447,10 @@ export function getEscapeSpellAction(
  */
 export function getTeleportSpellAction(game: GameState): GameAction | null {
   const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
   const available = getAvailableSpells(character, game.turn)
   const teleportSpells = available.filter(
     (entry) => entry.canCast && entry.spell.effectType === 'teleport'
@@ -449,6 +479,10 @@ export function getTeleportSpellAction(game: GameState): GameAction | null {
  */
 export function getPhaseDoorSpellAction(game: GameState): GameAction | null {
   const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
   const available = getAvailableSpells(character, game.turn)
 
   // Find phase door specifically (teleportRange > 0 means short-range)
@@ -479,6 +513,9 @@ export function getDebuffSpellAction(
   visibleMonsters: Monster[]
 ): GameAction | null {
   const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
 
   if (visibleMonsters.length === 0) return null
 
@@ -549,6 +586,9 @@ export function getBestSpellForPurpose(
   game: GameState,
   purpose: 'damage' | 'heal' | 'escape' | 'buff'
 ): SpellTemplate | null {
+  // GOLEM RESTRICTION
+  if (!canCastSpells(game.character)) return null
+
   const available = getAvailableSpells(game.character, game.turn)
 
   const matching = available.filter((entry) => {
@@ -660,6 +700,9 @@ export function getSummonSpellAction(
 ): GameAction | null {
   const character = game.character
 
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
   // Get available summon spells
   const available = getAvailableSpells(character, game.turn)
   const summonSpells = available.filter(
@@ -742,6 +785,9 @@ export function classShouldSummon(classId: string): boolean {
  */
 export function getLightOrbSpellAction(game: GameState): GameAction | null {
   const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
 
   // Only caster classes have vision buffs
   const visionSpellId =

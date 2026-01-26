@@ -35,6 +35,20 @@ export { handleSteal, canSteal } from './steal'
 export { handleShapeshift, canTransform, getActiveForm, getUsableForms } from './shapeshift'
 
 // ============================================================================
+// ACTIVATIONS (Artifact/Racial abilities)
+// ============================================================================
+
+export {
+  handleActivate,
+  handleRacialActivation,
+  canActivate,
+  getActivationCooldown,
+  canUseRacialAbility,
+  getRacialAbilityCooldown,
+  getEquippedActivations,
+} from './activation'
+
+// ============================================================================
 // INVENTORY
 // ============================================================================
 

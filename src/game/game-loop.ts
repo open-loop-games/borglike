@@ -56,6 +56,8 @@ import {
   handleUseHealer,
   handleSteal,
   handleShapeshift,
+  handleActivate,
+  handleRacialActivation,
 } from './actions'
 import { equipItem } from './character'
 
@@ -349,10 +351,12 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     game.character.hp < game.character.maxHp
   ) {
     if (game.turn % 10 === 0) {
-      game.character.hp = Math.min(
-        game.character.hp + game.balance.regenPer10Turns,
-        game.character.maxHp
-      )
+      // GOLEM RESTRICTION: 0.5x healing (rounded down, minimum 1)
+      let healAmount = game.balance.regenPer10Turns
+      if (game.character.raceId === 'golem') {
+        healAmount = Math.max(1, Math.floor(healAmount * 0.5))
+      }
+      game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
     }
   }
 
@@ -442,6 +446,10 @@ function executeAction(game: GameState, action: GameAction): ActionResult {
       return handleSteal(game, action.targetId)
     case 'shapeshift':
       return handleShapeshift(game, action.formId)
+    case 'activate':
+      return handleActivate(game, action.itemId, action.targetId)
+    case 'racial_ability':
+      return handleRacialActivation(game, action.targetId)
     default:
       return { success: false, message: 'Unknown action', energyCost: 0 }
   }

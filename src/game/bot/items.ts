@@ -571,6 +571,9 @@ export function getItemDisplayName(item: Item): string {
  * Optionally specify minimum tier (1-4) for stronger potions
  */
 export function findHealingPotion(character: Character, minTier: number = 1): Item | null {
+  // VAMPIRE RESTRICTION: Cannot drink healing potions
+  if (character.raceId === 'vampire') return null
+
   return (
     character.inventory.find((item) => {
       if (item.template.type !== 'potion') return false

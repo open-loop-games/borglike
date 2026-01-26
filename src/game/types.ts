@@ -442,6 +442,10 @@ export interface Character {
 
   // SHAPESHIFTING: Active form ID for Druid/Necromancer (null = normal form)
   activeFormId: string | null
+
+  // ACTIVATIONS: Cooldown tracking for artifact/racial abilities
+  activationCooldowns: Record<string, number> // activationId -> turn when available
+  racialAbilityLastUse: number // Turn of last racial ability use
 }
 
 // ============================================================================
@@ -787,6 +791,9 @@ export type GameAction =
   | { type: 'steal'; targetId: string }
   // Druid/Necromancer shapeshifting
   | { type: 'shapeshift'; formId: string }
+  // Artifact/Racial activations
+  | { type: 'activate'; itemId: string; targetId?: string }
+  | { type: 'racial_ability'; targetId?: string }
 
 /** Result of processing an action (unified type for all game actions including spells) */
 export interface ActionResult {
