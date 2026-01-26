@@ -334,10 +334,16 @@ export function getBuffSpellAction(
   if (visibleMonsters.length > 0) {
     // Enemies nearby but not adjacent - good time for buffs
 
-    // Mage Armor for mages (protection buff)
-    const mageArmor = buffSpells.find((entry) => entry.spell.id === 'mage_armor')
-    if (mageArmor && !existingBuffTypes.includes('protection')) {
-      return { type: 'cast', spellId: 'mage_armor' }
+    // Protection buffs: Shield > Mage Armor (Shield gives +15 AC, Mage Armor +8)
+    if (!existingBuffTypes.includes('protection')) {
+      const shield = buffSpells.find((entry) => entry.spell.id === 'shield')
+      if (shield) {
+        return { type: 'cast', spellId: 'shield' }
+      }
+      const mageArmor = buffSpells.find((entry) => entry.spell.id === 'mage_armor')
+      if (mageArmor) {
+        return { type: 'cast', spellId: 'mage_armor' }
+      }
     }
 
     // Bless for combat
@@ -354,17 +360,36 @@ export function getBuffSpellAction(
       }
     }
 
-    // Resist elements (check if visible monsters use fire/cold)
+    // Elemental resistance: Resistance > Resist Elements
+    // Resistance covers fire/cold/lightning/poison, Resist Elements only fire/cold
     const hasElementalEnemy = visibleMonsters.some(
-      (m) => hasAbility(m.template, 'FIRE') || hasAbility(m.template, 'COLD')
+      (m) =>
+        hasAbility(m.template, 'FIRE') ||
+        hasAbility(m.template, 'COLD') ||
+        hasAbility(m.template, 'ELEC') ||
+        hasAbility(m.template, 'POISON')
     )
     if (hasElementalEnemy) {
-      const resistElements = buffSpells.find((entry) => entry.spell.id === 'resist_elements')
-      if (
-        resistElements &&
-        !character.tempResistances.some((r) => r.type === 'FIRE' || r.type === 'COLD')
-      ) {
-        return { type: 'cast', spellId: 'resist_elements' }
+      // Check if we already have all relevant resistances
+      const hasFire = character.tempResistances.some((r) => r.type === 'FIRE')
+      const hasCold = character.tempResistances.some((r) => r.type === 'COLD')
+      const hasLightning = character.tempResistances.some((r) => r.type === 'LIGHTNING')
+      const hasPoison = character.tempResistances.some((r) => r.type === 'POISON')
+
+      // Prefer Resistance spell (full coverage) over Resist Elements
+      if (!hasFire || !hasCold || !hasLightning || !hasPoison) {
+        const resistance = buffSpells.find((entry) => entry.spell.id === 'resistance')
+        if (resistance) {
+          return { type: 'cast', spellId: 'resistance' }
+        }
+      }
+
+      // Fall back to Resist Elements if we don't have Resistance spell
+      if (!hasFire || !hasCold) {
+        const resistElements = buffSpells.find((entry) => entry.spell.id === 'resist_elements')
+        if (resistElements) {
+          return { type: 'cast', spellId: 'resist_elements' }
+        }
       }
     }
   }
@@ -535,9 +560,7 @@ export function getDebuffSpellAction(
     const slowSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'slow')
     if (slowSpell) {
       // Target the fastest one
-      const fastest = fastMonsters.reduce((a, b) =>
-        a.template.speed > b.template.speed ? a : b
-      )
+      const fastest = fastMonsters.reduce((a, b) => (a.template.speed > b.template.speed ? a : b))
       return { type: 'cast', spellId: slowSpell.spell.id, targetId: fastest.id }
     }
   }
@@ -658,6 +681,100 @@ export function getSmartDebuffAction(
   })
 
   return { type: 'cast', spellId: slowSpell.spell.id, targetId: target.id }
+}
+
+// ============================================================================
+// TELEPORT OTHER SPELL
+// ============================================================================
+
+/**
+ * Get Teleport Other spell action for banishing dangerous monsters
+ *
+ * Angband-inspired crowd control: teleport away a single dangerous threat
+ * when we're not surrounded (so we have escape routes)
+ *
+ * Conditions:
+ * - NOT surrounded (1 or fewer adjacent monsters)
+ * - Facing a dangerous threat (unique OR can kill us in <= 4 hits while HP < 50%)
+ * - Have mana reserve for escape after casting (15 mana)
+ *
+ * @returns GameAction to cast teleport_other, or null
+ */
+export function getTeleportOtherAction(
+  game: GameState,
+  visibleMonsters: Monster[]
+): GameAction | null {
+  const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
+  if (visibleMonsters.length === 0) return null
+
+  // Get available spells
+  const available = getAvailableSpells(character, game.turn)
+  const teleportOtherSpell = available.find(
+    (entry) => entry.canCast && entry.spell.id === 'teleport_other'
+  )
+
+  if (!teleportOtherSpell) return null
+
+  // Check mana reserve - need 15 mana for escape after casting
+  const ESCAPE_MANA_RESERVE = 15
+  const manaAfterCast = character.mp - teleportOtherSpell.spell.manaCost
+  if (manaAfterCast < ESCAPE_MANA_RESERVE) return null
+
+  // Don't use when surrounded (teleporting one away won't help)
+  const adjacentCount = countAdjacentMonsters(game, character.position)
+  if (adjacentCount > 1) return null
+
+  // Calculate armor reduction for damage estimation
+  const armorReduction = Math.min(character.combat.armor / 2, 50)
+
+  // Find dangerous monsters worth banishing
+  const dangerous = visibleMonsters.filter((m) => {
+    if (!m.isAwake) return false
+
+    // Unique monsters are always worth banishing
+    if (m.template.flags?.includes('UNIQUE') || m.template.flags?.includes('BOSS')) {
+      return true
+    }
+
+    // Check if monster can kill us in <= 4 hits while we're below 50% HP
+    if (character.hp / character.maxHp >= 0.5) return false
+
+    const rawDamage = m.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
+    const effectiveDamage = Math.floor((rawDamage * (100 - armorReduction)) / 100)
+    const hitsToKill = effectiveDamage > 0 ? character.hp / effectiveDamage : Infinity
+
+    return hitsToKill <= 4
+  })
+
+  if (dangerous.length === 0) return null
+
+  // Target the most dangerous: prioritize by threat/distance ratio
+  // Closer dangerous monsters are more urgent
+  const target = dangerous.reduce((a, b) => {
+    const distA =
+      Math.abs(a.position.x - character.position.x) + Math.abs(a.position.y - character.position.y)
+    const distB =
+      Math.abs(b.position.x - character.position.x) + Math.abs(b.position.y - character.position.y)
+
+    // Threat = damage potential / distance (closer = more threatening)
+    const damageA = a.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
+    const damageB = b.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
+
+    // Prioritize uniques over regular monsters
+    const uniqueBonus = (m: Monster) =>
+      m.template.flags?.includes('UNIQUE') || m.template.flags?.includes('BOSS') ? 100 : 0
+
+    const threatA = (damageA + uniqueBonus(a)) / Math.max(1, distA)
+    const threatB = (damageB + uniqueBonus(b)) / Math.max(1, distB)
+
+    return threatA > threatB ? a : b
+  })
+
+  return { type: 'cast', spellId: 'teleport_other', targetId: target.id }
 }
 
 // ============================================================================

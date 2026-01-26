@@ -210,6 +210,41 @@ const slow_monster: SpellTemplate = {
   description: 'Arcane bindings slow your foe by 50% for 12 turns.',
 }
 
+const teleport_other: SpellTemplate = {
+  id: 'teleport_other',
+  name: 'Teleport Other',
+  school: 'arcane',
+  level: 12,
+  manaCost: 10,
+  cooldown: 3,
+  effectType: 'teleport_other',
+  description: 'Teleports a visible monster to a random location.',
+}
+
+const shield: SpellTemplate = {
+  id: 'shield',
+  name: 'Shield',
+  school: 'arcane',
+  level: 18,
+  manaCost: 12,
+  cooldown: 25,
+  effectType: 'buff',
+  buff: { type: 'protection', value: 15, duration: 30 },
+  description: 'A powerful magical shield grants +15 AC.',
+}
+
+const resistance: SpellTemplate = {
+  id: 'resistance',
+  name: 'Resistance',
+  school: 'arcane',
+  level: 22,
+  manaCost: 15,
+  cooldown: 30,
+  effectType: 'buff',
+  // Special handling in spell-resolution.ts (no buff property)
+  description: 'Gain resistance to fire, cold, lightning, and poison.',
+}
+
 // ============================================================================
 // DIVINE SPELLS (WIS-based)
 // ============================================================================
@@ -726,6 +761,9 @@ export const SPELLS: Record<string, SpellTemplate> = {
   mage_armor,
   light_orb,
   slow_monster,
+  teleport_other,
+  shield,
+  resistance,
   // Arcane (late-game)
   arcane_torrent,
   meteor,

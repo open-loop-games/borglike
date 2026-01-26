@@ -40,8 +40,11 @@ const mageSpells: ClassSpellList = {
     { spellId: 'light_orb', learnLevel: 1 }, // Early visibility buff
     { spellId: 'frost_bolt', learnLevel: 5 },
     { spellId: 'slow_monster', learnLevel: 8 }, // CC for dangerous monsters
+    { spellId: 'teleport_other', learnLevel: 12 }, // Banish dangerous threats
     { spellId: 'lightning_bolt', learnLevel: 15 },
+    { spellId: 'shield', learnLevel: 18 }, // Strong AC buff (+15)
     { spellId: 'fireball', learnLevel: 20 },
+    { spellId: 'resistance', learnLevel: 22 }, // Full elemental coverage
     { spellId: 'teleport', learnLevel: 25 },
     // Late-game spells for endgame scaling
     { spellId: 'arcane_torrent', learnLevel: 35 }, // LOS damage
@@ -76,8 +79,11 @@ const archmageSpells: ClassSpellList = {
     { spellId: 'light_orb', learnLevel: 1 }, // Early visibility buff
     { spellId: 'slow_monster', learnLevel: 5 }, // Early CC for glass cannon
     { spellId: 'lightning_bolt', learnLevel: 5 },
+    { spellId: 'teleport_other', learnLevel: 8 }, // Banish dangerous threats (earlier than Mage)
     { spellId: 'fireball', learnLevel: 12 },
+    { spellId: 'shield', learnLevel: 14 }, // Strong AC buff (+15, earlier than Mage)
     { spellId: 'teleport', learnLevel: 18 },
+    { spellId: 'resistance', learnLevel: 18 }, // Full elemental coverage (earlier than Mage)
     // Late-game spells - Archmage gets them earlier
     { spellId: 'arcane_torrent', learnLevel: 25 }, // LOS damage
     { spellId: 'meteor', learnLevel: 32 }, // Single target nuke

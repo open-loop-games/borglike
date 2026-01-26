@@ -529,6 +529,9 @@ export function castSpell(game: GameState, spellId: string, targetId?: string): 
     case 'teleport':
       return castTeleportSpell(game, spell)
 
+    case 'teleport_other':
+      return castTeleportOtherSpell(game, spell, targetId)
+
     case 'summon':
       return castSummonSpell(game, spell)
 
@@ -889,6 +892,19 @@ function castBuffSpell(game: GameState, spell: SpellTemplate): ActionResult {
     }
   }
 
+  // Handle resistance spell specially (full elemental coverage)
+  if (spell.id === 'resistance') {
+    // Grant fire, cold, lightning, and poison resistance
+    addTempResistance(game.character, { type: 'FIRE', turnsRemaining: 30, value: 50 })
+    addTempResistance(game.character, { type: 'COLD', turnsRemaining: 30, value: 50 })
+    addTempResistance(game.character, { type: 'LIGHTNING', turnsRemaining: 30, value: 50 })
+    addTempResistance(game.character, { type: 'POISON', turnsRemaining: 30, value: 50 })
+    return {
+      success: true,
+      message: 'You cast Resistance. You feel protected from the elements!',
+    }
+  }
+
   // Standard buff
   const buffType = spell.buff.type as StatusEffect['type']
   addStatusEffect(game.character, {
@@ -1006,6 +1022,36 @@ function castTeleportSpell(game: GameState, spell: SpellTemplate): ActionResult 
   return {
     success: true,
     message: `You cast ${spell.name} and teleport${rangeStr}!`,
+  }
+}
+
+/**
+ * Cast a teleport other spell to banish a monster
+ * Inspired by Angband's Teleport Other - moves dangerous monster away
+ */
+function castTeleportOtherSpell(
+  game: GameState,
+  spell: SpellTemplate,
+  targetId?: string
+): ActionResult {
+  // Find target
+  const target: Monster | null = targetId
+    ? findTarget(game, targetId)
+    : getNearestVisibleMonster(game)
+
+  if (!target) {
+    return { success: true, message: `You cast ${spell.name}, but there are no targets.` }
+  }
+
+  // Teleport the monster to a random location on the level
+  const newPosition = findOpenPosition(game.currentLevel)
+  target.position = newPosition
+  target.isAwake = false // Disoriented after teleport
+
+  return {
+    success: true,
+    message: `You cast ${spell.name}! ${target.template.name} vanishes!`,
+    targets: [target.id],
   }
 }
 
