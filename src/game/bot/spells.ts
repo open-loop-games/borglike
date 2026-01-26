@@ -13,7 +13,7 @@ import { getAvailableSpells, getNearestVisibleMonster, selectAOETargets } from '
 import { getLocalDanger } from './danger'
 import { countAdjacentMonsters } from './combat'
 import { hasStatusEffect } from './items'
-import { hasAbility } from '../data/monsters'
+import { hasAbility, getDiceAverage } from '../data/monsters'
 
 // ============================================================================
 // RACE RESTRICTIONS
@@ -527,36 +527,137 @@ export function getDebuffSpellAction(
 
   if (debuffSpells.length === 0) return null
 
-  // Find strongest visible monster (by HP - we want to slow tanky targets)
-  const sortedByHp = [...visibleMonsters].sort((a, b) => b.hp - a.hp)
-  const strongestMonster = sortedByHp[0]
-
-  if (!strongestMonster) return null
-
-  // Check if monster is already slowed
-  const isAlreadySlowed = strongestMonster.debuffs.some((d) => d.type === 'slow')
-
-  // Slow any monster with significant HP (worth the mana investment)
-  // Threshold: monster HP > 50% of character's max HP
-  const isWorthSlowing = strongestMonster.hp > character.maxHp * 0.5
-  const shouldSlow = !isAlreadySlowed && isWorthSlowing
-
-  if (shouldSlow) {
+  // Priority 1: Slow FAST monsters (speed > 110) - breaks escape loops for squishies
+  const fastMonsters = visibleMonsters.filter(
+    (m) => m.template.speed > 110 && m.isAwake && !m.debuffs.some((d) => d.type === 'slow')
+  )
+  if (fastMonsters.length > 0) {
     const slowSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'slow')
     if (slowSpell) {
-      return { type: 'cast', spellId: slowSpell.spell.id, targetId: strongestMonster.id }
+      // Target the fastest one
+      const fastest = fastMonsters.reduce((a, b) =>
+        a.template.speed > b.template.speed ? a : b
+      )
+      return { type: 'cast', spellId: slowSpell.spell.id, targetId: fastest.id }
     }
   }
 
-  // Weaken as fallback (if slow not available or already slowed)
-  if (isWorthSlowing) {
+  // Priority 2: Slow TANKY monsters (HP > 50% of ours)
+  const sortedByHp = [...visibleMonsters].sort((a, b) => b.hp - a.hp)
+  const tankiestMonster = sortedByHp[0]
+
+  if (!tankiestMonster) return null
+
+  const isAlreadySlowed = tankiestMonster.debuffs.some((d) => d.type === 'slow')
+  const isTanky = tankiestMonster.hp > character.maxHp * 0.5
+
+  if (isTanky && !isAlreadySlowed) {
+    const slowSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'slow')
+    if (slowSpell) {
+      return { type: 'cast', spellId: slowSpell.spell.id, targetId: tankiestMonster.id }
+    }
+  }
+
+  // Priority 3: Weaken tanky monsters (if slow not available or already slowed)
+  if (isTanky) {
     const weakenSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'weaken')
     if (weakenSpell) {
-      return { type: 'cast', spellId: weakenSpell.spell.id, targetId: strongestMonster.id }
+      return { type: 'cast', spellId: weakenSpell.spell.id, targetId: tankiestMonster.id }
     }
   }
 
   return null
+}
+
+/**
+ * Smart debuff action for DANGER tier
+ *
+ * Only slow monsters that are truly dangerous and worth the mana:
+ * 1. Fast (speed > 110) - the escape loop problem
+ * 2. High damage relative to our HP (can kill in <= 4 hits after armor)
+ * 3. NOT easily killable (HP > 2x our best spell damage)
+ * 4. Only if we have mana left for escape after casting
+ *
+ * This follows Angband borg's "defense before damage" pattern for mages,
+ * but with smart filtering to avoid wasting turns on weak targets.
+ *
+ * @returns GameAction to cast slow, or null
+ */
+export function getSmartDebuffAction(
+  game: GameState,
+  visibleMonsters: Monster[]
+): GameAction | null {
+  const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
+  if (visibleMonsters.length === 0) return null
+
+  const available = getAvailableSpells(character, game.turn)
+
+  // Find slow spell
+  const slowSpell = available.find(
+    (entry) =>
+      entry.canCast && entry.spell.effectType === 'debuff' && entry.spell.debuff?.type === 'slow'
+  )
+  if (!slowSpell) return null
+
+  // Reserve mana for escape - phase door costs ~8-15 mana
+  const ESCAPE_MANA_RESERVE = 20
+  const manaAfterCast = character.mp - slowSpell.spell.manaCost
+  if (manaAfterCast < ESCAPE_MANA_RESERVE) return null
+
+  // Estimate our best spell damage (for "easily killable" check)
+  const damageSpells = available.filter(
+    (entry) =>
+      entry.canCast &&
+      (entry.spell.effectType === 'damage' || entry.spell.effectType === 'lifedrain')
+  )
+  const bestDamageSpell = damageSpells.sort((a, b) => b.spell.level - a.spell.level)[0]
+  const estimatedSpellDamage = bestDamageSpell ? bestDamageSpell.spell.level * 3 + 10 : 0
+
+  // Calculate armor reduction for damage estimation
+  const armorReduction = Math.min(character.combat.armor / 2, 50) // Max 50% reduction
+
+  // Find monsters worth slowing: fast AND high damage AND not easily killed
+  const worthSlowing = visibleMonsters.filter((m) => {
+    // Must be awake
+    if (!m.isAwake) return false
+
+    // Must not already be slowed
+    if (m.debuffs.some((d) => d.type === 'slow')) return false
+
+    // Must be FAST (speed > 110) - the main escape loop problem
+    if (m.template.speed <= 110) return false
+
+    // Calculate expected damage per turn after armor
+    const rawDamage = m.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
+    const effectiveDamage = Math.floor((rawDamage * (100 - armorReduction)) / 100)
+
+    // Must be HIGH DAMAGE: can kill us in 4 or fewer hits
+    const hitsToKill = effectiveDamage > 0 ? character.hp / effectiveDamage : Infinity
+    if (hitsToKill > 4) return false
+
+    // Must NOT be easily killable (HP > 2x our spell damage)
+    // If we can blast it in 2 turns, no point slowing
+    if (m.hp <= estimatedSpellDamage * 2) return false
+
+    return true
+  })
+
+  if (worthSlowing.length === 0) return null
+
+  // Target the most dangerous one (speed * effective damage)
+  const target = worthSlowing.reduce((a, b) => {
+    const aDamage = a.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
+    const bDamage = b.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
+    const aDanger = a.template.speed * aDamage
+    const bDanger = b.template.speed * bDamage
+    return aDanger > bDanger ? a : b
+  })
+
+  return { type: 'cast', spellId: slowSpell.spell.id, targetId: target.id }
 }
 
 // ============================================================================

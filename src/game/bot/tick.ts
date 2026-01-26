@@ -95,6 +95,7 @@ import {
   getEscapeSpellAction,
   getPhaseDoorSpellAction,
   getDebuffSpellAction,
+  getSmartDebuffAction,
   getSummonSpellAction,
   getRootShotAction,
   classShouldSummon,
@@ -386,6 +387,16 @@ function handleDangerTier(
             recordProgress(botState, game.turn)
             return phaseDoorAction
           }
+        }
+      }
+
+      // Casters: Smart debuff (slow fast+dangerous monsters) - defense before damage
+      // Only slow if: fast (speed > 110) AND high damage (4 hits to kill) AND not easily killed
+      if (!hasRangedWeapon(game)) {
+        const smartDebuff = getSmartDebuffAction(game, visibleMonsters)
+        if (smartDebuff) {
+          recordProgress(botState, game.turn)
+          return smartDebuff
         }
       }
 
