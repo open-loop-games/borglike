@@ -116,7 +116,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
     },
     abilities: ['Slay Evil', 'Resist Light', 'See Invisible', 'Activation: Detect Objects'],
     description:
-      'The radiant golden staff of an Istar of legend, this wizard\'s companion grants keen sight and clear knowledge of many hidden things.',
+      "The radiant golden staff of an Istar of legend, this wizard's companion grants keen sight and clear knowledge of many hidden things.",
   },
 
   // ============================================================================

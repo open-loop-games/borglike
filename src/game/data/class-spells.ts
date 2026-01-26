@@ -27,8 +27,9 @@ export interface ClassSpellList {
 // ============================================================================
 
 /**
- * Mage - Full arcane caster (8 spells)
+ * Mage - Full arcane caster (12 spells)
  * Gets Phase Door, Mage Armor, and Light Orb at level 1 for early survival
+ * Late-game spells at L35, L40, L45 for endgame scaling
  */
 const mageSpells: ClassSpellList = {
   classId: 'mage',
@@ -42,6 +43,10 @@ const mageSpells: ClassSpellList = {
     { spellId: 'lightning_bolt', learnLevel: 15 },
     { spellId: 'fireball', learnLevel: 20 },
     { spellId: 'teleport', learnLevel: 25 },
+    // Late-game spells for endgame scaling
+    { spellId: 'arcane_torrent', learnLevel: 35 }, // LOS damage
+    { spellId: 'meteor', learnLevel: 40 }, // Single target nuke
+    { spellId: 'mana_storm', learnLevel: 45 }, // Ultimate AOE, unresistable
   ],
 }
 
@@ -59,8 +64,8 @@ const rogueSpells: ClassSpellList = {
 }
 
 /**
- * Archmage - Ultimate arcane caster (7 spells, learns faster)
- * Prestige class - more powerful versions
+ * Archmage - Ultimate arcane caster (11 spells, learns faster)
+ * Prestige class - gets late-game spells earlier than Mage
  */
 const archmageSpells: ClassSpellList = {
   classId: 'archmage',
@@ -73,12 +78,16 @@ const archmageSpells: ClassSpellList = {
     { spellId: 'lightning_bolt', learnLevel: 5 },
     { spellId: 'fireball', learnLevel: 12 },
     { spellId: 'teleport', learnLevel: 18 },
+    // Late-game spells - Archmage gets them earlier
+    { spellId: 'arcane_torrent', learnLevel: 25 }, // LOS damage
+    { spellId: 'meteor', learnLevel: 32 }, // Single target nuke
+    { spellId: 'mana_storm', learnLevel: 40 }, // Ultimate AOE, unresistable
   ],
 }
 
 /**
- * Priest - Full divine caster (6 spells)
- * Focused on healing and anti-evil
+ * Priest - Full divine caster (10 spells)
+ * Focused on healing and anti-evil, late-game devastation vs evil
  */
 const priestSpells: ClassSpellList = {
   classId: 'priest',
@@ -91,12 +100,15 @@ const priestSpells: ClassSpellList = {
     { spellId: 'smite_evil', learnLevel: 15 },
     { spellId: 'sanctuary', learnLevel: 25 },
     { spellId: 'holy_word', learnLevel: 35 },
+    // Late-game divine power
+    { spellId: 'divine_wrath', learnLevel: 40 }, // LOS damage to all evil
+    { spellId: 'restoration', learnLevel: 45 }, // Full heal + cure all
   ],
 }
 
 /**
- * Paladin - Limited divine magic (4 spells)
- * Combat-focused divine warrior
+ * Paladin - Limited divine magic (6 spells)
+ * Combat-focused divine warrior with late-game holy power
  */
 const paladinSpells: ClassSpellList = {
   classId: 'paladin',
@@ -105,12 +117,15 @@ const paladinSpells: ClassSpellList = {
     { spellId: 'bless', learnLevel: 8 },
     { spellId: 'smite_evil', learnLevel: 12 },
     { spellId: 'cure_wounds', learnLevel: 20 },
+    // Late-game divine power (learns later than Priest)
+    { spellId: 'holy_word', learnLevel: 38 },
+    { spellId: 'divine_wrath', learnLevel: 45 }, // LOS damage to all evil
   ],
 }
 
 /**
- * Druid - Nature caster (5 spells)
- * Nature magic with healing and elemental power
+ * Druid - Nature caster (7 spells)
+ * Nature magic with healing and elemental power, late-game elemental devastation
  */
 const druidSpells: ClassSpellList = {
   classId: 'druid',
@@ -120,14 +135,17 @@ const druidSpells: ClassSpellList = {
     { spellId: 'thorn_strike', learnLevel: 10 },
     { spellId: 'resist_elements', learnLevel: 18 },
     { spellId: 'lightning_storm', learnLevel: 28 },
+    // Late-game elemental power
+    { spellId: 'ice_storm', learnLevel: 35 }, // LOS cold + slow
+    { spellId: 'volcanic_eruption', learnLevel: 42 }, // Massive fire AOE
   ],
 }
 
 /**
- * Ranger - Nature magic with companion (9 spells)
+ * Ranger - Nature magic with companion (11 spells)
  * Gets wolf companion and root shot early for survival
  * Mid-game: Hunter's Mark for damage, Camouflage for escape
- * Late-game: Summon Bear for tanking
+ * Late-game: Pack tactics and elemental storms
  */
 const rangerSpells: ClassSpellList = {
   classId: 'ranger',
@@ -141,12 +159,16 @@ const rangerSpells: ClassSpellList = {
     { spellId: 'camouflage', learnLevel: 18 }, // Escape/protection
     { spellId: 'summon_bear', learnLevel: 22 }, // Stronger summon
     { spellId: 'resist_elements', learnLevel: 25 },
+    // Late-game pack tactics
+    { spellId: 'summon_pack', learnLevel: 32 }, // Summon wolf + bear together
+    { spellId: 'ice_storm', learnLevel: 40 }, // LOS cold + slow
   ],
 }
 
 /**
- * Necromancer - Shadow caster with minions (7 spells)
+ * Necromancer - Shadow caster with minions (9 spells)
  * Dark magic with life drain and skeleton summon from L1
+ * Late-game mass drain and dark storms
  */
 const necromancerSpells: ClassSpellList = {
   classId: 'necromancer',
@@ -158,12 +180,15 @@ const necromancerSpells: ClassSpellList = {
     { spellId: 'weaken', learnLevel: 12 },
     { spellId: 'dark_pact', learnLevel: 18 },
     { spellId: 'soul_rend', learnLevel: 28 },
+    // Late-game shadow power
+    { spellId: 'mass_drain', learnLevel: 35 }, // AOE lifedrain
+    { spellId: 'storm_of_darkness', learnLevel: 42 }, // Massive dark AOE
   ],
 }
 
 /**
- * Blackguard - Limited shadow magic (4 spells)
- * Dark warrior with life steal
+ * Blackguard - Limited shadow magic (6 spells)
+ * Dark warrior with life steal and late-game dark power
  */
 const blackguardSpells: ClassSpellList = {
   classId: 'blackguard',
@@ -172,6 +197,9 @@ const blackguardSpells: ClassSpellList = {
     { spellId: 'shadow_bolt', learnLevel: 8 },
     { spellId: 'weaken', learnLevel: 15 },
     { spellId: 'dark_pact', learnLevel: 22 },
+    // Late-game shadow power (learns later than Necromancer)
+    { spellId: 'soul_rend', learnLevel: 35 },
+    { spellId: 'mass_drain', learnLevel: 42 }, // AOE lifedrain
   ],
 }
 

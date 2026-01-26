@@ -49,12 +49,18 @@ function spellDamageTypeToElement(damageType: SpellDamageType): Element | null {
 /**
  * Apply monster resistance/immunity to spell damage
  * Returns modified damage and whether monster is immune
+ *
+ * @param unresistable - If true, bypasses all resistance/immunity checks
  */
 function applyMonsterResistance(
   damage: number,
   monster: Monster,
-  damageType: SpellDamageType | undefined
+  damageType: SpellDamageType | undefined,
+  unresistable: boolean = false
 ): { damage: number; isImmune: boolean; isResistant: boolean } {
+  // Unresistable damage bypasses all checks (Mana Storm, etc.)
+  if (unresistable) return { damage, isImmune: false, isResistant: false }
+
   if (!damageType) return { damage, isImmune: false, isResistant: false }
 
   const element = spellDamageTypeToElement(damageType)
@@ -187,12 +193,31 @@ function rollDice(notation: string): number {
  * Calculate spell power (damage or heal) based on character stats
  * Formula: basePower + (primaryStat - 10) * scaling + level * scaling/3
  * Then apply spell power bonus from equipped staff
+ *
+ * For late-game spells with levelDamage: base + perLevel * characterLevel
  */
 export function calculateSpellPower(
   character: Character,
   spell: SpellTemplate,
   isHeal: boolean = false
 ): number {
+  let finalPower: number
+
+  // Check for level-based damage (late-game spells)
+  if (!isHeal && spell.levelDamage) {
+    // Late-game formula: base + perLevel * level
+    finalPower = spell.levelDamage.base + spell.levelDamage.perLevel * character.level
+
+    // Apply spell power bonus from equipped weapon (staves)
+    const weapon = character.equipment.weapon
+    if (weapon?.template.spellPower) {
+      finalPower = Math.floor(finalPower * (1 + weapon.template.spellPower / 100))
+    }
+
+    return Math.max(1, finalPower)
+  }
+
+  // Standard formula for early/mid-game spells
   // Roll base damage/heal
   const baseNotation = isHeal ? spell.baseHeal : spell.baseDamage
   if (!baseNotation) return 0
@@ -212,7 +237,7 @@ export function calculateSpellPower(
   // Calculate bonus from level (level / 3)
   const levelBonus = Math.floor(character.level / 3) * scaling
 
-  let finalPower = Math.max(1, basePower + statBonus + levelBonus)
+  finalPower = Math.max(1, basePower + statBonus + levelBonus)
 
   // Apply spell power bonus from equipped weapon (staves)
   const weapon = character.equipment.weapon
@@ -255,6 +280,25 @@ export function selectAOETargets(game: GameState, maxTargets: number): Monster[]
 
   // Return up to maxTargets
   return visibleMonsters.slice(0, maxTargets)
+}
+
+/**
+ * Select ALL visible monsters for LOS (line-of-sight) spells
+ * Optionally filter to only evil monsters
+ */
+export function selectLOSTargets(game: GameState, onlyEvil: boolean = false): Monster[] {
+  // Get all visible monsters
+  const visibleMonsters = game.monsters.filter((monster) => {
+    const tile = getTile(game.currentLevel, monster.position.x, monster.position.y)
+    if (!tile?.visible || monster.hp <= 0) return false
+
+    // Filter to only evil if required
+    if (onlyEvil && !monster.template.flags.includes('EVIL')) return false
+
+    return true
+  })
+
+  return visibleMonsters
 }
 
 /**
@@ -549,12 +593,17 @@ function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: strin
     damage *= 2
   }
 
-  // Apply monster resistance/immunity
-  const resistResult = applyMonsterResistance(damage, target, spell.damageType)
+  // Apply monster resistance/immunity (unless unresistable)
+  const resistResult = applyMonsterResistance(
+    damage,
+    target,
+    spell.damageType,
+    spell.unresistable ?? false
+  )
   damage = resistResult.damage
 
   // Apply debuff if spell has one
-  if (spell.debuff) {
+  if (spell.debuff && damage > 0) {
     applyMonsterDebuff(target, spell.debuff.type, spell.debuff.value, spell.debuff.duration)
   }
 
@@ -570,10 +619,12 @@ function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: strin
 
   // Build result message
   let resultStr = ''
-  if (resistResult.isImmune) {
-    resultStr = ` ${target.template.name} is immune!`
-  } else if (resistResult.isResistant) {
-    resultStr = ` ${target.template.name} resists!`
+  if (!spell.unresistable) {
+    if (resistResult.isImmune) {
+      resultStr = ` ${target.template.name} is immune!`
+    } else if (resistResult.isResistant) {
+      resultStr = ` ${target.template.name} resists!`
+    }
   }
   const killedStr = killed ? ' It dies!' : ''
   return {
@@ -655,13 +706,25 @@ function castBeamSpell(
 
 /**
  * Cast an AOE damage spell
+ * Supports standard AOE (nearest N targets) and LOS (all visible targets)
  */
 function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult {
-  const maxTargets = spell.maxTargets ?? 3
-  const targets = selectAOETargets(game, maxTargets)
+  // Select targets based on targeting mode
+  let targets: Monster[]
+  if (spell.targetMode === 'los') {
+    // Line of sight: hit ALL visible enemies (optionally filtered to evil only)
+    targets = selectLOSTargets(game, spell.onlyEvil ?? false)
+  } else {
+    // Standard AOE: hit up to maxTargets nearest enemies
+    const maxTargets = spell.maxTargets ?? 3
+    targets = selectAOETargets(game, maxTargets)
+  }
 
   if (targets.length === 0) {
-    return { success: true, message: `You cast ${spell.name}, but there are no targets.` }
+    const noTargetMsg = spell.onlyEvil
+      ? `You cast ${spell.name}, but there are no evil creatures in sight.`
+      : `You cast ${spell.name}, but there are no targets.`
+    return { success: true, message: noTargetMsg }
   }
 
   let totalDamage = 0
@@ -688,11 +751,21 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
       damage *= 2
     }
 
-    // Apply monster resistance/immunity
-    const resistResult = applyMonsterResistance(damage, target, spell.damageType)
+    // Apply monster resistance/immunity (unless unresistable)
+    const resistResult = applyMonsterResistance(
+      damage,
+      target,
+      spell.damageType,
+      spell.unresistable ?? false
+    )
     damage = resistResult.damage
     if (resistResult.isImmune) immuneCount++
     if (resistResult.isResistant) resistCount++
+
+    // Apply debuff if spell has one (e.g., Ice Storm's slow)
+    if (spell.debuff && damage > 0) {
+      applyMonsterDebuff(target, spell.debuff.type, spell.debuff.value, spell.debuff.duration)
+    }
 
     // Apply damage
     const killed = applyDamage(target, damage)
@@ -724,12 +797,22 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
   }
 
   // Build result message
-  const resistStr =
-    immuneCount > 0 ? ` (${immuneCount} immune)` : resistCount > 0 ? ` (${resistCount} resist)` : ''
+  let resistStr = ''
+  if (!spell.unresistable) {
+    resistStr =
+      immuneCount > 0
+        ? ` (${immuneCount} immune)`
+        : resistCount > 0
+          ? ` (${resistCount} resist)`
+          : ''
+  }
   const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
+  const drainStr = spell.drainPercent
+    ? ` You drain ${Math.floor((totalDamage * spell.drainPercent) / 100)} HP.`
+    : ''
   return {
     success: true,
-    message: `You cast ${spell.name} hitting ${targets.length} enemies for ${totalDamage} total damage.${resistStr}${killedStr}`,
+    message: `You cast ${spell.name} hitting ${targets.length} enemies for ${totalDamage} total damage.${resistStr}${killedStr}${drainStr}`,
     damage: totalDamage,
     targets: targetIds,
     events,
@@ -738,23 +821,51 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
 
 /**
  * Cast a healing spell
+ * Supports standard healing, full heal (Restoration), and cure all effects
  */
 function castHealSpell(game: GameState, spell: SpellTemplate): ActionResult {
-  const healAmount = calculateSpellPower(game.character, spell, true)
   const oldHp = game.character.hp
+  let actualHeal: number
 
-  game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
-  const actualHeal = game.character.hp - oldHp
+  if (spell.fullHeal) {
+    // Full heal (Restoration) - restore to max HP
+    game.character.hp = game.character.maxHp
+    actualHeal = game.character.hp - oldHp
+  } else {
+    // Standard healing with spell power calculation
+    const healAmount = calculateSpellPower(game.character, spell, true)
+    game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
+    actualHeal = game.character.hp - oldHp
+  }
+
+  const effects: string[] = []
 
   // Cure poison if applicable
   if (spell.curesPoison && game.character.poison) {
     game.character.poison = null
+    effects.push('Poison cured')
   }
 
-  const poisonStr = spell.curesPoison && game.character.poison === null ? ' Poison cured!' : ''
+  // Cure all negative status effects (Restoration)
+  if (spell.curesAll) {
+    // Clear all negative status effects
+    const negativeEffects = ['confusion', 'blindness', 'fear', 'paralysis', 'slow']
+    const hadEffects = game.character.statusEffects.some((e) =>
+      negativeEffects.includes(e.type as string)
+    )
+    game.character.statusEffects = game.character.statusEffects.filter(
+      (e) => !negativeEffects.includes(e.type as string)
+    )
+    if (hadEffects) {
+      effects.push('Status ailments cured')
+    }
+  }
+
+  const effectStr = effects.length > 0 ? ` ${effects.join('. ')}.` : ''
+  const healStr = spell.fullHeal ? 'fully restored' : `heal ${actualHeal} HP`
   return {
     success: true,
-    message: `You cast ${spell.name} and heal ${actualHeal} HP.${poisonStr}`,
+    message: `You cast ${spell.name} and ${healStr}.${effectStr}`,
     healed: actualHeal,
   }
 }
@@ -900,8 +1011,14 @@ function castTeleportSpell(game: GameState, spell: SpellTemplate): ActionResult 
 
 /**
  * Cast a summon spell to create a minion
+ * Supports single summons and multi-summons (Summon Pack)
  */
 function castSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
+  // Handle multi-summon spells (Summon Pack)
+  if (spell.summonIds && spell.summonIds.length > 0) {
+    return castMultiSummonSpell(game, spell)
+  }
+
   // Determine minion type from spell
   let minionType: MinionType
   if (spell.id === 'summon_wolf') {
@@ -914,6 +1031,44 @@ function castSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
     return { success: false, message: 'Unknown summon spell.' }
   }
 
+  return summonMinion(game, minionType)
+}
+
+/**
+ * Cast a multi-summon spell (e.g., Summon Pack summons wolf + bear)
+ */
+function castMultiSummonSpell(game: GameState, spell: SpellTemplate): ActionResult {
+  const results: string[] = []
+
+  for (const summonId of spell.summonIds!) {
+    // Map spell ID to minion type
+    let minionType: MinionType | null = null
+    if (summonId === 'summon_wolf') minionType = 'wolf'
+    else if (summonId === 'summon_bear') minionType = 'bear'
+    else if (summonId === 'summon_skeleton') minionType = 'skeleton'
+
+    if (minionType) {
+      const result = summonMinion(game, minionType)
+      if (result.success && result.message) {
+        results.push(result.message)
+      }
+    }
+  }
+
+  if (results.length === 0) {
+    return { success: false, message: 'No room to summon!' }
+  }
+
+  return {
+    success: true,
+    message: `You cast ${spell.name}! ${results.join(' ')}`,
+  }
+}
+
+/**
+ * Summon a single minion of the given type
+ */
+function summonMinion(game: GameState, minionType: MinionType): ActionResult {
   const template = MINION_TEMPLATES[minionType]
 
   // Calculate scaled HP for minions that scale with level

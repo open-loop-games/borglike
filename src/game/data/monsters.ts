@@ -807,7 +807,6 @@ export const monsters: MonsterTemplate[] = [
       { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'POISON' } },
       { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'POISON' } },
       { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'POISON' } },
-      { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'POISON' } },
     ],
     immune: ['POISON'],
   },

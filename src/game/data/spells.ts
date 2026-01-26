@@ -25,6 +25,12 @@ export interface SpellDebuff {
   duration: number // in turns
 }
 
+/** Level-based damage scaling for late-game spells */
+export interface LevelDamage {
+  base: number // flat base damage
+  perLevel: number // bonus per character level
+}
+
 /** Spell template definition */
 export interface SpellTemplate {
   id: string
@@ -41,13 +47,21 @@ export interface SpellTemplate {
   damageScaling?: number // bonus damage per level/3 (default 1)
   damageType?: SpellDamageType
 
+  // Late-game damage scaling (replaces baseDamage for endgame spells)
+  levelDamage?: LevelDamage // base + perLevel * characterLevel
+
   // AOE spells
   maxTargets?: number // for aoe_damage
+
+  // Targeting mode
+  targetMode?: 'single' | 'nearest' | 'aoe' | 'los' // los = line of sight (all visible)
 
   // Heal spells
   baseHeal?: string // dice notation
   healScaling?: number // bonus heal per level/2 (default 1)
   curesPoison?: boolean
+  fullHeal?: boolean // heals to full HP (for Restoration)
+  curesAll?: boolean // cures all negative status effects
 
   // Buff spells
   buff?: SpellBuff
@@ -63,7 +77,12 @@ export interface SpellTemplate {
 
   // Special flags
   doubleVsEvil?: boolean // 2x damage vs evil monsters
+  onlyEvil?: boolean // only damages evil monsters (Divine Wrath)
   canBeam?: boolean // Bolt spell that can become a beam at higher levels
+  unresistable?: boolean // bypasses all resistances/immunities
+
+  // Multi-summon
+  summonIds?: string[] // for spells that summon multiple minions
 }
 
 // ============================================================================
@@ -535,12 +554,169 @@ const soul_rend: SpellTemplate = {
 }
 
 // ============================================================================
+// LATE-GAME ARCANE SPELLS (L35-45)
+// ============================================================================
+
+const arcane_torrent: SpellTemplate = {
+  id: 'arcane_torrent',
+  name: 'Arcane Torrent',
+  school: 'arcane',
+  level: 35,
+  manaCost: 25,
+  cooldown: 3,
+  effectType: 'aoe_damage',
+  levelDamage: { base: 12, perLevel: 1 }, // 12 + level = 62 at L50
+  damageType: 'arcane',
+  targetMode: 'los', // hits ALL visible enemies
+  description: 'A torrent of arcane energy strikes all visible foes.',
+}
+
+const meteor: SpellTemplate = {
+  id: 'meteor',
+  name: 'Meteor',
+  school: 'arcane',
+  level: 40,
+  manaCost: 30,
+  cooldown: 4,
+  effectType: 'damage',
+  levelDamage: { base: 30, perLevel: 2 }, // 30 + level*2 = 130 at L50
+  damageType: 'fire',
+  description: 'Call down a devastating meteor on your foe.',
+}
+
+const mana_storm: SpellTemplate = {
+  id: 'mana_storm',
+  name: 'Mana Storm',
+  school: 'arcane',
+  level: 45,
+  manaCost: 40,
+  cooldown: 8,
+  effectType: 'aoe_damage',
+  levelDamage: { base: 50, perLevel: 2 }, // 50 + level*2 = 150 at L50
+  damageType: 'arcane',
+  maxTargets: 5,
+  unresistable: true,
+  description: 'A storm of pure mana devastates all nearby foes. Unresistable.',
+}
+
+// ============================================================================
+// LATE-GAME DIVINE SPELLS (L40-45)
+// ============================================================================
+
+const divine_wrath: SpellTemplate = {
+  id: 'divine_wrath',
+  name: 'Divine Wrath',
+  school: 'divine',
+  level: 40,
+  manaCost: 35,
+  cooldown: 6,
+  effectType: 'aoe_damage',
+  levelDamage: { base: 20, perLevel: 2 }, // 20 + level*2 = 120 at L50
+  damageType: 'holy',
+  targetMode: 'los', // hits ALL visible enemies
+  onlyEvil: true, // only damages evil monsters
+  description: 'Holy wrath smites all evil creatures in sight.',
+}
+
+const restoration: SpellTemplate = {
+  id: 'restoration',
+  name: 'Restoration',
+  school: 'divine',
+  level: 45,
+  manaCost: 50,
+  cooldown: 20,
+  effectType: 'heal',
+  fullHeal: true, // heals to full HP
+  curesPoison: true,
+  curesAll: true, // removes all negative effects
+  description: 'Divine power fully restores your body and spirit.',
+}
+
+// ============================================================================
+// LATE-GAME NATURE SPELLS (L35-42)
+// ============================================================================
+
+const ice_storm: SpellTemplate = {
+  id: 'ice_storm',
+  name: 'Ice Storm',
+  school: 'nature',
+  level: 35,
+  manaCost: 30,
+  cooldown: 5,
+  effectType: 'aoe_damage',
+  levelDamage: { base: 15, perLevel: 1 }, // 15 + level = 65 at L50
+  damageType: 'cold',
+  targetMode: 'los', // hits ALL visible enemies
+  debuff: { type: 'slow', value: 50, duration: 5 }, // slows all targets
+  description: 'A freezing storm strikes all visible enemies, slowing them.',
+}
+
+const volcanic_eruption: SpellTemplate = {
+  id: 'volcanic_eruption',
+  name: 'Volcanic Eruption',
+  school: 'nature',
+  level: 42,
+  manaCost: 40,
+  cooldown: 8,
+  effectType: 'aoe_damage',
+  levelDamage: { base: 25, perLevel: 2 }, // 25 + level*2 = 125 at L50
+  damageType: 'fire',
+  maxTargets: 6,
+  description: 'The earth erupts in fire, scorching all nearby foes.',
+}
+
+const summon_pack: SpellTemplate = {
+  id: 'summon_pack',
+  name: 'Summon Pack',
+  school: 'nature',
+  level: 32,
+  manaCost: 25,
+  cooldown: 30,
+  effectType: 'summon',
+  summonIds: ['summon_wolf', 'summon_bear'], // summons both
+  description: 'Call your wolf and bear companions together.',
+}
+
+// ============================================================================
+// LATE-GAME SHADOW SPELLS (L35-42)
+// ============================================================================
+
+const mass_drain: SpellTemplate = {
+  id: 'mass_drain',
+  name: 'Mass Drain',
+  school: 'shadow',
+  level: 35,
+  manaCost: 30,
+  cooldown: 5,
+  effectType: 'aoe_damage',
+  levelDamage: { base: 15, perLevel: 1 }, // 15 + level = 65 at L50
+  damageType: 'dark',
+  maxTargets: 4,
+  drainPercent: 50, // heals 50% of all damage dealt
+  description: 'Drain life from multiple enemies, healing yourself.',
+}
+
+const storm_of_darkness: SpellTemplate = {
+  id: 'storm_of_darkness',
+  name: 'Storm of Darkness',
+  school: 'shadow',
+  level: 42,
+  manaCost: 35,
+  cooldown: 6,
+  effectType: 'aoe_damage',
+  levelDamage: { base: 25, perLevel: 2 }, // 25 + level*2 = 125 at L50
+  damageType: 'dark',
+  maxTargets: 5,
+  description: 'A storm of darkness engulfs your enemies.',
+}
+
+// ============================================================================
 // SPELL COLLECTION
 // ============================================================================
 
 /** All spells in the game, indexed by ID */
 export const SPELLS: Record<string, SpellTemplate> = {
-  // Arcane
+  // Arcane (early/mid)
   magic_missile,
   frost_bolt,
   phase_door,
@@ -550,7 +726,11 @@ export const SPELLS: Record<string, SpellTemplate> = {
   mage_armor,
   light_orb,
   slow_monster,
-  // Divine
+  // Arcane (late-game)
+  arcane_torrent,
+  meteor,
+  mana_storm,
+  // Divine (early/mid)
   minor_heal,
   bless,
   cure_wounds,
@@ -559,7 +739,10 @@ export const SPELLS: Record<string, SpellTemplate> = {
   protection_from_evil,
   sanctuary,
   holy_word,
-  // Nature
+  // Divine (late-game)
+  divine_wrath,
+  restoration,
+  // Nature (early/mid)
   entangle,
   natures_balm,
   thorn_strike,
@@ -570,7 +753,11 @@ export const SPELLS: Record<string, SpellTemplate> = {
   hunters_mark,
   camouflage,
   summon_bear,
-  // Shadow
+  // Nature (late-game)
+  ice_storm,
+  volcanic_eruption,
+  summon_pack,
+  // Shadow (early/mid)
   drain_life,
   shadow_sight,
   shadow_bolt,
@@ -578,6 +765,9 @@ export const SPELLS: Record<string, SpellTemplate> = {
   dark_pact,
   soul_rend,
   summon_skeleton,
+  // Shadow (late-game)
+  mass_drain,
+  storm_of_darkness,
 }
 
 /** All spells as an array */
