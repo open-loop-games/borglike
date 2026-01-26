@@ -136,7 +136,7 @@ export const MERCHANTS: MerchantTemplate[] = [
     priceMultiplier: 1.8,
     sellMultiplier: 0.3,
     inventorySize: [10, 15],
-    tierRange: [1, 2],
+    tierRange: [1, 4], // T4 Healing potions needed for depth 30+ survival
     minDepth: 0,
     baseGold: 2000,
     dialogue: {

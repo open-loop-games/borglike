@@ -131,7 +131,7 @@ const HEALING_POTION_TIERS = POTIONS.filter(
  * - Depth 1-4:  T1 (Cure Light, minDepth 1)
  * - Depth 5-11: T2 (Cure Serious, minDepth 5)
  * - Depth 12-29: T3 (Cure Critical, minDepth 12)
- * - Depth 30+:  T4 (Healing, minDepth 30)
+ * - Depth 30+:  T4 (Healing, minDepth 30) - now available in town shops
  */
 export function getRequiredHealingTier(depth: number): number {
   let requiredTier = 1
@@ -484,7 +484,8 @@ function getClassLevelOffset(tier: ClassTier): number {
 export function getMinLevel(depth: number, classId?: string): number {
   const tier = classId ? getClassTier(classId) : 'MEDIUM'
   const offset = getClassLevelOffset(tier)
-  return Math.max(1, depth + offset)
+  // Cap at 50 (max level) - SQUISHY classes can't reach level 55 for depth 50
+  return Math.min(50, Math.max(1, depth + offset))
 }
 
 /**

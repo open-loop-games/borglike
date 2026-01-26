@@ -1127,7 +1127,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 3,
     weight: 4,
-    effect: 'Heal 60 HP, cure all status',
+    effect: 'Heal 60+ HP (scales), cure all status', // 60 + level*4, L50: 260 HP
     minDepth: 12,
   },
   {

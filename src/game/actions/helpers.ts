@@ -42,10 +42,11 @@ export function addMessage(game: GameState, text: string, type: GameMessage['typ
  */
 export function getHealAmount(effect: string, level: number): number {
   // Parse effect string for heal amounts
-  if (effect.includes('Light')) return 10 + level
-  if (effect.includes('Serious')) return 25 + level * 2
-  if (effect.includes('Critical')) return 50 + level * 3
-  if (effect.includes('Healing')) return 100 + level * 5
+  // Formulas scale with level to stay relevant in late game
+  if (effect.includes('Light')) return 10 + level // L50: 60 HP
+  if (effect.includes('Serious')) return 25 + level * 2 // L50: 125 HP
+  if (effect.includes('Critical')) return 60 + level * 4 // L50: 260 HP (buffed from 50+3*L)
+  if (effect.includes('Healing')) return 100 + level * 5 // L50: 350 HP
   if (effect.includes('*Healing*')) return Math.floor(level * 10)
   return 20 + level // Default
 }
