@@ -5,14 +5,7 @@
  * Used by game-loop, spell-resolution, and other modules.
  */
 
-import type {
-  Character,
-  StatusEffect,
-  TempResistance,
-  PoisonStatus,
-  GameState,
-  GameMessage,
-} from './types'
+import type { Character, StatusEffect, TempResistance, GameState, GameMessage } from './types'
 
 // ============================================================================
 // STATUS EFFECTS
@@ -126,21 +119,30 @@ export function tickTempResistances(character: Character): TempResistance['type'
 }
 
 // ============================================================================
-// POISON
+// POISON (now uses standard StatusEffect with type 'poisoned')
 // ============================================================================
 
 /**
- * Apply poison to a character
+ * Apply poison to a character (damagePerTurn stored in value field)
+ * If already poisoned, takes the worse of the two (max damage, max duration)
  */
-export function applyPoison(character: Character, poison: PoisonStatus): void {
-  // If already poisoned, take the worse of the two
-  if (character.poison) {
-    character.poison = {
-      damagePerTurn: Math.max(character.poison.damagePerTurn, poison.damagePerTurn),
-      turnsRemaining: Math.max(character.poison.turnsRemaining, poison.turnsRemaining),
-    }
+export function applyPoison(
+  character: Character,
+  damagePerTurn: number,
+  turnsRemaining: number
+): void {
+  const existing = getStatusEffect(character, 'poisoned')
+
+  if (existing) {
+    // Take the worse of the two
+    existing.value = Math.max(existing.value, damagePerTurn)
+    existing.turnsRemaining = Math.max(existing.turnsRemaining, turnsRemaining)
   } else {
-    character.poison = { ...poison }
+    addStatusEffect(character, {
+      type: 'poisoned',
+      value: damagePerTurn,
+      turnsRemaining,
+    })
   }
 }
 
@@ -148,32 +150,30 @@ export function applyPoison(character: Character, poison: PoisonStatus): void {
  * Clear poison from a character
  */
 export function clearPoison(character: Character): void {
-  character.poison = null
+  removeStatusEffect(character, 'poisoned')
 }
 
 /**
  * Check if character is poisoned
  */
 export function isPoisoned(character: Character): boolean {
-  return character.poison !== null
+  return hasStatusEffect(character, 'poisoned')
 }
 
 /**
- * Process poison damage and tick down duration
- * Returns damage dealt (0 if not poisoned)
+ * Get poison damage per turn (0 if not poisoned)
  */
-export function tickPoison(character: Character): number {
-  const poison = character.poison
-  if (!poison) return 0
+export function getPoisonDamage(character: Character): number {
+  const poison = getStatusEffect(character, 'poisoned')
+  return poison?.value ?? 0
+}
 
-  const damage = poison.damagePerTurn
-
-  poison.turnsRemaining--
-  if (poison.turnsRemaining <= 0) {
-    character.poison = null
-  }
-
-  return damage
+/**
+ * Get poison turns remaining (0 if not poisoned)
+ */
+export function getPoisonTurnsRemaining(character: Character): number {
+  const poison = getStatusEffect(character, 'poisoned')
+  return poison?.turnsRemaining ?? 0
 }
 
 // ============================================================================
@@ -183,23 +183,18 @@ export function tickPoison(character: Character): number {
 /**
  * Process poison damage on a character within game context
  * Handles damage application, death check, and messaging
+ * Note: Duration tick is handled by tickStatusEffects()
  */
 export function processPoison(
   game: GameState,
   addMessage: (game: GameState, text: string, type: GameMessage['type']) => void
 ): void {
-  const poison = game.character.poison
+  const poison = getStatusEffect(game.character, 'poisoned')
   if (!poison) return
 
-  const damage = poison.damagePerTurn
+  const damage = poison.value
   game.character.hp -= damage
   addMessage(game, `You suffer ${damage} poison damage!`, 'danger')
-
-  poison.turnsRemaining--
-  if (poison.turnsRemaining <= 0) {
-    game.character.poison = null
-    addMessage(game, 'The poison wears off.', 'info')
-  }
 
   // Check for death from poison
   if (game.character.hp <= 0) {
@@ -208,11 +203,24 @@ export function processPoison(
   }
 }
 
+/**
+ * Called after tickStatusEffects to check if poison just expired
+ */
+export function checkPoisonExpired(
+  expired: StatusEffect['type'][],
+  game: GameState,
+  addMessage: (game: GameState, text: string, type: GameMessage['type']) => void
+): void {
+  if (expired.includes('poisoned')) {
+    addMessage(game, 'The poison wears off.', 'info')
+  }
+}
+
 // ============================================================================
 // DEBUFF STATUS EFFECTS
 // ============================================================================
 
-/** List of debuff status types */
+/** List of debuff status types (including poisoned) */
 export const DEBUFF_TYPES: StatusEffect['type'][] = [
   'blind',
   'confused',
@@ -220,6 +228,7 @@ export const DEBUFF_TYPES: StatusEffect['type'][] = [
   'slowed',
   'terrified',
   'drained',
+  'poisoned',
 ]
 
 /**

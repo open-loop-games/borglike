@@ -1,7 +1,7 @@
 /**
  * Consumable Action Handlers for Borglike
  *
- * Handles item use (potions, scrolls, etc.) with an effect registry pattern.
+ * Handles item use (potions, scrolls, etc.) using structured item data.
  */
 
 import type { GameState, ActionResult, Item } from '../types'
@@ -14,7 +14,6 @@ import {
   clearPoison,
   removeStatusEffect,
   removeAllDebuffs,
-  hasStatusEffect,
 } from '../status-effects'
 import { createTownPortal, enterTown, isInTown } from '../town'
 import { addMessage, BASE_ENERGY_COST, getHealAmount } from './helpers'
@@ -39,223 +38,95 @@ interface EffectResult {
 // POTION EFFECTS
 // ============================================================================
 
-/** Registry of potion effects by keyword in effect description */
-const POTION_EFFECTS: Array<{
-  match: (effect: string) => boolean
-  apply: ConsumableEffect
-}> = [
-  // Free Action - cure paralysis and slow
-  {
-    match: (e) =>
-      e.toLowerCase().includes('cure paralysis') || e.toLowerCase().includes('free action'),
-    apply: (game) => {
-      const curedParalyzed = hasStatusEffect(game.character, 'paralyzed')
-      const curedSlowed = hasStatusEffect(game.character, 'slowed')
-      removeStatusEffect(game.character, 'paralyzed')
-      removeStatusEffect(game.character, 'slowed')
-      let message = 'You feel free to move!'
-      if (curedParalyzed) message = 'The paralysis wears off! You feel free to move!'
-      if (curedSlowed) message = 'You feel quick again!'
-      return { success: true, message }
-    },
-  },
-  // Clarity - cure confusion and blind
-  {
-    match: (e) => e.toLowerCase().includes('cure confusion') || e.toLowerCase().includes('clarity'),
-    apply: (game) => {
-      const curedConfused = hasStatusEffect(game.character, 'confused')
-      const curedBlind = hasStatusEffect(game.character, 'blind')
-      removeStatusEffect(game.character, 'confused')
-      removeStatusEffect(game.character, 'blind')
-      let message = 'Your mind clears!'
-      if (curedBlind) message = 'Your sight returns!'
-      if (curedConfused) message = 'Your confusion fades!'
-      return { success: true, message }
-    },
-  },
-  // Restoration - cure drain, restore stats
-  {
-    match: (e) => e.toLowerCase().includes('cure drain') || e.toLowerCase().includes('restoration'),
-    apply: (game) => {
-      const curedDrained = hasStatusEffect(game.character, 'drained')
-      removeStatusEffect(game.character, 'drained')
-      const message = curedDrained ? 'You feel your strength return!' : 'You feel restored!'
-      return { success: true, message }
-    },
-  },
-  // Purity - cure all ailments (debuffs + poison)
-  {
-    match: (e) => e.toLowerCase().includes('purity') || e.toLowerCase().includes('all ailments'),
-    apply: (game) => {
-      const debuffTypes: (
-        | 'blind'
-        | 'confused'
-        | 'paralyzed'
-        | 'slowed'
-        | 'terrified'
-        | 'drained'
-      )[] = ['blind', 'confused', 'paralyzed', 'slowed', 'terrified', 'drained']
-      const cured: string[] = []
+/** Resistance duration for temp resistance potions */
+const RESISTANCE_DURATION = 40
+const RESISTANCE_VALUE = 50
 
-      for (const type of debuffTypes) {
-        if (hasStatusEffect(game.character, type)) {
-          removeStatusEffect(game.character, type)
-          cured.push(type)
-        }
-      }
+/**
+ * Apply potion effects using structured item data
+ * No more string parsing - all data comes from ItemTemplate fields
+ */
+function applyPotionEffect(game: GameState, item: Item): EffectResult {
+  const template = item.template
+  const character = game.character
+  const messages: string[] = []
 
-      // Also cure poison
-      if (game.character.poison) {
-        game.character.poison = null
-        cured.push('poison')
-      }
+  // 1. Apply healing
+  if (template.healBase !== undefined || template.healPerLevel !== undefined) {
+    const healAmount = getHealAmount(template, character.level)
+    character.hp = Math.min(character.hp + healAmount, character.maxHp)
+    messages.push('You feel better')
+  }
 
-      if (cured.length === 0) {
-        return { success: true, message: 'You feel pure, but nothing changes.' }
-      }
-      return { success: true, message: `You are cured of ${cured.join(', ')}!` }
-    },
-  },
-  // Healing potions - cure status based on tier + heal
-  {
-    match: (e) => e.includes('Cure') || e.includes('Heal'),
-    apply: (game, item) => {
-      const effect = item.template.effect || ''
-      const healAmount = getHealAmount(effect, game.character.level)
-      game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
+  // 2. Cure status effects
+  if (template.curesAll) {
+    const removed = removeAllDebuffs(character)
+    clearPoison(character)
+    if (removed.length > 0) {
+      messages.push('your ailments fade')
+    }
+  } else if (template.cures && template.cures.length > 0) {
+    // All curable statuses are now proper StatusEffectTypes (including 'poisoned')
+    for (const status of template.cures) {
+      removeStatusEffect(character, status)
+    }
+  }
 
-      // Cure status effects based on potion type (from cure matrix)
-      // Cure Light: cure blind
-      // Cure Serious: cure blind, confusion
-      // Cure Critical / Healing: cure all status
-      if (
-        effect.toLowerCase().includes('cure all status') ||
-        effect.toLowerCase().includes('healing')
-      ) {
-        // Full healing potions cure all debuffs
-        const removed = removeAllDebuffs(game.character)
-        clearPoison(game.character)
-        if (removed.length > 0) {
-          return {
-            success: true,
-            message: `You drink the ${item.template.name}. You feel much better!`,
-          }
-        }
-      } else if (effect.toLowerCase().includes('critical')) {
-        // Cure Critical cures all debuffs
-        const removed = removeAllDebuffs(game.character)
-        clearPoison(game.character)
-        if (removed.length > 0) {
-          return {
-            success: true,
-            message: `You drink the ${item.template.name}. Your ailments fade!`,
-          }
-        }
-      } else if (effect.toLowerCase().includes('serious')) {
-        // Cure Serious cures blind and confusion
-        removeStatusEffect(game.character, 'blind')
-        removeStatusEffect(game.character, 'confused')
-      } else if (effect.toLowerCase().includes('light')) {
-        // Cure Light only cures blind
-        removeStatusEffect(game.character, 'blind')
-      }
+  // 3. Apply buff
+  if (template.buff) {
+    const duration = randomInt(template.buff.durationMin, template.buff.durationMax)
+    addStatusEffect(character, {
+      type: template.buff.type,
+      turnsRemaining: duration,
+      value: template.buff.value,
+    })
+    switch (template.buff.type) {
+      case 'speed':
+        messages.push('you feel yourself moving faster')
+        break
+      case 'heroism':
+        messages.push('you feel like a hero')
+        break
+      case 'berserk':
+        messages.push('you feel a berserker rage')
+        break
+    }
+  }
 
-      return {
-        success: true,
-        message: `You drink the ${item.template.name}. You feel better!`,
-      }
-    },
-  },
+  // 4. Grant temporary resistance
+  if (template.grantsResistance) {
+    addTempResistance(character, {
+      type: template.grantsResistance,
+      turnsRemaining: RESISTANCE_DURATION,
+      value: RESISTANCE_VALUE,
+    })
+    const resistName = template.grantsResistance.toLowerCase()
+    messages.push(`you feel resistant to ${resistName}`)
+  }
 
-  // Restore mana
-  {
-    match: (e) => e.includes('Restore'),
-    apply: (game, item) => {
-      game.character.mp = game.character.maxMp
-      return {
-        success: true,
-        message: `You drink the ${item.template.name}. You feel restored!`,
-      }
-    },
-  },
+  // 5. Restore mana
+  if (template.restoresMana) {
+    character.mp = character.maxMp
+    messages.push('your mana is restored')
+  }
 
-  // Speed potion (Haste)
-  {
-    match: (e) => e.includes('Haste') || e.includes('+10 speed'),
-    apply: (game) => {
-      const duration = randomInt(20, 39)
-      addStatusEffect(game.character, { type: 'speed', turnsRemaining: duration, value: 10 })
-      return { success: true, message: 'You feel yourself moving faster!' }
-    },
-  },
+  // Build message
+  let message: string
+  if (messages.length === 0) {
+    message = `You drink the ${template.name}.`
+  } else if (messages.length === 1) {
+    message = `You drink the ${template.name}. ${capitalize(messages[0]!)}!`
+  } else {
+    const last = messages.pop()!
+    message = `You drink the ${template.name}. ${capitalize(messages.join(', '))} and ${last}!`
+  }
 
-  // Heroism potion (+12 to hit, cure fear)
-  {
-    match: (e) => e.includes('+12 to hit'),
-    apply: (game, item) => {
-      const effect = item.template.effect || ''
-      const duration = randomInt(25, 49)
-      addStatusEffect(game.character, { type: 'heroism', turnsRemaining: duration, value: 12 })
-      // Heroism cures fear/terrified
-      removeStatusEffect(game.character, 'terrified')
-      // Small heal from heroism
-      if (effect.includes('Heal 10')) {
-        game.character.hp = Math.min(game.character.hp + 10, game.character.maxHp)
-      }
-      return { success: true, message: 'You feel like a hero!' }
-    },
-  },
+  return { success: true, message }
+}
 
-  // Berserk Strength potion (cure fear)
-  {
-    match: (e) => e.includes('berserk'),
-    apply: (game, item) => {
-      const effect = item.template.effect || ''
-      const duration = randomInt(25, 49)
-      addStatusEffect(game.character, { type: 'berserk', turnsRemaining: duration, value: 24 })
-      // Berserk cures fear/terrified
-      removeStatusEffect(game.character, 'terrified')
-      // Berserk also heals 30 HP
-      if (effect.includes('Heal 30')) {
-        game.character.hp = Math.min(game.character.hp + 30, game.character.maxHp)
-      }
-      return { success: true, message: 'You feel a berserker rage!' }
-    },
-  },
-
-  // Resist Heat (fire resistance)
-  {
-    match: (e) => e.includes('fire resistance'),
-    apply: (game) => {
-      addTempResistance(game.character, { type: 'FIRE', turnsRemaining: 40, value: 50 })
-      return { success: true, message: 'You feel resistant to fire!' }
-    },
-  },
-
-  // Resist Cold
-  {
-    match: (e) => e.includes('cold resistance'),
-    apply: (game) => {
-      addTempResistance(game.character, { type: 'COLD', turnsRemaining: 40, value: 50 })
-      return { success: true, message: 'You feel resistant to cold!' }
-    },
-  },
-
-  // Resist/Neutralize Poison
-  {
-    match: (e) => e.includes('poison'),
-    apply: (game, item) => {
-      const effect = item.template.effect || ''
-      clearPoison(game.character)
-      let message = 'The poison is purged!'
-      if (effect.includes('resistance')) {
-        addTempResistance(game.character, { type: 'POISON', turnsRemaining: 40, value: 50 })
-        message += ' You feel resistant to poison!'
-      }
-      return { success: true, message }
-    },
-  },
-]
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
 // ============================================================================
 // SCROLL EFFECTS
@@ -492,12 +363,13 @@ export function handleUse(game: GameState, itemId: string): ActionResult {
   }
 
   const effect = item.template.effect || ''
+  const template = item.template
 
-  // VAMPIRE RESTRICTION: Cannot drink healing potions
+  // VAMPIRE RESTRICTION: Cannot drink healing potions (use structured data)
   if (
     game.character.raceId === 'vampire' &&
-    item.template.type === 'potion' &&
-    (effect.includes('Heal') || effect.includes('Cure'))
+    template.type === 'potion' &&
+    (template.healBase !== undefined || template.healPerLevel !== undefined)
   ) {
     return {
       success: false,
@@ -507,7 +379,7 @@ export function handleUse(game: GameState, itemId: string): ActionResult {
   }
 
   // GOLEM RESTRICTION: Cannot use scrolls (no magic)
-  if (game.character.raceId === 'golem' && item.template.type === 'scroll') {
+  if (game.character.raceId === 'golem' && template.type === 'scroll') {
     return {
       success: false,
       message: 'Golems cannot use scrolls.',
@@ -518,20 +390,10 @@ export function handleUse(game: GameState, itemId: string): ActionResult {
   // Apply effect based on item type
   let result: EffectResult | null = null
 
-  if (item.template.type === 'potion') {
-    // Find matching potion effect
-    for (const handler of POTION_EFFECTS) {
-      if (handler.match(effect)) {
-        result = handler.apply(game, item)
-        break
-      }
-    }
-
-    // Default potion message if no specific handler
-    if (!result) {
-      result = { success: true, message: `You drink the ${item.template.name}.` }
-    }
-  } else if (item.template.type === 'scroll') {
+  if (template.type === 'potion') {
+    // Use structured potion data
+    result = applyPotionEffect(game, item)
+  } else if (template.type === 'scroll') {
     // Find matching scroll effect
     for (const handler of SCROLL_EFFECTS) {
       if (handler.match(effect)) {

@@ -286,10 +286,7 @@ function tryInflictPoison(character: Character): 'poison' | null {
 
   // Apply poison: 2% max HP per turn for 5 turns
   const damagePerTurn = Math.max(1, Math.floor(character.maxHp * 0.02))
-  applyPoison(character, {
-    damagePerTurn,
-    turnsRemaining: 5,
-  })
+  applyPoison(character, damagePerTurn, 5)
 
   return 'poison'
 }

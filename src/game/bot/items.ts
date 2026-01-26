@@ -148,11 +148,8 @@ function evaluateConsumable(item: Item, character: Character): ItemEvaluation {
   const isUseful = true
   let reason = template.type === 'potion' ? 'Potion' : 'Scroll'
 
-  // Healing potions are very valuable when HP is low
-  if (
-    template.name.toLowerCase().includes('cure') ||
-    template.name.toLowerCase().includes('healing')
-  ) {
+  // Healing potions are very valuable when HP is low (use structured data)
+  if (template.healBase !== undefined || template.healPerLevel !== undefined) {
     const hpRatio = character.hp / character.maxHp
     if (hpRatio < 0.5) {
       score *= 2
@@ -162,13 +159,13 @@ function evaluateConsumable(item: Item, character: Character): ItemEvaluation {
     }
   }
 
-  // Speed potions are always valuable
-  if (template.name.toLowerCase().includes('speed')) {
+  // Speed potions are always valuable (use structured data)
+  if (template.buff?.type === 'speed') {
     score *= 1.5
     reason = 'Speed buff'
   }
 
-  // Teleport scrolls are valuable for escape
+  // Teleport scrolls are valuable for escape (still use name - scrolls not refactored)
   if (
     template.name.toLowerCase().includes('teleport') ||
     template.name.toLowerCase().includes('phase')
@@ -578,8 +575,8 @@ export function findHealingPotion(character: Character, minTier: number = 1): It
     character.inventory.find((item) => {
       if (item.template.type !== 'potion') return false
       if (item.template.tier < minTier) return false
-      const name = item.template.name.toLowerCase()
-      return name.includes('cure') || name.includes('healing')
+      // Use structured data - any potion with healing
+      return item.template.healBase !== undefined || item.template.healPerLevel !== undefined
     }) ?? null
   )
 }
@@ -645,8 +642,7 @@ export function findSpeedPotion(character: Character): Item | null {
   return (
     character.inventory.find((item) => {
       if (item.template.type !== 'potion') return false
-      const name = item.template.name.toLowerCase()
-      return name.includes('speed')
+      return item.template.buff?.type === 'speed'
     }) ?? null
   )
 }
@@ -658,8 +654,8 @@ export function findBuffPotion(character: Character): Item | null {
   return (
     character.inventory.find((item) => {
       if (item.template.type !== 'potion') return false
-      const name = item.template.name.toLowerCase()
-      return name.includes('heroism') || name.includes('berserk')
+      const buffType = item.template.buff?.type
+      return buffType === 'heroism' || buffType === 'berserk'
     }) ?? null
   )
 }
@@ -671,36 +667,31 @@ export function findResistancePotion(character: Character, damageType?: string):
   return (
     character.inventory.find((item) => {
       if (item.template.type !== 'potion') return false
-      const name = item.template.name.toLowerCase()
-      const effect = (item.template.effect || '').toLowerCase()
+      const grantsResist = item.template.grantsResistance
 
       // If specific type requested, match it
       if (damageType) {
-        const type = damageType.toLowerCase()
-        if (type === 'fire' && (name.includes('heat') || effect.includes('fire'))) return true
-        if (type === 'cold' && (name.includes('cold') || effect.includes('cold'))) return true
-        if (type === 'poison' && name.includes('poison')) return true
-        return false
+        const type = damageType.toUpperCase()
+        return grantsResist === type
       }
 
       // Any resistance potion
-      return (
-        name.includes('resist') &&
-        (name.includes('heat') || name.includes('cold') || name.includes('poison'))
-      )
+      return grantsResist !== undefined
     }) ?? null
   )
 }
 
 /**
- * Find a neutralize poison potion
+ * Find a neutralize poison potion (cures poison but doesn't grant resistance)
  */
 export function findNeutralizePoison(character: Character): Item | null {
   return (
     character.inventory.find((item) => {
       if (item.template.type !== 'potion') return false
-      const name = item.template.name.toLowerCase()
-      return name.includes('neutralize') || (name.includes('poison') && !name.includes('resist'))
+      // Cures poisoned but doesn't grant resistance (Neutralize Poison vs Resist Poison)
+      return (
+        item.template.cures?.includes('poisoned') && item.template.grantsResistance !== 'POISON'
+      )
     }) ?? null
   )
 }
@@ -817,86 +808,56 @@ export function hasTempResistance(character: Character, type: string): boolean {
 // ============================================================================
 
 /**
- * Find a Free Action potion (cures paralysis and slow)
+ * Find a potion that cures a specific status (using structured data)
  */
-export function findFreeActionPotion(character: Character): Item | null {
+function findPotionCuring(character: Character, status: string): Item | null {
   return (
     character.inventory.find((item) => {
       if (item.template.type !== 'potion') return false
-      const name = item.template.name.toLowerCase()
-      return name.includes('free action')
+      // Check curesAll or specific cure
+      return item.template.curesAll || item.template.cures?.includes(status as never)
     }) ?? null
   )
+}
+
+/**
+ * Find a Free Action potion (cures paralysis and slow)
+ */
+export function findFreeActionPotion(character: Character): Item | null {
+  return findPotionCuring(character, 'paralyzed')
 }
 
 /**
  * Find a Clarity potion (cures confusion and blind)
  */
 export function findClarityPotion(character: Character): Item | null {
-  return (
-    character.inventory.find((item) => {
-      if (item.template.type !== 'potion') return false
-      const name = item.template.name.toLowerCase()
-      return name.includes('clarity')
-    }) ?? null
-  )
+  return findPotionCuring(character, 'confused')
 }
 
 /**
  * Find a Restoration potion (cures drain)
  */
 export function findRestorationPotion(character: Character): Item | null {
-  return (
-    character.inventory.find((item) => {
-      if (item.template.type !== 'potion') return false
-      const name = item.template.name.toLowerCase()
-      return name.includes('restoration')
-    }) ?? null
-  )
+  return findPotionCuring(character, 'drained')
 }
 
 /**
  * Find any potion that can cure a specific status effect
- * Checks cure potions first, then general healing potions
+ * Uses structured cures data instead of hardcoded tier logic
  */
 export function findCureFor(character: Character, status: string): Item | null {
-  switch (status) {
-    case 'paralyzed':
-    case 'slowed':
-      // Free Action potion, or Cure Critical/Healing
-      return (
-        findFreeActionPotion(character) ??
-        findHealingPotion(character, 3) ?? // Cure Critical or better
-        null
-      )
-
-    case 'confused':
-    case 'blind':
-      // Clarity potion, or Cure Serious/Critical/Healing
-      return (
-        findClarityPotion(character) ??
-        findHealingPotion(character, 2) ?? // Cure Serious or better
-        null
-      )
-
-    case 'terrified':
-      // Heroism or Berserk potions cure fear
-      return (
-        findBuffPotion(character) ??
-        findHealingPotion(character, 3) ?? // Cure Critical or better
-        null
-      )
-
-    case 'drained':
-      // Restoration potion, or Cure Critical/Healing
-      return findRestorationPotion(character) ?? findHealingPotion(character, 3) ?? null
-
-    case 'poison':
-      return findNeutralizePoison(character) ?? findResistancePotion(character, 'poison') ?? null
-
-    default:
-      return null
+  // For poisoned, also check resistance potions
+  if (status === 'poisoned') {
+    return findPotionCuring(character, 'poisoned') ?? findResistancePotion(character, 'poison')
   }
+
+  // For fear/terrified, buff potions work
+  if (status === 'terrified') {
+    return findPotionCuring(character, 'terrified') ?? findBuffPotion(character)
+  }
+
+  // General case: find any potion that cures this status
+  return findPotionCuring(character, status)
 }
 
 // ============================================================================

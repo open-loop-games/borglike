@@ -215,6 +215,7 @@ export type StatusEffectType =
   | 'slowed'
   | 'terrified'
   | 'drained'
+  | 'poisoned' // DOT effect, value = damage per turn
 
 // ============================================================================
 // MONSTER ATTACK TYPES
@@ -291,12 +292,11 @@ export const STATUS_DURATIONS: Record<string, number> = {
   drained: 10,
 }
 
-/** POISONED status: 2% max HP per turn for 5 turns (handled via PoisonStatus) */
-
 /** A temporary status effect on the character */
 export interface StatusEffect {
   type: StatusEffectType
   turnsRemaining: number
+  /** Effect strength. For 'poisoned', this is damage per turn. */
   value: number
 }
 
@@ -305,12 +305,6 @@ export interface TempResistance {
   type: ResistanceType
   turnsRemaining: number
   value: number
-}
-
-/** Poison damage over time status */
-export interface PoisonStatus {
-  damagePerTurn: number
-  turnsRemaining: number
 }
 
 // ============================================================================
@@ -416,10 +410,9 @@ export interface Character {
   // Resistances (from race + equipment)
   resistances: Resistances
 
-  // Status effects
+  // Status effects (includes 'poisoned' which deals DOT damage)
   statusEffects: StatusEffect[]
   tempResistances: TempResistance[]
-  poison: PoisonStatus | null
 
   // Inventory
   equipment: Equipment

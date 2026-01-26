@@ -17,6 +17,7 @@ import type {
 } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
+import { isPoisoned, getPoisonDamage } from '../status-effects'
 import { getLocalDanger, getTileDanger } from './danger'
 import { isInCombat, countAdjacentMonsters, getCombatAdvantage } from './combat'
 import {
@@ -100,13 +101,14 @@ export function getStatusRetreatUrgency(
   }
 
   // Poison + no cure + HP dropping (HIGH)
-  if (character.poison) {
+  if (isPoisoned(character)) {
     const hasCure =
       findNeutralizePoison(character) !== null || findResistancePotion(character, 'poison') !== null
     const hpDropping = hpRate < 0
+    const poisonDamage = getPoisonDamage(character)
 
-    if (!hasCure && hpDropping && hpRatio < 0.5) {
-      const turnsToLive = character.hp / character.poison.damagePerTurn
+    if (!hasCure && hpDropping && hpRatio < 0.5 && poisonDamage > 0) {
+      const turnsToLive = character.hp / poisonDamage
       if (turnsToLive < 10) {
         return {
           shouldRetreat: true,

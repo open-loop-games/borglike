@@ -585,7 +585,9 @@ function generateAlchemyShopInventory(maxDepthEver: number): Item[] {
   // Utility potions: Speed, Neutralize Poison, Restore Mana
   const utilityPotions = POTIONS.filter(
     (p) =>
-      p.name.includes('Speed') || p.name.includes('Neutralize') || p.name.includes('Restore Mana')
+      p.buff?.type === 'speed' ||
+      (p.cures?.includes('poisoned') && !p.grantsResistance) ||
+      p.restoresMana
   )
   for (const potion of utilityPotions) {
     // More utility potions at higher tiers

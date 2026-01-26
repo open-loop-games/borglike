@@ -24,7 +24,7 @@ import { getSpellIdsForLevel } from './data/class-spells'
 import { applyDamage, calculateSpellDeadliness, applyDeadliness } from './combat'
 import { handleMonsterKill } from './actions/combat'
 import { getTile, findOpenPosition, isWalkable } from './dungeon'
-import { addStatusEffect, addTempResistance } from './status-effects'
+import { addStatusEffect, addTempResistance, clearPoison, isPoisoned } from './status-effects'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 
 // SpellCastResult has been unified into ActionResult in types.ts
@@ -841,8 +841,8 @@ function castHealSpell(game: GameState, spell: SpellTemplate): ActionResult {
   const effects: string[] = []
 
   // Cure poison if applicable
-  if (spell.curesPoison && game.character.poison) {
-    game.character.poison = null
+  if (spell.curesPoison && isPoisoned(game.character)) {
+    clearPoison(game.character)
     effects.push('Poison cured')
   }
 

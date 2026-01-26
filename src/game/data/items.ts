@@ -3,6 +3,22 @@
  * Simplified and organized for Angband-lite roguelike
  */
 
+/** Status effects that can be cured by potions (matches debuff StatusEffectTypes) */
+export type CurableStatus =
+  | 'blind'
+  | 'confused'
+  | 'paralyzed'
+  | 'slowed'
+  | 'terrified'
+  | 'drained'
+  | 'poisoned'
+
+/** Buff types that potions can grant */
+export type PotionBuffType = 'speed' | 'heroism' | 'berserk'
+
+/** Resistance types that potions can grant temporarily */
+export type PotionResistType = 'FIRE' | 'COLD' | 'POISON'
+
 export interface ItemTemplate {
   name: string
   type:
@@ -40,7 +56,7 @@ export interface ItemTemplate {
   damage?: string // dice notation e.g. "2d5"
   protection?: number // AC value
   weight: number // in 0.1 lbs
-  effect?: string // special effect description
+  effect?: string // special effect description (display only for potions)
   minDepth?: number // minimum depth to find
   /** Light radius in tiles (only for light sources) */
   lightRadius?: number
@@ -48,6 +64,27 @@ export interface ItemTemplate {
   spellPower?: number
   /** True for edged weapons (swords, axes, daggers) - priests cannot use */
   isEdged?: boolean
+
+  // ========== Potion-specific fields ==========
+  /** Base HP healed (potions) */
+  healBase?: number
+  /** Additional HP healed per character level (potions) */
+  healPerLevel?: number
+  /** Status effects this potion cures */
+  cures?: CurableStatus[]
+  /** True if potion cures all debuffs */
+  curesAll?: boolean
+  /** Buff granted by this potion */
+  buff?: {
+    type: PotionBuffType
+    value: number
+    durationMin: number
+    durationMax: number
+  }
+  /** Temporary resistance granted */
+  grantsResistance?: PotionResistType
+  /** Restores all mana */
+  restoresMana?: boolean
 }
 
 // ============================================================================
@@ -1105,13 +1142,16 @@ export const LIGHTS: ItemTemplate[] = [
 // ============================================================================
 
 export const POTIONS: ItemTemplate[] = [
-  // Healing Potions (4 tiers)
+  // Healing Potions (4 tiers) - heal amount = healBase + healPerLevel * level
   {
     name: 'Potion of Cure Light Wounds',
     type: 'potion',
     tier: 1,
     weight: 4,
-    effect: 'Heal 20 HP, cure blind',
+    healBase: 10,
+    healPerLevel: 1, // L50: 60 HP
+    cures: ['blind'],
+    effect: 'Heal 10+L HP, cure blind',
     minDepth: 1,
   },
   {
@@ -1119,7 +1159,10 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
-    effect: 'Heal 40 HP, cure blind/cuts/confusion',
+    healBase: 25,
+    healPerLevel: 2, // L50: 125 HP
+    cures: ['blind', 'confused'],
+    effect: 'Heal 25+2L HP, cure blind/confusion',
     minDepth: 5,
   },
   {
@@ -1127,7 +1170,10 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 3,
     weight: 4,
-    effect: 'Heal 60+ HP (scales), cure all status', // 60 + level*4, L50: 260 HP
+    healBase: 60,
+    healPerLevel: 4, // L50: 260 HP
+    curesAll: true,
+    effect: 'Heal 60+4L HP, cure all',
     minDepth: 12,
   },
   {
@@ -1135,7 +1181,10 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 4,
     weight: 4,
-    effect: 'Heal 300 HP, cure all status',
+    healBase: 100,
+    healPerLevel: 5, // L50: 350 HP
+    curesAll: true,
+    effect: 'Heal 100+5L HP, cure all',
     minDepth: 30,
   },
 
@@ -1145,6 +1194,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 3,
     weight: 4,
+    restoresMana: true,
     effect: 'Restore all mana',
     minDepth: 15,
   },
@@ -1155,6 +1205,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    buff: { type: 'speed', value: 10, durationMin: 20, durationMax: 39 },
     effect: 'Haste (+10 speed) for 20-40 turns',
     minDepth: 1,
   },
@@ -1163,6 +1214,9 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    healBase: 10,
+    cures: ['terrified'],
+    buff: { type: 'heroism', value: 12, durationMin: 25, durationMax: 49 },
     effect: 'Heal 10 HP, cure fear, +12 to hit for 25-50 turns',
     minDepth: 1,
   },
@@ -1171,6 +1225,9 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    healBase: 30,
+    cures: ['terrified'],
+    buff: { type: 'berserk', value: 24, durationMin: 25, durationMax: 49 },
     effect: 'Heal 30 HP, cure fear, berserk for 25-50 turns',
     minDepth: 3,
   },
@@ -1181,6 +1238,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    grantsResistance: 'FIRE',
     effect: 'Temporary fire resistance',
     minDepth: 30,
   },
@@ -1189,6 +1247,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    grantsResistance: 'COLD',
     effect: 'Temporary cold resistance',
     minDepth: 30,
   },
@@ -1197,6 +1256,8 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    cures: ['poisoned'],
+    grantsResistance: 'POISON',
     effect: 'Temporary poison resistance, cure poison',
     minDepth: 20,
   },
@@ -1207,6 +1268,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 1,
     weight: 4,
+    cures: ['poisoned'],
     effect: 'Cure poison',
     minDepth: 1,
   },
@@ -1216,6 +1278,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    cures: ['paralyzed', 'slowed'],
     effect: 'Cure paralysis and slow',
     minDepth: 8,
   },
@@ -1224,6 +1287,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    cures: ['confused', 'blind'],
     effect: 'Cure confusion and blind',
     minDepth: 10,
   },
@@ -1232,6 +1296,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 3,
     weight: 4,
+    cures: ['drained'],
     effect: 'Cure drain, restore stats',
     minDepth: 20,
   },
@@ -1240,6 +1305,7 @@ export const POTIONS: ItemTemplate[] = [
     type: 'potion',
     tier: 2,
     weight: 4,
+    curesAll: true,
     effect: 'Cures all ailments',
     minDepth: 15,
   },

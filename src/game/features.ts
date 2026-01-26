@@ -26,6 +26,7 @@ import { selectGoldPile, rollGoldValue, getDefaultGoldDrop, rollMonsterGold } fr
 import { getTrapById } from './data/traps'
 import type { MonsterTemplate } from './data/monsters'
 import { DEFAULT_BONUSES } from './upgrade-effects'
+import { clearPoison, isPoisoned, applyPoison } from './status-effects'
 
 // ============================================================================
 // MESSAGE HELPERS
@@ -92,8 +93,8 @@ export function useFountain(game: GameState): boolean {
     }
     case 'cure': {
       // Clear poison status
-      if (char.poison) {
-        char.poison = null
+      if (isPoisoned(char)) {
+        clearPoison(char)
         addMessage(game, `The ${template.name} purifies you! The poison is cleansed!`, 'good')
       } else {
         addMessage(game, `The ${template.name} purifies you!`, 'good')
@@ -658,10 +659,9 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       game.stats.damageTaken += damage
 
       // Apply lingering poison
-      char.poison = {
-        damagePerTurn: Math.max(1, Math.floor(template.damage / 4)),
-        turnsRemaining: 3 + Math.floor(game.character.depth / 10),
-      }
+      const damagePerTurn = Math.max(1, Math.floor(template.damage / 4))
+      const turnsRemaining = 3 + Math.floor(game.character.depth / 10)
+      applyPoison(char, damagePerTurn, turnsRemaining)
 
       addMessage(
         game,

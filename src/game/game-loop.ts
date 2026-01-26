@@ -32,7 +32,12 @@ import { spawnItemsForLevel, createStartingEquipment, createRandomPotion } from 
 import { initializeFeaturesFromVault } from './features'
 import { generateMerchantInventory } from './items'
 import { tickPortalTimer } from './town'
-import { tickStatusEffects, tickTempResistances, processPoison } from './status-effects'
+import {
+  tickStatusEffects,
+  tickTempResistances,
+  processPoison,
+  checkPoisonExpired,
+} from './status-effects'
 import {
   addMessage,
   BASE_ENERGY_COST,
@@ -256,9 +261,11 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     events.push({ type: 'turn', turn: game.turn })
 
     // Tick status effects (including stun) and process monsters
-    tickStatusEffects(game.character)
-    tickTempResistances(game.character)
+    // Poison damage is dealt first, then duration ticks down
     processPoison(game, addMessage)
+    const expired = tickStatusEffects(game.character)
+    checkPoisonExpired(expired, game, addMessage)
+    tickTempResistances(game.character)
 
     // Process monster turns
     const monsterEvents = processMonsterTurns(game)
@@ -321,9 +328,11 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
   events.push({ type: 'turn', turn: game.turn })
 
   // Tick status effects, resistances, and poison
-  tickStatusEffects(game.character)
-  tickTempResistances(game.character)
+  // Poison damage is dealt first, then duration ticks down
   processPoison(game, addMessage)
+  const expired2 = tickStatusEffects(game.character)
+  checkPoisonExpired(expired2, game, addMessage)
+  tickTempResistances(game.character)
 
   // Tick town portal timer (decrements and destroys if expired)
   if (game.townPortal) {

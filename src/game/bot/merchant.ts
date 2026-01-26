@@ -128,18 +128,19 @@ export function botBuySupplies(game: GameState): number {
   let escapeScrollCount = 0
 
   for (const item of inventory) {
-    const effect = item.template.effect || ''
-    const name = item.template.name
+    const template = item.template
+    const effect = template.effect || ''
+    const name = template.name
 
     if (name.includes('Town Portal')) {
       tpScrollCount++
     } else if (
-      item.template.type === 'potion' &&
-      (effect.includes('Cure') || effect.includes('Heal'))
+      template.type === 'potion' &&
+      (template.healBase !== undefined || template.healPerLevel !== undefined)
     ) {
       healingPotionCount++
     } else if (
-      item.template.type === 'scroll' &&
+      template.type === 'scroll' &&
       (effect.includes('Teleport') || name.includes('Phase Door'))
     ) {
       escapeScrollCount++
@@ -184,7 +185,10 @@ export function botBuySupplies(game: GameState): number {
     }
     // Healing potions - second priority
     // Higher tier = lower priority number = bought FIRST (T4 Healing > T1 Cure Light)
-    else if (template.type === 'potion' && (effect.includes('Cure') || effect.includes('Heal'))) {
+    else if (
+      template.type === 'potion' &&
+      (template.healBase !== undefined || template.healPerLevel !== undefined)
+    ) {
       if (wantedHealing > 0) {
         // T4 gets priority 1.4, T1 gets 1.85 - prefer high-tier potions
         const tierBonus = template.tier * 0.15

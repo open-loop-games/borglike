@@ -7,6 +7,7 @@
 
 import type { Point, GameState, Monster, Character } from '../types'
 import { getAdjacentPositions } from '../dungeon'
+import { isPoisoned, getPoisonDamage, getPoisonTurnsRemaining } from '../status-effects'
 import type { DangerMap, DangerResult, DangerTier, PersonalityConfig } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import {
@@ -204,10 +205,10 @@ export function getStatusEffectDanger(
     totalDanger += Math.floor(danger)
   }
 
-  // Check poison (stored separately)
-  if (character.poison) {
-    const poisonTurns = character.poison.turnsRemaining
-    const poisonDamage = character.poison.damagePerTurn
+  // Check poison (now a standard status effect)
+  if (isPoisoned(character)) {
+    const poisonTurns = getPoisonTurnsRemaining(character)
+    const poisonDamage = getPoisonDamage(character)
     const totalPoisonDamage = poisonDamage * poisonTurns
 
     // Danger = potential damage * 2

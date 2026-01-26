@@ -51,14 +51,19 @@ export const DEPTH_REQUIREMENTS: Record<number, DepthRequirement> = {
 // ============================================================================
 
 /**
+ * Check if a potion template is a healing potion (has healBase or healPerLevel)
+ */
+function isHealingPotion(template: { healBase?: number; healPerLevel?: number }): boolean {
+  return template.healBase !== undefined || template.healPerLevel !== undefined
+}
+
+/**
  * Count healing potions in inventory.
- * Includes Cure Light, Cure Serious, Cure Critical, and Healing potions.
+ * Includes any potion with healBase or healPerLevel defined.
  */
 export function countHealingPotions(inventory: Item[]): number {
   return inventory.filter(
-    (item) =>
-      item.template.type === 'potion' &&
-      (item.template.name.includes('Cure') || item.template.name.includes('Healing'))
+    (item) => item.template.type === 'potion' && isHealingPotion(item.template)
   ).length
 }
 
@@ -70,7 +75,7 @@ export function countHealingPotionsByTier(inventory: Item[], minTier: number): n
   return inventory.filter(
     (item) =>
       item.template.type === 'potion' &&
-      (item.template.name.includes('Cure') || item.template.name.includes('Healing')) &&
+      isHealingPotion(item.template) &&
       item.template.tier >= minTier
   ).length
 }
@@ -101,13 +106,11 @@ export function countTownPortals(inventory: Item[]): number {
  * Includes Speed, Heroism, and Berserk Strength potions.
  */
 export function countBuffPotions(inventory: Item[]): number {
-  return inventory.filter(
-    (item) =>
-      item.template.type === 'potion' &&
-      (item.template.name.includes('Speed') ||
-        item.template.name.includes('Heroism') ||
-        item.template.name.includes('Berserk'))
-  ).length
+  return inventory.filter((item) => {
+    if (item.template.type !== 'potion') return false
+    const buffType = item.template.buff?.type
+    return buffType === 'speed' || buffType === 'heroism' || buffType === 'berserk'
+  }).length
 }
 
 // ============================================================================
@@ -116,10 +119,10 @@ export function countBuffPotions(inventory: Item[]): number {
 
 /**
  * Healing potion tiers and their minDepth thresholds.
- * Derived from POTIONS data in items.ts.
+ * Derived from POTIONS data in items.ts using structured healBase/healPerLevel.
  */
 const HEALING_POTION_TIERS = POTIONS.filter(
-  (p) => p.name.includes('Cure') || p.name.includes('Healing')
+  (p) => p.healBase !== undefined || p.healPerLevel !== undefined
 )
   .map((p) => ({ tier: p.tier, minDepth: p.minDepth ?? 0, name: p.name }))
   .sort((a, b) => a.minDepth - b.minDepth)

@@ -510,7 +510,7 @@ function selectShopForBuying(game: GameState, botState: BotState): TownShopId | 
   // Count consumables
   const tpCount = inventory.filter((item) => item.template.name === 'Scroll of Town Portal').length
   const healCount = inventory.filter(
-    (item) => item.template.name.includes('Cure') || item.template.name.includes('Healing')
+    (item) => item.template.healBase !== undefined || item.template.healPerLevel !== undefined
   ).length
   const escapeCount = inventory.filter(
     (item) =>

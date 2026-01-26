@@ -7,6 +7,7 @@
 
 import type { GameState, GameAction, Monster } from '../types'
 import type { PersonalityConfig, DangerMap, BotState } from './types'
+import { isPoisoned } from '../status-effects'
 import {
   getLocalDanger,
   calculateAvoidance,
@@ -92,7 +93,7 @@ export function getSurvivalConsumableAction(
   }
 
   // 1b. Cure poison - ongoing damage
-  if (character.poison) {
+  if (isPoisoned(character)) {
     const antidote = findNeutralizePoison(character)
     if (antidote) {
       return { type: 'use', itemId: antidote.id }
