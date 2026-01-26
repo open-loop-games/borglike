@@ -13,7 +13,7 @@ import { getAvailableSpells, getNearestVisibleMonster, selectAOETargets } from '
 import { getLocalDanger } from './danger'
 import { countAdjacentMonsters } from './combat'
 import { hasStatusEffect } from './items'
-import { hasAbility, getAverageDamage } from '../data/monsters'
+import { hasAbility } from '../data/monsters'
 
 // ============================================================================
 // RACE RESTRICTIONS
@@ -527,34 +527,29 @@ export function getDebuffSpellAction(
 
   if (debuffSpells.length === 0) return null
 
-  // Don't debuff if mana is low
-  if (character.mp < character.maxMp * 0.4) return null
-
-  // Find strongest visible monster
-  const sortedByThreat = [...visibleMonsters].sort(
-    (a, b) => getAverageDamage(b.template) - getAverageDamage(a.template)
-  )
-  const strongestMonster = sortedByThreat[0]
+  // Find strongest visible monster (by HP - we want to slow tanky targets)
+  const sortedByHp = [...visibleMonsters].sort((a, b) => b.hp - a.hp)
+  const strongestMonster = sortedByHp[0]
 
   if (!strongestMonster) return null
 
-  const strongestDamage = getAverageDamage(strongestMonster.template)
+  // Check if monster is already slowed
+  const isAlreadySlowed = strongestMonster.debuffs.some((d) => d.type === 'slow')
 
-  // Check if monster is worth debuffing (strong enough)
-  if (strongestDamage < 10) return null // Too weak to bother
+  // Slow any monster with significant HP (worth the mana investment)
+  // Threshold: monster HP > 50% of character's max HP
+  const isWorthSlowing = strongestMonster.hp > character.maxHp * 0.5
+  const shouldSlow = !isAlreadySlowed && isWorthSlowing
 
-  // Prefer entangle/slow for fast monsters
-  const isFastMonster = strongestMonster.template.speed > 110
-  if (isFastMonster) {
+  if (shouldSlow) {
     const slowSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'slow')
     if (slowSpell) {
       return { type: 'cast', spellId: slowSpell.spell.id, targetId: strongestMonster.id }
     }
   }
 
-  // Weaken for high-damage monsters
-  const isHighDamage = strongestDamage >= 20
-  if (isHighDamage) {
+  // Weaken as fallback (if slow not available or already slowed)
+  if (isWorthSlowing) {
     const weakenSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'weaken')
     if (weakenSpell) {
       return { type: 'cast', spellId: weakenSpell.spell.id, targetId: strongestMonster.id }

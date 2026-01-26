@@ -619,16 +619,30 @@ function handleCautionTier(
 
   // 6. Damage/debuff spells for visible enemies
   if (visibleMonsters.length > 0) {
+    // Casters should debuff (slow) tanky targets before blasting
+    // Melee classes prefer damage over CC
+    const isCaster = ['mage', 'archmage', 'necromancer'].includes(game.character.classId)
+    if (isCaster) {
+      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters)
+      if (debuffSpell) {
+        recordProgress(botState, game.turn)
+        return debuffSpell
+      }
+    }
+
     const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
     if (damageSpell) {
       recordProgress(botState, game.turn)
       return damageSpell
     }
 
-    const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters)
-    if (debuffSpell) {
-      recordProgress(botState, game.turn)
-      return debuffSpell
+    // Non-casters still get debuffs as fallback
+    if (!isCaster) {
+      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters)
+      if (debuffSpell) {
+        recordProgress(botState, game.turn)
+        return debuffSpell
+      }
     }
   }
 
@@ -745,6 +759,16 @@ function handleSafeTier(
       if (buffSpell) {
         recordProgress(botState, game.turn)
         return buffSpell
+      }
+    }
+
+    // Casters should debuff (slow) tanky targets before blasting
+    const isCaster = ['mage', 'archmage', 'necromancer'].includes(game.character.classId)
+    if (isCaster) {
+      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters)
+      if (debuffSpell) {
+        recordProgress(botState, game.turn)
+        return debuffSpell
       }
     }
 

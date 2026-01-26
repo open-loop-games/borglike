@@ -179,6 +179,18 @@ const light_orb: SpellTemplate = {
   description: 'Conjure a glowing orb that follows you, extending your vision by 2 tiles.',
 }
 
+const slow_monster: SpellTemplate = {
+  id: 'slow_monster',
+  name: 'Slow Monster',
+  school: 'arcane',
+  level: 8,
+  manaCost: 5,
+  cooldown: 0,
+  effectType: 'debuff',
+  debuff: { type: 'slow', value: 50, duration: 12 },
+  description: 'Arcane bindings slow your foe by 50% for 12 turns.',
+}
+
 // ============================================================================
 // DIVINE SPELLS (WIS-based)
 // ============================================================================
@@ -537,6 +549,7 @@ export const SPELLS: Record<string, SpellTemplate> = {
   teleport,
   mage_armor,
   light_orb,
+  slow_monster,
   // Divine
   minor_heal,
   bless,

@@ -478,6 +478,41 @@ export function calculateRangedDeadliness(character: Character): number {
 }
 
 /**
+ * Calculate character's spell deadliness value
+ *
+ * Spell deadliness comes from:
+ * - Primary stat bonus: +1 deadliness per point of INT/WIS above 10
+ * - Level bonus: +0.5 deadliness per level
+ * - Staff spell power: +1 deadliness per 5% spell power
+ *
+ * This gives casters the same scaling curve as melee/ranged,
+ * fixing the mid-game damage gap where spell flat bonuses fall behind.
+ *
+ * @param character - The character
+ * @returns Deadliness value (0-150)
+ */
+export function calculateSpellDeadliness(character: Character): number {
+  let deadliness = 0
+
+  // Use higher of INT or WIS (casters typically max one)
+  const intBonus = Math.max(0, character.stats.int - 10)
+  const wisBonus = Math.max(0, character.stats.wis - 10)
+  deadliness += Math.max(intBonus, wisBonus)
+
+  // Level bonus (level / 2, same as melee/ranged)
+  deadliness += Math.floor(character.level / 2)
+
+  // Staff spell power bonus (+1 deadliness per 5% spell power)
+  const weapon = character.equipment.weapon
+  if (weapon?.template.spellPower) {
+    deadliness += Math.floor(weapon.template.spellPower / 5)
+  }
+
+  // Cap at 150 (table maximum)
+  return Math.min(150, deadliness)
+}
+
+/**
  * Apply deadliness damage multiplier
  *
  * @param baseDamage - Base damage before deadliness

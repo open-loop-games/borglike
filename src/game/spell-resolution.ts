@@ -21,7 +21,7 @@ import { MINION_TEMPLATES } from './types'
 import { randomInt, random } from './rng'
 import { getSpellById, getSchoolStat, type SpellTemplate } from './data/spells'
 import { getSpellIdsForLevel } from './data/class-spells'
-import { applyDamage } from './combat'
+import { applyDamage, calculateSpellDeadliness, applyDeadliness } from './combat'
 import { handleMonsterKill } from './actions/combat'
 import { getTile, findOpenPosition, isWalkable } from './dungeon'
 import { addStatusEffect, addTempResistance } from './status-effects'
@@ -219,6 +219,11 @@ export function calculateSpellPower(
   if (weapon?.template.spellPower) {
     finalPower = Math.floor(finalPower * (1 + weapon.template.spellPower / 100))
   }
+
+  // Apply spell deadliness multiplier (matches melee/ranged scaling curve)
+  // This fixes mid-game damage gap where spell flat bonuses fall behind
+  const spellDeadliness = calculateSpellDeadliness(character)
+  finalPower = applyDeadliness(finalPower, spellDeadliness)
 
   return finalPower
 }

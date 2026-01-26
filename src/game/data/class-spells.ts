@@ -38,6 +38,7 @@ const mageSpells: ClassSpellList = {
     { spellId: 'mage_armor', learnLevel: 1 }, // Early defense buff
     { spellId: 'light_orb', learnLevel: 1 }, // Early visibility buff
     { spellId: 'frost_bolt', learnLevel: 5 },
+    { spellId: 'slow_monster', learnLevel: 8 }, // CC for dangerous monsters
     { spellId: 'lightning_bolt', learnLevel: 15 },
     { spellId: 'fireball', learnLevel: 20 },
     { spellId: 'teleport', learnLevel: 25 },
@@ -68,6 +69,7 @@ const archmageSpells: ClassSpellList = {
     { spellId: 'phase_door', learnLevel: 1 }, // Early escape like Mage - essential for glass cannon
     { spellId: 'frost_bolt', learnLevel: 1 }, // Extra damage spell at L1
     { spellId: 'light_orb', learnLevel: 1 }, // Early visibility buff
+    { spellId: 'slow_monster', learnLevel: 5 }, // Early CC for glass cannon
     { spellId: 'lightning_bolt', learnLevel: 5 },
     { spellId: 'fireball', learnLevel: 12 },
     { spellId: 'teleport', learnLevel: 18 },
