@@ -83,7 +83,9 @@ const priestSpells: ClassSpellList = {
   spells: [
     { spellId: 'minor_heal', learnLevel: 1 },
     { spellId: 'bless', learnLevel: 5 },
+    { spellId: 'orb_of_draining', learnLevel: 8 }, // Primary attack spell
     { spellId: 'cure_wounds', learnLevel: 10 },
+    { spellId: 'protection_from_evil', learnLevel: 12 }, // Defensive buff vs EVIL
     { spellId: 'smite_evil', learnLevel: 15 },
     { spellId: 'sanctuary', learnLevel: 25 },
     { spellId: 'holy_word', learnLevel: 35 },

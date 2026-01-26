@@ -71,7 +71,8 @@ export function getSurvivalConsumableAction(
   config: PersonalityConfig,
   dangers: DangerMap,
   botState?: BotState,
-  personality?: string
+  personality?: string,
+  healsPriority: boolean = false
 ): GameAction | null {
   const character = game.character
   const hpRatio = character.hp / character.maxHp
@@ -206,12 +207,19 @@ export function getSurvivalConsumableAction(
       (fightingMorgoth && hpRatio < 0.5))
 
   if (shouldHeal) {
-    // Against Morgoth: always use best potions available
-    // Normal: try stronger potions when more hurt
-    const minTier = fightingMorgoth ? 4 : hpRatio < 0.25 ? 2 : 1
-    const potion = findHealingPotion(character, minTier) ?? findHealingPotion(character, 1)
-    if (potion) {
-      return { type: 'use', itemId: potion.id }
+    // healsPriority classes (priest/paladin) should use heal spells first
+    // Only use potions when mana is low (<20%) or in CRITICAL emergency
+    const manaRatio = character.maxMp > 0 ? character.mp / character.maxMp : 0
+    const shouldReservePotions = healsPriority && manaRatio >= 0.2 && immediateTier !== 'CRITICAL'
+
+    if (!shouldReservePotions) {
+      // Against Morgoth: always use best potions available
+      // Normal: try stronger potions when more hurt
+      const minTier = fightingMorgoth ? 4 : hpRatio < 0.25 ? 2 : 1
+      const potion = findHealingPotion(character, minTier) ?? findHealingPotion(character, 1)
+      if (potion) {
+        return { type: 'use', itemId: potion.id }
+      }
     }
   }
 
@@ -302,10 +310,15 @@ export function getSurvivalConsumableAction(
   }
 
   // 7. Also check for basic healing outside of combat when HP is low
+  // healsPriority classes should still use spells - only potion if mana depleted
   if (!inCombat && hpRatio < 0.4) {
-    const potion = findHealingPotion(character, 1)
-    if (potion) {
-      return { type: 'use', itemId: potion.id }
+    const manaRatio = character.maxMp > 0 ? character.mp / character.maxMp : 0
+    const canUseSpell = healsPriority && manaRatio >= 0.1
+    if (!canUseSpell) {
+      const potion = findHealingPotion(character, 1)
+      if (potion) {
+        return { type: 'use', itemId: potion.id }
+      }
     }
   }
 

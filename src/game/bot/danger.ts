@@ -305,6 +305,16 @@ export function getMonsterThreat(
   const armorReduction = Math.min(character.combat.armor / 20, 0.5) // Max 50% reduction
   threat *= 1 - armorReduction
 
+  // Protection from Evil: halves threat from EVIL monsters
+  // Angband requires player level >= monster level for PFE to work
+  // We use minDepth as monster "level" approximation
+  const hasPFE = character.statusEffects.some((e) => e.type === 'prot_from_evil')
+  const isEvil = template.flags.includes('EVIL')
+  const levelCheck = character.level >= template.minDepth
+  if (hasPFE && isEvil && levelCheck) {
+    threat *= 0.5
+  }
+
   return Math.floor(threat)
 }
 

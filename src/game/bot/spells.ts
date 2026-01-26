@@ -28,19 +28,21 @@ import { hasAbility, getAverageDamage } from '../data/monsters'
  * @param game - Current game state
  * @param config - Personality configuration
  * @param danger - Local danger value (damage potential from nearby monsters)
+ * @param healsPriority - If true, heal more aggressively (Priest, Paladin)
  * @returns GameAction to cast a heal spell, or null if no healing needed/available
  */
 export function getHealingSpellAction(
   game: GameState,
   config: PersonalityConfig,
-  danger: number = 0
+  danger: number = 0,
+  healsPriority: boolean = false
 ): GameAction | null {
   const character = game.character
   const hpRatio = character.hp / character.maxHp
   const hpDown = character.maxHp - character.hp
 
   // Angband-style graduated thresholds based on danger
-  if (!evaluateHealNeed(hpRatio, danger, character.hp, config)) {
+  if (!evaluateHealNeed(hpRatio, danger, character.hp, config, healsPriority)) {
     return null
   }
 
@@ -65,22 +67,35 @@ export function getHealingSpellAction(
 /**
  * Evaluate whether healing is needed based on Angband-style graduated thresholds.
  * Lower HP = always heal, higher HP = only heal if danger is high.
+ *
+ * Classes with healsPriority (Priest, Paladin) heal more aggressively since
+ * they have renewable spell healing and should reserve potions.
  */
 function evaluateHealNeed(
   hpRatio: number,
   danger: number,
   currentHp: number,
-  _config: PersonalityConfig
+  _config: PersonalityConfig,
+  healsPriority: boolean = false
 ): boolean {
   // Always heal if danger exceeds current HP (would die next hit)
   if (danger >= currentHp) return true
 
-  // Graduated thresholds (Angband-style)
-  // Lower HP = always heal, higher HP = only if danger justifies it
-  if (hpRatio < 0.25) return true // Always heal below 25%
-  if (hpRatio < 0.4) return danger > 20 // Heal at 40% if any real danger
-  if (hpRatio < 0.55) return danger > 50 // Heal at 55% if moderate danger
-  if (hpRatio < 0.7) return danger > 100 // Heal at 70% if high danger
+  if (healsPriority) {
+    // Priests/Paladins heal more aggressively with spells (mana is renewable)
+    // This keeps them at higher HP and reserves potions for emergencies
+    if (hpRatio < 0.4) return true // Always heal below 40%
+    if (hpRatio < 0.6) return danger > 10 // Very low danger threshold
+    if (hpRatio < 0.75) return danger > 30 // Low danger threshold
+    if (hpRatio < 0.85) return danger > 60 // Moderate danger threshold
+  } else {
+    // Standard thresholds (Angband-style)
+    // Lower HP = always heal, higher HP = only if danger justifies it
+    if (hpRatio < 0.25) return true // Always heal below 25%
+    if (hpRatio < 0.4) return danger > 20 // Heal at 40% if any real danger
+    if (hpRatio < 0.55) return danger > 50 // Heal at 55% if moderate danger
+    if (hpRatio < 0.7) return danger > 100 // Heal at 70% if high danger
+  }
 
   return false
 }

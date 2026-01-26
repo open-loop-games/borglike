@@ -236,6 +236,34 @@ const smite_evil: SpellTemplate = {
   description: 'Holy wrath smites the wicked (2x vs evil).',
 }
 
+const orb_of_draining: SpellTemplate = {
+  id: 'orb_of_draining',
+  name: 'Orb of Draining',
+  school: 'divine',
+  level: 8,
+  manaCost: 6,
+  cooldown: 0,
+  effectType: 'aoe_damage',
+  baseDamage: '2d6',
+  damageScaling: 2,
+  damageType: 'holy',
+  maxTargets: 3,
+  doubleVsEvil: true,
+  description: 'A ball of holy energy sears evil creatures (2x vs evil).',
+}
+
+const protection_from_evil: SpellTemplate = {
+  id: 'protection_from_evil',
+  name: 'Protection from Evil',
+  school: 'divine',
+  level: 12,
+  manaCost: 10,
+  cooldown: 30,
+  effectType: 'buff',
+  buff: { type: 'prot_from_evil', value: 50, duration: 50 },
+  description: 'Divine ward halves damage from evil creatures.',
+}
+
 const sanctuary: SpellTemplate = {
   id: 'sanctuary',
   name: 'Sanctuary',
@@ -514,6 +542,8 @@ export const SPELLS: Record<string, SpellTemplate> = {
   bless,
   cure_wounds,
   smite_evil,
+  orb_of_draining,
+  protection_from_evil,
   sanctuary,
   holy_word,
   // Nature

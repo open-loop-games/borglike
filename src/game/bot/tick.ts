@@ -279,7 +279,8 @@ function handleCriticalTier(
     config,
     dangerResult.dangers,
     botState,
-    personality
+    personality,
+    classProfile.healsPriority
   )
   if (survivalAction) {
     // TODO: resetAfterTeleport causes regression, disabled pending investigation
@@ -291,7 +292,7 @@ function handleCriticalTier(
   }
 
   // 3. Try healing spell
-  const healSpell = getHealingSpellAction(game, config, localDanger)
+  const healSpell = getHealingSpellAction(game, config, localDanger, classProfile.healsPriority)
   if (healSpell) {
     recordProgress(botState, game.turn)
     return healSpell
@@ -417,7 +418,7 @@ function handleDangerTier(
   }
 
   // 3. Healing spell
-  const healSpell = getHealingSpellAction(game, config, localDanger)
+  const healSpell = getHealingSpellAction(game, config, localDanger, classProfile.healsPriority)
   if (healSpell) {
     recordProgress(botState, game.turn)
     return healSpell
@@ -429,7 +430,8 @@ function handleDangerTier(
     config,
     dangerResult.dangers,
     botState,
-    personality
+    personality,
+    classProfile.healsPriority
   )
   if (survivalAction) {
     recordProgress(botState, game.turn)
@@ -583,7 +585,7 @@ function handleCautionTier(
 
   // 4. Proactive healing when not in melee (if significantly hurt)
   if (hpRatio < 0.7) {
-    const healSpell = getHealingSpellAction(game, config, localDanger)
+    const healSpell = getHealingSpellAction(game, config, localDanger, classProfile.healsPriority)
     if (healSpell) {
       recordProgress(botState, game.turn)
       return healSpell
@@ -596,7 +598,8 @@ function handleCautionTier(
         config,
         dangerResult.dangers,
         botState,
-        personality
+        personality,
+        classProfile.healsPriority
       )
       if (survivalAction) {
         recordProgress(botState, game.turn)
@@ -685,7 +688,7 @@ function handleSafeTier(
 
   // 3. Out-of-combat healing when safe and hurt
   if (hpRatio < 0.6) {
-    const healSpell = getHealingSpellAction(game, config, localDanger)
+    const healSpell = getHealingSpellAction(game, config, localDanger, classProfile.healsPriority)
     if (healSpell) {
       recordProgress(botState, game.turn)
       return healSpell
@@ -698,7 +701,8 @@ function handleSafeTier(
         config,
         dangerResult.dangers,
         botState,
-        personality
+        personality,
+        classProfile.healsPriority
       )
       if (survivalAction) {
         recordProgress(botState, game.turn)

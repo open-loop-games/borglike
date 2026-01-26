@@ -203,6 +203,7 @@ export type StatusEffectType =
   | 'berserk'
   | 'blessing'
   | 'protection'
+  | 'prot_from_evil' // Halves damage from EVIL monsters (priest)
   | 'stun'
   | 'immunity_fear'
   | 'active_form'
