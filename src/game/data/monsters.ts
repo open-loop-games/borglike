@@ -782,8 +782,95 @@ export const monsters: MonsterTemplate[] = [
     rarity: 0.2,
   },
 
+  // Depth 24
+  {
+    name: '5-Headed Hydra',
+    char: 'M',
+    color: 'lightGreen',
+    minDepth: 24,
+    hp: 450,
+    speed: 120,
+    armor: 100,
+    experience: 400,
+    flags: ['ANIMAL'],
+    attacks: [
+      { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'POISON' } },
+      { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'POISON' } },
+      { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'POISON' } },
+      { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'POISON' } },
+    ],
+    immune: ['POISON'],
+  },
+
+  // Depth 25
+  {
+    name: 'Dread',
+    char: 'G',
+    color: 'orange',
+    minDepth: 25,
+    hp: 300,
+    speed: 120,
+    armor: 50,
+    experience: 450,
+    flags: ['UNDEAD'],
+    attacks: [
+      { method: 'TOUCH', dice: '2d6', effect: { type: 'DRAIN' } },
+      { method: 'CLAW', dice: '2d4', effect: { type: 'HURT' } },
+    ],
+    immune: ['COLD'],
+  },
+
+  // Depth 26
+  {
+    name: 'Dark Elven Mage',
+    char: 'h',
+    color: 'purple',
+    minDepth: 26,
+    hp: 280,
+    speed: 120,
+    armor: 70,
+    experience: 400,
+    flags: [],
+    attacks: [{ method: 'HIT', dice: '2d5', effect: { type: 'HURT' } }],
+    spells: { freq: 3, list: ['BO_COLD', 'BLINK'] },
+  },
+  {
+    name: 'Lugdush, Uruk Captain',
+    char: 'o',
+    color: 'lightRed',
+    minDepth: 26,
+    hp: 700,
+    speed: 120,
+    armor: 80,
+    experience: 900,
+    flags: ['UNIQUE', 'ORC'],
+    attacks: [
+      { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
+    ],
+    rarity: 0.2,
+  },
+
+  // Depth 27
+  {
+    name: 'Stone Giant',
+    char: 'P',
+    color: 'slate',
+    minDepth: 27,
+    hp: 500,
+    speed: 110,
+    armor: 100,
+    experience: 500,
+    flags: ['GIANT'],
+    attacks: [
+      { method: 'HIT', dice: '4d6', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '4d6', effect: { type: 'HURT' } },
+    ],
+  },
+
   // ============================================
-  // DEPTH 26-40: DEEP - Giants, dragons, demons
+  // DEPTH 28-40: DEEP - Giants, dragons, demons
   // ============================================
 
   // Depth 28
@@ -838,6 +925,62 @@ export const monsters: MonsterTemplate[] = [
       { method: 'BITE', dice: '2d6', effect: { type: 'ELEMENTAL', element: 'ELEC' } },
     ],
     spells: { freq: 4, list: ['BR_ELEC'] },
+    immune: ['ELEC'],
+  },
+
+  // Depth 30
+  {
+    name: 'Olog-hai',
+    char: 'T',
+    color: 'black',
+    minDepth: 30,
+    hp: 400,
+    speed: 115,
+    armor: 70,
+    experience: 550,
+    flags: ['TROLL'],
+    attacks: [
+      { method: 'CLAW', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'CLAW', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'BITE', dice: '3d6', effect: { type: 'HURT' } },
+    ],
+  },
+
+  // Depth 31
+  {
+    name: 'Vampire Lord',
+    char: 'V',
+    color: 'blue',
+    minDepth: 31,
+    hp: 550,
+    speed: 120,
+    armor: 85,
+    experience: 600,
+    flags: ['UNDEAD'],
+    attacks: [
+      { method: 'BITE', dice: '3d4', effect: { type: 'DRAIN' } },
+      { method: 'TOUCH', dice: '2d6', effect: { type: 'DRAIN' } },
+    ],
+    spells: { freq: 4, list: ['HOLD', 'SCARE', 'HEAL'] },
+    immune: ['COLD'],
+  },
+
+  // Depth 32
+  {
+    name: 'Storm Troll',
+    char: 'T',
+    color: 'lightBlue',
+    minDepth: 32,
+    hp: 420,
+    speed: 120,
+    armor: 75,
+    experience: 650,
+    flags: ['TROLL'],
+    attacks: [
+      { method: 'CLAW', dice: '3d4', effect: { type: 'ELEMENTAL', element: 'ELEC' } },
+      { method: 'CLAW', dice: '3d4', effect: { type: 'ELEMENTAL', element: 'ELEC' } },
+      { method: 'BITE', dice: '3d5', effect: { type: 'HURT' } },
+    ],
     immune: ['ELEC'],
   },
 
