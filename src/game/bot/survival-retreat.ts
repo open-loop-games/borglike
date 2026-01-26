@@ -28,7 +28,13 @@ import {
   findResistancePotion,
 } from './items'
 import { isInTown } from '../town'
-import { isUnderPrepared } from './preparation'
+import {
+  isUnderPrepared,
+  getEncumbranceRatio,
+  ENCUMBRANCE_TOLERANCE,
+  countEquipmentInInventory,
+  EQUIPMENT_INVENTORY_LIMIT,
+} from './preparation'
 import { getAverageDamage } from '../data/monsters'
 import { computeSafetyFlow } from './safety-flow'
 import { resetCorridorFollowing } from './exploration'
@@ -488,6 +494,10 @@ export function shouldClassRetreat(
  * - aggressive: HP < 20% AND no healing AND no escape
  * - greedy: HP < 40% OR 5+ sellable items
  * - speedrunner: HP < 15%, last resort
+ *
+ * Also triggers on:
+ * - Equipment inventory full (hard cap)
+ * - Encumbrance exceeds personality tolerance (soft pressure)
  */
 export function shouldUseTownPortal(
   game: GameState,
@@ -559,6 +569,22 @@ export function shouldUseTownPortal(
   if (isEarlyDepth && !canSpareTP && !hasTownValue && !absoluteEmergency) {
     // Preserve TP scroll at early depths - use other survival options instead
     return { shouldUse: false, reason: 'Preserving TP for planned trip' }
+  }
+
+  // Hard cap: equipment inventory full - must return to sell
+  const equipmentCount = countEquipmentInInventory(character.inventory)
+  if (equipmentCount >= EQUIPMENT_INVENTORY_LIMIT) {
+    return { shouldUse: true, reason: 'Equipment inventory full' }
+  }
+
+  // Encumbrance check: personality-based tolerance
+  // Only check when not in combat (adjacentCount === 0 already checked above)
+  if (adjacentCount === 0) {
+    const ratio = getEncumbranceRatio(character)
+    const tolerance = ENCUMBRANCE_TOLERANCE[personality] ?? 1.0
+    if (ratio > tolerance) {
+      return { shouldUse: true, reason: `Encumbered (${Math.round(ratio * 100)}%)` }
+    }
   }
 
   // Personality-specific thresholds

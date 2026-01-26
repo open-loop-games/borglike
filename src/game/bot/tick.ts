@@ -63,7 +63,7 @@ import {
   handleForceDescentStrategy,
   handleStopFleeingStrategy,
 } from './stuck'
-import { selectGoal } from './goals'
+import { selectGoal, initializeTownNeeds, updateTownNeeds } from './goals'
 import {
   invalidateFrontierCache,
   getFrontierPositions,
@@ -138,6 +138,11 @@ export function runBotTick(
     const wasInFarmingMode = botState.farmingMode
     resetLevelState(botState, game.character.depth, game.turn)
     invalidateFrontierCache()
+
+    // Initialize town needs when entering town
+    if (game.character.depth === 0) {
+      initializeTownNeeds(game, botState)
+    }
 
     // Set known stairs immediately from level data on level transition
     // Both stairsUp and stairsDown positions are stored in the level
@@ -1369,7 +1374,7 @@ function executeGoalAction(
     }
 
     case 'SELL_TO_MERCHANT':
-      botSellItems(game)
+      botSellItems(game, botState)
       return { type: 'wait' }
 
     case 'VISIT_HEALER':
@@ -1377,6 +1382,8 @@ function executeGoalAction(
 
     case 'BUY_FROM_MERCHANT':
       botBuySupplies(game)
+      // Update town needs to check if we successfully bought what we needed
+      updateTownNeeds(game, botState)
       return { type: 'wait' }
 
     case 'RETURN_PORTAL':
@@ -1400,7 +1407,7 @@ function executeGoalAction(
 
     case 'VISIT_MERCHANT':
       // Trade with dungeon merchant (same as town merchants)
-      botSellItems(game)
+      botSellItems(game, botState)
       botBuySupplies(game)
       // Mark merchant as visited so we don't re-target it
       if (goal.targetId) {

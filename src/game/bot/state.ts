@@ -35,6 +35,10 @@ export function createBotState(): BotState {
     shopsVisitedForSelling: new Set(),
     shopsVisitedForBuying: new Set(),
     visitedDungeonMerchants: new Set(),
+    // Consumable tier management
+    consumablesToSell: new Set(),
+    // Town needs tracking
+    townNeeds: { tp: 0, healing: 0, escape: 0 },
     // Corridor exploration
     corridorFollowingMode: false,
     corridorFacing: null,
@@ -70,6 +74,8 @@ export function createBotState(): BotState {
     lastExploredCount: 0,
     // Danger retreat
     dangerBlockedDescent: false,
+    // Diagnostic tracking
+    lastTownPortalReason: null,
   }
 }
 

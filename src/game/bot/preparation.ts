@@ -15,6 +15,238 @@ import type { BotContext, BotGoal } from './types'
 import { getClassTier, type ClassTier } from './types'
 
 // ============================================================================
+// CONSUMABLE CAPS (Soft Separation)
+// ============================================================================
+
+/** Consumable type categories for inventory caps */
+export type ConsumableType = 'healing' | 'escape' | 'townPortal' | 'buff' | 'mana' | 'utility'
+
+/** Maximum consumables per type - prevents hoarding low-tier items */
+export const CONSUMABLE_CAPS: Record<ConsumableType, number> = {
+  healing: 12, // Matches Morgoth requirement
+  escape: 4, // Phase Door, Teleport, Teleport Level
+  townPortal: 2, // Critical safety item
+  buff: 6, // Speed, Heroism, Berserk
+  mana: 3, // Restore Mana
+  utility: 4, // Cure poison, clarity, restoration, etc.
+}
+
+/** Equipment-only inventory limit (consumables are separate) */
+export const EQUIPMENT_INVENTORY_LIMIT = 20
+
+// ============================================================================
+// ENCUMBRANCE SYSTEM
+// ============================================================================
+
+/** Base carrying capacity in 0.1 lbs (500 = 50 lbs) */
+const BASE_CAPACITY = 500
+
+/** Extra capacity per point of STR (50 = 5 lbs per STR) */
+const STR_CAPACITY_BONUS = 50
+
+/**
+ * Calculate character's carry capacity based on strength.
+ * @returns Capacity in 0.1 lbs units (e.g., 1000 = 100 lbs)
+ */
+export function getCarryCapacity(character: Character): number {
+  return BASE_CAPACITY + character.stats.str * STR_CAPACITY_BONUS
+}
+
+/**
+ * Calculate total weight of all inventory items.
+ * @returns Weight in 0.1 lbs units
+ */
+export function getInventoryWeight(inventory: Item[]): number {
+  return inventory.reduce((sum, item) => sum + (item.template.weight ?? 0), 0)
+}
+
+/**
+ * Calculate encumbrance ratio (current weight / capacity).
+ * @returns Ratio where 1.0 = at capacity, 1.2 = 20% over
+ */
+export function getEncumbranceRatio(character: Character): number {
+  const capacity = getCarryCapacity(character)
+  const weight = getInventoryWeight(character.inventory)
+  return weight / capacity
+}
+
+/**
+ * Calculate speed penalty from being overweight.
+ * Each 10% over capacity = -1 speed.
+ * @returns Speed penalty (0 if not overweight)
+ */
+export function getEncumbranceSpeedPenalty(character: Character): number {
+  const ratio = getEncumbranceRatio(character)
+  if (ratio <= 1.0) return 0
+  return Math.floor((ratio - 1.0) * 10) // 110% = -1, 120% = -2, etc.
+}
+
+/** Encumbrance tolerance by personality (when to trigger town trip) */
+export const ENCUMBRANCE_TOLERANCE: Record<string, number> = {
+  greedy: 1.2, // 120% before trip (tolerates -2 speed)
+  aggressive: 1.1, // 110%
+  cautious: 0.9, // 90% (proactive)
+  speedrunner: 0.8, // 80% (speed is everything)
+}
+
+// ============================================================================
+// CONSUMABLE TYPE CLASSIFICATION
+// ============================================================================
+
+/**
+ * Determine the consumable type category for an item.
+ * Used for type-specific inventory caps.
+ */
+export function getConsumableType(item: Item): ConsumableType | null {
+  const template = item.template
+
+  // Not a consumable
+  if (template.type !== 'potion' && template.type !== 'scroll') {
+    return null
+  }
+
+  // Healing potions
+  if (
+    template.type === 'potion' &&
+    (template.healBase !== undefined || template.healPerLevel !== undefined)
+  ) {
+    return 'healing'
+  }
+
+  // Mana potions
+  if (template.type === 'potion' && template.restoresMana) {
+    return 'mana'
+  }
+
+  // Buff potions (speed, heroism, berserk)
+  if (template.type === 'potion' && template.buff) {
+    const buffType = template.buff.type
+    if (buffType === 'speed' || buffType === 'heroism' || buffType === 'berserk') {
+      return 'buff'
+    }
+  }
+
+  // Utility potions (cure effects, resistance)
+  if (template.type === 'potion') {
+    if (template.cures || template.curesAll || template.grantsResistance) {
+      return 'utility'
+    }
+  }
+
+  // Town Portal scrolls
+  if (template.type === 'scroll' && template.name.includes('Town Portal')) {
+    return 'townPortal'
+  }
+
+  // Escape scrolls (Phase Door, Teleportation, Teleport Level)
+  if (template.type === 'scroll') {
+    const name = template.name.toLowerCase()
+    if (
+      name.includes('phase door') ||
+      name.includes('teleportation') ||
+      name.includes('teleport level')
+    ) {
+      return 'escape'
+    }
+  }
+
+  // Other scrolls count as utility
+  if (template.type === 'scroll') {
+    return 'utility'
+  }
+
+  return null
+}
+
+/**
+ * Count consumables of a specific type in inventory.
+ */
+export function countConsumablesByType(inventory: Item[], type: ConsumableType): number {
+  return inventory.filter((item) => getConsumableType(item) === type).length
+}
+
+/**
+ * Check if inventory is at cap for a consumable type.
+ */
+export function isAtConsumableCap(inventory: Item[], type: ConsumableType): boolean {
+  return countConsumablesByType(inventory, type) >= CONSUMABLE_CAPS[type]
+}
+
+/**
+ * Get the lowest tier consumable of a specific type in inventory.
+ * Returns 0 if no items of that type exist.
+ */
+export function getLowestTierOfType(inventory: Item[], type: ConsumableType): number {
+  let lowestTier = Infinity
+
+  for (const item of inventory) {
+    if (getConsumableType(item) === type) {
+      lowestTier = Math.min(lowestTier, item.template.tier)
+    }
+  }
+
+  return lowestTier === Infinity ? 0 : lowestTier
+}
+
+/**
+ * Count equipment items in inventory (non-consumables with a slot).
+ */
+export function countEquipmentInInventory(inventory: Item[]): number {
+  return inventory.filter((item) => item.template.slot !== undefined).length
+}
+
+/**
+ * Get minimum healing potion tier useful at a given depth.
+ * Only healing potions become obsolete - other consumables retain utility.
+ *
+ * At depth 15+: T1 healing (60 HP) useless with 200+ HP
+ * At depth 30+: T2 healing (125 HP) marginal with 350+ HP
+ */
+export function getMinHealingTier(depth: number): number {
+  if (depth >= 30) return 3 // Only T3+ useful
+  if (depth >= 15) return 2 // T2+ useful
+  return 1 // All tiers useful
+}
+
+/**
+ * Find outdated healing potions in inventory based on depth.
+ * Returns items that should be sold.
+ */
+export function findOutdatedHealingPotions(inventory: Item[], depth: number): Item[] {
+  const minTier = getMinHealingTier(depth)
+
+  return inventory.filter((item) => {
+    // Only healing potions
+    if (item.template.type !== 'potion') return false
+    const consumableType = getConsumableType(item)
+    if (consumableType !== 'healing') return false
+
+    // Below minimum tier for this depth
+    return item.template.tier < minTier
+  })
+}
+
+/**
+ * Find the lowest tier consumable of a given type in inventory.
+ * Returns the item itself (for marking to sell).
+ */
+export function findLowestTierConsumable(inventory: Item[], type: ConsumableType): Item | null {
+  let lowestItem: Item | null = null
+  let lowestTier = Infinity
+
+  for (const item of inventory) {
+    if (getConsumableType(item) === type) {
+      if (item.template.tier < lowestTier) {
+        lowestTier = item.template.tier
+        lowestItem = item
+      }
+    }
+  }
+
+  return lowestItem
+}
+
+// ============================================================================
 // DEPTH REQUIREMENTS
 // ============================================================================
 

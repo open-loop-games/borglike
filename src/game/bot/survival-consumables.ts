@@ -232,6 +232,10 @@ export function getSurvivalConsumableAction(
     if (portalDecision.shouldUse) {
       const scroll = findTownPortalScroll(character)
       if (scroll) {
+        // Store reason for diagnostics
+        if (botState) {
+          botState.lastTownPortalReason = portalDecision.reason
+        }
         return { type: 'use', itemId: scroll.id }
       }
     }
@@ -272,6 +276,10 @@ export function getSurvivalConsumableAction(
     if (adjacentCount === 0 && !game.townPortal) {
       const townPortal = findTownPortalScroll(character)
       if (townPortal) {
+        // Store reason for diagnostics
+        if (botState) {
+          botState.lastTownPortalReason = 'Emergency escape (no teleport)'
+        }
         return { type: 'use', itemId: townPortal.id }
       }
     }
@@ -301,6 +309,10 @@ export function getSurvivalConsumableAction(
     if (!game.townPortal) {
       const townPortal = findTownPortalScroll(character)
       if (townPortal) {
+        // Store reason for diagnostics
+        if (botState) {
+          botState.lastTownPortalReason = `Stuck escape (twitch=${botState.twitchCounter})`
+        }
         return { type: 'use', itemId: townPortal.id }
       }
     }

@@ -24,6 +24,7 @@ import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { getSpellIdsForLevel, getNewSpellsAtLevel } from './data/class-spells'
 import { addStatusEffect, hasStatusEffect } from './status-effects'
 import { getFormById } from './data/forms'
+import { getEncumbranceSpeedPenalty } from './bot/preparation'
 
 // ============================================================================
 // CONSTANTS
@@ -524,6 +525,8 @@ export function calculateCombatStats(character: Character): CombatStats {
   if (activeForm?.statMods.speedMod) {
     speed += activeForm.statMods.speedMod
   }
+  // ENCUMBRANCE: Apply speed penalty for being overweight
+  speed -= getEncumbranceSpeedPenalty(character)
 
   // Ranged combat stats (DEX-based)
   let rangedDamage = Math.floor(stats.dex / 3)

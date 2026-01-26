@@ -23,7 +23,13 @@ import { getTakeGoal, findBestItem } from './items'
 import { getExploreGoal } from './exploration'
 import { getUseAltarGoal, getVisitMerchantGoal } from './merchant'
 import { getProgressionGoal, getReturnToUniqueHuntGoal } from './progression'
-import { getEffectiveGold, getHuntUniqueGoal } from './preparation'
+import {
+  getEffectiveGold,
+  getHuntUniqueGoal,
+  countTownPortals,
+  countHealingPotions,
+  countEscapeScrolls,
+} from './preparation'
 import { profile } from './profiler'
 
 // Re-export for external use
@@ -497,41 +503,76 @@ function selectShopForSelling(game: GameState, botState: BotState): TownShopId |
 }
 
 /**
- * Select the appropriate shop for buying based on character needs
+ * Initialize town needs at the start of a town visit.
+ * Called when entering town to track what we need to buy.
+ */
+export function initializeTownNeeds(game: GameState, botState: BotState): void {
+  const inventory = game.character.inventory
+  botState.townNeeds = {
+    tp: Math.max(0, 2 - countTownPortals(inventory)),
+    healing: Math.max(0, 3 - countHealingPotions(inventory)),
+    escape: Math.max(0, 2 - countEscapeScrolls(inventory)),
+  }
+}
+
+/**
+ * Update town needs after a purchase attempt.
+ * Called after botBuySupplies() to check actual inventory state.
+ */
+export function updateTownNeeds(game: GameState, botState: BotState): void {
+  const inventory = game.character.inventory
+  botState.townNeeds = {
+    tp: Math.max(0, 2 - countTownPortals(inventory)),
+    healing: Math.max(0, 3 - countHealingPotions(inventory)),
+    escape: Math.max(0, 2 - countEscapeScrolls(inventory)),
+  }
+}
+
+/** Minimum gold needed to buy from each shop type */
+const SHOP_MIN_GOLD: Record<TownShopId, number> = {
+  town_magic: 110, // TP scroll ~110g
+  town_alchemy: 90, // Basic healing potion ~90g
+  town_weapons: 200, // Weapons are expensive
+  town_armory: 200, // Armor is expensive
+  town_general: 50, // General supplies cheaper
+}
+
+/**
+ * Select the appropriate shop for buying based on character needs.
+ *
+ * Combines needs-based and visit-based tracking:
+ * - Checks what we still need
+ * - Checks if we can afford anything at the shop
+ * - Only visits each shop once per town visit (shop may not have items in stock)
  *
  * Priority:
- * 1. Need Town Portal (< 2)? → town_magic
- * 2. Need healing potions (< 3)? → town_alchemy
- * 3. Need escape scrolls (< 3)? → town_magic (if not visited for TP)
+ * 1. Need Town Portal? → town_magic (if can afford AND not visited)
+ * 2. Need healing potions? → town_alchemy (if can afford AND not visited)
+ * 3. Need escape scrolls? → town_magic (if can afford AND not visited for escapes)
  */
 function selectShopForBuying(game: GameState, botState: BotState): TownShopId | null {
-  const inventory = game.character.inventory
+  const gold = game.character.gold
+  const needs = botState.townNeeds
+  const visited = botState.shopsVisitedForBuying
 
-  // Count consumables
-  const tpCount = inventory.filter((item) => item.template.name === 'Scroll of Town Portal').length
-  const healCount = inventory.filter(
-    (item) => item.template.healBase !== undefined || item.template.healPerLevel !== undefined
-  ).length
-  const escapeCount = inventory.filter(
-    (item) =>
-      item.template.name.includes('Phase Door') || item.template.name.includes('Teleportation')
-  ).length
-
-  // Need Town Portal scrolls (primary escape)
-  if (tpCount < 2 && !botState.shopsVisitedForBuying.has('town_magic')) {
+  // Need Town Portal scrolls (critical safety)
+  // town_magic sells both TP and escape scrolls
+  if (needs.tp > 0 && gold >= SHOP_MIN_GOLD.town_magic && !visited.has('town_magic')) {
     return 'town_magic'
   }
 
   // Need healing potions
-  if (healCount < 3 && !botState.shopsVisitedForBuying.has('town_alchemy')) {
+  if (needs.healing > 0 && gold >= SHOP_MIN_GOLD.town_alchemy && !visited.has('town_alchemy')) {
     return 'town_alchemy'
   }
 
-  // Need escape scrolls (secondary)
-  if (escapeCount < 3 && !botState.shopsVisitedForBuying.has('town_magic')) {
+  // Need escape scrolls - town_magic also sells these
+  // Only visit if we haven't been there yet (would have bought TP too)
+  if (needs.escape > 0 && gold >= SHOP_MIN_GOLD.town_magic && !visited.has('town_magic')) {
     return 'town_magic'
   }
 
+  // Done shopping - all needs met, can't afford, or already visited all relevant shops
   return null
 }
 

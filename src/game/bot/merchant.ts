@@ -5,9 +5,9 @@
  */
 
 import type { GameState, Point } from '../types'
-import type { BotGoal, BotContext } from './types'
+import type { BotGoal, BotContext, BotState } from './types'
 import { findAdjacentMerchant, sellToMerchant, buyFromMerchant } from '../features'
-import { countHealingPotions } from './preparation'
+import { countHealingPotions, findOutdatedHealingPotions } from './preparation'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
 
 // ============================================================================
@@ -62,29 +62,55 @@ function getSlotPriority(slot: string): number {
 // ============================================================================
 
 /**
- * Bot sells all sellable items to adjacent merchant
+ * Bot sells all sellable items to adjacent merchant.
  *
- * Sells equipment (weapons, armor, accessories) but NOT consumables (potions, scrolls).
+ * Sells:
+ * 1. Equipment (weapons, armor, accessories) - not consumables
+ * 2. Outdated healing potions (based on depth - T1 useless at depth 15+, etc.)
+ * 3. Items explicitly marked for sale in botState.consumablesToSell
+ *
  * Returns number of items sold.
  */
-export function botSellItems(game: GameState): number {
+export function botSellItems(game: GameState, botState?: BotState): number {
   const merchant = findAdjacentMerchant(game)
   if (!merchant) return 0
 
   const merchantIndex = game.merchants.indexOf(merchant)
   if (merchantIndex < 0) return 0
 
-  // Find sellable items: equipment only, NOT consumables
+  const depth = game.character.depth
+
+  // Find outdated healing potions to sell
+  const outdatedHealingIds = new Set(
+    findOutdatedHealingPotions(game.character.inventory, depth).map((item) => item.id)
+  )
+
+  // Get items marked for sale from botState
+  const markedForSale = botState?.consumablesToSell ?? new Set<string>()
+
+  // Find sellable items
   const sellableIndices: number[] = []
   for (let i = 0; i < game.character.inventory.length; i++) {
     const item = game.character.inventory[i]
     if (!item) continue
 
-    // Only sell equipment (has a slot), skip consumables
+    // Equipment (has a slot) that isn't a consumable
     const isEquipment = item.template.slot !== undefined
     const isConsumable = item.template.type === 'potion' || item.template.type === 'scroll'
 
     if (isEquipment && !isConsumable) {
+      sellableIndices.push(i)
+      continue
+    }
+
+    // Outdated healing potions
+    if (outdatedHealingIds.has(item.id)) {
+      sellableIndices.push(i)
+      continue
+    }
+
+    // Explicitly marked for sale (tier upgrades replaced lower tier)
+    if (markedForSale.has(item.id)) {
       sellableIndices.push(i)
     }
   }
@@ -95,8 +121,15 @@ export function botSellItems(game: GameState): number {
   let soldCount = 0
   for (let i = sellableIndices.length - 1; i >= 0; i--) {
     const invIndex = sellableIndices[i]!
+    const item = game.character.inventory[invIndex]
     const success = sellToMerchant(game, merchantIndex, invIndex)
-    if (success) soldCount++
+    if (success) {
+      soldCount++
+      // Clear from marked-for-sale set
+      if (item && markedForSale.has(item.id)) {
+        markedForSale.delete(item.id)
+      }
+    }
   }
 
   return soldCount

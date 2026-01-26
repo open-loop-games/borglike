@@ -9,6 +9,13 @@ import type { Item, GroundItem, Character, EquipSlot, ItemTemplate, GameAction }
 import type { PersonalityConfig, BotContext, BotGoal, DangerMap } from './types'
 import { getLocalDanger } from './danger'
 import { isSamePosition } from './movement'
+import {
+  getConsumableType,
+  isAtConsumableCap,
+  countEquipmentInInventory,
+  getLowestTierOfType,
+  EQUIPMENT_INVENTORY_LIMIT,
+} from './preparation'
 
 // ============================================================================
 // TYPES
@@ -242,48 +249,78 @@ function evaluateEquipment(item: Item, character: Character): ItemEvaluation {
 // ============================================================================
 
 /**
- * Decide whether to pick up an item
+ * Decide whether to pick up an item.
+ *
+ * Uses soft separation: consumables have type-specific caps,
+ * equipment shares a separate 20-slot limit.
  */
 export function shouldPickup(
   item: GroundItem,
   character: Character,
   config: PersonalityConfig
 ): boolean {
-  const evaluation = evaluateItem(item, character)
-
   // Always pick up gold
   if (item.goldValue !== undefined) {
     return true
   }
 
-  // Greedy personalities pick up more
-  const greedThreshold = Math.max(5, 15 - config.greed / 10)
+  const evaluation = evaluateItem(item, character)
 
-  // Always pick up upgrades
-  if (evaluation.isUpgrade) {
-    return true
-  }
-
-  // Pick up consumables based on usefulness
+  // Consumables: check type-specific cap
   if (item.template.type === 'potion' || item.template.type === 'scroll') {
-    // Check inventory space (simple heuristic: < 10 items)
-    if (character.inventory.length < 10) {
+    const type = getConsumableType(item as Item)
+    if (!type) {
+      // Unknown consumable - use greed threshold
+      const greedThreshold = Math.max(5, 15 - config.greed / 10)
       return evaluation.score >= greedThreshold
     }
+
+    // Under cap: always pickup
+    if (!isAtConsumableCap(character.inventory, type)) {
+      return true
+    }
+
+    // At cap: only pickup if this is a tier upgrade
+    const lowestTier = getLowestTierOfType(character.inventory, type)
+    if (item.template.tier > lowestTier) {
+      // Higher tier than existing - worth picking up for upgrade
+      return true
+    }
+
+    // At cap with no upgrade - skip
+    return false
   }
 
-  // Pick up equipment if it's an upgrade or we have empty slot
+  // Equipment: check equipment inventory limit
   if (item.template.slot) {
     const slot = getEquipSlot(item.template)
     if (slot) {
       const currentItem = getEquippedItem(character, slot)
-      if (!currentItem || evaluation.isUpgrade) {
+
+      // Always pick up for empty slot
+      if (!currentItem) {
         return true
       }
+
+      // Always pick up upgrades (will equip immediately)
+      if (evaluation.isUpgrade) {
+        return true
+      }
+
+      // Check equipment inventory limit for non-upgrades
+      const equipmentCount = countEquipmentInInventory(character.inventory)
+      if (equipmentCount >= EQUIPMENT_INVENTORY_LIMIT) {
+        return false
+      }
+
+      // Have room - use greed threshold
+      const greedThreshold = Math.max(5, 15 - config.greed / 10)
+      return evaluation.score >= greedThreshold * 2
     }
   }
 
-  // Otherwise use greed threshold
+  // Unknown item type - use greed threshold
+  const greedThreshold = Math.max(5, 15 - config.greed / 10)
   return evaluation.score >= greedThreshold * 2
 }
 

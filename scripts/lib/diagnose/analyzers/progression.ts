@@ -34,6 +34,8 @@ export interface ProgressionChecks {
   tether: boolean
   /** Track descent/ascent patterns */
   descent: boolean
+  /** Track town portal usage reasons */
+  townPortal: boolean
 }
 
 /** Configuration for progression analysis */
@@ -54,6 +56,7 @@ const DEFAULT_CHECKS: ProgressionChecks = {
   sweep: true,
   tether: true,
   descent: true,
+  townPortal: true,
 }
 
 const DEFAULT_CONFIG: ProgressionAnalyzerConfig = {
@@ -107,6 +110,13 @@ interface DescentEvent {
   reason: 'normal' | 'farming' | 'sweep' | 'town_return'
 }
 
+/** Town portal usage event */
+interface TownPortalUsage {
+  turn: number
+  depth: number
+  reason: string
+}
+
 // ============================================================================
 // ANALYZER
 // ============================================================================
@@ -130,6 +140,7 @@ export class ProgressionAnalyzer implements Analyzer {
   private sweepSessions: SweepSession[] = []
   private farmingFlips: FarmingFlip[] = []
   private descentEvents: DescentEvent[] = []
+  private townPortalUsages: TownPortalUsage[] = []
   private totalFarmingTurns = 0
   private totalSweepTurns = 0
   private totalTurns = 0
@@ -152,6 +163,7 @@ export class ProgressionAnalyzer implements Analyzer {
     this.sweepSessions = []
     this.farmingFlips = []
     this.descentEvents = []
+    this.townPortalUsages = []
     this.totalFarmingTurns = 0
     this.totalSweepTurns = 0
     this.totalTurns = 0
@@ -185,6 +197,10 @@ export class ProgressionAnalyzer implements Analyzer {
 
     if (this.config.checks.tether) {
       this.trackTether(ctx)
+    }
+
+    if (this.config.checks.townPortal) {
+      this.trackTownPortal(ctx)
     }
 
     // Accumulate time in modes
@@ -280,6 +296,31 @@ export class ProgressionAnalyzer implements Analyzer {
     }
     this.lastTetherRadius = botState.tetheredRadius
     this.lastTetherFlipCount = botState.tetheredFlipCount
+  }
+
+  private trackTownPortal(ctx: TurnContext): void {
+    const { game, botState, action, turn } = ctx
+
+    // Check if action is using a Town Portal scroll
+    if (action.type === 'use' && action.itemId) {
+      const item = game.character.inventory.find((i) => i.id === action.itemId)
+      if (item?.template.name === 'Scroll of Town Portal') {
+        // Check multiple sources for reason:
+        // 1. lastTownPortalReason (set by survival-consumables path)
+        // 2. currentGoal.reason (set by TOWN_TRIP goal path)
+        let reason = botState.lastTownPortalReason
+        if (!reason && botState.currentGoal?.type === 'TOWN_TRIP') {
+          reason = botState.currentGoal.reason
+        }
+        this.townPortalUsages.push({
+          turn,
+          depth: game.character.depth,
+          reason: reason ?? 'unknown',
+        })
+        // Clear the reason after recording
+        botState.lastTownPortalReason = null
+      }
+    }
   }
 
   onLevelChange(game: GameState, oldDepth: number, newDepth: number): void {
@@ -486,6 +527,41 @@ export class ProgressionAnalyzer implements Analyzer {
         details.push('By reason:')
         for (const [reason, count] of byReason) {
           details.push(`  ${reason}: ${count}`)
+        }
+      }
+    }
+
+    // Town portal metrics
+    if (this.config.checks.townPortal) {
+      Object.assign(metrics, {
+        townPortalUsages: this.townPortalUsages.length,
+      })
+
+      if (this.townPortalUsages.length > 0) {
+        details.push(
+          '',
+          '=== Town Portal Usage ===',
+          `Total uses: ${this.townPortalUsages.length}`,
+        )
+
+        // Breakdown by reason
+        const byReason = new Map<string, number>()
+        for (const usage of this.townPortalUsages) {
+          byReason.set(usage.reason, (byReason.get(usage.reason) ?? 0) + 1)
+        }
+        details.push('By reason:')
+        for (const [reason, count] of byReason) {
+          metrics[`townPortal_${reason.replace(/[^a-zA-Z0-9]/g, '_')}`] = count
+          details.push(`  ${reason}: ${count}`)
+        }
+
+        // Show individual usages (first 5)
+        details.push('Recent uses:')
+        for (const usage of this.townPortalUsages.slice(0, 5)) {
+          details.push(`  Turn ${usage.turn}: depth=${usage.depth} reason="${usage.reason}"`)
+        }
+        if (this.townPortalUsages.length > 5) {
+          details.push(`  ... (${this.townPortalUsages.length - 5} more)`)
         }
       }
     }

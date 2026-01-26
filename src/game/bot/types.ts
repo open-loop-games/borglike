@@ -178,6 +178,18 @@ export interface BotState {
   shopsVisitedForBuying: Set<string> // Shop IDs where we bought items
   visitedDungeonMerchants: Set<string> // Dungeon merchant IDs visited this level
 
+  // Consumable tier management
+  /** Item IDs of consumables to sell when picking up tier upgrades */
+  consumablesToSell: Set<string>
+
+  // Town needs tracking (shopping completion - tracks what we need, not what we visited)
+  /** Number of each supply type still needed during town visit */
+  townNeeds: {
+    tp: number // Town Portal scrolls needed
+    healing: number // Healing potions needed
+    escape: number // Escape scrolls needed
+  }
+
   // Labyrinth/corridor exploration mode
   /** Whether we're actively following a corridor (for labyrinth exploration) */
   corridorFollowingMode: boolean
@@ -247,6 +259,10 @@ export interface BotState {
   // Danger retreat state (cautious personality)
   /** DESCEND blocked by danger, cautious bot should retreat (ascend) instead of bullrush */
   dangerBlockedDescent: boolean
+
+  // Diagnostic tracking (for analyzer consumption)
+  /** Last town portal usage reason (set when TP used, cleared on town exit) */
+  lastTownPortalReason: string | null
 }
 
 // ============================================================================
