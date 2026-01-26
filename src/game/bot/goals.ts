@@ -371,7 +371,8 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
     }
 
     case 'ASCEND_TO_FARM': {
-      // Ascend is valid until we reach known stairs up
+      // Ascend is valid until we actually ascend (depth changes)
+      // Don't invalidate when AT stairs - that's when we execute the ascend action
       if (game.character.depth <= 1) return false
       const stairsUp = botState.knownStairsUp
       if (!stairsUp) return false
@@ -379,10 +380,7 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       if (goal.target && (goal.target.x !== stairsUp.x || goal.target.y !== stairsUp.y)) {
         return false
       }
-      // If at stairs, goal complete
-      const atStairs =
-        game.character.position.x === stairsUp.x && game.character.position.y === stairsUp.y
-      if (atStairs) return false
+      // Goal remains valid at stairs - getGoalArrivalAction will trigger ascend
       return true
     }
 
