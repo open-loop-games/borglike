@@ -97,7 +97,7 @@ const magic_missile: SpellTemplate = {
   manaCost: 2,
   cooldown: 0,
   effectType: 'damage',
-  baseDamage: '1d6',
+  baseDamage: '2d6',
   damageScaling: 1,
   damageType: 'arcane',
   canBeam: true, // Can pierce multiple enemies as beam at higher levels

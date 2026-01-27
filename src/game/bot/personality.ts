@@ -32,7 +32,7 @@ export const PERSONALITIES: Record<BotPersonality, PersonalityConfig> = {
   cautious: {
     aggression: 30, // Avoids unnecessary fights
     greed: 40, // Moderate item interest
-    caution: 50, // Retreat at 50% HP
+    caution: 35, // Retreat at 35% HP (was 50)
     exploration: 80, // Explore 80% before descending
     patience: 200, // Wait up to 200 turns
   },
@@ -46,14 +46,14 @@ export const PERSONALITIES: Record<BotPersonality, PersonalityConfig> = {
   greedy: {
     aggression: 50, // Balanced combat approach
     greed: 80, // High item interest - detour far for items
-    caution: 40, // Moderate retreat threshold
+    caution: 30, // Retreat at 30% HP (was 40)
     exploration: 90, // Explore thoroughly for loot
     patience: 300, // Very patient - look for all items
   },
   speedrunner: {
     aggression: 40, // Avoid fights when possible
     greed: 20, // Ignore most items
-    caution: 35, // Moderate retreat threshold
+    caution: 25, // Retreat at 25% HP (was 35)
     exploration: 30, // Minimal exploration - beeline for stairs
     patience: 100, // Very impatient - descend quickly
   },

@@ -54,8 +54,8 @@ const mage: ClassBehaviorProfile = {
   neverRetreats: false,
   usesTeleport: true,
   healsPriority: false,
-  aggressionMod: -20,
-  cautionMod: 20,
+  aggressionMod: 0,
+  cautionMod: -5,
   engageDistance: 4,
 }
 
@@ -115,8 +115,8 @@ const necromancer: ClassBehaviorProfile = {
   neverRetreats: false,
   usesTeleport: false,
   healsPriority: false,
-  aggressionMod: -15,
-  cautionMod: 15,
+  aggressionMod: 0,
+  cautionMod: -5,
   engageDistance: 3,
 }
 
@@ -139,8 +139,8 @@ const archmage: ClassBehaviorProfile = {
   neverRetreats: false,
   usesTeleport: true,
   healsPriority: false,
-  aggressionMod: -25,
-  cautionMod: 25,
+  aggressionMod: 0,
+  cautionMod: -5,
   engageDistance: 5,
 }
 

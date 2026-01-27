@@ -756,7 +756,7 @@ export function getFleeGoal(
   dangers: DangerMap,
   hpRate: number = 0
 ): BotGoal | null {
-  const { game, config, botState } = context
+  const { game, effectiveConfig, botState } = context
 
   // Check flee cooldown
   if (game.turn < botState.fleeCooldownUntil) {
@@ -764,7 +764,8 @@ export function getFleeGoal(
   }
 
   // Check if retreat warranted (PASS HP RATE)
-  const retreatEval = shouldRetreat(game, config, dangers, hpRate)
+  // Use effectiveConfig to include class modifiers (aggression/caution)
+  const retreatEval = shouldRetreat(game, effectiveConfig, dangers, hpRate)
   if (!retreatEval.shouldRetreat) return null
 
   // If fleeing due to high danger area while pursuing TAKE goal, blacklist that item
