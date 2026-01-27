@@ -25,7 +25,7 @@ export const BASELINE_CLASSES = [
 /** Standard baseline parameters */
 export const BASELINE_DEFAULTS = {
   runs: 100,
-  turns: 30000,
+  turns: 50000,
   seed: 1000,
   threads: 20,
 }
@@ -37,6 +37,8 @@ export interface BaselineConfig {
   threads?: number
   race?: string
   personality?: string
+  /** Use max upgrades (default: true for baseline) */
+  maxUpgrades?: boolean
   // Balance overrides
   monsterHp?: number
   monsterDamage?: number
@@ -69,19 +71,21 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
   const threads = config.threads ?? BASELINE_DEFAULTS.threads
   const race = config.race ?? 'human'
   const personality = (config.personality ?? 'cautious') as any
+  const maxUpgrades = config.maxUpgrades ?? true
 
   console.log(`\n${'='.repeat(60)}`)
   console.log('BASELINE TEST')
   console.log('='.repeat(60))
   console.log(`Parameters: ${runs} runs, ${turns} turns, seed=${seed}, ${threads} threads`)
+  console.log(`Personality: ${personality}, Max Upgrades: ${maxUpgrades}`)
   console.log(`Classes: ${BASELINE_CLASSES.length}`)
   console.log('='.repeat(60))
 
   const results: BaselineResult[] = []
   const startTime = Date.now()
 
-  // Build balance config - always use max bestiary for baseline
-  const effectiveBestiary = (config.bestiary ?? 0) > 0 ? config.bestiary : 25
+  // Build balance config - use max bestiary if maxUpgrades enabled
+  const effectiveBestiary = (config.bestiary ?? 0) > 0 ? config.bestiary : (maxUpgrades ? 25 : 0)
   const balance = {
     monsterHpPercent: config.monsterHp ?? 100,
     monsterDamagePercent: config.monsterDamage ?? 100,
@@ -107,7 +111,7 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
       personality,
       maxTurns: turns,
       analyzers: createAllAnalyzers(),
-      maxUpgrades: true, // Always use max upgrades for baseline
+      maxUpgrades,
       balance,
       runs,
       startSeed: seed,
@@ -148,24 +152,24 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
   console.log(`\n${'='.repeat(60)}`)
   console.log('BASELINE RESULTS')
   console.log('='.repeat(60))
-  console.log(`\n| Class | Avg Depth | Max Depth | CB Rate | Kills | Morgoth |`)
-  console.log('|-------|-----------|-----------|---------|-------|---------|')
+  console.log(`\n| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth |`)
+  console.log('|-------|-----------|-----------|---------|-----------|-------|---------|')
   for (const r of results) {
     const status = r.avgDepth >= 30 ? '✅' : r.avgDepth >= 10 ? '⚠️' : '❌'
     console.log(
-      `| ${status} ${r.classId.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
+      `| ${status} ${r.classId.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
     )
   }
 
   console.log(`\nTotal time: ${totalTime}s`)
   console.log(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
   console.log('```')
-  console.log(`| Class | Avg Depth | Max Depth | CB Rate | Kills | Status |`)
-  console.log('|-------|-----------|-----------|---------|-------|--------|')
+  console.log(`| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Status |`)
+  console.log('|-------|-----------|-----------|---------|-----------|-------|--------|')
   for (const r of results) {
     const status = r.avgDepth >= 30 ? '✅ Endgame' : r.avgDepth >= 10 ? '⚠️ Mid' : '⚠️ Early'
     console.log(
-      `| **${r.classId.charAt(0).toUpperCase() + r.classId.slice(1)}** | ${r.avgDepth.toFixed(1)} | ${r.maxDepth} | ${r.cbRate.toFixed(0)}% | ${r.avgKills.toFixed(0)} | ${status} |`
+      `| **${r.classId.charAt(0).toUpperCase() + r.classId.slice(1)}** | ${r.avgDepth.toFixed(1)} | ${r.maxDepth} | ${r.cbRate.toFixed(0)}% | ${r.avgTurns.toFixed(0)} | ${r.avgKills.toFixed(0)} | ${status} |`
     )
   }
   console.log('```')

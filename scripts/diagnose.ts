@@ -358,6 +358,7 @@ async function main(): Promise<void> {
       threads: args.threads !== 8 ? args.threads : undefined,
       race: args.race,
       personality: args.personality,
+      maxUpgrades: args.maxUpgrades,
       monsterHp: args.monsterHp,
       monsterDamage: args.monsterDamage,
       startPotions: args.startPotions,

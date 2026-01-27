@@ -20,6 +20,30 @@
 
 **Summary:** All 11 classes endgame-viable (41+ avg depth). Major caster improvements from caution system fix: **Mage +8.3**, **Archmage +6.7**, **Necromancer +6.8** avg depth. CB rates remain low except casters (11-16%). See "RESOLVED: Caster Caution Threshold Bug" below.
 
+### Upgrade Impact Analysis (100 runs, 50k turns, seed=1000)
+
+Comparison of no-upgrades vs max-upgrades to measure upgrade dependency per class:
+
+| Class | No Upgrades | Max Upgrades | Δ Depth | Notes |
+|-------|-------------|--------------|---------|-------|
+| **Ranger** | 44.6 | 47.9 | +3.3 | Strong baseline |
+| **Berserker** | 43.0 | 48.7 | +5.7 | Strong baseline |
+| **Warrior** | 41.3 | 47.8 | +6.5 | Strong baseline |
+| **Necromancer** | 36.4 | 44.7 | +8.3 | Skeleton carries early |
+| **Rogue** | 34.0 | 44.4 | +10.4 | Moderate dependency |
+| **Priest** | 27.8 | 43.6 | +15.8 | High dependency |
+| **Druid** | 24.4 | 43.2 | +18.8 | High dependency |
+| **Archmage** | 23.7 | 41.6 | +17.9 | High dependency |
+| **Mage** | 23.1 | 42.8 | +19.7 | High dependency |
+| **Paladin** | 28.1 | 47.4 | +19.3 | High dependency |
+| **Blackguard** | 22.0 | 48.2 | **+26.2** | Most upgrade-dependent |
+
+**Observations:**
+- Pure melee (Ranger, Berserker, Warrior) are viable without upgrades (~41-45 depth)
+- Casters and hybrids need upgrades to reach endgame (+15-20 depth from upgrades)
+- Blackguard is nearly unplayable without upgrades (+26 depth difference)
+- Validates bot feature unlock design: face-rush viable for melee, casters need features
+
 ### Previous Run (30 runs, 30k turns, seed=1000, max-upgrades) - Post Defensive Spells
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |

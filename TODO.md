@@ -7,45 +7,71 @@
 - [ ] Tune bot personalities for distinct playstyles
 - [ ] Status effect implementation (debuffs currently cosmetic)
 
+### Bot Feature Unlock System (Per-Slot Progression)
+
+Bots start simple (face-rush), unlock features through upgrades per run slot.
+
+**Dramatic Changes (on/off)**
+- [ ] Farming mode: Without unlock, always descend regardless of level
+- [ ] Town usage: Without unlock, never visit town (no buy/sell)
+- [ ] Preparedness: Without unlock, no consumable requirements checked
+
+**Reduced Effectiveness (upgrade levels)**
+- [ ] Sweep mode: Levels increase re-exploration % (L1: 25%, L2: 50%, L3: 75%)
+- [ ] Stair surfing: Levels reduce HP threshold to ascend
+- [ ] Kiting: Levels improve ranged distance maintenance
+
+**Implementation**
+- [ ] Per-slot unlock state in progression store
+- [ ] Full loadout UI exposes unlocked feature toggles
+- [ ] Personality presets set default lever values
+
+### Town & Economy
+
+- [ ] Town tier unlocks (T2, T3, T4 merchants)
+- [ ] Black market vendor: Random selection of higher-tier items
+- [ ] Rebalance gold economy: Gain too high vs drains (encumbrance helps, need more sinks)
+
+### Balance Fixes
+
+- [ ] Nerf Swiftness upgrade: 25% → 10% evasion
+- [ ] Audit other upgrades for scaling issues
+
 ### Technical Debt
-- [ ] Exploration short-distance goal thrashing (~2% circuit breaker rate)
-  - Bot gets trapped in local exploration loops, picking nearby tiles instead of distant frontiers
-  - Seed 1768974377494 reproduces: 1000 turns on depth 1, 51% explored, stairs not found
-  - Potential fixes: frontier bias, longer goal persistence, better corridor-following
-- [ ] Remove debug console.log statements
-  - `src/game/bot/exploration.ts:330`, `src/game/bot/goals.ts:112`
-  - `src/stores/progression.ts:516`, `src/App.vue:71`
 
-### Prestige System (Not Implemented)
+### Prestige System
 
-Prestige races/classes show as purchasable but unlock conditions are never validated.
-The `unlockCondition` field is just a display string with no checking logic.
-
-**Unlock Condition Validation** (`src/stores/progression.ts:216-242`)
-- [x] Add `meetsCondition` check to `raceUnlocks` and `classUnlocks` computed properties
-- [x] UI should disable purchase button when condition not met (`src/ui/components/meta/UnlockItem.vue`)
-
-**Missing Stats Tracking** (for prestige conditions)
-- [x] Track victories per race: `victoriesPerRace: Record<string, number>` in GlobalStats
-- [x] Track victories per class: `victoriesPerClass: Record<string, number>` in GlobalStats
-- [x] Add dragon kill aggregation query (bestiary has per-monster kills, need total dragons)
-- [x] Update `run-completion-service.ts` to record race/class wins on victory
-
-**Prestige Race Abilities** (defined in data but not implemented)
-- [ ] Vampire `life_steal`: Melee attacks heal 20% of damage (`src/game/combat.ts`)
-- [ ] Vampire `no_potions`: Block healing potion use (`src/game/actions/consumables.ts`)
-- [ ] Golem `no_magic`: Block spell casting and scroll use (`src/game/spell-resolution.ts`, `consumables.ts`)
-- [ ] Golem `slow_heal`: 50% healing rate modifier (`src/game/game-loop.ts`)
-- [ ] Draconian `breath_weapon`: Cone AOE fire/cold/acid ability (new spell or action)
+**Remaining Work**
 - [ ] Draconian `wings`: Fly over pits and water (`src/game/actions/movement.ts`)
-- Vampire `light_vuln`: Works via resistance system (-100 LIGHT)
-- Golem `construct` poison immunity: Works via resistance system (+100 POISON)
-- Draconian `elem_resist`: Works via resistance system (+50 fire/cold/acid)
-
-**Prestige Class Mechanics**
-- [ ] Necromancer: Summoner behavior - raise slain monsters as allies (requires summoning system)
 - [ ] Archmage: Glass cannon - prefer AOE spells in bot spell selection (`src/game/bot/spells.ts`)
-- Berserker `neverRetreats`: Already implemented in `src/game/bot/goals.ts:139`
+
+**Implemented** (2026-01)
+
+Unlock Condition Validation:
+- [x] `checkCondition` predicates on prestige races/classes (`races.ts`, `classes.ts`)
+- [x] Victory tracking per race/class (`progression.ts:517-526`)
+- [x] Dragon kill aggregation for Draconian unlock (`races.ts:407-410`)
+- [x] UI disables purchase when condition not met (`UnlockItem.vue`)
+
+Vampire Abilities:
+- [x] `life_steal`: 20% lifesteal on melee (`combat.ts:1284`)
+- [x] `no_potions`: Blocks healing potions (`consumables.ts:370`, `bot/items.ts:609`)
+- [x] `light_vuln`: -100 LIGHT resistance (`character.ts:292`)
+
+Golem Abilities:
+- [x] `no_magic`: Blocks spells (`interaction.ts:70`) and scrolls (`consumables.ts:382`)
+- [x] `slow_heal`: 50% healing rate (`game-loop.ts:365`)
+- [x] `construct`: +100 POISON resistance (`character.ts:296`)
+- [x] Bot knows golem can't cast (`bot/spells.ts:27`)
+
+Draconian Abilities:
+- [x] `breath_weapon`: Cone AOE via activation system (`activation.ts`, `activations.ts:163`)
+- [x] `elem_resist`: +50 fire/cold/acid resistance (`character.ts:286-289`)
+- [x] Bot uses breath weapon (`bot/activations.ts:130`)
+
+Prestige Class Mechanics:
+- [x] Necromancer: Summon skeleton spell + minion AI (`minion-ai.ts`, `spells.ts:493`)
+- [x] Berserker `neverRetreats` (`class-profiles.ts:127`)
 
 ### Other Missing Systems
 - [ ] Curse system (`src/game/features.ts:246` has TODO, altars show message but curses don't exist)
@@ -54,6 +80,12 @@ The `unlockCondition` field is just a display string with no checking logic.
 
 ### Future Features
 - [ ] Statistics dashboard
+- [ ] Optional tile graphics (RLTiles)
+  - Public domain tileset, attribution required: http://rltiles.sf.net
+  - Toggle in settings (ASCII vs tiles)
+  - Scope: player, monsters, terrain, items
+  - 32x32 tiles - decide viewport scaling approach
+  - Tile mapping strategy for 52+ monsters
 
 ---
 
