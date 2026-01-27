@@ -1,24 +1,24 @@
 # Balance Test Plan
 
-## Current State (2026-01-26)
+## Current State (2026-01-27)
 
-### Full Baseline @ `HEAD` (100 runs, 30k turns, seed=1000, max-upgrades) - Post Caster Caution Fix
+### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Phase Door Near-Stairs Fix
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
-| **Berserker** | 48.7 | 50 | 1% | 632 | ✅ Endgame |
-| **Blackguard** | 48.2 | 50 | 1% | 540 | ✅ Endgame |
-| **Ranger** | 47.9 | 50 | 3% | 618 | ✅ Endgame |
-| **Warrior** | 47.8 | 50 | 3% | 506 | ✅ Endgame |
-| **Paladin** | 47.4 | 50 | 2% | 637 | ✅ Endgame |
-| **Necromancer** | 44.7 | 49 | 11% | 765 | ✅ Endgame |
-| **Rogue** | 44.4 | 50 | 5% | 562 | ✅ Endgame |
-| **Priest** | 43.6 | 50 | 0% | 611 | ✅ Endgame |
-| **Druid** | 43.2 | 50 | 0% | 548 | ✅ Endgame |
-| **Mage** | 42.8 | 50 | 13% | 696 | ✅ Endgame |
-| **Archmage** | 41.6 | 48 | 16% | 686 | ✅ Endgame |
+| **Berserker** | 48.8 | 50 | 5% | 529 | ✅ Endgame |
+| **Ranger** | 48.5 | 50 | 2% | 611 | ✅ Endgame |
+| **Blackguard** | 48.1 | 50 | 5% | 630 | ✅ Endgame |
+| **Warrior** | 47.8 | 50 | 3% | 502 | ✅ Endgame |
+| **Paladin** | 46.8 | 50 | 3% | 607 | ✅ Endgame |
+| **Necromancer** | 44.7 | 50 | 12% | 751 | ✅ Endgame |
+| **Rogue** | 43.6 | 50 | 1% | 534 | ✅ Endgame |
+| **Priest** | 43.2 | 49 | 0% | 605 | ✅ Endgame |
+| **Druid** | 42.9 | 50 | 0% | 536 | ✅ Endgame |
+| **Mage** | 42.3 | 47 | 8% | 684 | ✅ Endgame |
+| **Archmage** | 41.9 | 48 | 6% | 674 | ✅ Endgame |
 
-**Summary:** All 11 classes endgame-viable (41+ avg depth). Major caster improvements from caution system fix: **Mage +8.3**, **Archmage +6.7**, **Necromancer +6.8** avg depth. CB rates remain low except casters (11-16%). See "RESOLVED: Caster Caution Threshold Bug" below.
+**Summary:** All 11 classes endgame-viable (41+ avg depth). Phase Door near-stairs fix: skip Phase Door when within 15 tiles of stairs with DESCEND goal. Extended tether path distance when displaced by teleport. **Mage CB: 14% → 8%, Archmage CB: 10% → 6%**. Remaining CB: Necromancer 12%.
 
 ### Upgrade Impact Analysis (100 runs, 50k turns, seed=1000)
 
@@ -532,10 +532,10 @@ Added `estimateCasterDamage()` to properly estimate caster kill speed:
 
 ```bash
 # Baseline before staves
-pnpm diagnose batch --runs=100 --seed=1000 --class=mage --max-upgrades --turns=30000
+pnpm diagnose batch --runs=100 --seed=1000 --class=mage --max-upgrades --turns=50000
 
 # After staves - expect similar or improved depth, fewer CB from spell power boost
-pnpm diagnose batch --runs=100 --seed=1000 --class=mage --max-upgrades --turns=30000
+pnpm diagnose batch --runs=100 --seed=1000 --class=mage --max-upgrades --turns=50000
 ```
 
 ---
@@ -560,19 +560,19 @@ pnpm diagnose batch --runs=100 --seed=1000 --class=mage --max-upgrades --turns=3
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
-| `--turns` | 30,000 | Enough for endgame, catches long caster runs |
-| `--runs` | 100 | Statistical significance, ~1.5-2 min per class |
+| `--turns` | 50,000 | Catches caster CB issues that emerge at higher turn counts |
+| `--runs` | 100 | Statistical significance, ~2-3 min per class |
 | `--seed` | 1000 | Reproducibility baseline |
 | `--max-upgrades` | always | Consistent meta-progression state |
 
 **Standard command:**
 ```bash
-pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=50000 > /tmp/[name].txt 2>&1
 ```
 
 **Full baseline (all 11 classes):**
 ```bash
-pnpm diagnose baseline --seed=1000  # ~15 min
+pnpm diagnose baseline --seed=1000 --turns=50000 --max-upgrades  # ~16 min
 ```
 
 **Parallel execution:** Run only 2 batch commands simultaneously (8 threads each = 16 total).
@@ -589,14 +589,14 @@ pnpm diagnose quick --seed=12345 --class=warrior
 pnpm diagnose deep --seed=12345 --class=warrior --map
 
 # Standard batch test
-pnpm diagnose batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=50000 > /tmp/[name].txt 2>&1
 
 # Find problematic seeds
-pnpm diagnose find --runs=100 --seed=1000 --class=mage --turns=30000 > /tmp/[name].txt 2>&1
+pnpm diagnose find --runs=100 --seed=1000 --class=mage --turns=50000 > /tmp/[name].txt 2>&1
 
-# Full baseline across all 11 classes (100 runs, 30k turns, max-upgrades)
-# ~15 min runtime
-pnpm diagnose baseline --seed=1000  > /tmp/[name].txt 2>&1
+# Full baseline across all 11 classes (100 runs, 50k turns, max-upgrades)
+# ~16 min runtime
+pnpm diagnose baseline --seed=1000 --turns=50000 --max-upgrades > /tmp/[name].txt 2>&1
 ```
 
 ### Balance Flags
@@ -622,13 +622,13 @@ pnpm diagnose baseline --seed=1000  > /tmp/[name].txt 2>&1
 
 ```bash
 # Baseline (seeded for reproducibility)
-pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000  > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=50000  > /tmp/[name].txt 2>&1
 
 # With change (same seed for A/B comparison)
-pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=30000 [flags]  > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=50000 [flags]  > /tmp/[name].txt 2>&1
 
 # Verify no regression on warrior
-pnpm diagnose batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=30000 [flags]  > /tmp/[name].txt 2>&1
+pnpm diagnose batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turns=50000 [flags]  > /tmp/[name].txt 2>&1
 ```
 
 **Success criteria:**

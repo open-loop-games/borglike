@@ -240,8 +240,12 @@ function findUnseenTileInTether(
   // Use precomputed flow or compute fresh
   const flowCosts = precomputedFlow ?? computeFlow(level, pos)
 
-  // Cap path distance: don't walk further than 2x the tether radius
-  const maxPathDist = radius * 2
+  // Cap path distance - allow longer paths if bot is displaced from origin
+  // (e.g., by teleport/phase door). This ensures we can still find targets
+  // within the tether geometry even when starting from outside the tether.
+  const distFromOrigin = Math.max(Math.abs(pos.x - origin.x), Math.abs(pos.y - origin.y))
+  const basePathDist = radius * 2
+  const maxPathDist = Math.max(basePathDist, distFromOrigin + radius + 5)
 
   let bestTarget: Point | null = null
   let bestDist = Infinity
@@ -710,7 +714,7 @@ function handleTetherSweep(context: BotContext, goldTarget: number): BotGoal | n
     flipCount++
   }
 
-  // All radii exhausted - tether cycle complete
+  // All radii exhausted - exit tether mode
   exitTetheredMode(botState)
   return null
 }

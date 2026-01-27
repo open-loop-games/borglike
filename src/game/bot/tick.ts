@@ -380,11 +380,18 @@ function handleDangerTier(
       // Mage/Archmage: Try Phase Door at DANGER tier (tactical escape)
       // Only when actually threatened: HP < 50% OR surrounded (2+ adjacent)
       // Avoids disrupting exploration when bot could just fight
+      // EXCEPTION: Skip phase door when close to stairs with DESCEND goal - push through
+      // instead of repeatedly teleporting away and restarting the approach
       const classId = game.character.classId
       const hpRatio = game.character.hp / game.character.maxHp
       const adjacentCount = countAdjacentMonsters(game, pos)
+      const goal = botState.currentGoal
+      const closeToStairs =
+        goal?.type === 'DESCEND' &&
+        goal.target &&
+        Math.max(Math.abs(pos.x - goal.target.x), Math.abs(pos.y - goal.target.y)) <= 15
       if (classId === 'mage' || classId === 'archmage') {
-        if (hpRatio < 0.5 || adjacentCount >= 2) {
+        if ((hpRatio < 0.5 || adjacentCount >= 2) && !closeToStairs) {
           const phaseDoorAction = getPhaseDoorSpellAction(game)
           if (phaseDoorAction) {
             // TODO: resetAfterTeleport causes regression, disabled pending investigation
