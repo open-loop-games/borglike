@@ -411,6 +411,15 @@ function handleDangerTier(
         recordProgress(botState, game.turn)
         return { type: 'move', direction: kiteDir }
       }
+
+      // 2b. Can't kite - casters should cast damage spell point-blank, not melee
+      if (!hasRangedWeapon(game)) {
+        const damageSpell = getDamageSpellAction(game, config, [adjacentMonster])
+        if (damageSpell) {
+          recordProgress(botState, game.turn)
+          return damageSpell
+        }
+      }
     }
 
     // 3. Ranged attack if at safe distance
