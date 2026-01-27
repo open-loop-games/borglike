@@ -299,8 +299,9 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       }
 
     case 'KITE':
-      // Kite is valid if we have a ranged weapon and visible monsters
-      if (!hasRangedWeapon(game)) return false
+      // Kite is valid if we have ranged capability (bow OR caster) and visible monsters
+      // Must match getKiteGoal logic: bow users OR prefersRanged casters
+      if (!hasRangedWeapon(game) && !context.classProfile.prefersRanged) return false
       if (context.visibleMonsters.length === 0) return false
       // If target monster is dead, need new target
       if (goal.targetId) {
