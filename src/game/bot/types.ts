@@ -240,6 +240,12 @@ export interface BotState {
   /** Depth to return to for hunting the unique */
   uniqueHuntFlipDepth: number | null
 
+  // Morgoth hunt level flip (separate from unique blocking - Morgoth IS the endgame)
+  /** Whether we're in a Morgoth hunt flip (ascend to 49, descend back to 50) */
+  morgothFlipActive: boolean
+  /** Target depth to return to (always MAX_DEPTH when active) */
+  morgothFlipTargetDepth: number | null
+
   // HP tracking for DOT detection
   /** HP value from previous turn */
   previousHp: number
@@ -255,6 +261,8 @@ export interface BotState {
   cachedSweepFlow: SweepFlowCache | null
   /** Cached unexplored tile count (for invalidation detection) */
   lastExploredCount: number
+  /** Cached floor tile count for current level (non-wall tiles) */
+  cachedLevelFloorCount: number
 
   // Danger retreat state (cautious personality)
   /** DESCEND blocked by danger, cautious bot should retreat (ascend) instead of bullrush */

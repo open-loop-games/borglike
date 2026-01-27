@@ -8,7 +8,7 @@
  */
 
 import type { Character, Item, UniqueState, MonsterTemplate } from '../types'
-import { getLivingUniques } from '../types'
+import { getLivingUniques, MAX_DEPTH } from '../types'
 import { POTIONS, SCROLLS } from '../data/items'
 import { monsters as MONSTERS } from '../data/monsters'
 import type { BotContext, BotGoal } from './types'
@@ -798,13 +798,19 @@ export function getRelevantLivingUniques(
 // HUNT UNIQUE GOAL
 // ============================================================================
 
+/** Exploration threshold to trigger unique hunt flip (80% of level seen this visit) */
+const UNIQUE_HUNT_FLIP_THRESHOLD = 0.8
+
 /**
  * Get HUNT_UNIQUE goal - hunt unique monsters blocking descent.
  *
  * If 2+ living uniques block descent to next depth:
  * 1. If unique visible → HUNT_UNIQUE (engage it)
- * 2. If level has unexplored tiles → null (let EXPLORE find it)
- * 3. If level fully explored → ASCEND_TO_FARM (flip level to respawn)
+ * 2. If level not sufficiently explored (seenThisVisit) → null (let EXPLORE find it)
+ * 3. If level 80%+ seen this visit, unique not found → ASCEND_TO_FARM (flip level to respawn)
+ *
+ * Uses seenThisVisit (resets on level change) instead of tile.explored (persists)
+ * to prevent infinite flip loops.
  */
 export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
   const { game, visibleMonsters, botState } = context
@@ -814,7 +820,7 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
   // Skip in town
   if (character.depth === 0) return null
 
-  // Check for unique blocker
+  // Check for unique blocker (Morgoth hunt is handled separately in getMorgothHuntGoal)
   const uniqueBlocker = getUniqueBlocker(character.depth, nextDepth, game.uniqueState, MONSTERS)
 
   if (!uniqueBlocker) {
@@ -842,17 +848,26 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
     }
   }
 
-  // Unique exists but not visible - check if level is fully explored
-  const hasUnexploredTiles = game.currentLevel.tiles.some((row) =>
-    row.some((tile) => !tile.explored && tile.type !== 'wall')
-  )
+  // Unique exists but not visible - check seenThisVisit coverage
+  // Using seenThisVisit (resets on level change) instead of tile.explored (persists)
+  // prevents infinite flip loops where bot immediately re-flips after returning
+  const level = game.currentLevel
+  let totalFloor = 0
+  for (const row of level.tiles) {
+    for (const tile of row) {
+      if (tile.type !== 'wall') {
+        totalFloor++
+      }
+    }
+  }
+  const seenRate = totalFloor > 0 ? botState.seenThisVisit.size / totalFloor : 0
 
-  if (hasUnexploredTiles) {
-    // Still tiles to explore - let EXPLORE goal handle it
+  if (seenRate < UNIQUE_HUNT_FLIP_THRESHOLD) {
+    // Not enough of level seen this visit - let EXPLORE goal find the unique
     return null
   }
 
-  // Level fully explored, unique not found - trigger level flip
+  // Level 80%+ seen this visit, unique not found - trigger level flip
   // This forces respawn of monsters, giving another chance to find the unique
   botState.huntingUniqueBlocker = uniqueBlocker
   botState.uniqueHuntFlipDepth = character.depth

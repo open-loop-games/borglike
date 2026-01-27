@@ -111,10 +111,10 @@ export function spawnMonstersForLevel(
   // Get available monster templates for this depth
   let templates = getSpawnableMonsters(depth)
 
-  // Filter out uniques that have already spawned this run
+  // Filter out uniques that have been killed this run (killed uniques don't respawn)
   if (uniqueState) {
     templates = templates.filter((t) => {
-      if (t.flags?.includes('UNIQUE') && uniqueState.spawned.has(t.name)) {
+      if (t.flags?.includes('UNIQUE') && uniqueState.killed.has(t.name)) {
         return false
       }
       return true
@@ -144,17 +144,17 @@ export function spawnMonstersForLevel(
       const monster = spawnMonster(template, pos, hpPercent)
       monsters.push(monster)
 
-      // Track unique spawns
+      // Track unique spawns (for getLivingUniques - uniques currently alive in the run)
       if (uniqueState && template.flags?.includes('UNIQUE')) {
         uniqueState.spawned.add(template.name)
       }
     }
   }
 
-  // Spawn boss on max depth (only if not already spawned)
+  // Spawn boss on max depth (respawns on revisit, but not if killed)
   if (depth === MAX_DEPTH) {
-    const bossAlreadySpawned = uniqueState?.spawned.has(VICTORY_BOSS_NAME)
-    if (!bossAlreadySpawned) {
+    const bossAlreadyKilled = uniqueState?.killed.has(VICTORY_BOSS_NAME)
+    if (!bossAlreadyKilled) {
       const bossTemplate = getMonsterByName(VICTORY_BOSS_NAME)
       if (bossTemplate) {
         const bossPos = findOpenPositions(level, 1)[0]

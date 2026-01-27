@@ -64,6 +64,9 @@ export function createBotState(): BotState {
     // Unique hunt level flip
     huntingUniqueBlocker: null,
     uniqueHuntFlipDepth: null,
+    // Morgoth hunt level flip
+    morgothFlipActive: false,
+    morgothFlipTargetDepth: null,
     // HP tracking
     previousHp: 0,
     hpHistory: [],
@@ -72,6 +75,7 @@ export function createBotState(): BotState {
     cachedExplorationFlow: null,
     cachedSweepFlow: null,
     lastExploredCount: 0,
+    cachedLevelFloorCount: 0,
     // Danger retreat
     dangerBlockedDescent: false,
     // Diagnostic tracking
@@ -117,6 +121,7 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.cachedExplorationFlow = null
   state.cachedSweepFlow = null
   state.lastExploredCount = 0
+  state.cachedLevelFloorCount = 0
   // Sweep exploration - reset direction (will be re-initialized based on entry point)
   // Keep sweepMode active across levels (part of multi-level pattern)
   state.sweepDirection = null

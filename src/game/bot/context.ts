@@ -44,6 +44,10 @@ function createMinimalBotState(): BotState {
     shopsVisitedForSelling: new Set(),
     shopsVisitedForBuying: new Set(),
     visitedDungeonMerchants: new Set(),
+    // Consumable tier management
+    consumablesToSell: new Set(),
+    // Town needs tracking
+    townNeeds: { tp: 0, healing: 0, escape: 0 },
     // Corridor exploration
     corridorFollowingMode: false,
     corridorFacing: null,
@@ -69,6 +73,9 @@ function createMinimalBotState(): BotState {
     // Unique hunt level flip
     huntingUniqueBlocker: null,
     uniqueHuntFlipDepth: null,
+    // Morgoth hunt level flip
+    morgothFlipActive: false,
+    morgothFlipTargetDepth: null,
     // HP tracking
     previousHp: 0,
     hpHistory: [],
@@ -77,8 +84,11 @@ function createMinimalBotState(): BotState {
     cachedExplorationFlow: null,
     cachedSweepFlow: null,
     lastExploredCount: 0,
+    cachedLevelFloorCount: 0,
     // Danger retreat
     dangerBlockedDescent: false,
+    // Diagnostic tracking
+    lastTownPortalReason: null,
   }
 }
 

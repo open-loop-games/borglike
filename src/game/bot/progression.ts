@@ -54,6 +54,38 @@ const SWEEP_COMPLETION_THRESHOLD = 70
 const SWEEP_TIMEOUT = 500
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Get floor tile count for the current level (cached per level).
+ * Floor tiles = all non-wall tiles (floor, doors, stairs, etc.)
+ */
+function getLevelFloorCount(context: BotContext): number {
+  const { game, botState } = context
+
+  // Return cached value if available
+  if (botState.cachedLevelFloorCount > 0) {
+    return botState.cachedLevelFloorCount
+  }
+
+  // Compute floor count
+  const level = game.currentLevel
+  let count = 0
+  for (const row of level.tiles) {
+    for (const tile of row) {
+      if (tile.type !== 'wall') {
+        count++
+      }
+    }
+  }
+
+  // Cache for future calls this level
+  botState.cachedLevelFloorCount = count
+  return count
+}
+
+// ============================================================================
 // STATE TRANSITIONS
 // ============================================================================
 
@@ -465,6 +497,174 @@ export function getReturnToUniqueHuntGoal(context: BotContext): BotGoal | null {
   }
 
   return null
+}
+
+// ============================================================================
+// MORGOTH HUNT (Standalone - not a unique blocker, IS the endgame)
+// ============================================================================
+
+/** Exploration threshold to trigger Morgoth flip (90%) */
+const MORGOTH_FLIP_EXPLORATION_THRESHOLD = 0.9
+
+/**
+ * Get goal to navigate back to target depth during a level flip.
+ * Shared logic for both unique hunt and Morgoth hunt flips.
+ */
+function getLevelFlipReturnGoal(
+  context: BotContext,
+  targetDepth: number,
+  reason: string
+): BotGoal | null {
+  const { game, botState } = context
+  const character = game.character
+
+  // Skip in town
+  if (character.depth === 0) return null
+
+  // At target depth - flip complete, return null to let hunt logic take over
+  if (character.depth === targetDepth) {
+    return null
+  }
+
+  // Above target depth - descend back
+  if (character.depth < targetDepth) {
+    // Try known stairs first, then level data, finally check if standing on stairs
+    let stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
+
+    // After ascending during flip, we land on stairs down - check current tile
+    if (!stairsDown) {
+      const currentTile = getTile(game.currentLevel, character.position.x, character.position.y)
+      if (currentTile?.type === 'stairs_down') {
+        stairsDown = character.position
+      }
+    }
+
+    if (!stairsDown) return null
+
+    return {
+      type: 'DESCEND',
+      target: stairsDown,
+      targetId: null,
+      reason,
+      startTurn: game.turn,
+    }
+  }
+
+  // Below target depth - ascend back
+  if (character.depth > targetDepth) {
+    const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+    if (!stairsUp) return null
+
+    return {
+      type: 'ASCEND_TO_FARM',
+      target: stairsUp,
+      targetId: null,
+      reason,
+      startTurn: game.turn,
+    }
+  }
+
+  return null
+}
+
+/**
+ * Get goal to return to depth 50 during Morgoth hunt flip.
+ * Called before combat goals to ensure flip completes.
+ */
+export function getMorgothFlipReturnGoal(context: BotContext): BotGoal | null {
+  const { botState } = context
+
+  // Not in Morgoth flip mode
+  if (!botState.morgothFlipActive || botState.morgothFlipTargetDepth === null) {
+    return null
+  }
+
+  return getLevelFlipReturnGoal(
+    context,
+    botState.morgothFlipTargetDepth,
+    'Returning to depth 50 to hunt Morgoth'
+  )
+}
+
+/**
+ * Get goal to hunt Morgoth at depth 50.
+ *
+ * Morgoth hunt is different from regular unique hunting:
+ * - Morgoth doesn't "block descent" - he IS the endgame
+ * - Trigger: At depth 50, 90%+ explored, Morgoth not visible
+ * - Action: Level flip (ascend to 49, descend back) to respawn monsters
+ * - End: Find and kill Morgoth (victory) or die trying
+ */
+export function getMorgothHuntGoal(context: BotContext): BotGoal | null {
+  const { game, botState, visibleMonsters } = context
+  const character = game.character
+
+  // Only at max depth
+  if (character.depth !== MAX_DEPTH) return null
+
+  // Check if Morgoth is visible - if so, KILL goal will handle it
+  const morgothVisible = visibleMonsters.some(
+    (m) => m.template.name === 'Morgoth, Lord of Darkness' && m.hp > 0
+  )
+  if (morgothVisible) {
+    // Clear flip state if we found him
+    botState.morgothFlipActive = false
+    botState.morgothFlipTargetDepth = null
+    return null // Let KILL goal engage
+  }
+
+  // Calculate seenThisVisit coverage (resets on level change, unlike tile.explored)
+  const totalFloor = getLevelFloorCount(context)
+  const seenThisVisitRate = totalFloor > 0 ? botState.seenThisVisit.size / totalFloor : 0
+
+  // Already in flip mode at depth 50
+  if (botState.morgothFlipActive && botState.morgothFlipTargetDepth === MAX_DEPTH) {
+    // Flip complete detection: seenThisVisit resets on level change
+    // If coverage is low, we've just returned from the flip
+    if (seenThisVisitRate < MORGOTH_FLIP_EXPLORATION_THRESHOLD) {
+      botState.morgothFlipActive = false
+      botState.morgothFlipTargetDepth = null
+      return null // Let EXPLORE find Morgoth on the fresh level
+    }
+
+    // Still at high seenThisVisit - we haven't left yet, keep trying to ascend
+    const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+    if (stairsUp) {
+      return {
+        type: 'ASCEND_TO_FARM',
+        target: stairsUp,
+        targetId: null,
+        reason: 'Level flip to find Morgoth (continuing)',
+        startTurn: game.turn,
+      }
+    }
+    // No stairs available, clear state
+    botState.morgothFlipActive = false
+    botState.morgothFlipTargetDepth = null
+    return null
+  }
+
+  // Not explored enough yet - let EXPLORE goal handle it
+  if (seenThisVisitRate < MORGOTH_FLIP_EXPLORATION_THRESHOLD) {
+    return null
+  }
+
+  // High exploration, Morgoth not visible - trigger level flip
+  // Must have stairs up (depth 50 always has stairs up)
+  const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+  if (!stairsUp) return null
+
+  // Activate flip mode
+  botState.morgothFlipActive = true
+  botState.morgothFlipTargetDepth = MAX_DEPTH
+
+  return {
+    type: 'ASCEND_TO_FARM',
+    target: stairsUp,
+    targetId: null,
+    reason: `Level flip to find Morgoth (${Math.round(seenThisVisitRate * 100)}% seen)`,
+    startTurn: game.turn,
+  }
 }
 
 /**

@@ -22,7 +22,12 @@ import { getKiteGoal, getKillGoal } from './combat'
 import { getTakeGoal, findBestItem } from './items'
 import { getExploreGoal } from './exploration'
 import { getUseAltarGoal, getVisitMerchantGoal } from './merchant'
-import { getProgressionGoal, getReturnToUniqueHuntGoal } from './progression'
+import {
+  getProgressionGoal,
+  getReturnToUniqueHuntGoal,
+  getMorgothHuntGoal,
+  getMorgothFlipReturnGoal,
+} from './progression'
 import {
   getEffectiveGold,
   getHuntUniqueGoal,
@@ -186,9 +191,17 @@ export function selectGoal(
   const returnToHuntGoal = getReturnToUniqueHuntGoal(context)
   if (returnToHuntGoal) return returnToHuntGoal
 
+  // 2.4 MORGOTH_FLIP_RETURN - Return to depth 50 during Morgoth hunt flip
+  const morgothReturnGoal = getMorgothFlipReturnGoal(context)
+  if (morgothReturnGoal) return morgothReturnGoal
+
   // 2.5 HUNT_UNIQUE - Hunt uniques blocking descent (priority over regular KILL)
   const huntUniqueGoal = getHuntUniqueGoal(context)
   if (huntUniqueGoal) return huntUniqueGoal
+
+  // 2.6 MORGOTH_HUNT - Hunt Morgoth at depth 50 (triggers flip when stuck)
+  const morgothHuntGoal = getMorgothHuntGoal(context)
+  if (morgothHuntGoal) return morgothHuntGoal
 
   // 3. KILL - Adjacent monster or hunting
   const killGoal = getKillGoal(context, hpRatio)
@@ -233,6 +246,16 @@ export function selectGoal(
  */
 function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState): boolean {
   const { game } = context
+
+  // Morgoth flip return takes priority - invalidate current goal if flip is active
+  // and we're not at the target depth (need to navigate back)
+  if (
+    botState.morgothFlipActive &&
+    botState.morgothFlipTargetDepth !== null &&
+    game.character.depth !== botState.morgothFlipTargetDepth
+  ) {
+    return false
+  }
 
   switch (goal.type) {
     case 'FLEE':
