@@ -43,6 +43,7 @@ import {
   shouldEscapeOverHeal,
 } from './survival-retreat'
 import { hasAbility } from '../data/monsters'
+import { profile } from './profiler'
 
 // ============================================================================
 // SURVIVAL CONSUMABLES
@@ -264,7 +265,9 @@ export function getSurvivalConsumableAction(
     // Try phase door with safety check
     const phaseDoor = findPhaseDoorScroll(character)
     if (phaseDoor) {
-      const safety = evaluatePhaseDoorSafety(game, dangers, avoidance)
+      const safety = profile('evaluatePhaseDoorSafety', () =>
+        evaluatePhaseDoorSafety(game, dangers, avoidance)
+      )
       if (safety.isSafe) {
         return { type: 'use', itemId: phaseDoor.id }
       }

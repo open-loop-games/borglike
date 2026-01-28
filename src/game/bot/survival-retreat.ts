@@ -38,6 +38,7 @@ import {
 import { getAverageDamage } from '../data/monsters'
 import { computeSafetyFlow } from './safety-flow'
 import { resetCorridorFollowing } from './exploration'
+import { profile } from './profiler'
 
 // ============================================================================
 // TYPES
@@ -795,11 +796,8 @@ export function getFleeGoal(
   })
 
   if (nearbyMonsters.length > 0) {
-    const safetyResult = computeSafetyFlow(
-      game.currentLevel,
-      nearbyMonsters,
-      game.character.position,
-      game.turn
+    const safetyResult = profile('computeSafetyFlow', () =>
+      computeSafetyFlow(game.currentLevel, nearbyMonsters, game.character.position, game.turn)
     )
 
     if (safetyResult.target) {

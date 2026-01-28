@@ -172,19 +172,21 @@ export function selectGoal(
 
   // 1. FLEE - HP critical and in danger (skip for Berserker)
   if (!classProfile.neverRetreats) {
-    const fleeGoal = getFleeGoal(context, dangers, botState.hpRate)
+    const fleeGoal = profile('goal.flee', () => getFleeGoal(context, dangers, botState.hpRate))
     if (fleeGoal) return fleeGoal
   }
 
   // 1.5 KITE - Ranged classes maintain distance and attack from range
   // Works for bow users (rangers) AND ranged casters (mage, archmage, necromancer)
   if (classProfile.prefersRanged) {
-    const kiteGoal = getKiteGoal(context)
+    const kiteGoal = profile('goal.kite', () => getKiteGoal(context))
     if (kiteGoal) return kiteGoal
   }
 
   // 2. RECOVER - Low HP but safe
-  const recoverGoal = getRecoverGoal(context, dangerThreshold, localDanger, hpRatio)
+  const recoverGoal = profile('goal.recover', () =>
+    getRecoverGoal(context, dangerThreshold, localDanger, hpRatio)
+  )
   if (recoverGoal) return recoverGoal
 
   // 2.3 RETURN_TO_UNIQUE_HUNT - Return to depth after level flip for unique hunting
@@ -196,7 +198,7 @@ export function selectGoal(
   if (morgothReturnGoal) return morgothReturnGoal
 
   // 2.5 HUNT_UNIQUE - Hunt uniques blocking descent (priority over regular KILL)
-  const huntUniqueGoal = getHuntUniqueGoal(context)
+  const huntUniqueGoal = profile('goal.huntUnique', () => getHuntUniqueGoal(context))
   if (huntUniqueGoal) return huntUniqueGoal
 
   // 2.6 MORGOTH_HUNT - Hunt Morgoth at depth 50 (triggers flip when stuck)
@@ -204,11 +206,11 @@ export function selectGoal(
   if (morgothHuntGoal) return morgothHuntGoal
 
   // 3. KILL - Adjacent monster or hunting
-  const killGoal = getKillGoal(context, hpRatio)
+  const killGoal = profile('goal.kill', () => getKillGoal(context, hpRatio))
   if (killGoal) return killGoal
 
   // 4. TAKE - Valuable item nearby
-  const takeGoal = getTakeGoal(context, dangers, dangerThreshold)
+  const takeGoal = profile('goal.take', () => getTakeGoal(context, dangers, dangerThreshold))
   if (takeGoal) return takeGoal
 
   // 4.5 USE_ALTAR - Use dungeon altars when safe (gold sink)
