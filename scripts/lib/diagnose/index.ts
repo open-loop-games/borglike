@@ -63,9 +63,13 @@ export {
   createGoalAnalyzer,
   JitterAnalyzer,
   createJitterAnalyzer,
-  // Personality comparison
+  // Variant comparison (personalities, races)
+  compareVariants,
+  formatVariantComparison,
   comparePersonalities,
   formatPersonalityComparison,
+  DEFAULT_PERSONALITIES,
+  DEFAULT_RACES,
 } from './analyzers'
 
 export type {
@@ -81,6 +85,12 @@ export type {
   FormatMapOptions,
   GoalAnalyzerConfig,
   JitterAnalyzerConfig,
+  // Variant comparison types
+  CompareVariant,
+  VariantCompareConfig,
+  VariantMetrics,
+  VariantCompareResult,
+  // Legacy aliases
   PersonalityCompareConfig,
   PersonalityMetrics,
   PersonalityCompareResult,

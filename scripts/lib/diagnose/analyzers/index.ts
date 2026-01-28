@@ -62,9 +62,26 @@ export type { MapVisualizerConfig, MapSnapshot, FormatMapOptions } from './map'
 export { StepDebugAnalyzer, createStepDebugAnalyzer } from './step-debug'
 export type { StepDebugConfig } from './step-debug'
 
-// Personality comparison (standalone utility)
-export { comparePersonalities, formatPersonalityComparison } from './personality'
-export type { PersonalityCompareConfig, PersonalityMetrics, PersonalityCompareResult } from './personality'
+// Variant comparison (personalities, races)
+export {
+  compareVariants,
+  formatVariantComparison,
+  // Legacy aliases
+  comparePersonalities,
+  formatPersonalityComparison,
+  DEFAULT_PERSONALITIES,
+  DEFAULT_RACES,
+} from './comparison'
+export type {
+  CompareVariant,
+  VariantCompareConfig,
+  VariantMetrics,
+  VariantCompareResult,
+  // Legacy aliases
+  PersonalityCompareConfig,
+  PersonalityMetrics,
+  PersonalityCompareResult,
+} from './comparison'
 
 // =============================================================================
 // LEGACY ANALYZERS (deprecated - use consolidated versions)

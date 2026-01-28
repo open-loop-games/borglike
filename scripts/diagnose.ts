@@ -49,11 +49,13 @@ import {
   formatTurnLog,
   formatOneLiner,
   formatMapSnapshot,
-  comparePersonalities,
-  formatPersonalityComparison,
+  compareVariants,
+  formatVariantComparison,
+  DEFAULT_RACES,
   MapVisualizer,
   runBaseline,
 } from './lib/diagnose'
+import type { CompareVariant } from './lib/diagnose'
 import type { AnalyzerName } from './lib/diagnose'
 import type { BotPersonality } from '@game/types'
 
@@ -85,6 +87,10 @@ interface Args {
   maxUpgrades: boolean
   /** Randomize race/class/personality per run */
   randomize: boolean
+  /** Compare races instead of personalities (for compare mode) */
+  compareRaces: boolean
+  /** Specific races to compare (comma-separated, or empty for defaults) */
+  raceList: string[]
   // Balance overrides (Tier 1)
   monsterHp: number
   monsterDamage: number
@@ -134,6 +140,8 @@ function parseArgs(): Args {
     threads: 8,
     maxUpgrades: false,
     randomize: false,
+    compareRaces: false,
+    raceList: [],
     // Balance defaults (100 = normal)
     monsterHp: 100,
     monsterDamage: 100,
@@ -208,6 +216,11 @@ function parseArgs(): Args {
       result.maxUpgrades = true
     } else if (arg === '--randomize') {
       result.randomize = true
+    } else if (arg === '--races') {
+      result.compareRaces = true
+    } else if (arg.startsWith('--races=')) {
+      result.compareRaces = true
+      result.raceList = arg.slice(8).split(',').filter(Boolean)
     // Balance overrides (Tier 1)
     } else if (arg.startsWith('--monster-hp=')) {
       result.monsterHp = parseInt(arg.slice(13), 10)
@@ -281,6 +294,8 @@ OPTIONS:
   --log-only      Only show turn log, skip analyzer output (deep mode)
   --max-upgrades  Apply all upgrades at max level
   --randomize     Randomize race/class/personality per run (batch mode)
+  --races         Compare races instead of personalities (compare mode)
+  --races=a,b,c   Compare specific races (e.g., --races=human,dwarf,elf)
 
 EXAMPLES:
   # Deep dive on a specific problematic seed with explored map
@@ -303,6 +318,12 @@ EXAMPLES:
 
   # Compare all personalities
   pnpm diagnose compare --runs=20
+
+  # Compare races
+  pnpm diagnose compare --races --runs=20 --class=warrior
+
+  # Compare specific races
+  pnpm diagnose compare --races=human,dwarf,elf,half_orc --runs=20
 
 ANALYZERS:
   stuck       - Detects repeated actions, waits, twitch counter issues
@@ -338,14 +359,22 @@ async function main(): Promise<void> {
 
   // Handle compare mode separately
   if (args.mode === 'compare') {
-    console.log('Running personality comparison...\n')
-    const result = comparePersonalities({
-      runsPerPersonality: args.runs,
+    const variant: CompareVariant = args.compareRaces ? 'race' : 'personality'
+    const variantLabel = variant === 'race' ? 'race' : 'personality'
+    console.log(`Running ${variantLabel} comparison...\n`)
+
+    const result = await compareVariants({
+      variant,
+      ...(args.compareRaces && args.raceList.length > 0 ? { ids: args.raceList } : {}),
+      runsPerVariant: args.runs,
       maxTurns: args.turns,
       raceId: args.race,
       classId: args.classId,
+      personality: args.personality,
+      threads: args.threads,
+      seed: args.seed,
     })
-    console.log(formatPersonalityComparison(result))
+    console.log(formatVariantComparison(result))
     return
   }
 
