@@ -1,25 +1,25 @@
 # Performance Documentation
 
-## Current State (2026-01-23)
+## Current State (2026-01-27)
 
 ### Tick Budget
 
 | Mode | Target | Measured | Status |
 |------|--------|----------|--------|
-| Normal (100ms) | <50ms per tick | 0.89ms avg, 4.1ms max | OK |
-| Turbo (5-20ms) | <5ms per tick | 0.89ms avg, 4.1ms max | OK |
-| 4x concurrent | <20ms total | ~3.5ms total | OK |
+| Normal (100ms) | <50ms per tick | 0.55ms avg, 3.2ms max | ✅ OK |
+| Turbo (5-20ms) | <5ms per tick | 0.55ms avg, 3.2ms max | ✅ OK |
+| 4x concurrent | <20ms total | ~2.2ms total | ✅ OK |
 
 **Measurement:** Enable `PROFILE_BOT=1` environment variable to capture per-tick metrics.
 
-### Class Comparison (5000 turns, max-upgrades)
+### Class Comparison (50k turn limit, max-upgrades, seed=1000)
 
-| Class | Total Time | Avg/Tick | Main Cost |
-|-------|------------|----------|-----------|
-| Warrior | 4472ms | 0.89ms | flow.exploration (13%) |
-| Mage | 5419ms | 1.08ms | flow.sweep (16%) |
+| Class | Turns | Total Time | Avg/Tick | Main Cost |
+|-------|-------|------------|----------|-----------|
+| Warrior | 13.8k | 6165ms | 0.45ms | handleFallback (24%) |
+| Mage | 32.9k | 22595ms | 0.69ms | handleFallback (24%), getSweepFrontiers (6%) |
 
-Casters ~21% slower due to tethered sweep mode pathfinding (was 44% before multi-target Dijkstra).
+Mage ~53% slower per tick due to sweep mode frontier calculation (longer-lived runs spend more time in sweep). Flow computation itself is now fast (~5% of total).
 
 ---
 
@@ -68,13 +68,13 @@ PROFILE_BOT=1 npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior
 
 | Operation | File | Avg Time | Max Time | Notes |
 |-----------|------|----------|----------|-------|
-| `buildBotContext` | `context.ts` | 11µs | 3.7ms | Filters visible entities |
-| `computeDangerGrid` | `danger.ts` | 50µs | 0.7ms | Uses monster state hash cache |
-| `selectGoal` | `goals.ts` | 40µs | 3.0ms | Priority-based selection |
-| `flow.singleTarget` | `flow.ts` | 541µs | 1.4ms | Single-target BFS |
-| `flow.exploration` | `exploration.ts` | 205µs | 1.0ms | Dijkstra frontier flow |
-| `getFrontierPositions` | `exploration.ts` | 51µs | 0.7ms | Frontier tile detection |
-| `handleFallback` | `tick.ts` | 245µs | 4.1ms | Goal movement execution |
+| `buildBotContext` | `context.ts` | 2.6µs | 0.35ms | Filters visible entities |
+| `computeDangerGrid` | `danger.ts` | 47µs | 0.79ms | Uses monster state hash cache |
+| `selectGoal` | `goals.ts` | 39µs | 2.0ms | Priority-based selection |
+| `flow.singleTarget` | `flow.ts` | 319µs | 1.1ms | Single-target BFS (typed array) |
+| `flow.exploration` | `flow.ts` | 73µs | 0.47ms | Dijkstra frontier flow (typed array) |
+| `getFrontierPositions` | `exploration.ts` | 54µs | 1.0ms | Frontier tile detection |
+| `handleFallback` | `tick.ts` | 136µs | 3.2ms | Goal movement execution |
 
 ### Expensive Operations (Cached)
 
@@ -93,12 +93,12 @@ PROFILE_BOT=1 npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior
 
 ```typescript
 interface BotState {
-  // Performance caches
-  cachedFlow: FlowCache | null       // Current goal pathfinding
-  cachedDanger: DangerCache | null   // Monster threat grid
-  cachedSafetyFlow: FlowCache | null // Safe retreat paths
-  cachedExplorationFlow: FlowCache | null // Dijkstra frontier
-  lastExploredCount: number          // Quick frontier check
+  // Performance caches (FlowGrid = Uint8Array-backed typed array)
+  cachedFlow: FlowResult | null           // Current goal pathfinding
+  cachedDanger: DangerResult | null       // Monster threat grid
+  cachedExplorationFlow: ExplorationFlowCache | null  // Dijkstra frontier
+  cachedSweepFlow: SweepFlowCache | null  // Caster sweep mode
+  lastExploredCount: number               // Quick frontier check
 }
 ```
 
@@ -106,10 +106,11 @@ interface BotState {
 
 | Cache | Invalidated When | Cost If Missed |
 |-------|------------------|----------------|
-| Flow | Goal changes, player moves 5+ tiles | 1-3ms |
+| Flow (FlowGrid) | Goal changes, player moves 5+ tiles | 0.3-1ms |
 | Danger | Monster positions/HP change | <1ms |
-| Frontier | New tile explored | 0.5-2ms |
-| Exploration flow | Level change | 2-5ms |
+| Frontier | New tile explored | 0.5-1ms |
+| Exploration flow | Level change, explored count | 0.5-1ms |
+| Sweep flow | seenThisVisit.size changes | 0.5-1ms |
 
 ### Danger Grid Hash (`danger.ts`)
 
@@ -179,31 +180,32 @@ time npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --max-upgrades --t
 
 ## Optimization History
 
-### Baseline: 2026-01-23
+### Baseline: 2026-01-27 (Post Typed Array Flow)
 
-**Test:** 5000 turns, warrior, max-upgrades, seed=1000
+**Test:** ~4500 turns, warrior, max-upgrades
 
 | Operation | % Time | Total | Calls | Avg |
 |-----------|--------|-------|-------|-----|
-| handleFallback | 26.5% | 1182ms | 4830 | 245µs |
-| fallback.goalMovement | 26.4% | 1178ms | 4824 | 244µs |
-| flow.exploration | 13.1% | 584ms | 2853 | 205µs |
-| computeDangerGrid | 5.6% | 251ms | 5000 | 50µs |
-| selectGoal | 4.4% | 194ms | 4824 | 40µs |
-| getFrontierPositions | 3.9% | 175ms | 3407 | 51µs |
-| flow.singleTarget | 3.7% | 164ms | 304 | 541µs |
-| buildBotContext | 1.2% | 55ms | 5000 | 11µs |
+| handleFallback | 23.7% | 593ms | 4367 | 136µs |
+| fallback.goalMovement | 23.5% | 588ms | 4358 | 135µs |
+| computeDangerGrid | 8.5% | 214ms | 4510 | 47µs |
+| selectGoal | 6.8% | 169ms | 4358 | 39µs |
+| goal.descend | 5.4% | 136ms | 571 | 237µs |
+| flow.exploration | 5.2% | 130ms | 1791 | 73µs |
+| getFrontierPositions | 4.8% | 121ms | 2251 | 54µs |
+| flow.singleTarget | 4.8% | 120ms | 375 | 319µs |
+| buildBotContext | 0.5% | 12ms | 4510 | 2.6µs |
 
 **Summary:**
-- Total tracked: 4463ms for 5000 turns = **0.89ms/tick avg**
-- Fallback path dominates (53% of time)
-- Flow computation is the main cost within fallback
-- Context building is very efficient (11µs)
+- Total tracked: 2502ms for ~4500 turns = **0.55ms/tick avg**
+- Fallback path dominates (47% of time)
+- Flow computation now ~10% of total (was ~17%)
+- Context building very efficient (2.6µs)
 
-**Batch Test:** 30 runs, 30k turns, warrior, max-upgrades
-- Runtime: **28.4s** (wall clock)
-- CPU time: 3m44s (8 threads)
-- ~0.95s per run
+**Batch Test:** 100 runs, 50k turns, warrior, max-upgrades
+- Warrior avg depth: 47.8, CB rate: 2%
+- Mage avg depth: 42.5, CB rate: 20%
+- Zero regression from typed array refactor
 
 ---
 
@@ -265,6 +267,49 @@ time npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --max-upgrades --t
 - Profile max times, not just averages - spikes cause frame drops
 - Audit what data is actually used before computing it
 - Sentinel values work when only existence check needed
+
+---
+
+### Pass 3: 2026-01-27 - Typed Array Flow Grid
+
+**Problem:** Flow computation used `Map<string, number>` with string key creation ("x,y") on every access, causing hash computation overhead.
+
+**Changes:**
+- Replaced `Map<string, number>` with `Uint8Array`-backed `FlowGrid` type
+- Direct array indexing via `data[y * width + x]` instead of string keys
+- Pre-allocated circular buffer queue for BFS (avoids array resizing)
+- Merged `flow-grid.ts` into `flow.ts` for cleaner API
+
+**Benchmark results (isolated):**
+| Operation | Map-based | Typed Array | Speedup |
+|-----------|-----------|-------------|---------|
+| Single-target BFS | 0.54ms | 0.21ms | **2.6x** |
+| Multi-target BFS | 0.06ms | 0.04ms | **1.5x** |
+| Memory per flow | 4.9KB | 3.1KB | **37% smaller** |
+
+**Results (Warrior, ~4500 turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total tracked | 4463ms | 2502ms | **44% faster** |
+| flow.singleTarget | 541µs avg | 319µs avg | **41% faster** |
+| flow.exploration | 205µs avg | 73µs avg | **64% faster** |
+| Tick time | 0.89ms avg | 0.55ms avg | **38% faster** |
+
+**Results (Mage, ~4500 turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total tracked | 5419ms | 2489ms | **54% faster** |
+| flow.singleTarget | - | 314µs avg | - |
+| flow.exploration | - | 74µs avg | - |
+| Tick time | 1.08ms avg | 0.55ms avg | **49% faster** |
+
+**Verification:** 100-run batch tests for warrior and mage show identical results to baseline (same avg depth, CB rate, kills). Zero regression.
+
+**Learnings:**
+- Typed arrays dramatically outperform Maps for grid-based algorithms
+- String key creation ("x,y") is surprisingly expensive at scale
+- Pre-allocated queues avoid GC pressure from array resizing
+- Direct indexing beats hash table lookups for dense grids
 
 ---
 

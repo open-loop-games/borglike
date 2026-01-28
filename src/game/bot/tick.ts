@@ -20,12 +20,12 @@ import type {
   BotState,
   BotGoal,
   BotContext,
-  FlowMap,
   DangerResult,
   DangerTier,
   PersonalityConfig,
 } from './types'
-import { MAX_FLOW_COST, SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from './types'
+import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from './types'
+import type { FlowGrid } from './flow'
 import {
   createBotState,
   resetLevelState,
@@ -43,6 +43,7 @@ import {
   createFlowResult,
   isFlowValid,
   getFlowCost,
+  MAX_FLOW_COST,
 } from './flow'
 import { selectStep, isSamePosition } from './movement'
 import { buildBotContext } from './context'
@@ -958,7 +959,7 @@ function computeGoalFlow(
   botState: BotState,
   goal: BotGoal,
   avoidSet: Set<string>
-): FlowMap | null {
+): FlowGrid | null {
   if (goal.type === 'EXPLORE') {
     return computeExploreGoalFlow(game, botState, goal, avoidSet)
   }
@@ -976,7 +977,7 @@ function computeExploreGoalFlow(
   botState: BotState,
   _goal: BotGoal,
   avoidSet: Set<string>
-): FlowMap | null {
+): FlowGrid | null {
   // Sweep mode: multi-target Dijkstra to all sweep frontier tiles
   if (shouldUseSweepFlow(game, botState)) {
     // Check sweep cache validity FIRST (before expensive frontier scan)
@@ -1073,7 +1074,7 @@ function computeSingleTargetFlow(
   botState: BotState,
   goal: BotGoal,
   avoidSet: Set<string>
-): FlowMap {
+): FlowGrid {
   const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)
   if (!needsRecompute && botState.cachedFlow?.costs) {
     return botState.cachedFlow.costs
@@ -1101,10 +1102,10 @@ function ensureFlowReachable(
   game: GameState,
   botState: BotState,
   goal: BotGoal,
-  flowCosts: FlowMap,
+  flowCosts: FlowGrid,
   avoidSet: Set<string>,
   caution: number
-): FlowMap | null {
+): FlowGrid | null {
   const pos = game.character.position
   const currentCost = getFlowCost(flowCosts, pos)
 
@@ -1120,11 +1121,11 @@ function ensureFlowReachable(
   }
 
   // Try without avoidance first to check path length
-  let fallbackFlow: FlowMap
+  let fallbackFlow: FlowGrid
   if (goal.type === 'EXPLORE') {
     const frontiers = getFrontierPositions(game)
-    fallbackFlow =
-      frontiers.length > 0 ? computeExplorationFlow(game.currentLevel, frontiers) : new Map()
+    // computeExplorationFlow returns an empty grid if no frontiers, so always call it
+    fallbackFlow = computeExplorationFlow(game.currentLevel, frontiers)
   } else {
     fallbackFlow = computeFlow(game.currentLevel, goal.target!)
     botState.cachedFlow = createFlowResult(goal.target!, fallbackFlow, game.turn)

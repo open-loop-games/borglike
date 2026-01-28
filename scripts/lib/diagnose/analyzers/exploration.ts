@@ -31,11 +31,9 @@ import {
   getSweepFrontierPositions,
 } from '@bot/exploration'
 import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from '@bot/types'
-import { computeExplorationFlow, getFlowCost, isReachable } from '@bot/flow'
+import { computeExplorationFlow, getFlowCost, isReachable, MAX_FLOW_COST } from '@bot/flow'
 import { getTile, getAdjacentPositions, isWalkable } from '@game/dungeon'
 import { computeDangerGrid, buildAvoidSet, getDangerThreshold } from '@bot/danger'
-
-const MAX_FLOW_COST = 255
 
 // ============================================================================
 // CONFIGURATION
@@ -529,9 +527,8 @@ export class ExplorationAnalyzer implements Analyzer {
 
     const adjAnalysis: string[] = []
     let validCandidates = 0
-    const flowCosts = frontierPositions.length > 0
-      ? computeExplorationFlow(game.currentLevel, frontierPositions)
-      : new Map()
+    // computeExplorationFlow returns an empty grid if no frontiers, so always call it
+    const flowCosts = computeExplorationFlow(game.currentLevel, frontierPositions)
 
     for (const adj of adjacent) {
       const tile = getTile(game.currentLevel, adj.x, adj.y)

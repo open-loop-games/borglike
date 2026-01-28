@@ -20,9 +20,10 @@
 import type { Point, GameState, Tile } from '../types'
 import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL, MAX_FLOW_COST } from './types'
+import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from './types'
 import { getTile } from '../dungeon'
-import { computeFlow, getFlowCost } from './flow'
+import type { FlowGrid } from './flow'
+import { computeFlow, getFlowCost, MAX_FLOW_COST } from './flow'
 import { profile } from './profiler'
 import {
   getExplorationProgress,
@@ -252,9 +253,6 @@ function isWithinTether(pos: Point, origin: Point | null, radius: number): boole
   return Math.max(dx, dy) <= radius
 }
 
-/** Flow map type for tether search */
-type FlowMap = Map<string, number>
-
 /**
  * Find nearest unseen tile within tether using flow-based path distance.
  * Accepts optional precomputed flow to avoid redundant computations.
@@ -263,7 +261,7 @@ function findUnseenTileInTether(
   context: BotContext,
   origin: Point,
   radius: number,
-  precomputedFlow?: FlowMap
+  precomputedFlow?: FlowGrid
 ): Point | null {
   const { game, botState } = context
   const level = game.currentLevel

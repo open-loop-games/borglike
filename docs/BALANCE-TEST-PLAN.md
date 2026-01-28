@@ -2,7 +2,25 @@
 
 ## Current State (2026-01-27)
 
-### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Phase Door Near-Stairs Fix
+### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Unique Respawn Fix
+
+| Class | Avg Depth | Max Depth | CB Rate | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|---------|--------|
+| **Berserker** | 48.6 | 50 | 1% | 515 | 7 | ✅ Endgame |
+| **Ranger** | 48.3 | 50 | 2% | 601 | 2 | ✅ Endgame |
+| **Warrior** | 47.8 | 50 | 2% | 497 | 2 | ✅ Endgame |
+| **Blackguard** | 47.3 | 50 | 1% | 502 | 0 | ✅ Endgame |
+| **Paladin** | 46.5 | 50 | 0% | 593 | 0 | ✅ Endgame |
+| **Necromancer** | 44.8 | 50 | 8% | 737 | 0 | ✅ Endgame |
+| **Rogue** | 43.8 | 50 | 1% | 524 | 1 | ✅ Endgame |
+| **Druid** | 43.4 | 49 | 0% | 525 | 0 | ✅ Endgame |
+| **Priest** | 43.1 | 50 | 0% | 586 | 0 | ✅ Endgame |
+| **Mage** | 42.5 | 48 | 20% | 676 | 0 | ✅ Endgame |
+| **Archmage** | 41.8 | 48 | 15% | 660 | 0 | ✅ Endgame |
+
+**Summary:** All 11 classes endgame-viable (41+ avg depth). **12 Morgoth kills** (7 berserker, 2 ranger, 2 warrior, 1 rogue). Fixed unique respawn logic: uniques now respawn on level revisit (only blocked after killed). Added Morgoth hunt with level flip when 90%+ explored at depth 50. Fixed unique hunt to use seenThisVisit (prevents infinite flip loops). **Blackguard CB: 5% → 1%, Berserker CB: 5% → 1%, Paladin CB: 3% → 0%**. Remaining CB: Mage 20%, Archmage 15%, Necromancer 8%.
+
+### Previous Baseline (100 runs, 50k turns, seed=1000, max-upgrades) - Post Phase Door Near-Stairs Fix
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
 |-------|-----------|-----------|---------|-------|--------|
@@ -18,7 +36,7 @@
 | **Mage** | 42.3 | 47 | 8% | 684 | ✅ Endgame |
 | **Archmage** | 41.9 | 48 | 6% | 674 | ✅ Endgame |
 
-**Summary:** All 11 classes endgame-viable (41+ avg depth). Phase Door near-stairs fix: skip Phase Door when within 15 tiles of stairs with DESCEND goal. Extended tether path distance when displaced by teleport. **Mage CB: 14% → 8%, Archmage CB: 10% → 6%**. Remaining CB: Necromancer 12%.
+**Summary:** Phase Door near-stairs fix: skip Phase Door when within 15 tiles of stairs with DESCEND goal. Extended tether path distance when displaced by teleport. **Mage CB: 14% → 8%, Archmage CB: 10% → 6%**. Remaining CB: Necromancer 12%.
 
 ### Upgrade Impact Analysis (100 runs, 50k turns, seed=1000)
 

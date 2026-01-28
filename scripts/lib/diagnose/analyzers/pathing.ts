@@ -18,8 +18,7 @@ import type {
 } from '../types'
 import type { GameState, Point } from '@game/types'
 import type { BotState } from '@bot/types'
-import { computeFlow, getFlowCost } from '@bot/flow'
-import { MAX_FLOW_COST } from '@bot/types'
+import { computeFlow, getFlowCost, MAX_FLOW_COST } from '@bot/flow'
 
 /** Configuration for pathing analysis */
 export interface PathingAnalyzerConfig {

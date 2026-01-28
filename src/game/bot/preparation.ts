@@ -8,7 +8,7 @@
  */
 
 import type { Character, Item, UniqueState, MonsterTemplate } from '../types'
-import { getLivingUniques, MAX_DEPTH } from '../types'
+import { getLivingUniques } from '../types'
 import { POTIONS, SCROLLS } from '../data/items'
 import { monsters as MONSTERS } from '../data/monsters'
 import type { BotContext, BotGoal } from './types'

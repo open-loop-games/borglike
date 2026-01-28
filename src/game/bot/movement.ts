@@ -11,9 +11,10 @@ import { getDirectionFromDelta, isAdjacent, isSamePoint } from '../types'
 // Re-export for backwards compatibility
 export { isAdjacent }
 export { isSamePoint as isSamePosition }
-import type { BotState, FlowMap } from './types'
-import { MAX_FLOW_COST, CARDINAL_DIRECTIONS } from './types'
-import { getFlowCost } from './flow'
+import type { BotState } from './types'
+import { CARDINAL_DIRECTIONS } from './types'
+import type { FlowGrid } from './flow'
+import { getFlowCost, MAX_FLOW_COST } from './flow'
 import { getRecencyPenalty } from './state'
 
 /** Step candidate with scoring info */
@@ -34,7 +35,7 @@ interface StepCandidate {
  * @param flowCosts - Pre-computed flow costs from goal
  * @returns Direction to move, or 'wait' if stuck
  */
-export function selectStep(game: GameState, botState: BotState, flowCosts: FlowMap): Direction {
+export function selectStep(game: GameState, botState: BotState, flowCosts: FlowGrid): Direction {
   const pos = game.character.position
   const currentCost = getFlowCost(flowCosts, pos)
 

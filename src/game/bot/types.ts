@@ -15,6 +15,7 @@ import type {
   MerchantState,
 } from '../types'
 import type { ClassBehaviorProfile } from './class-profiles'
+import type { FlowGrid } from './flow'
 
 // ============================================================================
 // GOAL TYPES
@@ -57,13 +58,13 @@ export interface BotGoal {
 // FLOW TYPES
 // ============================================================================
 
-/** Cost map from reverse-BFS */
-export type FlowMap = Map<string, number>
+// Re-export FlowGrid for external consumers
+export type { FlowGrid }
 
 /** Flow computation result */
 export interface FlowResult {
   goal: Point
-  costs: FlowMap
+  costs: FlowGrid
   computedAt: number // Turn when computed
 }
 
@@ -90,7 +91,7 @@ export interface SafetyFlowResult {
 /** Cached exploration flow (multi-goal BFS) */
 export interface ExplorationFlowCache {
   /** The computed flow costs */
-  costs: FlowMap
+  costs: FlowGrid
   /** Frontier count when computed (for invalidation) */
   frontierCount: number
   /** Explored tile count when computed */
@@ -104,7 +105,7 @@ export interface ExplorationFlowCache {
 /** Cached sweep flow (multi-goal BFS for caster sweep mode) */
 export interface SweepFlowCache {
   /** The computed flow costs */
-  costs: FlowMap
+  costs: FlowGrid
   /** seenThisVisit.size when computed (for invalidation) */
   seenCount: number
   /** Turn when computed */
@@ -312,9 +313,6 @@ export interface PersonalityConfig {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-/** Maximum cost value (unreachable) */
-export const MAX_FLOW_COST = 255
 
 /** Step history length for anti-oscillation */
 export const STEP_HISTORY_LENGTH = 25
