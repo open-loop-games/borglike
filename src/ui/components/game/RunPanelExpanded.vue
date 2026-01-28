@@ -79,6 +79,52 @@ const personalBest = computed(() => {
   return best
 })
 
+// Separate consumables from equipment items (consumables don't count toward inventory limit)
+const isConsumableChar = (char: string) => char === '!' || char === '?'
+
+// Equipment items (non-consumables) for the Pack section
+const equipmentItems = computed(() => {
+  return props.run.inventory.filter((item) => !isConsumableChar(item.char))
+})
+
+// Stacked consumable for display
+interface StackedConsumable {
+  name: string
+  char: string
+  color: number
+  count: number
+  isArtifact: boolean
+  tier: number
+}
+
+// Consumables stacked by name with count
+const stackedConsumables = computed(() => {
+  const consumables = props.run.inventory.filter((item) => isConsumableChar(item.char))
+  const stacks = new Map<string, StackedConsumable>()
+
+  for (const item of consumables) {
+    const existing = stacks.get(item.name)
+    if (existing) {
+      existing.count++
+    } else {
+      stacks.set(item.name, {
+        name: item.name,
+        char: item.char,
+        color: item.color,
+        count: 1,
+        isArtifact: item.isArtifact,
+        tier: item.tier,
+      })
+    }
+  }
+
+  // Sort: potions first, then scrolls, then by name
+  return Array.from(stacks.values()).sort((a, b) => {
+    if (a.char !== b.char) return a.char === '!' ? -1 : 1
+    return a.name.localeCompare(b.name)
+  })
+})
+
 // Reactive run duration that updates every second
 const runDuration = useRunDuration(() => props.run.startTime)
 
@@ -308,26 +354,30 @@ function formatGoal(goal: string | undefined): string {
           </div>
         </CollapsibleSection>
 
-        <!-- Combat Stats: AC, EVA, DMG, SPD -->
+        <!-- Combat Stats: AC, EVA, DMG, SPD, ACC (2-column grid) -->
         <CollapsibleSection
           title="Combat"
           :expanded="settingsStore.panelStates.combat"
           @toggle="togglePanel('combat')"
         >
-          <div class="combat-stats">
-            <div class="combat-row">
+          <div class="combat-stats-grid">
+            <div class="combat-stat">
               <span class="combat-label">AC</span>
               <span class="combat-val armor">{{ run.combat.armor }}</span>
             </div>
-            <div class="combat-row">
+            <div class="combat-stat">
               <span class="combat-label">EVA</span>
               <span class="combat-val evasion">{{ run.combat.evasion }}</span>
             </div>
-            <div class="combat-row">
+            <div class="combat-stat">
               <span class="combat-label">DMG</span>
               <span class="combat-val damage">{{ run.combat.meleeDamage }}</span>
             </div>
-            <div class="combat-row">
+            <div class="combat-stat">
+              <span class="combat-label">ACC</span>
+              <span class="combat-val accuracy">{{ run.combat.accuracy }}</span>
+            </div>
+            <div class="combat-stat">
               <span class="combat-label">SPD</span>
               <span
                 class="combat-val speed"
@@ -335,10 +385,6 @@ function formatGoal(goal: string | undefined): string {
               >
                 {{ run.combat.speed }}
               </span>
-            </div>
-            <div class="combat-row">
-              <span class="combat-label">ACC</span>
-              <span class="combat-val accuracy">{{ run.combat.accuracy }}</span>
             </div>
           </div>
         </CollapsibleSection>
@@ -411,15 +457,38 @@ function formatGoal(goal: string | undefined): string {
           </div>
         </CollapsibleSection>
 
-        <!-- Inventory -->
+        <!-- Consumables (stacked potions/scrolls) -->
+        <CollapsibleSection
+          v-if="stackedConsumables.length > 0"
+          title="Consumables"
+          :expanded="settingsStore.panelStates.consumables"
+          :badge="stackedConsumables.reduce((sum, c) => sum + c.count, 0)"
+          @toggle="togglePanel('consumables')"
+        >
+          <div class="consumables-list">
+            <div v-for="item in stackedConsumables" :key="item.name" class="consumable-item">
+              <span
+                class="item-char"
+                :style="{ color: '#' + item.color.toString(16).padStart(6, '0') }"
+                >{{ item.char }}</span
+              >
+              <span class="consumable-count">{{ item.count }}x</span>
+              <span class="item-name" :class="{ artifact: item.isArtifact }">
+                {{ item.name }}
+              </span>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        <!-- Inventory (equipment items only, consumables shown separately) -->
         <CollapsibleSection
           title="Pack"
           :expanded="settingsStore.panelStates.inventory"
-          :badge="run.inventory.length"
+          :badge="equipmentItems.length"
           @toggle="togglePanel('inventory')"
         >
           <div class="inventory-list">
-            <div v-for="item in run.inventory" :key="item.id" class="inv-item">
+            <div v-for="item in equipmentItems" :key="item.id" class="inv-item">
               <span
                 class="item-char"
                 :style="{ color: '#' + item.color.toString(16).padStart(6, '0') }"
@@ -429,7 +498,7 @@ function formatGoal(goal: string | undefined): string {
                 {{ formatItemName(item) }}
               </span>
             </div>
-            <div v-if="run.inventory.length === 0" class="inv-empty">Empty</div>
+            <div v-if="equipmentItems.length === 0" class="inv-empty">Empty</div>
           </div>
         </CollapsibleSection>
 
@@ -704,7 +773,7 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .stats-panel {
-  width: 200px;
+  width: 220px;
   padding: 8px;
   background: var(--panel);
   border-right: 1px solid var(--border);
@@ -848,6 +917,26 @@ function formatGoal(goal: string | undefined): string {
   font-style: italic;
 }
 
+/* Consumables list (stacked potions/scrolls) */
+.consumables-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.consumable-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.consumable-count {
+  color: var(--text-dim);
+  min-width: 20px;
+}
+
 .status-badges {
   display: flex;
   flex-wrap: wrap;
@@ -954,14 +1043,14 @@ function formatGoal(goal: string | undefined): string {
   color: var(--purple);
 }
 
-/* Combat Stats */
-.combat-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+/* Combat Stats Grid (2-column like core stats) */
+.combat-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 8px;
 }
 
-.combat-row {
+.combat-stat {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);

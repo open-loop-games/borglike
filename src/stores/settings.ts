@@ -31,6 +31,7 @@ export interface PanelStates {
   resist: boolean
   status: boolean
   equipment: boolean
+  consumables: boolean
   inventory: boolean
 }
 
@@ -41,6 +42,7 @@ const DEFAULT_PANEL_STATES: PanelStates = {
   resist: false,
   status: true,
   equipment: true,
+  consumables: true,
   inventory: true,
 }
 
