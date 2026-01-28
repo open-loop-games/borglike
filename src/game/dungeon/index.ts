@@ -98,13 +98,7 @@ export function generateLevelWithInfo(
   }
 
   // Try to place a vault (depth-dependent chance)
-  // Must happen BEFORE connectivity validation so corridors connect to vault entrances
   const vault = tryPlaceVault(tiles, rooms, width, height, depth, profile.vaultChance)
-
-  // Ensure connectivity after vault placement
-  if (!validateConnectivity(tiles, width, height)) {
-    ensureConnectivity(tiles, width, height)
-  }
 
   // Place doors at room entrances (not mid-corridor)
   // Labyrinths have few/no doors - the maze itself is the obstacle
@@ -118,6 +112,12 @@ export function generateLevelWithInfo(
   // Place stairs (prefer room centers in different map quadrants)
   // Exclude vault area from stair placement
   const { stairsUp, stairsDown } = placeStairs(tiles, rooms, width, height, depth, vault)
+
+  // Ensure connectivity AFTER stairs placement so stairs are included in connectivity check
+  // This prevents stairs from being placed in disconnected regions
+  if (!validateConnectivity(tiles, width, height)) {
+    ensureConnectivity(tiles, width, height)
+  }
 
   const level: DungeonLevel = {
     depth,

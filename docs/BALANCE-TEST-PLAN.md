@@ -2,7 +2,25 @@
 
 ## Current State (2026-01-28)
 
-### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post TP Drop Rate Fix
+### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Farming Oscillation Fix
+
+| Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Ranger** | 49.3 | 50 | 1% | 21274 | 623 | 6 | ✅ Endgame |
+| **Berserker** | 48.5 | 50 | 2% | 14515 | 525 | 8 | ✅ Endgame |
+| **Warrior** | 48.5 | 50 | 0% | 15021 | 520 | 3 | ✅ Endgame |
+| **Blackguard** | 47.9 | 50 | 1% | 14902 | 528 | 2 | ✅ Endgame |
+| **Paladin** | 47.5 | 50 | 0% | 20474 | 623 | 0 | ✅ Endgame |
+| **Necromancer** | 45.4 | 50 | 18% | 31221 | 752 | 0 | ✅ Endgame |
+| **Rogue** | 45.1 | 50 | 0% | 20076 | 557 | 1 | ✅ Endgame |
+| **Priest** | 44.0 | 50 | 0% | 22040 | 630 | 0 | ✅ Endgame |
+| **Druid** | 43.7 | 50 | 0% | 19796 | 547 | 0 | ✅ Endgame |
+| **Mage** | 43.4 | 50 | 21% | 32157 | 691 | 0 | ✅ Endgame |
+| **Archmage** | 42.3 | 50 | 19% | 31725 | 678 | 0 | ✅ Endgame |
+
+**Summary:** All 11 classes endgame-viable (42+ avg depth). **20 Morgoth kills** (8 berserker, 6 ranger, 3 warrior, 2 blackguard, 1 rogue). Added farming commitment period (50 turns min) to prevent FARM/DESCEND oscillation. Added emergency ascent fallback when stuck deep without TP scrolls. Dungeon connectivity validated after stair placement. Caster CB rates remain elevated (Necromancer 18%, Mage 21%, Archmage 19%).
+
+### Previous Baseline (100 runs, 50k turns, seed=1000, max-upgrades) - Post TP Drop Rate Fix
 
 | Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|-------|---------|--------|
