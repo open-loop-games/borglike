@@ -340,10 +340,17 @@ export function buyFromMerchant(
     return false
   }
 
-  // Check inventory space (max 20 items)
-  if (game.character.inventory.length >= 20) {
-    addMessage(game, 'Your inventory is full!', 'info')
-    return false
+  // Check inventory space (max 20 equipment items)
+  // Consumables (potions/scrolls) are tracked separately and don't count toward this limit
+  const isConsumable = item.template.type === 'potion' || item.template.type === 'scroll'
+  if (!isConsumable) {
+    const equipmentCount = game.character.inventory.filter(
+      (i) => i.template.type !== 'potion' && i.template.type !== 'scroll'
+    ).length
+    if (equipmentCount >= 20) {
+      addMessage(game, 'Your inventory is full!', 'info')
+      return false
+    }
   }
 
   // Transaction

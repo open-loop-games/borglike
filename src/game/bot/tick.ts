@@ -726,7 +726,7 @@ function executeGoalAction(
       return { type: 'use_healer' }
 
     case 'BUY_FROM_MERCHANT':
-      botBuySupplies(game)
+      botBuySupplies(game, goal.targetId)
       // Update town needs to check if we successfully bought what we needed
       updateTownNeeds(game, botState)
       return { type: 'wait' }

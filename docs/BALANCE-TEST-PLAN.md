@@ -2,7 +2,25 @@
 
 ## Current State (2026-01-28)
 
-### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Farming Oscillation Fix
+### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post TP Purchase Fix
+
+| Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Ranger** | 49.4 | 50 | 1% | 22369 | 652 | 3 | ✅ Endgame |
+| **Blackguard** | 48.3 | 50 | 0% | 16802 | 557 | 5 | ✅ Endgame |
+| **Warrior** | 48.3 | 50 | 0% | 16259 | 538 | 11 | ✅ Endgame |
+| **Berserker** | 48.3 | 50 | 0% | 14854 | 516 | 14 | ✅ Endgame |
+| **Paladin** | 48.0 | 50 | 0% | 22131 | 657 | 3 | ✅ Endgame |
+| **Necromancer** | 46.8 | 50 | 4% | 33386 | 806 | 0 | ✅ Endgame |
+| **Mage** | 46.8 | 50 | 1% | 36757 | 783 | 0 | ✅ Endgame |
+| **Rogue** | 46.6 | 50 | 1% | 22774 | 614 | 1 | ✅ Endgame |
+| **Druid** | 45.7 | 50 | 0% | 21626 | 607 | 0 | ✅ Endgame |
+| **Archmage** | 45.4 | 50 | 0% | 35478 | 758 | 0 | ✅ Endgame |
+| **Priest** | 45.3 | 50 | 0% | 24291 | 695 | 0 | ✅ Endgame |
+
+**Summary:** All 11 classes endgame-viable (45+ avg depth). **37 Morgoth kills** (14 berserker, 11 warrior, 5 blackguard, 3 ranger, 3 paladin, 1 rogue). Fixed two TP scroll purchase bugs: (1) botBuySupplies finding wrong adjacent merchant, (2) engine inventory limit blocking consumable purchases. Caster CB rates now excellent (Necromancer 4%, Mage 1%, Archmage 0%) - down from 18-21%.
+
+### Previous Baseline (100 runs, 50k turns, seed=1000, max-upgrades) - Post Farming Oscillation Fix
 
 | Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|-------|---------|--------|

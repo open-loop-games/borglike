@@ -146,8 +146,14 @@ export function botSellItems(game: GameState, botState?: BotState): number {
  *
  * Returns number of items bought.
  */
-export function botBuySupplies(game: GameState): number {
-  const merchant = findAdjacentMerchant(game)
+export function botBuySupplies(game: GameState, targetMerchantId?: string | null): number {
+  // Find specific merchant by ID, or fall back to any adjacent merchant
+  let merchant = targetMerchantId
+    ? game.merchants.find((m) => m.template.id === targetMerchantId)
+    : null
+  if (!merchant) {
+    merchant = findAdjacentMerchant(game)
+  }
   if (!merchant) return 0
 
   const merchantIndex = game.merchants.indexOf(merchant)
@@ -273,13 +279,13 @@ export function botBuySupplies(game: GameState): number {
 
   // Buy items
   let boughtCount = 0
-  const maxInventory = 20
   let boughtTP = 0
   let boughtHealing = 0
   let boughtEscape = 0
 
   for (const candidate of candidates) {
-    if (candidate.category !== 'gear' && game.character.inventory.length >= maxInventory) continue
+    // Consumables use type-specific caps (wantedTP, wantedHealing, wantedEscape)
+    // No total inventory check needed - caps are enforced below
     if (game.character.gold < candidate.price) continue
 
     if (candidate.category === 'tp' && boughtTP >= wantedTP) continue
