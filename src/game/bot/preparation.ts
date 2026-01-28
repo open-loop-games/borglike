@@ -615,7 +615,9 @@ export function getGoldTarget(targetDepth: number, caution: number): number {
   const escapeCost = req.escapeScrolls * PHASE_DOOR_PRICE
 
   // Town portals: Actual price from data
-  const portalCost = req.townPortals * TOWN_PORTAL_PRICE
+  // Always include at least 1 TP cost - ensures bot can restock after using a TP for the trip
+  const minPortals = Math.max(1, req.townPortals)
+  const portalCost = minPortals * TOWN_PORTAL_PRICE
 
   return healingCost + escapeCost + portalCost + HEALER_BUFFER
 }
