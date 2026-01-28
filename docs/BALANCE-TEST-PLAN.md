@@ -1,8 +1,44 @@
 # Balance Test Plan
 
-## Current State (2026-01-27)
+## Current State (2026-01-28)
 
-### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Unique Respawn Fix
+### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) - Post TP Drop Rate Fix
+
+| Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Ranger** | 49.0 | 50 | 0% | 20976 | 623 | 1 | ✅ Endgame |
+| **Berserker** | 48.6 | 50 | 0% | 14462 | 522 | 12 | ✅ Endgame |
+| **Warrior** | 47.9 | 50 | 1% | 14795 | 507 | 3 | ✅ Endgame |
+| **Blackguard** | 47.8 | 50 | 0% | 14765 | 524 | 4 | ✅ Endgame |
+| **Paladin** | 47.3 | 50 | 0% | 20282 | 623 | 0 | ✅ Endgame |
+| **Necromancer** | 45.5 | 50 | 15% | 31184 | 758 | 0 | ✅ Endgame |
+| **Rogue** | 45.4 | 50 | 1% | 20348 | 560 | 1 | ✅ Endgame |
+| **Druid** | 44.4 | 50 | 0% | 19614 | 553 | 0 | ✅ Endgame |
+| **Priest** | 44.4 | 50 | 0% | 22039 | 644 | 0 | ✅ Endgame |
+| **Mage** | 43.4 | 50 | 18% | 32174 | 691 | 0 | ✅ Endgame |
+| **Archmage** | 42.1 | 48 | 23% | 31557 | 671 | 0 | ✅ Endgame |
+
+**Summary:** All 11 classes endgame-viable (42+ avg depth). **21 Morgoth kills** (12 berserker, 4 blackguard, 3 warrior, 1 ranger, 1 rogue). TP scroll drop rate doubled and depth penalty capped at 25 levels - fixed Necromancer CB (20%→15%). Archmage CB regressed (14%→23%), needs investigation.
+
+### Previous Baseline (100 runs, 50k turns, seed=1000, max-upgrades) - Pre TP Drop Rate Fix
+
+| Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Berserker** | 48.7 | 50 | 1% | 14419 | 521 | 4 | ✅ Endgame |
+| **Ranger** | 47.6 | 50 | 0% | 20283 | 596 | 2 | ✅ Endgame |
+| **Warrior** | 47.5 | 50 | 2% | 14640 | 496 | 3 | ✅ Endgame |
+| **Blackguard** | 47.4 | 50 | 2% | 14266 | 515 | 3 | ✅ Endgame |
+| **Paladin** | 46.8 | 50 | 0% | 19927 | 604 | 0 | ✅ Endgame |
+| **Necromancer** | 44.7 | 50 | 20% | 30496 | 741 | 0 | ✅ Endgame |
+| **Priest** | 44.6 | 50 | 0% | 21568 | 621 | 0 | ✅ Endgame |
+| **Rogue** | 43.7 | 50 | 1% | 19548 | 535 | 0 | ✅ Endgame |
+| **Druid** | 43.3 | 50 | 0% | 18916 | 530 | 0 | ✅ Endgame |
+| **Mage** | 42.7 | 48 | 18% | 31587 | 683 | 0 | ✅ Endgame |
+| **Archmage** | 41.8 | 49 | 14% | 30460 | 659 | 0 | ✅ Endgame |
+
+**Summary:** All 11 classes endgame-viable (41+ avg depth). **12 Morgoth kills** (4 berserker, 3 warrior, 3 blackguard, 2 ranger). Caster CB rates remain elevated (Necromancer 20%, Mage 18%, Archmage 14%). Melee classes stable with low CB (0-2%).
+
+### Previous Baseline (100 runs, 50k turns, seed=1000, max-upgrades) - Post Unique Respawn Fix
 
 | Class | Avg Depth | Max Depth | CB Rate | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|---------|--------|
@@ -18,25 +54,7 @@
 | **Mage** | 42.5 | 48 | 20% | 676 | 0 | ✅ Endgame |
 | **Archmage** | 41.8 | 48 | 15% | 660 | 0 | ✅ Endgame |
 
-**Summary:** All 11 classes endgame-viable (41+ avg depth). **12 Morgoth kills** (7 berserker, 2 ranger, 2 warrior, 1 rogue). Fixed unique respawn logic: uniques now respawn on level revisit (only blocked after killed). Added Morgoth hunt with level flip when 90%+ explored at depth 50. Fixed unique hunt to use seenThisVisit (prevents infinite flip loops). **Blackguard CB: 5% → 1%, Berserker CB: 5% → 1%, Paladin CB: 3% → 0%**. Remaining CB: Mage 20%, Archmage 15%, Necromancer 8%.
-
-### Previous Baseline (100 runs, 50k turns, seed=1000, max-upgrades) - Post Phase Door Near-Stairs Fix
-
-| Class | Avg Depth | Max Depth | CB Rate | Kills | Status |
-|-------|-----------|-----------|---------|-------|--------|
-| **Berserker** | 48.8 | 50 | 5% | 529 | ✅ Endgame |
-| **Ranger** | 48.5 | 50 | 2% | 611 | ✅ Endgame |
-| **Blackguard** | 48.1 | 50 | 5% | 630 | ✅ Endgame |
-| **Warrior** | 47.8 | 50 | 3% | 502 | ✅ Endgame |
-| **Paladin** | 46.8 | 50 | 3% | 607 | ✅ Endgame |
-| **Necromancer** | 44.7 | 50 | 12% | 751 | ✅ Endgame |
-| **Rogue** | 43.6 | 50 | 1% | 534 | ✅ Endgame |
-| **Priest** | 43.2 | 49 | 0% | 605 | ✅ Endgame |
-| **Druid** | 42.9 | 50 | 0% | 536 | ✅ Endgame |
-| **Mage** | 42.3 | 47 | 8% | 684 | ✅ Endgame |
-| **Archmage** | 41.9 | 48 | 6% | 674 | ✅ Endgame |
-
-**Summary:** Phase Door near-stairs fix: skip Phase Door when within 15 tiles of stairs with DESCEND goal. Extended tether path distance when displaced by teleport. **Mage CB: 14% → 8%, Archmage CB: 10% → 6%**. Remaining CB: Necromancer 12%.
+**Summary:** Fixed unique respawn logic: uniques now respawn on level revisit (only blocked after killed). Added Morgoth hunt with level flip when 90%+ explored at depth 50. Fixed unique hunt to use seenThisVisit (prevents infinite flip loops). **12 Morgoth kills** (7 berserker, 2 ranger, 2 warrior, 1 rogue).
 
 ### Upgrade Impact Analysis (100 runs, 50k turns, seed=1000)
 

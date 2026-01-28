@@ -373,6 +373,7 @@ async function main(): Promise<void> {
       personality: args.personality,
       threads: args.threads,
       seed: args.seed,
+      maxUpgrades: args.maxUpgrades,
     })
     console.log(formatVariantComparison(result))
     return

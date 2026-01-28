@@ -34,6 +34,8 @@ export interface VariantCompareConfig {
   threads: number
   /** Starting seed for reproducibility */
   seed?: number
+  /** Use max upgrade bonuses */
+  maxUpgrades: boolean
 }
 
 /** Default personalities to compare */
@@ -51,6 +53,7 @@ const DEFAULT_PERSONALITY_CONFIG: VariantCompareConfig = {
   classId: 'warrior',
   personality: 'cautious',
   threads: 8,
+  maxUpgrades: false,
 }
 
 const DEFAULT_RACE_CONFIG: VariantCompareConfig = {
@@ -62,6 +65,7 @@ const DEFAULT_RACE_CONFIG: VariantCompareConfig = {
   classId: 'warrior',
   personality: 'cautious',
   threads: 8,
+  maxUpgrades: false,
 }
 
 /** Metrics for a single variant */
@@ -366,6 +370,7 @@ export async function compareVariants(
       runs: cfg.runsPerVariant,
       startSeed: cfg.seed,
       threads: cfg.threads,
+      maxUpgrades: cfg.maxUpgrades,
       analyzers: createAllAnalyzers(),
       onProgress: (completed: number, total: number) => {
         const pct = Math.floor((completed / total) * 20)

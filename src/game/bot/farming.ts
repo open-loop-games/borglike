@@ -731,7 +731,7 @@ function getTownWalkGoal(context: BotContext): BotGoal | null {
   const { game, botState, effectiveConfig } = context
   const character = game.character
 
-  // Only at depth 1
+  // Only at depth 1 - walk up to town instead of using TP scroll
   if (character.depth !== 1) return null
 
   const townGoldTarget = getGoldTarget(character.depth + 1, effectiveConfig.caution)

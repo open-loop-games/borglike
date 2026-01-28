@@ -227,6 +227,8 @@ export function spawnItemsForLevel(
  * Pick a random item template, weighted by depth appropriateness
  *
  * Favors items closer to the current depth's minDepth.
+ * Town Portal scrolls get 2x weight to ensure availability at deep levels.
+ * Depth penalty is capped at 25 levels with gentler coefficient (0.25 vs 0.5).
  *
  * @param templates - Available templates to choose from
  * @param depth - Current dungeon depth
@@ -239,10 +241,16 @@ function pickRandomItem(templates: ItemTemplate[], depth: number): ItemTemplate 
   // Items with minDepth closer to current depth are more common
   const weighted: { template: ItemTemplate; weight: number }[] = templates.map((t) => {
     const minDepth = t.minDepth ?? 0
-    // Items at or just below current depth have highest weight
-    // Items much lower have reduced weight (old items are less common)
     const depthDiff = Math.abs(depth - minDepth)
-    const weight = Math.max(1, 10 - depthDiff * 0.5)
+    // Cap depth penalty at 25 levels, use gentler coefficient (was 0.5)
+    const effectiveDepthDiff = Math.min(25, depthDiff)
+    let weight = Math.max(1, 10 - effectiveDepthDiff * 0.25)
+
+    // Double drop rate for Town Portal scrolls (critical for deep dungeon survival)
+    if (t.name === 'Scroll of Town Portal') {
+      weight *= 2
+    }
+
     return { template: t, weight }
   })
 
