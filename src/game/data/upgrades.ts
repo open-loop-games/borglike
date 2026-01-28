@@ -65,7 +65,7 @@ const might: UpgradeDefinition = {
 const resilience: UpgradeDefinition = {
   id: 'resilience',
   name: 'Resilience',
-  description: '+1 armor per level',
+  description: '+2 armor per level',
   category: 'stats',
   maxLevel: 5,
   baseCost: 100,
@@ -73,8 +73,8 @@ const resilience: UpgradeDefinition = {
   effect: {
     type: 'flat',
     stat: 'armor',
-    baseValue: 1,
-    perLevel: 1,
+    baseValue: 2,
+    perLevel: 2,
   },
   icon: '◆',
 }
@@ -82,7 +82,7 @@ const resilience: UpgradeDefinition = {
 const swiftness: UpgradeDefinition = {
   id: 'swiftness',
   name: 'Swiftness',
-  description: '+5% dodge chance per level',
+  description: '+2% dodge chance per level',
   category: 'stats',
   maxLevel: 5,
   baseCost: 150,
@@ -90,8 +90,8 @@ const swiftness: UpgradeDefinition = {
   effect: {
     type: 'percent',
     stat: 'dodge',
-    baseValue: 5,
-    perLevel: 5,
+    baseValue: 2,
+    perLevel: 2,
   },
   icon: '»',
 }
