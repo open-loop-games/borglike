@@ -41,8 +41,11 @@ export interface VariantCompareConfig {
 /** Default personalities to compare */
 export const DEFAULT_PERSONALITIES = ['cautious', 'aggressive', 'greedy', 'speedrunner']
 
-/** Default races to compare (starting + commonly unlocked) */
-export const DEFAULT_RACES = ['human', 'dwarf', 'elf', 'half_orc', 'hobbit', 'gnome']
+/** Default races to compare (all available) */
+export const DEFAULT_RACES = [
+  'human', 'dwarf', 'elf', 'half_elf', 'hobbit', 'gnome',
+  'half_orc', 'half_troll', 'dunadan', 'high_elf', 'kobold',
+]
 
 const DEFAULT_PERSONALITY_CONFIG: VariantCompareConfig = {
   variant: 'personality',
