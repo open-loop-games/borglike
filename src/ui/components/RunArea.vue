@@ -38,8 +38,8 @@ const visibleSlots = computed(() => {
 })
 
 const gridClass = computed(() => {
-  // When focused, don't use grid
-  if (runs.focusedSlot !== null) return 'grid-focused'
+  // When focused or editing loadout, use full-width layout
+  if (runs.focusedSlot !== null || loadoutSlot.value !== null) return 'grid-focused'
 
   const slotCount = maxSlots.value
   switch (slotCount) {

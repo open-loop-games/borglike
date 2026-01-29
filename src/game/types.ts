@@ -18,7 +18,7 @@ import type { MerchantTemplate } from './data/merchants'
 import type { GoldPileTemplate } from './data/gold'
 import type { TrapTemplate } from './data/traps'
 import type { VaultPlacement, GeneratorType } from './dungeon/types'
-import type { BestiaryEntry } from '@/types/progression'
+import type { BestiaryEntry, BotCapabilities, BotToggles } from '@/types/progression'
 
 // Re-export data types
 export type {
@@ -906,6 +906,9 @@ export interface RunConfig {
   bestiary?: Record<string, BestiaryEntry> // Lifetime kill data for knowledge bonuses
   balanceOverrides?: Partial<BalanceOverrides> // A/B testing overrides
   maxDepthEver?: number // Permanent progression: deepest level ever reached (for merchant scaling)
+  // Per-slot bot capabilities (training unlocks)
+  botCapabilities?: BotCapabilities
+  botToggles?: BotToggles
 }
 
 // ============================================================================

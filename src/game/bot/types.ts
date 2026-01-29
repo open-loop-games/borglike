@@ -14,6 +14,7 @@ import type {
   AltarState,
   MerchantState,
 } from '../types'
+import type { BotCapabilities, BotToggles } from '@/types/progression'
 import type { ClassBehaviorProfile } from './class-profiles'
 import type { FlowGrid } from './flow'
 
@@ -289,6 +290,10 @@ export interface BotContext {
   classProfile: ClassBehaviorProfile
   effectiveConfig: PersonalityConfig // personality + class modifiers
 
+  // Bot capabilities (per-slot training unlocks)
+  capabilities: BotCapabilities
+  toggles: BotToggles
+
   // Derived data
   visibleMonsters: Monster[]
   visibleItems: GroundItem[]
@@ -299,6 +304,29 @@ export interface BotContext {
 
   // Current state reference
   botState: BotState
+}
+
+/** Effective capability state (unlocked AND toggled on for ON/OFF, level for graded) */
+export interface EffectiveCapabilities {
+  town: boolean
+  farming: boolean
+  preparedness: boolean
+  sweep: number
+  surf: number
+  kiting: number
+}
+
+/** Get effective capabilities (capability unlocked AND toggled on) */
+export function getEffectiveCapabilities(context: BotContext): EffectiveCapabilities {
+  const { capabilities, toggles } = context
+  return {
+    town: capabilities.town && toggles.town,
+    farming: capabilities.farming && toggles.farming,
+    preparedness: capabilities.preparedness && toggles.preparedness,
+    sweep: capabilities.sweep,
+    surf: capabilities.surf,
+    kiting: capabilities.kiting,
+  }
 }
 
 /** Personality configuration parameters (0-100 scale) */

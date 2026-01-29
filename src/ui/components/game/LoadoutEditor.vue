@@ -5,6 +5,7 @@ import { getBoosterById } from '@/game/data/boosters'
 import { races, type Race } from '@/game/data/races'
 import { classes, type GameClass } from '@/game/data/classes'
 import PanelFrame from '../common/PanelFrame.vue'
+import BotTrainingPanel from './BotTrainingPanel.vue'
 
 const props = defineProps<{
   slot: number
@@ -135,170 +136,179 @@ function handleCancel() {
     </header>
 
     <div class="editor-content">
-      <!-- Race Selection -->
-      <PanelFrame class="selection-section">
-        <h3>Race</h3>
-        <div class="option-grid">
-          <button
-            v-for="race in availableRaces"
-            :key="race"
-            class="option-btn"
-            :class="{ active: selectedRace === race }"
-            @click="selectedRace = race"
-          >
-            {{ race }}
-          </button>
-        </div>
-        <!-- Race Description -->
-        <div v-if="selectedRaceData" class="selection-details">
-          <div class="details-stats">
-            <span :class="formatStatClass(selectedRaceData.stats.str)"
-              >STR {{ formatStat(selectedRaceData.stats.str) }}</span
+      <!-- Left Column: Character Config -->
+      <div class="config-column">
+        <!-- Race Selection -->
+        <PanelFrame class="selection-section">
+          <h3>Race</h3>
+          <div class="option-grid">
+            <button
+              v-for="race in availableRaces"
+              :key="race"
+              class="option-btn"
+              :class="{ active: selectedRace === race }"
+              @click="selectedRace = race"
             >
-            <span :class="formatStatClass(selectedRaceData.stats.int)"
-              >INT {{ formatStat(selectedRaceData.stats.int) }}</span
-            >
-            <span :class="formatStatClass(selectedRaceData.stats.wis)"
-              >WIS {{ formatStat(selectedRaceData.stats.wis) }}</span
-            >
-            <span :class="formatStatClass(selectedRaceData.stats.dex)"
-              >DEX {{ formatStat(selectedRaceData.stats.dex) }}</span
-            >
-            <span :class="formatStatClass(selectedRaceData.stats.con)"
-              >CON {{ formatStat(selectedRaceData.stats.con) }}</span
-            >
-            <span class="stat-info">HD +{{ selectedRaceData.hitdie }}</span>
-            <span v-if="selectedRaceData.expPenalty !== 100" class="stat-xp"
-              >XP {{ selectedRaceData.expPenalty }}%</span
-            >
+              {{ race }}
+            </button>
           </div>
-          <div class="details-desc">{{ selectedRaceData.description }}</div>
-          <div v-if="selectedRaceData.abilities.length > 0" class="details-abilities">
-            <span
-              v-for="ability in selectedRaceData.abilities"
-              :key="ability.id"
-              class="ability-tag"
-              :title="ability.description"
-            >
-              {{ ability.name }}
-            </span>
-          </div>
-        </div>
-      </PanelFrame>
-
-      <!-- Class Selection -->
-      <PanelFrame class="selection-section">
-        <h3>Class</h3>
-        <div class="option-grid">
-          <button
-            v-for="cls in availableClasses"
-            :key="cls"
-            class="option-btn"
-            :class="{ active: selectedClass === cls }"
-            @click="selectedClass = cls"
-          >
-            {{ cls }}
-          </button>
-        </div>
-        <!-- Class Description -->
-        <div v-if="selectedClassData" class="selection-details">
-          <div class="details-stats">
-            <span :class="formatStatClass(selectedClassData.stats.str)"
-              >STR {{ formatStat(selectedClassData.stats.str) }}</span
-            >
-            <span :class="formatStatClass(selectedClassData.stats.int)"
-              >INT {{ formatStat(selectedClassData.stats.int) }}</span
-            >
-            <span :class="formatStatClass(selectedClassData.stats.wis)"
-              >WIS {{ formatStat(selectedClassData.stats.wis) }}</span
-            >
-            <span :class="formatStatClass(selectedClassData.stats.dex)"
-              >DEX {{ formatStat(selectedClassData.stats.dex) }}</span
-            >
-            <span :class="formatStatClass(selectedClassData.stats.con)"
-              >CON {{ formatStat(selectedClassData.stats.con) }}</span
-            >
-            <span class="stat-info"
-              >HD {{ selectedClassData.hitdie >= 0 ? '+' : '' }}{{ selectedClassData.hitdie }}</span
-            >
-            <span class="stat-info">{{ selectedClassData.maxAttacks }} atk</span>
-            <span v-if="selectedClassData.usesMagic" class="stat-magic">Magic</span>
-          </div>
-          <div class="details-desc">{{ selectedClassData.description }}</div>
-          <div class="details-behavior">
-            <span class="behavior-label">AI:</span> {{ selectedClassData.botBehavior }}
-          </div>
-        </div>
-      </PanelFrame>
-
-      <!-- Personality Selection -->
-      <PanelFrame class="selection-section">
-        <h3>Bot Personality</h3>
-        <div class="personality-list">
-          <button
-            v-for="p in personalities"
-            :key="p.id"
-            class="personality-btn"
-            :class="{ active: selectedPersonality === p.id }"
-            @click="selectedPersonality = p.id"
-          >
-            <span class="personality-name">{{ p.name }}</span>
-            <span class="personality-desc">{{ p.desc }}</span>
-          </button>
-        </div>
-      </PanelFrame>
-
-      <!-- Booster Selection -->
-      <PanelFrame v-if="unlockedBoosters.length > 0" class="selection-section booster-section">
-        <h3>Boosters <span class="booster-hint">(max 2)</span></h3>
-        <div class="booster-slots">
-          <div class="booster-slot">
-            <span class="slot-label">Slot 1</span>
-            <select v-model="boosterSlot0" class="booster-select">
-              <option :value="null">-- None --</option>
-              <option
-                v-for="b in unlockedBoosters"
-                :key="b.id"
-                :value="b.id"
-                :disabled="b.id === boosterSlot1"
+          <!-- Race Description -->
+          <div v-if="selectedRaceData" class="selection-details">
+            <div class="details-stats">
+              <span :class="formatStatClass(selectedRaceData.stats.str)"
+                >STR {{ formatStat(selectedRaceData.stats.str) }}</span
               >
-                {{ b.icon }} {{ b.name }}
-              </option>
-            </select>
-            <span v-if="getBoosterInfo(boosterSlot0)" class="booster-desc">
-              {{ getBoosterInfo(boosterSlot0)?.description }}
-            </span>
-          </div>
-          <div class="booster-slot">
-            <span class="slot-label">Slot 2</span>
-            <select v-model="boosterSlot1" class="booster-select">
-              <option :value="null">-- None --</option>
-              <option
-                v-for="b in unlockedBoosters"
-                :key="b.id"
-                :value="b.id"
-                :disabled="b.id === boosterSlot0"
+              <span :class="formatStatClass(selectedRaceData.stats.int)"
+                >INT {{ formatStat(selectedRaceData.stats.int) }}</span
               >
-                {{ b.icon }} {{ b.name }}
-              </option>
-            </select>
-            <span v-if="getBoosterInfo(boosterSlot1)" class="booster-desc">
-              {{ getBoosterInfo(boosterSlot1)?.description }}
-            </span>
+              <span :class="formatStatClass(selectedRaceData.stats.wis)"
+                >WIS {{ formatStat(selectedRaceData.stats.wis) }}</span
+              >
+              <span :class="formatStatClass(selectedRaceData.stats.dex)"
+                >DEX {{ formatStat(selectedRaceData.stats.dex) }}</span
+              >
+              <span :class="formatStatClass(selectedRaceData.stats.con)"
+                >CON {{ formatStat(selectedRaceData.stats.con) }}</span
+              >
+              <span class="stat-info">HD +{{ selectedRaceData.hitdie }}</span>
+              <span v-if="selectedRaceData.expPenalty !== 100" class="stat-xp"
+                >XP {{ selectedRaceData.expPenalty }}%</span
+              >
+            </div>
+            <div class="details-desc">{{ selectedRaceData.description }}</div>
+            <div v-if="selectedRaceData.abilities.length > 0" class="details-abilities">
+              <span
+                v-for="ability in selectedRaceData.abilities"
+                :key="ability.id"
+                class="ability-tag"
+                :title="ability.description"
+              >
+                {{ ability.name }}
+              </span>
+            </div>
           </div>
-        </div>
-      </PanelFrame>
+        </PanelFrame>
 
-      <!-- Active Bonuses -->
-      <PanelFrame v-if="activeBonuses.length > 0" class="bonuses-section">
-        <h3>Active Bonuses</h3>
-        <div class="bonus-list">
-          <div v-for="bonus in activeBonuses" :key="bonus.name" class="bonus-item">
-            <span class="bonus-name">{{ bonus.name }}</span>
-            <span class="bonus-value">{{ bonus.value }}</span>
+        <!-- Class Selection -->
+        <PanelFrame class="selection-section">
+          <h3>Class</h3>
+          <div class="option-grid">
+            <button
+              v-for="cls in availableClasses"
+              :key="cls"
+              class="option-btn"
+              :class="{ active: selectedClass === cls }"
+              @click="selectedClass = cls"
+            >
+              {{ cls }}
+            </button>
           </div>
-        </div>
-      </PanelFrame>
+          <!-- Class Description -->
+          <div v-if="selectedClassData" class="selection-details">
+            <div class="details-stats">
+              <span :class="formatStatClass(selectedClassData.stats.str)"
+                >STR {{ formatStat(selectedClassData.stats.str) }}</span
+              >
+              <span :class="formatStatClass(selectedClassData.stats.int)"
+                >INT {{ formatStat(selectedClassData.stats.int) }}</span
+              >
+              <span :class="formatStatClass(selectedClassData.stats.wis)"
+                >WIS {{ formatStat(selectedClassData.stats.wis) }}</span
+              >
+              <span :class="formatStatClass(selectedClassData.stats.dex)"
+                >DEX {{ formatStat(selectedClassData.stats.dex) }}</span
+              >
+              <span :class="formatStatClass(selectedClassData.stats.con)"
+                >CON {{ formatStat(selectedClassData.stats.con) }}</span
+              >
+              <span class="stat-info"
+                >HD {{ selectedClassData.hitdie >= 0 ? '+' : ''
+                }}{{ selectedClassData.hitdie }}</span
+              >
+              <span class="stat-info">{{ selectedClassData.maxAttacks }} atk</span>
+              <span v-if="selectedClassData.usesMagic" class="stat-magic">Magic</span>
+            </div>
+            <div class="details-desc">{{ selectedClassData.description }}</div>
+            <div class="details-behavior">
+              <span class="behavior-label">AI:</span> {{ selectedClassData.botBehavior }}
+            </div>
+          </div>
+        </PanelFrame>
+
+        <!-- Personality Selection -->
+        <PanelFrame class="selection-section">
+          <h3>Bot Personality</h3>
+          <div class="personality-list">
+            <button
+              v-for="p in personalities"
+              :key="p.id"
+              class="personality-btn"
+              :class="{ active: selectedPersonality === p.id }"
+              @click="selectedPersonality = p.id"
+            >
+              <span class="personality-name">{{ p.name }}</span>
+              <span class="personality-desc">{{ p.desc }}</span>
+            </button>
+          </div>
+        </PanelFrame>
+
+        <!-- Booster Selection -->
+        <PanelFrame v-if="unlockedBoosters.length > 0" class="selection-section booster-section">
+          <h3>Boosters <span class="booster-hint">(max 2)</span></h3>
+          <div class="booster-slots">
+            <div class="booster-slot">
+              <span class="slot-label">Slot 1</span>
+              <select v-model="boosterSlot0" class="booster-select">
+                <option :value="null">-- None --</option>
+                <option
+                  v-for="b in unlockedBoosters"
+                  :key="b.id"
+                  :value="b.id"
+                  :disabled="b.id === boosterSlot1"
+                >
+                  {{ b.icon }} {{ b.name }}
+                </option>
+              </select>
+              <span v-if="getBoosterInfo(boosterSlot0)" class="booster-desc">
+                {{ getBoosterInfo(boosterSlot0)?.description }}
+              </span>
+            </div>
+            <div class="booster-slot">
+              <span class="slot-label">Slot 2</span>
+              <select v-model="boosterSlot1" class="booster-select">
+                <option :value="null">-- None --</option>
+                <option
+                  v-for="b in unlockedBoosters"
+                  :key="b.id"
+                  :value="b.id"
+                  :disabled="b.id === boosterSlot0"
+                >
+                  {{ b.icon }} {{ b.name }}
+                </option>
+              </select>
+              <span v-if="getBoosterInfo(boosterSlot1)" class="booster-desc">
+                {{ getBoosterInfo(boosterSlot1)?.description }}
+              </span>
+            </div>
+          </div>
+        </PanelFrame>
+
+        <!-- Active Bonuses -->
+        <PanelFrame v-if="activeBonuses.length > 0" class="bonuses-section">
+          <h3>Active Bonuses</h3>
+          <div class="bonus-list">
+            <div v-for="bonus in activeBonuses" :key="bonus.name" class="bonus-item">
+              <span class="bonus-name">{{ bonus.name }}</span>
+              <span class="bonus-value">{{ bonus.value }}</span>
+            </div>
+          </div>
+        </PanelFrame>
+      </div>
+
+      <!-- Right Column: Bot Training -->
+      <div class="training-column">
+        <BotTrainingPanel :slot="slot" />
+      </div>
     </div>
 
     <footer class="editor-footer">
@@ -352,8 +362,19 @@ function handleCancel() {
   overflow-y: auto;
   padding: 16px;
   display: flex;
+  gap: 20px;
+}
+
+.config-column {
+  flex: 1;
+  display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+}
+
+.training-column {
+  flex: 0 0 320px;
 }
 
 .selection-section {

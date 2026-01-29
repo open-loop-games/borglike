@@ -11,7 +11,21 @@ import type {
   SlotConfig,
   AchievementState,
   UnlockContext,
+  BotCapabilities,
+  BotToggles,
 } from '../types'
+import {
+  DEFAULT_BOT_CAPABILITIES,
+  DEFAULT_BOT_TOGGLES,
+  FULL_BOT_CAPABILITIES,
+} from '../types/progression'
+import {
+  type BotUpgradeId,
+  type ToggleUpgradeId,
+  getBotUpgradeById,
+  canPurchaseBotUpgrade,
+  applyBotUpgrade,
+} from '@/game/data/bot-upgrades'
 import { achievements, getAchievementById } from '@/game/data/achievements'
 import {
   unlockableRaces,
@@ -75,6 +89,8 @@ export const useProgressionStore = defineStore('progression', () => {
       class: availableClasses.value[0] || 'Warrior',
       personality: 'cautious',
       boosters: [null, null],
+      capabilities: { ...DEFAULT_BOT_CAPABILITIES },
+      toggles: { ...DEFAULT_BOT_TOGGLES },
     }
   }
 
@@ -471,6 +487,10 @@ export const useProgressionStore = defineStore('progression', () => {
     const saved = slotConfigs.value[slot]
     if (saved) {
       // Validate saved config - fallback if race/class no longer unlocked
+      // Migration: old saves without capabilities get FULL capabilities (reward existing players)
+      const capabilities = saved.capabilities ?? { ...FULL_BOT_CAPABILITIES }
+      const toggles = saved.toggles ?? { ...DEFAULT_BOT_TOGGLES }
+
       return {
         race: unlocks.value.races.has(saved.race) ? saved.race : availableRaces.value[0] || 'Human',
         class: unlocks.value.classes.has(saved.class)
@@ -485,6 +505,8 @@ export const useProgressionStore = defineStore('progression', () => {
             ? saved.boosters[1]
             : null,
         ],
+        capabilities,
+        toggles,
       }
     }
     return createDefaultSlotConfig()
@@ -495,7 +517,73 @@ export const useProgressionStore = defineStore('progression', () => {
     while (slotConfigs.value.length <= slot) {
       slotConfigs.value.push(createDefaultSlotConfig())
     }
-    slotConfigs.value[slot] = { ...config }
+    slotConfigs.value[slot] = {
+      ...config,
+      capabilities: { ...config.capabilities },
+      toggles: { ...config.toggles },
+    }
+  }
+
+  // Bot capability upgrade actions
+  function purchaseBotUpgrade(slot: number, upgradeId: BotUpgradeId): boolean {
+    const config = getSlotConfig(slot)
+
+    if (!canPurchaseBotUpgrade(upgradeId, config.capabilities, currency.value.essence)) {
+      return false
+    }
+
+    const upgrade = getBotUpgradeById(upgradeId)
+    if (!upgrade) return false
+
+    // Spend essence
+    if (!spendEssence(upgrade.cost)) return false
+
+    // Apply upgrade to capabilities
+    const newCapabilities = applyBotUpgrade(upgradeId, config.capabilities)
+
+    // Save updated config
+    saveSlotConfig(slot, {
+      ...config,
+      capabilities: newCapabilities,
+    })
+
+    // Save immediately - upgrade purchases are critical
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after purchaseBotUpgrade:', err)
+    )
+    return true
+  }
+
+  function toggleBotCapability(slot: number, capability: ToggleUpgradeId): void {
+    const config = getSlotConfig(slot)
+
+    // Can only toggle if capability is unlocked
+    if (!config.capabilities[capability]) return
+
+    // Toggle the setting
+    const newToggles = {
+      ...config.toggles,
+      [capability]: !config.toggles[capability],
+    }
+
+    // Save updated config
+    saveSlotConfig(slot, {
+      ...config,
+      toggles: newToggles,
+    })
+  }
+
+  /** Get effective capabilities (unlocked AND toggled on) */
+  function getEffectiveCapabilities(slot: number): BotCapabilities & BotToggles {
+    const config = getSlotConfig(slot)
+    return {
+      town: config.capabilities.town && config.toggles.town,
+      farming: config.capabilities.farming && config.toggles.farming,
+      preparedness: config.capabilities.preparedness && config.toggles.preparedness,
+      sweep: config.capabilities.sweep,
+      surf: config.capabilities.surf,
+      kiting: config.capabilities.kiting,
+    }
   }
 
   function recordRun(stats: RunStats, isVictory: boolean = false) {
@@ -879,6 +967,11 @@ export const useProgressionStore = defineStore('progression', () => {
     slotConfigs,
     getSlotConfig,
     saveSlotConfig,
+
+    // Bot capability actions
+    purchaseBotUpgrade,
+    toggleBotCapability,
+    getEffectiveCapabilities,
 
     // Achievement getters and actions
     isAchievementUnlocked,

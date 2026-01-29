@@ -18,7 +18,7 @@
 import type { Point, GameState } from '../types'
 import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { SQUISHY_CLASSES } from './types'
+import { SQUISHY_CLASSES, getEffectiveCapabilities } from './types'
 import { getTile } from '../dungeon'
 import { profile } from './profiler'
 import {
@@ -329,18 +329,23 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
   const { game, botState, effectiveConfig } = context
   const character = game.character
   const nextDepth = character.depth + 1
+  const effective = getEffectiveCapabilities(context)
 
   if (botState.farmingMode && botState.farmBlockedDepth > 0) {
     const farmingGoal = profile('prog.activeFarm', () => handleActiveFarmingLoop(context))
     if (farmingGoal) return farmingGoal
   }
 
-  const readinessIssue = profile('prog.depthReadiness', () =>
-    getDepthReadiness(character, character.inventory, nextDepth, effectiveConfig.caution)
-  )
-  if (readinessIssue) {
-    const farmingGoal = profile('prog.initFarm', () => initiateFarmingLoop(context))
-    if (farmingGoal) return farmingGoal
+  // GATE: Preparedness check only if capability is enabled
+  // Face-rush mode skips consumable requirements entirely
+  if (effective.preparedness) {
+    const readinessIssue = profile('prog.depthReadiness', () =>
+      getDepthReadiness(character, character.inventory, nextDepth, effectiveConfig.caution)
+    )
+    if (readinessIssue) {
+      const farmingGoal = profile('prog.initFarm', () => initiateFarmingLoop(context))
+      if (farmingGoal) return farmingGoal
+    }
   }
 
   if (botState.sweepMode && SQUISHY_CLASSES.has(character.classId)) {

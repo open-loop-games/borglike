@@ -11,19 +11,33 @@
 
 Bots start simple (face-rush), unlock features through upgrades per run slot.
 
-**Dramatic Changes (on/off)**
-- [ ] Farming mode: Without unlock, always descend regardless of level
-- [ ] Town usage: Without unlock, never visit town (no buy/sell)
-- [ ] Preparedness: Without unlock, no consumable requirements checked
+**Implemented** (2026-01)
 
-**Reduced Effectiveness (upgrade levels)**
-- [ ] Sweep mode: Levels increase re-exploration % (L1: 25%, L2: 50%, L3: 75%)
-- [ ] Stair surfing: Levels reduce HP threshold to ascend
-- [ ] Kiting: Levels improve ranged distance maintenance
+Types & Data:
+- [x] `BotCapabilities`, `BotToggles` interfaces (`types/progression.ts`)
+- [x] Upgrade definitions with costs/prereqs (`game/data/bot-upgrades.ts`)
+- [x] Per-slot state in `SlotConfig` with migration for existing saves
 
-**Implementation**
-- [ ] Per-slot unlock state in progression store
-- [ ] Full loadout UI exposes unlocked feature toggles
+Gates (ON/OFF capabilities):
+- [x] Town: Without unlock, return through portal immediately, skip services (`bot/goals.ts`)
+- [x] Farming: Without unlock, skip farming loops (`bot/farming.ts`)
+- [x] Preparedness: Without unlock, skip depth readiness checks (`bot/progression.ts`)
+- [x] TP scroll blocked when town disabled (`bot/survival-consumables.ts`)
+
+Gates (Graded levels 0-3):
+- [x] Sweep: L0=disabled, L1-L3 increase exploration threshold (`bot/farming.ts`)
+- [x] Surf: L0=15% HP flee, L1=30%, L2=40%, L3=personality-based (`bot/survival-retreat.ts`)
+- [x] Kiting: L0=disabled, L1-L3 increase engage distance (`bot/combat.ts`)
+
+Context Flow:
+- [x] `RunConfig` → `GameRunner` → `runBotTick` → `buildBotContext` → `BotContext`
+- [x] `getEffectiveCapabilities()` combines unlocked + toggled state
+
+UI:
+- [x] `BotTrainingPanel.vue` - upgrade purchase, toggles, level bars
+- [x] `LoadoutEditor.vue` - two-column layout with bot training
+
+**Remaining**
 - [ ] Personality presets set default lever values
 
 ### Town & Economy

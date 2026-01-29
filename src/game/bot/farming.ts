@@ -13,7 +13,7 @@
 
 import type { Point, GameState, Tile } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from './types'
+import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL, getEffectiveCapabilities } from './types'
 import { MAX_DEPTH } from '../types'
 import { getTile } from '../dungeon'
 import type { FlowGrid } from './flow'
@@ -30,8 +30,16 @@ import { findTownPortalScroll } from './items'
 /** Tethered exploration radii: 5x5 -> 9x9 -> 21x21 */
 export const TETHER_RADII = [2, 4, 10] as const
 
-/** Threshold for sweep completion (% of floor tiles seen this visit) */
-const SWEEP_COMPLETION_THRESHOLD = 70
+/** Base sweep threshold (% of floor tiles seen this visit) - used when sweep disabled */
+const SWEEP_BASE_THRESHOLD = 100 // Effectively disabled at L0
+
+/** Sweep completion thresholds by level: L0=disabled, L1=60%, L2=75%, L3=90% */
+const SWEEP_THRESHOLDS = [100, 60, 75, 90] as const
+
+/** Get sweep completion threshold based on capability level */
+export function getSweepCompletionThreshold(sweepLevel: number): number {
+  return SWEEP_THRESHOLDS[sweepLevel] ?? SWEEP_BASE_THRESHOLD
+}
 
 /** Max turns before sweep times out */
 const SWEEP_TIMEOUT = 500
@@ -317,9 +325,15 @@ export function getSweepProgress(game: GameState, botState: BotState): number {
 
 /**
  * Check if sweep is complete (progress >= threshold).
+ * @param sweepLevel - Capability level (0=disabled, 1-3=levels)
  */
-export function isSweepComplete(game: GameState, botState: BotState): boolean {
-  return getSweepProgress(game, botState) >= SWEEP_COMPLETION_THRESHOLD
+export function isSweepComplete(
+  game: GameState,
+  botState: BotState,
+  sweepLevel: number = 3
+): boolean {
+  const threshold = getSweepCompletionThreshold(sweepLevel)
+  return getSweepProgress(game, botState) >= threshold
 }
 
 /**
@@ -835,6 +849,12 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
  * Initiate farming loop when descent is blocked.
  */
 export function initiateFarmingLoop(context: BotContext): BotGoal | null {
+  // GATE: Farming capability must be unlocked AND enabled
+  const effective = getEffectiveCapabilities(context)
+  if (!effective.farming) {
+    return null // Face-rush mode: just descend unprepared
+  }
+
   const { game, botState, effectiveConfig } = context
   const character = game.character
   const nextDepth = character.depth + 1

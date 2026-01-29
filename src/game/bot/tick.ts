@@ -12,6 +12,7 @@
  */
 
 import type { GameState, GameAction, BotPersonality, DungeonLevel } from '../types'
+import type { BotCapabilities, BotToggles } from '@/types/progression'
 import { getTile } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 
@@ -84,7 +85,9 @@ function countExploredTiles(level: DungeonLevel): number {
 export function runBotTick(
   game: GameState,
   personality: BotPersonality,
-  existingState?: BotState
+  existingState?: BotState,
+  capabilities?: BotCapabilities,
+  toggles?: BotToggles
 ): GameAction {
   // Get or create bot state
   const botState = existingState ?? createBotState()
@@ -139,7 +142,9 @@ export function runBotTick(
   cleanupBlacklist(botState, game.turn)
 
   // Build context
-  const context = profile('buildBotContext', () => buildBotContext(game, personality, botState))
+  const context = profile('buildBotContext', () =>
+    buildBotContext(game, personality, botState, capabilities, toggles)
+  )
 
   // Update known stairs if visible
   updateKnownStairs(game, botState)

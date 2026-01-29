@@ -74,7 +74,8 @@ export function getSurvivalConsumableAction(
   dangers: DangerMap,
   botState?: BotState,
   personality?: string,
-  healsPriority: boolean = false
+  healsPriority: boolean = false,
+  townEnabled: boolean = true
 ): GameAction | null {
   const character = game.character
   const hpRatio = character.hp / character.maxHp
@@ -228,7 +229,8 @@ export function getSurvivalConsumableAction(
   // 4b. Town Portal decision - use when not adjacent to monsters
   // This is a strategic escape/resupply - not for immediate combat
   // Skip if portal already active (would fail and loop forever)
-  if (adjacentCount === 0 && personality && !game.townPortal) {
+  // Skip if town capability disabled (no benefit from town visit)
+  if (adjacentCount === 0 && personality && !game.townPortal && townEnabled) {
     const portalDecision = shouldUseTownPortal(game, config, personality)
     if (portalDecision.shouldUse) {
       const scroll = findTownPortalScroll(character)

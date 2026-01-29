@@ -205,6 +205,9 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
   // Get max depth ever for merchant scaling
   const maxDepthEver = progression.globalStats.maxDepthEver
 
+  // Get per-slot bot capabilities (training unlocks)
+  const slotConfig = progression.getSlotConfig(slot)
+
   // Create the actual game runner
   const runner = createGameRunner({
     raceId: RACE_IDS[raceName] || 'human',
@@ -216,6 +219,9 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     bestiary,
     maxDepthEver,
     maxTurns: 0, // Unlimited
+    // Per-slot bot training unlocks
+    botCapabilities: slotConfig.capabilities,
+    botToggles: slotConfig.toggles,
   })
 
   // Create instance

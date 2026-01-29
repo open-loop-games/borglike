@@ -5,6 +5,8 @@
  */
 
 import type { GameState, BotPersonality, Point, AltarState } from '../types'
+import type { BotCapabilities, BotToggles } from '@/types/progression'
+import { FULL_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '@/types/progression'
 import { manhattanDistance } from '../types'
 import type { BotContext, BotState, PersonalityConfig } from './types'
 import { getTile } from '../dungeon'
@@ -98,9 +100,15 @@ function createMinimalBotState(): BotState {
 export function buildBotContext(
   game: GameState,
   personality: BotPersonality,
-  botState?: BotState
+  botState?: BotState,
+  capabilities?: BotCapabilities,
+  toggles?: BotToggles
 ): BotContext {
   const config = getPersonalityConfig(personality)
+
+  // Default to full capabilities for backwards compatibility
+  const effectiveCapabilities = capabilities ?? FULL_BOT_CAPABILITIES
+  const effectiveToggles = toggles ?? DEFAULT_BOT_TOGGLES
 
   // Get class-aware information
   const classId = game.character.classId
@@ -158,6 +166,8 @@ export function buildBotContext(
     classId,
     classProfile,
     effectiveConfig,
+    capabilities: effectiveCapabilities,
+    toggles: effectiveToggles,
     visibleMonsters,
     visibleItems,
     visibleAltars,

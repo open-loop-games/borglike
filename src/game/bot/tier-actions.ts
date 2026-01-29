@@ -15,6 +15,7 @@ import { isBossOrUnique } from '../types'
 import { canRangedAttack } from '../combat'
 
 import type { BotState, BotContext, DangerResult, DangerTier } from './types'
+import { getEffectiveCapabilities } from './types'
 import { recordProgress, setGoal } from './state'
 import { isSamePosition } from './movement'
 import {
@@ -126,13 +127,15 @@ function handleCriticalTier(
   }
 
   // 2. Try escape consumable (teleport scroll, phase door)
+  const effective = getEffectiveCapabilities(context)
   const survivalAction = getSurvivalConsumableAction(
     game,
     config,
     dangerResult.dangers,
     botState,
     personality,
-    classProfile.healsPriority
+    classProfile.healsPriority,
+    effective.town
   )
   if (survivalAction) {
     // TODO: resetAfterTeleport causes regression, disabled pending investigation
@@ -303,13 +306,15 @@ function handleDangerTier(
   }
 
   // 4. Survival consumables (healing potion, antidote)
+  const effective = getEffectiveCapabilities(context)
   const survivalAction = getSurvivalConsumableAction(
     game,
     config,
     dangerResult.dangers,
     botState,
     personality,
-    classProfile.healsPriority
+    classProfile.healsPriority,
+    effective.town
   )
   if (survivalAction) {
     recordProgress(botState, game.turn)
@@ -471,13 +476,15 @@ function handleCautionTier(
 
     // Only use consumables if no spell available and quite hurt
     if (hpRatio < 0.5) {
+      const effective = getEffectiveCapabilities(context)
       const survivalAction = getSurvivalConsumableAction(
         game,
         config,
         dangerResult.dangers,
         botState,
         _personality,
-        classProfile.healsPriority
+        classProfile.healsPriority,
+        effective.town
       )
       if (survivalAction) {
         recordProgress(botState, game.turn)
@@ -588,13 +595,15 @@ function handleSafeTier(
 
     // Only use potions if quite hurt and safe
     if (hpRatio < 0.4) {
+      const effective = getEffectiveCapabilities(context)
       const survivalAction = getSurvivalConsumableAction(
         game,
         config,
         dangerResult.dangers,
         botState,
         personality,
-        classProfile.healsPriority
+        classProfile.healsPriority,
+        effective.town
       )
       if (survivalAction) {
         recordProgress(botState, game.turn)

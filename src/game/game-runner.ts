@@ -65,6 +65,9 @@ export function createGameRunner(config: RunnerConfig) {
   const onEvent = config.onEvent
   const onTurn = config.onTurn
   const onEnd = config.onEnd
+  // Bot capabilities from slot config (face-rush mode if not provided)
+  const capabilities = config.botCapabilities
+  const toggles = config.botToggles
 
   const game = createGame(config)
   const botState = createBotState() // Persistent bot state for this run
@@ -79,7 +82,7 @@ export function createGameRunner(config: RunnerConfig) {
     }
 
     // Get bot decision with persistent state
-    const action = runBotTick(game, personality, botState)
+    const action = runBotTick(game, personality, botState, capabilities, toggles)
 
     // Process the turn
     const events = processTurn(game, action)
