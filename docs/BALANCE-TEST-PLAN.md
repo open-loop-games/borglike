@@ -4,7 +4,25 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `54a9e7a` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Upgrade Rebalance
+### Full Baseline @ `b6ccc40` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Gold Economy Rebalance
+
+| Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Ranger** | 49.0 | 50 | 0% | 22017 | 652 | 2 | ✅ Endgame |
+| **Blackguard** | 48.5 | 50 | 0% | 15771 | 556 | 1 | ✅ Endgame |
+| **Berserker** | 48.5 | 50 | 0% | 14651 | 526 | 9 | ✅ Endgame |
+| **Paladin** | 48.1 | 50 | 1% | 22120 | 663 | 0 | ✅ Endgame |
+| **Warrior** | 47.8 | 50 | 0% | 16170 | 535 | 6 | ✅ Endgame |
+| **Rogue** | 47.1 | 50 | 0% | 22391 | 627 | 0 | ✅ Endgame |
+| **Mage** | 46.8 | 50 | 1% | 36863 | 780 | 2 | ✅ Endgame |
+| **Necromancer** | 46.5 | 50 | 3% | 32986 | 797 | 0 | ✅ Endgame |
+| **Archmage** | 45.8 | 50 | 2% | 35744 | 764 | 0 | ✅ Endgame |
+| **Druid** | 45.6 | 50 | 0% | 21477 | 604 | 0 | ✅ Endgame |
+| **Priest** | 44.9 | 50 | 0% | 24132 | 689 | 1 | ✅ Endgame |
+
+**Summary:** All 11 classes endgame-viable (44.9-49.0 avg depth). **21 Morgoth kills** (9 berserker, 6 warrior, 2 ranger, 2 mage, 1 blackguard, 1 priest). CB rates 0-3%. Gold economy rebalanced: quadratic equipment pricing, reduced late-game gold drops, depth-aware bot shopping logic.
+
+### Previous Baseline @ `54a9e7a` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Upgrade Rebalance
 
 | Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|-------|---------|--------|
@@ -22,7 +40,7 @@
 
 **Summary:** All 11 classes endgame-viable (45+ avg depth). **36 Morgoth kills** (16 berserker, 11 warrior, 4 ranger, 2 paladin, 2 blackguard, 1 mage). CB rates excellent (0-1%). Nerfed Swiftness (25%→10% dodge) and buffed Resilience (5→10 armor) with no measurable impact.
 
-### Previous Baseline @ `9b151af` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Baseline @ `9b151af` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|-------|---------|--------|

@@ -738,10 +738,12 @@ export function generateMerchantInventory(merchantId: string, depth: number): It
     const enchantment = rollEnchantmentForShop(depth)
     const item = createItem(template, enchantment)
 
-    // Calculate shop price (base tier * 50 + enchant bonus)
-    const basePrice = template.tier * 50 + enchantment * 30
+    // Calculate shop price using quadratic scaling
+    // Tier: tier² * 50, Enchant: enchant² * 100
+    const tierCost = template.tier * template.tier * 50
+    const enchantCost = enchantment * enchantment * 100
     const markup = 1.5 + random() * 0.5 // 1.5x to 2.0x markup
-    item.shopPrice = Math.floor(basePrice * markup)
+    item.shopPrice = Math.floor((tierCost + enchantCost) * markup)
 
     items.push(item)
   }

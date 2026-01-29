@@ -14,7 +14,7 @@ import type {
   ActionResult,
   Item,
 } from './types'
-import { randomInt } from './rng'
+import { randomInt, random } from './rng'
 import {
   TOWN_LAYOUT,
   TOWN_WIDTH,
@@ -35,6 +35,48 @@ import { spawnMonstersForLevel } from './monster-ai'
 import { spawnItemsForLevel, generateMerchantInventory } from './items'
 import { SCROLLS, POTIONS, ALL_EQUIPMENT, type ItemTemplate } from './data/items'
 import { createItem } from './items'
+
+// ============================================================================
+// PRICING HELPERS
+// ============================================================================
+
+/**
+ * Calculate shop price using quadratic scaling for both tier and enchantment.
+ *
+ * Tier pricing: tier² * 50 (T1=50, T2=200, T3=450, T4=800)
+ * Enchant pricing: enchant² * 100 (+1=100, +2=400, +3=900)
+ *
+ * @param tier - Item tier (1-4)
+ * @param enchantment - Enchantment level (0-4)
+ * @param markup - Shop markup multiplier (default 2.0)
+ */
+function calculateEquipmentPrice(tier: number, enchantment: number, markup: number = 2.0): number {
+  const tierCost = tier * tier * 50
+  const enchantCost = enchantment * enchantment * 100
+  return Math.floor((tierCost + enchantCost) * markup)
+}
+
+/**
+ * Roll enchantment for town shop items based on progression tier.
+ *
+ * - Tier 0 (depths 1-14): No enchantments
+ * - Tier 1 (depths 15-29): 30% +1
+ * - Tier 2 (depths 30+): 40% +1, 20% +2
+ */
+function rollTownShopEnchantment(progressionTier: number): number {
+  if (progressionTier === 0) return 0
+
+  const roll = random()
+  if (progressionTier === 1) {
+    // Tier 1: 30% chance of +1
+    return roll < 0.3 ? 1 : 0
+  } else {
+    // Tier 2: 40% +1, 20% +2
+    if (roll < 0.2) return 2
+    if (roll < 0.6) return 1
+    return 0
+  }
+}
 
 // ============================================================================
 // TOWN GENERATION
@@ -425,17 +467,19 @@ function generateGeneralStoreInventory(): Item[] {
  * Armory: Armor, shields, helms, gloves, boots
  *
  * Inventory tiers scale with maxDepthEver:
- * - Tier 0 (depths 1-14): Tier 1-2 equipment
- * - Tier 1 (depths 15-29): Tier 2-3 equipment
- * - Tier 2 (depths 30+): Tier 3-4 equipment
+ * - Tier 0 (depths 1-14): Tier 1-2 equipment, no enchants
+ * - Tier 1 (depths 15-29): Tier 2-3 equipment, some +1
+ * - Tier 2 (depths 30+): Tier 3-4 equipment, +1/+2 available
+ *
+ * Uses quadratic pricing: tier² * 50 + enchant² * 100
  */
 function generateArmoryInventory(maxDepthEver: number): Item[] {
   const items: Item[] = []
-  const tier = maxDepthEver >= 30 ? 2 : maxDepthEver >= 15 ? 1 : 0
+  const progressionTier = maxDepthEver >= 30 ? 2 : maxDepthEver >= 15 ? 1 : 0
 
   // Determine tier range based on progression
-  const minTier = tier + 1 // 1, 2, or 3
-  const maxTier = tier + 2 // 2, 3, or 4
+  const minTier = progressionTier + 1 // 1, 2, or 3
+  const maxTier = progressionTier + 2 // 2, 3, or 4
 
   // Filter for armor-type items in tier range
   const armorTypes: ItemTemplate['slot'][] = ['body', 'shield', 'helm', 'gloves', 'boots']
@@ -444,11 +488,12 @@ function generateArmoryInventory(maxDepthEver: number): Item[] {
   )
 
   // Stock 6-8 random armor pieces (more at higher tiers)
-  const count = randomInt(6 + tier, 8 + tier)
+  const count = randomInt(6 + progressionTier, 8 + progressionTier)
   for (let i = 0; i < count && armorItems.length > 0; i++) {
     const template = armorItems[randomInt(0, armorItems.length - 1)]!
-    const item = createItem(template, 0)
-    item.shopPrice = Math.floor(template.tier * 50 * 2.0)
+    const enchantment = rollTownShopEnchantment(progressionTier)
+    const item = createItem(template, enchantment)
+    item.shopPrice = calculateEquipmentPrice(template.tier, enchantment)
     items.push(item)
   }
 
@@ -459,17 +504,19 @@ function generateArmoryInventory(maxDepthEver: number): Item[] {
  * Weapon Smithy: Weapons and bows
  *
  * Inventory tiers scale with maxDepthEver:
- * - Tier 0 (depths 1-14): Tier 1-2 weapons
- * - Tier 1 (depths 15-29): Tier 2-3 weapons
- * - Tier 2 (depths 30+): Tier 3-4 weapons
+ * - Tier 0 (depths 1-14): Tier 1-2 weapons, no enchants
+ * - Tier 1 (depths 15-29): Tier 2-3 weapons, some +1
+ * - Tier 2 (depths 30+): Tier 3-4 weapons, +1/+2 available
+ *
+ * Uses quadratic pricing: tier² * 50 + enchant² * 100
  */
 function generateWeaponShopInventory(maxDepthEver: number): Item[] {
   const items: Item[] = []
-  const tier = maxDepthEver >= 30 ? 2 : maxDepthEver >= 15 ? 1 : 0
+  const progressionTier = maxDepthEver >= 30 ? 2 : maxDepthEver >= 15 ? 1 : 0
 
   // Determine tier range based on progression
-  const minTier = tier + 1 // 1, 2, or 3
-  const maxTier = tier + 2 // 2, 3, or 4
+  const minTier = progressionTier + 1 // 1, 2, or 3
+  const maxTier = progressionTier + 2 // 2, 3, or 4
 
   // Filter for weapon-type items in tier range
   const weaponTypes: ItemTemplate['slot'][] = ['weapon', 'bow']
@@ -478,11 +525,12 @@ function generateWeaponShopInventory(maxDepthEver: number): Item[] {
   )
 
   // Stock 6-8 random weapons (more at higher tiers)
-  const count = randomInt(6 + tier, 8 + tier)
+  const count = randomInt(6 + progressionTier, 8 + progressionTier)
   for (let i = 0; i < count && weaponItems.length > 0; i++) {
     const template = weaponItems[randomInt(0, weaponItems.length - 1)]!
-    const item = createItem(template, 0)
-    item.shopPrice = Math.floor(template.tier * 50 * 2.0)
+    const enchantment = rollTownShopEnchantment(progressionTier)
+    const item = createItem(template, enchantment)
+    item.shopPrice = calculateEquipmentPrice(template.tier, enchantment)
     items.push(item)
   }
 

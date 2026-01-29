@@ -634,7 +634,8 @@ const CONSERVATIVE_SELL_MULTIPLIER = 0.25
 
 /**
  * Estimate the sell value of a single item.
- * Mirrors getItemValue from features.ts but with conservative multiplier.
+ * Uses quadratic pricing to match shop costs: tier² * 50 + enchant² * 100
+ * Conservative multiplier to underestimate and leave room for gear purchases.
  */
 function estimateItemSellValue(item: Item): number {
   const template = item.template
@@ -653,8 +654,9 @@ function estimateItemSellValue(item: Item): number {
   ]
   if (!sellableTypes.includes(template.type)) return 0
 
-  // Base value = tier * 50
-  let value = template.tier * 50
+  // Quadratic tier pricing: tier² * 50
+  const tier = template.tier
+  let value = tier * tier * 50
 
   // Weapons and armor worth more
   if (template.type === 'weapon' || template.type === 'bow') {
@@ -663,8 +665,9 @@ function estimateItemSellValue(item: Item): number {
     value *= 1.5
   }
 
-  // Enchantment adds value
-  value += (item.enchantment ?? 0) * 20
+  // Quadratic enchantment value: enchant² * 100
+  const enchant = item.enchantment ?? 0
+  value += enchant * enchant * 100
 
   // Apply conservative sell multiplier
   return Math.floor(value * CONSERVATIVE_SELL_MULTIPLIER)

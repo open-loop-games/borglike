@@ -244,26 +244,44 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
         candidates.push({ index: i, category: 'escape', priority: 3 - phaseDoorBonus, price, name })
       }
     }
-    // Gear upgrades - aggressive buying at 60% threshold with slot priority
+    // Gear upgrades - depth-aware budget with quadratic value calculation
     else if (template.slot) {
       const slotKey = template.slot as keyof typeof char.equipment
       const currentGear = char.equipment[slotKey]
-      const currentValue = currentGear
-        ? currentGear.template.tier * 10 + currentGear.enchantment * 5
-        : 0
-      const newValue = template.tier * 10 + item.enchantment * 5
 
-      // Slot priority: weapon/armor most important
+      // Quadratic value: tier² * 10 + enchant² * 20
+      const currentTier = currentGear?.template.tier ?? 0
+      const currentEnchant = currentGear?.enchantment ?? 0
+      const currentValue = currentTier * currentTier * 10 + currentEnchant * currentEnchant * 20
+
+      const newTier = template.tier
+      const newEnchant = item.enchantment
+      const newValue = newTier * newTier * 10 + newEnchant * newEnchant * 20
+
+      const upgradeValue = newValue - currentValue
+      if (upgradeValue <= 0) continue // Not an upgrade
+
+      // Depth-aware consumable reserve (100g base + 15g per depth)
+      const depth = game.character.depth
+      const consumableReserve = 100 + depth * 15
+
+      // Available budget after reserve
+      const availableBudget = Math.max(0, char.gold - consumableReserve)
+
+      // Slot priority affects max spend
       const slotPriority = getSlotPriority(template.slot)
-      const gearBudget = char.gold * 0.6 * slotPriority
+      const maxSpend = availableBudget * slotPriority
 
-      if (newValue > currentValue && price <= gearBudget) {
-        const upgradeValue = newValue - currentValue
+      // Efficiency: upgrade value per 100g spent (higher = better deal)
+      const efficiency = price > 0 ? upgradeValue / (price / 100) : 0
+
+      // Buy if affordable and efficient (at least 0.3 value per 100g)
+      if (price <= maxSpend && efficiency > 0.3) {
         // Lower priority = bought sooner; better upgrades and better slots get lower priority
         candidates.push({
           index: i,
           category: 'gear',
-          priority: 4 - upgradeValue * 0.1 - (1 - slotPriority) * 0.5,
+          priority: 4 - upgradeValue * 0.05 - (1 - slotPriority) * 0.5,
           price,
           name,
         })
@@ -323,8 +341,13 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
 // GOAL CREATION (merchant domain)
 // ============================================================================
 
-/** Minimum gold buffer to keep for emergencies (potions, escapes) */
-const ALTAR_GOLD_BUFFER = 300
+/**
+ * Calculate minimum gold buffer for emergencies (consumables, escapes).
+ * Scales with depth: 100g base + 15g per depth level.
+ */
+function getGoldBuffer(depth: number): number {
+  return 100 + depth * 15
+}
 
 /**
  * Get USE_ALTAR goal - use dungeon altars for benefits.
@@ -341,6 +364,7 @@ export function getUseAltarGoal(
 ): BotGoal | null {
   const { game, visibleAltars, visibleMonsters } = context
   const character = game.character
+  const goldBuffer = getGoldBuffer(character.depth)
 
   // Don't use altars if monsters are visible
   if (visibleMonsters.length > 0) return null
@@ -361,7 +385,7 @@ export function getUseAltarGoal(
     const cost = template.cost
 
     // Can we afford this altar while keeping buffer?
-    if (character.gold < cost + ALTAR_GOLD_BUFFER) continue
+    if (character.gold < cost + goldBuffer) continue
 
     // Evaluate based on altar type
     let priority = 0
@@ -433,6 +457,36 @@ export function getUseAltarGoal(
 }
 
 /**
+ * Calculate minimum gold needed to make a merchant visit worthwhile.
+ * Uses quadratic pricing: tier² * 50 for equipment base cost.
+ * Consumables (potions/scrolls) use linear pricing and are always cheap.
+ */
+function getMinGoldForMerchant(depth: number, shopType: string): number {
+  // Expected gear tier at this depth
+  const tier = depth >= 30 ? 3 : depth >= 15 ? 2 : 1
+  // Quadratic base cost with 2x shop markup
+  const minGearCost = tier * tier * 50 * 2
+
+  switch (shopType) {
+    case 'blackmarket':
+      // Black market has 4x markup on T3-4 gear
+      // Need ~3x base cost to afford anything useful
+      return Math.max(2000, minGearCost * 3)
+    case 'weapon':
+    case 'armor':
+      return minGearCost
+    case 'potion':
+      // Potions are still cheap (linear pricing)
+      return 150
+    case 'scroll':
+      return 100
+    default:
+      // Mixed/general
+      return Math.max(200, minGearCost * 0.5)
+  }
+}
+
+/**
  * Get VISIT_MERCHANT goal - visit dungeon merchants for supplies/gear.
  *
  * Priority scoring:
@@ -440,6 +494,8 @@ export function getUseAltarGoal(
  * - Alchemist - high priority if low on healing potions
  * - Weapon/Armor dealers - moderate priority if gold available
  * - General/Mixed - low priority for general supplies
+ *
+ * Gold thresholds scale with depth using quadratic equipment pricing.
  */
 export function getVisitMerchantGoal(
   context: BotContext,
@@ -448,12 +504,13 @@ export function getVisitMerchantGoal(
 ): BotGoal | null {
   const { game, visibleMerchants, visibleMonsters } = context
   const character = game.character
+  const depth = character.depth
 
   // Safety checks
   if (visibleMonsters.length > 0) return null
   if (localDanger > dangerThreshold * 0.3) return null
   if (visibleMerchants.length === 0) return null
-  if (game.character.depth === 0) return null // Town handled separately
+  if (depth === 0) return null // Town handled separately
 
   // Score each merchant
   let bestMerchant = null
@@ -464,45 +521,47 @@ export function getVisitMerchantGoal(
     // Skip merchants we've already visited this level
     if (context.botState.visitedDungeonMerchants.has(merchant.template.id)) continue
 
+    const shopType = merchant.template.shopType
+    const minGold = getMinGoldForMerchant(depth, shopType)
+
     let score = 0
     let reason = ''
 
     // Shady Dealer (black market) - highest priority for late-game gear
     if (merchant.template.id === 'black_market') {
-      // High priority if we have gold for T3-4 gear
-      if (character.gold > 500) {
+      if (character.gold >= minGold) {
         score = 100
         reason = 'Black market (T3-4 gear)'
       }
     }
-    // Alchemist - if low on healing
-    else if (merchant.template.shopType === 'potion') {
+    // Alchemist - if low on healing (potions are cheap, always check if needed)
+    else if (shopType === 'potion') {
       const healingCount = countHealingPotions(character.inventory)
       if (healingCount < 3) {
         score = 60
         reason = 'Need healing potions'
-      } else if (character.gold > 300) {
+      } else if (character.gold >= minGold) {
         score = 20
         reason = 'Checking potion supplies'
       }
     }
-    // Weapon/Armor dealers - if gold available
-    else if (merchant.template.shopType === 'weapon' || merchant.template.shopType === 'armor') {
-      if (character.gold > 500) {
+    // Weapon/Armor dealers - if gold available for tier-appropriate gear
+    else if (shopType === 'weapon' || shopType === 'armor') {
+      if (character.gold >= minGold) {
         score = 40
-        reason = `Checking ${merchant.template.shopType} upgrades`
+        reason = `Checking ${shopType} upgrades`
       }
     }
-    // Scroll merchant - if need escape/utility scrolls
-    else if (merchant.template.shopType === 'scroll') {
-      if (character.gold > 200) {
+    // Scroll merchant - if need escape/utility scrolls (cheap)
+    else if (shopType === 'scroll') {
+      if (character.gold >= minGold) {
         score = 35
         reason = 'Checking scroll supplies'
       }
     }
     // Mixed/general - moderate priority
     else {
-      if (character.gold > 200) {
+      if (character.gold >= minGold) {
         score = 20
         reason = 'General supplies'
       }

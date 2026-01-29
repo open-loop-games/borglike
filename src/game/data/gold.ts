@@ -28,7 +28,7 @@ export const GOLD_PILES: GoldPileTemplate[] = [
     type: 'gold',
     tier: 1,
     weight: 2,
-    goldValue: [10, 50],
+    goldValue: [10, 40],
     minDepth: 5,
   },
   {
@@ -36,7 +36,7 @@ export const GOLD_PILES: GoldPileTemplate[] = [
     type: 'gold',
     tier: 2,
     weight: 3,
-    goldValue: [50, 200],
+    goldValue: [25, 80],
     minDepth: 15,
   },
   {
@@ -44,7 +44,7 @@ export const GOLD_PILES: GoldPileTemplate[] = [
     type: 'gold',
     tier: 2,
     weight: 10,
-    goldValue: [100, 500],
+    goldValue: [40, 120],
     minDepth: 25,
   },
   {
@@ -52,7 +52,7 @@ export const GOLD_PILES: GoldPileTemplate[] = [
     type: 'gold',
     tier: 3,
     weight: 25,
-    goldValue: [500, 2000],
+    goldValue: [80, 250],
     minDepth: 35,
   },
   {
@@ -60,7 +60,7 @@ export const GOLD_PILES: GoldPileTemplate[] = [
     type: 'gold',
     tier: 4,
     weight: 50,
-    goldValue: [2000, 10000],
+    goldValue: [150, 500],
     minDepth: 50,
   },
 ]
@@ -116,16 +116,19 @@ export interface MonsterGoldDrop {
 /**
  * Default gold drop chances by monster tier
  * Calculated from minDepth ranges
+ *
+ * Late-game drops are reduced to flatten the gold curve -
+ * early game intact, mid-game slightly reduced, late-game heavily reduced.
  */
 export function getDefaultGoldDrop(minDepth: number): MonsterGoldDrop {
   if (minDepth >= 40) {
-    return { chance: 1.0, amount: [100, 500] }
+    return { chance: 0.65, amount: [35, 100] }
   } else if (minDepth >= 25) {
-    return { chance: 0.8, amount: [50, 200] }
+    return { chance: 0.55, amount: [25, 75] }
   } else if (minDepth >= 15) {
-    return { chance: 0.6, amount: [20, 100] }
+    return { chance: 0.45, amount: [15, 50] }
   } else if (minDepth >= 5) {
-    return { chance: 0.4, amount: [5, 30] }
+    return { chance: 0.35, amount: [5, 25] }
   } else {
     return { chance: 0.2, amount: [1, 10] }
   }
