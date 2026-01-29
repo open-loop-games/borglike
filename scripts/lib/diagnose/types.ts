@@ -103,6 +103,8 @@ export interface DiagnoseConfig {
   randomize?: boolean
   /** Balance overrides for A/B testing */
   balance?: Partial<BalanceOverrides>
+  /** Bot capabilities spec: 'none', 'full', or comma-separated upgrade IDs */
+  capabilities?: string
 }
 
 /** Result from a diagnostic run */

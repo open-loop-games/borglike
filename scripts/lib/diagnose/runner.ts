@@ -17,6 +17,8 @@ import { invalidateFrontierCache } from '@bot/exploration'
 import { invalidateUnexploredCache } from '@bot/context'
 import type { GameState } from '@game/types'
 import type { BotState } from '@bot/types'
+import type { BotCapabilities } from '@/types/progression'
+import { DEFAULT_BOT_CAPABILITIES, FULL_BOT_CAPABILITIES } from '@/types/progression'
 import type {
   DiagnoseConfig,
   DiagnoseResult,
@@ -30,6 +32,56 @@ import type {
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+// ============================================================================
+// CAPABILITIES PARSING
+// ============================================================================
+
+/**
+ * Parse capabilities spec string into BotCapabilities object.
+ *
+ * @param spec - 'none', 'full', or comma-separated IDs like 'town,farming,sweep_2'
+ * @returns BotCapabilities object
+ */
+export function parseCapabilities(spec: string): BotCapabilities {
+  const normalized = spec.toLowerCase().trim()
+
+  // Special keywords
+  if (normalized === 'none' || normalized === 'face-rush') {
+    return { ...DEFAULT_BOT_CAPABILITIES }
+  }
+  if (normalized === 'full') {
+    return { ...FULL_BOT_CAPABILITIES }
+  }
+
+  // Start with all disabled
+  const caps: BotCapabilities = { ...DEFAULT_BOT_CAPABILITIES }
+
+  // Parse comma-separated IDs
+  const ids = normalized.split(',').map((s) => s.trim()).filter(Boolean)
+
+  for (const id of ids) {
+    // Toggle capabilities
+    if (id === 'town') caps.town = true
+    else if (id === 'farming') caps.farming = true
+    else if (id === 'preparedness') caps.preparedness = true
+    // Graded capabilities (sweep_1, sweep_2, sweep_3)
+    else if (id.startsWith('sweep_')) {
+      const level = parseInt(id.slice(6), 10)
+      if (level >= 1 && level <= 3) caps.sweep = Math.max(caps.sweep, level)
+    }
+    else if (id.startsWith('surf_')) {
+      const level = parseInt(id.slice(5), 10)
+      if (level >= 1 && level <= 3) caps.surf = Math.max(caps.surf, level)
+    }
+    else if (id.startsWith('kiting_')) {
+      const level = parseInt(id.slice(7), 10)
+      if (level >= 1 && level <= 3) caps.kiting = Math.max(caps.kiting, level)
+    }
+  }
+
+  return caps
+}
 
 // ============================================================================
 // DEFAULTS
@@ -47,6 +99,7 @@ const DEFAULT_CONFIG: Required<Omit<DiagnoseConfig, 'analyzers'>> = {
   excludeUpgrades: [],
   randomize: false,
   balance: DEFAULT_BALANCE,
+  capabilities: 'full',
 }
 
 // ============================================================================
@@ -59,6 +112,9 @@ const DEFAULT_CONFIG: Required<Omit<DiagnoseConfig, 'analyzers'>> = {
 export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
   const cfg = { ...DEFAULT_CONFIG, ...config }
   const analyzers = config.analyzers ?? []
+
+  // Parse bot capabilities
+  const capabilities = parseCapabilities(cfg.capabilities)
 
   // Create game
   const game: GameState = createGame({
@@ -87,7 +143,7 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
     const previousDepth = game.character.depth
 
     // Get bot action
-    const action = runBotTick(game, cfg.personality, botState)
+    const action = runBotTick(game, cfg.personality, botState, capabilities)
 
     // Build turn context
     const turnCtx: TurnContext = {
@@ -346,6 +402,7 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     excludeUpgrades: config.excludeUpgrades,
     randomize: config.randomize,
     balance: config.balance,
+    capabilities: config.capabilities,
   }
 
   const workItems: WorkerInput[] = []
@@ -483,6 +540,9 @@ export function runDeepDiagnosis(
   const analyzers = config.analyzers ?? []
   const turnLog: TurnLogEntry[] = []
 
+  // Parse bot capabilities
+  const capabilities = parseCapabilities(cfg.capabilities)
+
   // CRITICAL: Invalidate module-level caches before each run
   // These caches persist across runs and can cause "no goal" bugs when stale
   invalidateFrontierCache()
@@ -519,7 +579,7 @@ export function runDeepDiagnosis(
     const previousDepth = game.character.depth
 
     // Get bot action
-    const action = runBotTick(game, cfg.personality, botState)
+    const action = runBotTick(game, cfg.personality, botState, capabilities)
 
     // Build action string BEFORE processTurn (items/monsters may be consumed/killed)
     let actionType: string

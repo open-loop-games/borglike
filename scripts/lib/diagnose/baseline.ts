@@ -39,6 +39,8 @@ export interface BaselineConfig {
   personality?: string
   /** Use max upgrades (default: true for baseline) */
   maxUpgrades?: boolean
+  /** Bot capabilities spec: 'none', 'full', or comma-separated IDs */
+  capabilities?: string
   // Balance overrides
   monsterHp?: number
   monsterDamage?: number
@@ -72,12 +74,13 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
   const race = config.race ?? 'human'
   const personality = (config.personality ?? 'cautious') as any
   const maxUpgrades = config.maxUpgrades ?? true
+  const capabilities = config.capabilities ?? 'full'
 
   console.log(`\n${'='.repeat(60)}`)
   console.log('BASELINE TEST')
   console.log('='.repeat(60))
   console.log(`Parameters: ${runs} runs, ${turns} turns, seed=${seed}, ${threads} threads`)
-  console.log(`Personality: ${personality}, Max Upgrades: ${maxUpgrades}`)
+  console.log(`Personality: ${personality}, Max Upgrades: ${maxUpgrades}, Capabilities: ${capabilities}`)
   console.log(`Classes: ${BASELINE_CLASSES.length}`)
   console.log('='.repeat(60))
 
@@ -112,6 +115,7 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
       maxTurns: turns,
       analyzers: createAllAnalyzers(),
       maxUpgrades,
+      capabilities,
       balance,
       runs,
       startSeed: seed,

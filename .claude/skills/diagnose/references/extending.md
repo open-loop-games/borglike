@@ -46,6 +46,7 @@ All analyzers in `scripts/lib/diagnose/analyzers/`:
 - **jitter** - Bot confined to small area (bounding box analysis)
 - **frontier** - Frontier reachability, door blocking patterns, goal generation failures
 - **stats** - Worker metrics aggregation for parallel batch runs
+- **step-debug** - Per-step debugging info for detailed analysis
 - **map** - Dungeon map snapshots (ASCII visualization)
 - **personality** - Cross-personality comparison (not a standard analyzer)
 

@@ -80,15 +80,21 @@ pnpm diagnose deep 1768965560201 --map
 --runs=N          Runs for batch/find/compare (default: 50)
 --threads=N       Worker threads (default: 8)
 --personality=P   cautious|aggressive|greedy|speedrunner
---class=ID        warrior|mage|priest|rogue|ranger|necromancer|druid|paladin|monk|bard|warlock
---race=ID         human|elf|dwarf|halfling|gnome|half_orc|half_elf|kobold
+--class=ID        warrior|mage|rogue|priest|ranger|paladin|necromancer|berserker|archmage|druid|blackguard|monk|bard
+--race=ID         human|dwarf|elf|half_elf|hobbit|gnome|half_orc|half_troll|dunadan|high_elf|kobold
 --map             Include ASCII map (explored tiles)
 --full-map        Include full map (all tiles revealed)
 --from=N          Start turn for output (deep mode)
 --to=N            End turn for output (deep mode)
 --log-only        Only turn log, skip analyzers (deep mode)
 --max-upgrades    Apply all upgrades at max level
+--exclude-upgrade=X,Y  Exclude specific upgrades when --max-upgrades (isolation testing)
+--capabilities=X  Bot capabilities (default: full)
+                  Values: none, full, or comma-separated IDs
+                  IDs: town,farming,preparedness,sweep_1-3,surf_1-3,kiting_1-3
 --randomize       Randomize race/class/personality per run
+--races           Compare races instead of personalities (compare mode)
+--races=a,b,c     Compare specific races (e.g., --races=human,dwarf,elf)
 ```
 
 ## Diagnostic Workflow
@@ -155,6 +161,7 @@ Output includes a markdown table ready to paste into `docs/BALANCE-TEST-PLAN.md`
 | `jitter` | Bot confined to small area (bounding box) |
 | `frontier` | Frontier reachability, door blocking, goal generation failures |
 | `stats` | Worker metrics aggregation (internal use) |
+| `step-debug` | Per-step debugging info (internal use) |
 | `map` | Dungeon map snapshots |
 
 ## Turn Log Format

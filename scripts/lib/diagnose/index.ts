@@ -14,7 +14,7 @@
  */
 
 // Core runner
-export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis } from './runner'
+export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis, parseCapabilities } from './runner'
 export type { TurnLogEntry, ParallelBatchConfig } from './runner'
 
 // Modes

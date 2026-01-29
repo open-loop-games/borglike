@@ -13,6 +13,7 @@ import { calculateCombatStats, calculateStats } from '../../../src/game/characte
 import type { GameState, BotPersonality, BalanceOverrides } from '../../../src/game/types'
 import { DEFAULT_BALANCE } from '../../../src/game/types'
 import type { BotState } from '../../../src/game/bot/types'
+import { DEFAULT_BOT_CAPABILITIES, FULL_BOT_CAPABILITIES, type BotCapabilities } from '../../../src/types/progression'
 import type { DiagnoseResult, EndReason, DiagnosticIssue, AnalyzerResult } from './types'
 
 interface WorkerInput {
@@ -27,6 +28,7 @@ interface WorkerInput {
     excludeUpgrades?: string[]
     randomize?: boolean
     balance?: Partial<BalanceOverrides>
+    capabilities?: string
   }
 }
 
@@ -50,6 +52,45 @@ const DEFAULT_CONFIG = {
   excludeUpgrades: [] as string[],
   randomize: false,
   balance: DEFAULT_BALANCE,
+  capabilities: 'full',
+}
+
+/**
+ * Parse capabilities spec string into BotCapabilities object.
+ * (Duplicated from runner.ts since workers can't import from other modules easily)
+ */
+function parseCapabilities(spec: string): BotCapabilities {
+  const normalized = spec.toLowerCase().trim()
+
+  if (normalized === 'none' || normalized === 'face-rush') {
+    return { ...DEFAULT_BOT_CAPABILITIES }
+  }
+  if (normalized === 'full') {
+    return { ...FULL_BOT_CAPABILITIES }
+  }
+
+  const caps: BotCapabilities = { ...DEFAULT_BOT_CAPABILITIES }
+  const ids = normalized.split(',').map((s) => s.trim()).filter(Boolean)
+
+  for (const id of ids) {
+    if (id === 'town') caps.town = true
+    else if (id === 'farming') caps.farming = true
+    else if (id === 'preparedness') caps.preparedness = true
+    else if (id.startsWith('sweep_')) {
+      const level = parseInt(id.slice(6), 10)
+      if (level >= 1 && level <= 3) caps.sweep = Math.max(caps.sweep, level)
+    }
+    else if (id.startsWith('surf_')) {
+      const level = parseInt(id.slice(5), 10)
+      if (level >= 1 && level <= 3) caps.surf = Math.max(caps.surf, level)
+    }
+    else if (id.startsWith('kiting_')) {
+      const level = parseInt(id.slice(7), 10)
+      if (level >= 1 && level <= 3) caps.kiting = Math.max(caps.kiting, level)
+    }
+  }
+
+  return caps
 }
 
 /** Compute upgrade bonuses with optional exclusions */
@@ -90,6 +131,9 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
     }
   }
 
+  // Parse bot capabilities
+  const capabilities = parseCapabilities(cfg.capabilities)
+
   const game: GameState = createGame({
     raceId: cfg.raceId,
     classId: cfg.classId,
@@ -117,7 +161,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
     const previousHP = game.character.hp
     const previousPosition = { ...game.character.position }
 
-    const action = runBotTick(game, cfg.personality as BotPersonality, botState)
+    const action = runBotTick(game, cfg.personality as BotPersonality, botState, capabilities)
     processTurn(game, action)
 
     // Track movement
@@ -232,7 +276,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
 
   return {
     seed: cfg.seed,
-    config: { ...cfg, personality: cfg.personality as BotPersonality, excludeUpgrades: cfg.excludeUpgrades ?? [] },
+    config: { ...cfg, personality: cfg.personality as BotPersonality, excludeUpgrades: cfg.excludeUpgrades ?? [], capabilities: cfg.capabilities },
     endReason,
     finalState: {
       turn: game.turn,

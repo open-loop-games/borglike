@@ -93,6 +93,8 @@ interface Args {
   compareRaces: boolean
   /** Specific races to compare (comma-separated, or empty for defaults) */
   raceList: string[]
+  /** Bot capabilities spec: 'none', 'full', or comma-separated upgrade IDs */
+  capabilities: string
   // Balance overrides (Tier 1)
   monsterHp: number
   monsterDamage: number
@@ -145,6 +147,7 @@ function parseArgs(): Args {
     randomize: false,
     compareRaces: false,
     raceList: [],
+    capabilities: 'full',
     // Balance defaults (100 = normal)
     monsterHp: 100,
     monsterDamage: 100,
@@ -226,6 +229,8 @@ function parseArgs(): Args {
     } else if (arg.startsWith('--races=')) {
       result.compareRaces = true
       result.raceList = arg.slice(8).split(',').filter(Boolean)
+    } else if (arg.startsWith('--capabilities=')) {
+      result.capabilities = arg.slice(15)
     // Balance overrides (Tier 1)
     } else if (arg.startsWith('--monster-hp=')) {
       result.monsterHp = parseInt(arg.slice(13), 10)
@@ -298,6 +303,9 @@ OPTIONS:
   --to=N          End of turn range for output (deep mode only)
   --log-only      Only show turn log, skip analyzer output (deep mode)
   --max-upgrades  Apply all upgrades at max level
+  --capabilities=X Bot capabilities (default: full)
+                  Values: none, full, or comma-separated IDs
+                  IDs: town,farming,preparedness,sweep_1-3,surf_1-3,kiting_1-3
   --randomize     Randomize race/class/personality per run (batch mode)
   --races         Compare races instead of personalities (compare mode)
   --races=a,b,c   Compare specific races (e.g., --races=human,dwarf,elf)
@@ -448,6 +456,7 @@ async function main(): Promise<void> {
     excludeUpgrades: args.excludeUpgrades,
     randomize: args.randomize,
     balance,
+    capabilities: args.capabilities,
   }
 
   switch (args.mode) {
