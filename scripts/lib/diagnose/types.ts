@@ -97,6 +97,8 @@ export interface DiagnoseConfig {
   verbosity?: 0 | 1 | 2 | 3
   /** Use max upgrade bonuses */
   maxUpgrades?: boolean
+  /** Upgrade IDs to exclude when maxUpgrades is true (for isolation testing) */
+  excludeUpgrades?: string[]
   /** Randomize race/class/personality per run (batch mode) */
   randomize?: boolean
   /** Balance overrides for A/B testing */

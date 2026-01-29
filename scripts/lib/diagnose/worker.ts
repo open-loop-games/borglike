@@ -6,7 +6,8 @@
  */
 
 import { createGame, processTurn } from '../../../src/game/game-loop'
-import { computeMaxUpgradeBonuses } from '../../../src/game/upgrade-effects'
+import { computeMaxUpgradeBonuses, computeUpgradeBonuses } from '../../../src/game/upgrade-effects'
+import { upgrades as allUpgrades } from '../../../src/game/data/upgrades'
 import { runBotTick, createBotState } from '../../../src/game/bot'
 import { calculateCombatStats, calculateStats } from '../../../src/game/character'
 import type { GameState, BotPersonality, BalanceOverrides } from '../../../src/game/types'
@@ -23,6 +24,7 @@ interface WorkerInput {
     maxTurns?: number
     circuitBreakerTurns?: number
     maxUpgrades?: boolean
+    excludeUpgrades?: string[]
     randomize?: boolean
     balance?: Partial<BalanceOverrides>
   }
@@ -45,8 +47,21 @@ const DEFAULT_CONFIG = {
   circuitBreakerTurns: 1000,
   verbosity: 1 as const,
   maxUpgrades: false,
+  excludeUpgrades: [] as string[],
   randomize: false,
   balance: DEFAULT_BALANCE,
+}
+
+/** Compute upgrade bonuses with optional exclusions */
+function computeUpgradesWithExclusions(
+  excludeUpgrades: string[],
+  upgradePowerPercent: number
+) {
+  const levels: Record<string, number> = {}
+  for (const upgrade of allUpgrades) {
+    levels[upgrade.id] = excludeUpgrades.includes(upgrade.id) ? 0 : upgrade.maxLevel
+  }
+  return computeUpgradeBonuses(levels, upgradePowerPercent)
 }
 
 function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
@@ -63,11 +78,23 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
   // Merge balance overrides
   const balance = { ...DEFAULT_BALANCE, ...config.balance }
 
+  // Compute upgrade bonuses based on config
+  let upgradeBonuses = undefined
+  if (cfg.maxUpgrades) {
+    if (cfg.excludeUpgrades && cfg.excludeUpgrades.length > 0) {
+      // Max upgrades with exclusions (for isolation testing)
+      upgradeBonuses = computeUpgradesWithExclusions(cfg.excludeUpgrades, balance.upgradePowerPercent)
+    } else {
+      // All upgrades maxed
+      upgradeBonuses = computeMaxUpgradeBonuses(balance.upgradePowerPercent)
+    }
+  }
+
   const game: GameState = createGame({
     raceId: cfg.raceId,
     classId: cfg.classId,
     seed: cfg.seed,
-    upgradeBonuses: cfg.maxUpgrades ? computeMaxUpgradeBonuses(balance.upgradePowerPercent) : undefined,
+    upgradeBonuses,
     balanceOverrides: balance,
   })
 
@@ -205,7 +232,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
 
   return {
     seed: cfg.seed,
-    config: { ...cfg, personality: cfg.personality as BotPersonality },
+    config: { ...cfg, personality: cfg.personality as BotPersonality, excludeUpgrades: cfg.excludeUpgrades ?? [] },
     endReason,
     finalState: {
       turn: game.turn,

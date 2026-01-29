@@ -44,6 +44,7 @@ const DEFAULT_CONFIG: Required<Omit<DiagnoseConfig, 'analyzers'>> = {
   circuitBreakerTurns: 1000,
   verbosity: 1,
   maxUpgrades: false,
+  excludeUpgrades: [],
   randomize: false,
   balance: DEFAULT_BALANCE,
 }
@@ -309,6 +310,7 @@ export interface WorkerInput {
     maxTurns?: number
     circuitBreakerTurns?: number
     maxUpgrades?: boolean
+    excludeUpgrades?: string[]
     randomize?: boolean
     balance?: Partial<BalanceOverrides>
   }
@@ -341,6 +343,7 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     maxTurns: config.maxTurns,
     circuitBreakerTurns: config.circuitBreakerTurns,
     maxUpgrades: config.maxUpgrades,
+    excludeUpgrades: config.excludeUpgrades,
     randomize: config.randomize,
     balance: config.balance,
   }

@@ -85,6 +85,8 @@ interface Args {
   threads: number
   /** Use max upgrade bonuses */
   maxUpgrades: boolean
+  /** Upgrade IDs to exclude when maxUpgrades is true (for isolation testing) */
+  excludeUpgrades: string[]
   /** Randomize race/class/personality per run */
   randomize: boolean
   /** Compare races instead of personalities (for compare mode) */
@@ -139,6 +141,7 @@ function parseArgs(): Args {
     logOnly: false,
     threads: 8,
     maxUpgrades: false,
+    excludeUpgrades: [],
     randomize: false,
     compareRaces: false,
     raceList: [],
@@ -214,6 +217,8 @@ function parseArgs(): Args {
       result.threads = parseInt(arg.slice(10), 10)
     } else if (arg === '--max-upgrades') {
       result.maxUpgrades = true
+    } else if (arg.startsWith('--exclude-upgrade=')) {
+      result.excludeUpgrades = arg.slice(18).split(',').filter(Boolean)
     } else if (arg === '--randomize') {
       result.randomize = true
     } else if (arg === '--races') {
@@ -440,6 +445,7 @@ async function main(): Promise<void> {
     maxTurns: args.turns,
     analyzers,
     maxUpgrades: args.maxUpgrades,
+    excludeUpgrades: args.excludeUpgrades,
     randomize: args.randomize,
     balance,
   }
