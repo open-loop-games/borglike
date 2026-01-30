@@ -6,7 +6,7 @@
  */
 
 import { createGame, processTurn } from '../../../src/game/game-loop'
-import { computeMaxUpgradeBonuses, computeUpgradeBonuses } from '../../../src/game/upgrade-effects'
+import { computeMaxUpgradeBonuses, computeUpgradeBonuses, computeUpgradeBonusesFromPreset } from '../../../src/game/upgrade-effects'
 import { upgrades as allUpgrades } from '../../../src/game/data/upgrades'
 import { runBotTick, createBotState } from '../../../src/game/bot'
 import { calculateCombatStats, calculateStats } from '../../../src/game/character'
@@ -60,11 +60,28 @@ const DEFAULT_CONFIG = {
 }
 
 /**
+ * Named capability presets for progression testing.
+ * Maps preset name to comma-separated capability IDs.
+ * (Duplicated from runner.ts since workers can't import from other modules easily)
+ */
+const CAPABILITY_PRESETS: Record<string, string> = {
+  early: 'town',
+  mid: 'town,farming,sweep_1,surf_1',
+  late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1',
+}
+
+/**
  * Parse capabilities spec string into BotCapabilities object.
  * (Duplicated from runner.ts since workers can't import from other modules easily)
  */
 function parseCapabilities(spec: string): BotCapabilities {
   const normalized = spec.toLowerCase().trim()
+
+  // Check for named presets first (resolve to comma-separated, then parse)
+  const preset = CAPABILITY_PRESETS[normalized]
+  if (preset) {
+    return parseCapabilities(preset)
+  }
 
   if (normalized === 'none' || normalized === 'face-rush') {
     return { ...DEFAULT_BOT_CAPABILITIES }
@@ -133,6 +150,9 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
       // All upgrades maxed
       upgradeBonuses = computeMaxUpgradeBonuses(balance.upgradePowerPercent)
     }
+  } else if (cfg.upgrades && cfg.upgrades !== 'none') {
+    // Use upgrade preset (none, early, mid, late, full)
+    upgradeBonuses = computeUpgradeBonusesFromPreset(cfg.upgrades, balance.upgradePowerPercent)
   }
 
   // Parse bot capabilities

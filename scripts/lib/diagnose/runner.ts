@@ -460,6 +460,8 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     randomize: config.randomize,
     balance: config.balance,
     capabilities: config.capabilities,
+    upgrades: config.upgrades,
+    boosters: config.boosters,
   }
 
   const workItems: WorkerInput[] = []
