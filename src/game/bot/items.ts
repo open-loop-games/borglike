@@ -16,6 +16,7 @@ import {
   getLowestTierOfType,
   EQUIPMENT_INVENTORY_LIMIT,
 } from './preparation'
+import { isDangerousItemBlacklisted } from './state'
 
 // ============================================================================
 // TYPES
@@ -946,7 +947,7 @@ export function findBestItem(context: BotContext, maxDistance: number): GroundIt
 
   for (const item of visibleItems) {
     // Skip items blacklisted due to danger (caused flee oscillation)
-    if (botState.dangerousItemBlacklist.has(item.id)) continue
+    if (isDangerousItemBlacklisted(botState, item.id, game.turn)) continue
 
     const dx = Math.abs(item.position.x - pos.x)
     const dy = Math.abs(item.position.y - pos.y)

@@ -29,7 +29,6 @@ import {
   hasRangedWeapon,
   findBestRangedTarget,
   findKitePosition,
-  findClosestMonster,
   countAdjacentMonsters,
 } from './combat'
 import { findEquipmentUpgrades } from './items'
@@ -396,24 +395,6 @@ function handleCautionTier(
         }
       }
     } else if (visibleMonsters.length > 0) {
-      // Check if we need to proactively reposition (monster very close and pursuing)
-      // Only for casters - bow users should shoot at dist 2, not kite
-      if (!hasRangedWeapon(game)) {
-        const nearest = findClosestMonster(visibleMonsters, pos)
-        if (nearest) {
-          const dist = nearest.distance
-          // Only reposition when at distance 2 AND monster is awake
-          // This prevents oscillation while still avoiding getting cornered
-          if (dist === 2 && nearest.monster.isAwake) {
-            const kiteDir = findKitePosition(game, nearest.monster, classProfile)
-            if (kiteDir) {
-              recordProgress(botState, game.turn)
-              return { type: 'move', direction: kiteDir }
-            }
-          }
-        }
-      }
-
       // Ranged attack from distance
       if (hasRangedWeapon(game)) {
         // Bow attack for rangers
@@ -612,26 +593,7 @@ function handleSafeTier(
     }
   }
 
-  // 4. Proactive repositioning for casters only (no bow)
-  // Bow users (rangers) should shoot at dist 2, not kite - kiting causes oscillation
-  // Casters benefit from distance to cast multiple spells before melee
-  if (classProfile.prefersRanged && !hasRangedWeapon(game) && visibleMonsters.length > 0) {
-    const nearest = findClosestMonster(visibleMonsters, pos)
-    if (nearest) {
-      const dist = nearest.distance
-      // Only reposition when at distance 2 AND monster is awake (actively pursuing)
-      // Distance 3+ is fine for casting - no need to create oscillation
-      if (dist === 2 && nearest.monster.isAwake) {
-        const kiteDir = findKitePosition(game, nearest.monster, classProfile)
-        if (kiteDir) {
-          recordProgress(botState, game.turn)
-          return { type: 'move', direction: kiteDir }
-        }
-      }
-    }
-  }
-
-  // 5. Pre-combat buffs only for bosses/uniques
+  // 4. Pre-combat buffs only for bosses/uniques
   if (visibleMonsters.length > 0) {
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 

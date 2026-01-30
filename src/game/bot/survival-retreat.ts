@@ -40,6 +40,7 @@ import { getAverageDamage } from '../data/monsters'
 import { computeSafetyFlow } from './safety-flow'
 import { resetCorridorFollowing } from './exploration'
 import { profile } from './profiler'
+import { blacklistDangerousItem } from './state'
 
 // ============================================================================
 // TYPES
@@ -814,7 +815,7 @@ export function getFleeGoal(
   if (retreatEval.reason === 'High danger area' && botState.currentGoal?.type === 'TAKE') {
     const itemId = botState.currentGoal.targetId
     if (itemId) {
-      botState.dangerousItemBlacklist.add(itemId)
+      blacklistDangerousItem(botState, itemId, game.turn)
     }
   }
 

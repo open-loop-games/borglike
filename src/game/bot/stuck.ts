@@ -11,6 +11,7 @@ import type { BotState } from './types'
 import { computeFlow } from './flow'
 import { selectStep } from './movement'
 import { isSamePoint, manhattanDistance } from '../types'
+import { recordProgress } from './state'
 
 // ============================================================================
 // CONSTANTS
@@ -354,6 +355,7 @@ export function handleWallFollowStrategy(game: GameState, botState: BotState): G
       botState.recentPositions.shift()
     }
     botState.recentPositions.push({ ...pos })
+    recordProgress(botState, game.turn) // Wall-following is progress
     return { type: 'move', direction: wallDir }
   }
   return null

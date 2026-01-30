@@ -45,7 +45,7 @@ export function createBotState(): BotState {
     // Exploration blacklist
     blacklistedTargets: new Map(),
     // Item blacklist (items that caused danger)
-    dangerousItemBlacklist: new Set(),
+    dangerousItemBlacklist: new Map(),
     // Farming loop state
     farmingMode: false,
     farmBlockedDepth: 0,
@@ -242,6 +242,33 @@ export function cleanupBlacklist(state: BotState, currentTurn: number): void {
       state.blacklistedTargets.delete(key)
     }
   }
+}
+
+/** Duration (in turns) to blacklist dangerous items */
+const DANGEROUS_ITEM_BLACKLIST_DURATION = 100
+
+/**
+ * Add an item to the dangerous item blacklist
+ */
+export function blacklistDangerousItem(state: BotState, itemId: string, currentTurn: number): void {
+  state.dangerousItemBlacklist.set(itemId, currentTurn + DANGEROUS_ITEM_BLACKLIST_DURATION)
+}
+
+/**
+ * Check if an item is blacklisted as dangerous
+ */
+export function isDangerousItemBlacklisted(
+  state: BotState,
+  itemId: string,
+  currentTurn: number
+): boolean {
+  const expiry = state.dangerousItemBlacklist.get(itemId)
+  if (expiry === undefined) return false
+  if (currentTurn >= expiry) {
+    state.dangerousItemBlacklist.delete(itemId)
+    return false
+  }
+  return true
 }
 
 /**

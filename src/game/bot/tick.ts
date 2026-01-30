@@ -322,6 +322,8 @@ function computeExploreGoalFlow(
       cache &&
       cache.depth === game.character.depth &&
       cache.seenCount === seenCount &&
+      cache.botPosition.x === game.character.position.x &&
+      cache.botPosition.y === game.character.position.y &&
       game.turn - cache.computedAt < 5
 
     if (cacheValid) {
@@ -353,6 +355,7 @@ function computeExploreGoalFlow(
             seenCount,
             computedAt: game.turn,
             depth: game.character.depth,
+            botPosition: { ...game.character.position },
           }
           botState.cachedFlow = null // Don't use single-target cache for sweep
           return flowCosts

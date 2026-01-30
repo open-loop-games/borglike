@@ -56,7 +56,7 @@ function createMinimalBotState(): BotState {
     // Exploration blacklist
     blacklistedTargets: new Map(),
     // Item blacklist (items that caused danger)
-    dangerousItemBlacklist: new Set(),
+    dangerousItemBlacklist: new Map(),
     // Farming loop state
     farmingMode: false,
     farmBlockedDepth: 0,

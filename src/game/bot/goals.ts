@@ -297,6 +297,7 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
         (goal.target.x !== targetMonster.position.x || goal.target.y !== targetMonster.position.y)
       ) {
         goal.target = { ...targetMonster.position }
+        context.botState.cachedFlow = null // Invalidate stale flow
       }
 
       return true
@@ -373,6 +374,7 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
         (goal.target.x !== targetUnique.position.x || goal.target.y !== targetUnique.position.y)
       ) {
         goal.target = { ...targetUnique.position }
+        context.botState.cachedFlow = null // Invalidate stale flow
       }
       return true
     }

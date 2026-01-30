@@ -113,6 +113,8 @@ export interface SweepFlowCache {
   computedAt: number
   /** Depth where computed */
   depth: number
+  /** Bot position when computed (for invalidation on movement) */
+  botPosition: Point
 }
 
 // ============================================================================
@@ -204,7 +206,7 @@ export interface BotState {
 
   // Item blacklist (items that caused danger)
   /** Items that triggered flee due to high danger area - avoid re-targeting */
-  dangerousItemBlacklist: Set<string> // Item IDs
+  dangerousItemBlacklist: Map<string, number> // Item ID -> expiry turn
 
   // Farming loop state (depth preparation system)
   /** Whether bot is in farming mode (blocked from descent, farming for gold/XP) */
