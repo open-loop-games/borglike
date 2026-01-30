@@ -10,6 +10,7 @@ import BestiaryModal from './ui/components/bestiary/BestiaryModal.vue'
 import ItemArmoryModal from './ui/components/armory/ItemArmoryModal.vue'
 import CodexModal from './ui/components/codex/CodexModal.vue'
 import AchievementsModal from './ui/components/achievements/AchievementsModal.vue'
+import HelpModal from './ui/components/help/HelpModal.vue'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
 import { useGameTitle } from './ui/composables/use-game-title'
@@ -37,6 +38,7 @@ const showBestiary = ref(false)
 const showArmory = ref(false)
 const showCodex = ref(false)
 const showAchievements = ref(false)
+const showHelp = ref(false)
 
 function handleOpenSettings() {
   showSettings.value = true
@@ -87,8 +89,11 @@ function handleCloseAchievements() {
 }
 
 function handleOpenHelp() {
-  // Help modal could be implemented similarly
-  console.log('Help requested')
+  showHelp.value = true
+}
+
+function handleCloseHelp() {
+  showHelp.value = false
 }
 </script>
 
@@ -174,6 +179,15 @@ function handleOpenHelp() {
         </div>
       </div>
     </Teleport>
+
+    <!-- Help Modal -->
+    <Teleport to="body">
+      <div v-if="showHelp" class="modal-overlay" @click="handleCloseHelp">
+        <div class="modal-container" @click.stop>
+          <HelpModal @close="handleCloseHelp" />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -206,7 +220,7 @@ function handleOpenHelp() {
 .app-layout {
   display: grid;
   grid-template-rows: 48px 1fr 48px;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 1fr 300px;
   grid-template-areas:
     'header  header'
     'game    sidebar'
@@ -239,7 +253,7 @@ function handleOpenHelp() {
 /* Responsive: narrower screens */
 @media (max-width: 1199px) {
   .app-layout {
-    grid-template-columns: 1fr 240px;
+    grid-template-columns: 1fr 260px;
   }
 }
 
