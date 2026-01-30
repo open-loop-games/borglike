@@ -503,6 +503,10 @@ export function calculateCombatStats(character: Character): CombatStats {
   if (weapon?.artifact?.bonuses?.toHit) {
     accuracy += weapon.artifact.bonuses.toHit
   }
+  // RACIAL: High-Elf "Keen Senses" - +10 accuracy
+  if (race.abilities.some((a) => a.id === 'keen_senses')) {
+    accuracy += 10
+  }
 
   // Evasion: DEX/2 + swiftness bonus
   // Note: current ItemTemplate doesn't have evasion field, but artifacts might
@@ -511,6 +515,14 @@ export function calculateCombatStats(character: Character): CombatStats {
   // SHAPESHIFTING: Apply form evasion modifier
   if (activeForm?.statMods.evasionMod) {
     evasion += activeForm.statMods.evasionMod
+  }
+  // RACIAL: Kobold "Slippery" - +5 evasion
+  if (race.abilities.some((a) => a.id === 'slippery')) {
+    evasion += 5
+  }
+  // RACIAL: Hobbit "Small Target" / Elf "Elven Grace" - +3 evasion
+  if (race.abilities.some((a) => a.id === 'small_target' || a.id === 'elven_grace')) {
+    evasion += 3
   }
 
   // Speed: base 100 + celerity upgrade + equipment modifiers
@@ -524,6 +536,14 @@ export function calculateCombatStats(character: Character): CombatStats {
   // SHAPESHIFTING: Apply form speed modifier
   if (activeForm?.statMods.speedMod) {
     speed += activeForm.statMods.speedMod
+  }
+  // RACIAL: Gnome "Nimble" - +5 speed
+  if (race.abilities.some((a) => a.id === 'nimble')) {
+    speed += 5
+  }
+  // RACIAL: Elf "Swift Feet" - +3 speed
+  if (race.abilities.some((a) => a.id === 'swift_feet')) {
+    speed += 3
   }
   // ENCUMBRANCE: Apply speed penalty for being overweight
   speed -= getEncumbranceSpeedPenalty(character)

@@ -80,7 +80,7 @@ const dwarf: Race = {
   id: 'dwarf',
   name: 'Dwarf',
   stats: { str: 2, int: -3, wis: 2, dex: -2, con: 2 },
-  hitdie: 11,
+  hitdie: 10,
   infravision: 5,
   expPenalty: 120,
   abilities: [
@@ -89,14 +89,9 @@ const dwarf: Race = {
       name: 'Resist Blindness',
       description: 'Immune to blindness effects',
     },
-    {
-      id: 'see_ore',
-      name: 'Sense Treasure',
-      description: 'Detects gold and gems on the map',
-    },
   ],
   starting: true,
-  description: 'Sturdy mountain folk with keen eyes for treasure and strong constitutions.',
+  description: 'Sturdy mountain folk with keen eyes in the dark and strong constitutions.',
 }
 
 const elf: Race = {
@@ -108,9 +103,14 @@ const elf: Race = {
   expPenalty: 120,
   abilities: [
     {
-      id: 'sustain_dex',
-      name: 'Sustain Dexterity',
-      description: 'Dexterity cannot be drained',
+      id: 'swift_feet',
+      name: 'Swift Feet',
+      description: '+3 speed',
+    },
+    {
+      id: 'elven_grace',
+      name: 'Elven Grace',
+      description: '+3 evasion',
     },
     {
       id: 'resist_light',
@@ -119,7 +119,7 @@ const elf: Race = {
     },
   ],
   starting: true,
-  description: 'Graceful and intelligent, elves excel at ranged combat and magic.',
+  description: 'Graceful and swift, elves are hard to pin down.',
 }
 
 // =============================================================================
@@ -149,7 +149,7 @@ const hobbit: Race = {
   id: 'hobbit',
   name: 'Hobbit',
   stats: { str: -2, int: 2, wis: 1, dex: 3, con: 2 },
-  hitdie: 7, // Lowest HP but great skills
+  hitdie: 8,
   infravision: 4,
   expPenalty: 120,
   abilities: [
@@ -159,14 +159,19 @@ const hobbit: Race = {
       description: 'Resistant to experience drain',
     },
     {
-      id: 'mushroom_lore',
-      name: 'Mushroom Lore',
-      description: 'Automatically identifies mushrooms',
+      id: 'second_breakfast',
+      name: 'Second Breakfast',
+      description: '+25% healing from potions',
+    },
+    {
+      id: 'small_target',
+      name: 'Small Target',
+      description: '+3 evasion',
     },
   ],
   starting: false,
   unlockCondition: 'Reach depth 20',
-  description: 'Small but nimble, hobbits are natural survivors with keen senses.',
+  description: 'Small but nimble, hobbits are natural survivors with hearty appetites.',
 }
 
 const gnome: Race = {
@@ -183,14 +188,19 @@ const gnome: Race = {
       description: 'Immune to paralysis',
     },
     {
-      id: 'device_mastery',
-      name: 'Device Mastery',
-      description: 'Wands and staves are 50% more effective',
+      id: 'lucky',
+      name: 'Lucky',
+      description: '+5% critical hit chance',
+    },
+    {
+      id: 'nimble',
+      name: 'Nimble',
+      description: '+5 speed',
     },
   ],
   starting: false,
   unlockCondition: 'Use 100 scrolls/wands total',
-  description: 'Clever tinkerers with an innate talent for magical devices.',
+  description: 'Quick and fortunate, gnomes rely on luck and agility to survive.',
 }
 
 const halfOrc: Race = {
@@ -269,9 +279,9 @@ const highElf: Race = {
   expPenalty: 145, // Highest exp penalty
   abilities: [
     {
-      id: 'see_invis',
-      name: 'See Invisible',
-      description: 'Can see invisible creatures',
+      id: 'keen_senses',
+      name: 'Keen Senses',
+      description: '+10 accuracy from elven precision',
     },
     {
       id: 'resist_light',
@@ -298,9 +308,9 @@ const kobold: Race = {
       description: 'Immune to poison',
     },
     {
-      id: 'trap_sense',
-      name: 'Trap Sense',
-      description: 'Automatically detects traps within 2 squares',
+      id: 'slippery',
+      name: 'Slippery',
+      description: '+5 evasion from being hard to pin down',
     },
   ],
   starting: false,
@@ -394,11 +404,6 @@ const draconian: Race = {
       id: 'elem_resist',
       name: 'Elemental Affinity',
       description: 'Resistant to fire, cold, and acid',
-    },
-    {
-      id: 'wings',
-      name: 'Wings',
-      description: 'Can fly over pits and water',
     },
   ],
   starting: false,

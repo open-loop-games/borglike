@@ -17,6 +17,7 @@ import { STATUS_DURATIONS } from './types'
 import { rollDice, getDiceAverage } from './dice'
 import { random } from './rng'
 import { addStatusEffect, applyPoison } from './status-effects'
+import { getRaceById } from './data/races'
 
 // ============================================================================
 // TYPES
@@ -226,6 +227,31 @@ function tryInflictStatus(character: Character, effect: AttackEffect): StatusEff
   // Only status-inflicting effects
   if (effect.type === 'HURT' || effect.type === 'ELEMENTAL') {
     return null
+  }
+
+  // Get race for ability checks
+  const race = getRaceById(character.raceId)
+  const raceAbilityIds = race?.abilities.map((a) => a.id) ?? []
+
+  // RACIAL: Gnome "Free Action" - immune to paralysis
+  if (effect.type === 'PARALYZE' && raceAbilityIds.includes('free_act')) {
+    return null
+  }
+
+  // RACIAL: Dwarf "Resist Blindness" - immune to blind
+  if (effect.type === 'BLIND' && raceAbilityIds.includes('blind_resist')) {
+    return null
+  }
+
+  // RACIAL: Sustain abilities block stat drain
+  // sustain_dex (Elf, Half-Elf), sustain_str (Half-Troll), sustain_con (Dunadan)
+  if (effect.type === 'DRAIN') {
+    const hasSustain = raceAbilityIds.some((id) =>
+      ['sustain_dex', 'sustain_str', 'sustain_con'].includes(id)
+    )
+    if (hasSustain) {
+      return null
+    }
   }
 
   // Base 33% chance, reduced by WIS

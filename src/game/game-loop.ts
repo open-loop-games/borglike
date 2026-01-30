@@ -360,11 +360,17 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     game.character.hp < game.character.maxHp
   ) {
     if (game.turn % 10 === 0) {
-      // GOLEM RESTRICTION: 0.5x healing (rounded down, minimum 1)
       let healAmount = game.balance.regenPer10Turns
+
+      // RACIAL: Golem "Stone Body" - 0.5x healing (rounded down, minimum 1)
       if (game.character.raceId === 'golem') {
         healAmount = Math.max(1, Math.floor(healAmount * 0.5))
       }
+      // RACIAL: Half-Troll "Regeneration" - 2x HP regen
+      else if (game.character.raceId === 'half_troll') {
+        healAmount = healAmount * 2
+      }
+
       game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
     }
   }

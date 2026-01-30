@@ -558,7 +558,8 @@ export interface CriticalResult {
  */
 export function calculateScaledCritical(
   weaponWeight: number,
-  characterLevel: number
+  characterLevel: number,
+  bonusCritChance = 0
 ): CriticalResult {
   // Base crit chance from weight (heavier = more crits)
   // Weight is in 0.1 lbs, so 120 = 12% base
@@ -567,8 +568,8 @@ export function calculateScaledCritical(
   // Level bonus (3% per level)
   const levelBonus = characterLevel * 3
 
-  // Total crit chance, capped at 50%
-  const critChance = Math.min(50, weightBonus + levelBonus)
+  // Total crit chance, capped at 50% (bonus can exceed cap)
+  const critChance = Math.min(50, weightBonus + levelBonus) + bonusCritChance
 
   // Roll for crit
   const critRoll = random() * 100
@@ -697,6 +698,11 @@ export function attack(
       const brandMult = calculateBrandMultiplier(attacker.equipment.weapon, defender)
       baseDamage = Math.floor(baseDamage * brandMult)
     }
+
+    // RACIAL: Half-Orc "Berserker Rage" - +20% damage when below 30% HP
+    if (attacker.raceId === 'half_orc' && attacker.hp < attacker.maxHp * 0.3) {
+      baseDamage = Math.floor(baseDamage * 1.2)
+    }
   } else {
     // Monster attacks use pre-calculated average (actual dice rolled in monster-combat.ts)
     baseDamage = attackerStats.damage + damageBonus
@@ -717,7 +723,9 @@ export function attack(
   let critical = false
   if (isCharacter(attacker)) {
     const weaponWeight = attacker.equipment.weapon?.template.weight ?? 50 // Default to 5 lbs if unarmed
-    const critResult = calculateScaledCritical(weaponWeight, attacker.level)
+    // RACIAL: Gnome "Lucky" - +5% crit chance
+    const luckyBonus = attacker.raceId === 'gnome' ? 5 : 0
+    const critResult = calculateScaledCritical(weaponWeight, attacker.level, luckyBonus)
     critical = critResult.isCritical
     if (critical) {
       damage *= critResult.multiplier
@@ -1106,7 +1114,9 @@ export function rangedAttack(
 
   // Check for critical hit using scaled system (bow weight + level)
   const bowWeight = attacker.equipment.bow?.template.weight ?? 30 // Default to 3 lbs
-  const critResult = calculateScaledCritical(bowWeight, attacker.level)
+  // RACIAL: Gnome "Lucky" - +5% crit chance
+  const luckyBonus = attacker.raceId === 'gnome' ? 5 : 0
+  const critResult = calculateScaledCritical(bowWeight, attacker.level, luckyBonus)
   const critical = critResult.isCritical
   if (critical) {
     finalDamage *= critResult.multiplier

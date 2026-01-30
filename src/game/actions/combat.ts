@@ -190,7 +190,13 @@ export function handleMonsterKill(
   // Award XP with upgrade bonus and balance rate
   const bonuses = game.upgradeBonuses ?? DEFAULT_BONUSES
   const baseXP = monster.template.experience
-  const upgradedXP = applyXPBonus(baseXP, bonuses)
+  let upgradedXP = applyXPBonus(baseXP, bonuses)
+
+  // RACIAL: Human "Versatile" - +10% XP gain
+  if (game.character.raceId === 'human') {
+    upgradedXP = Math.floor(upgradedXP * 1.1)
+  }
+
   const xpToAward = Math.floor((upgradedXP * game.balance.xpRatePercent) / 100)
   const { leveledUp, newLevel } = gainXP(game.character, xpToAward, game.balance.levelupHpPercent)
   game.stats.kills++

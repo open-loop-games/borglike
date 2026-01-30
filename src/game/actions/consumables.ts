@@ -53,7 +53,11 @@ function applyPotionEffect(game: GameState, item: Item): EffectResult {
 
   // 1. Apply healing
   if (template.healBase !== undefined || template.healPerLevel !== undefined) {
-    const healAmount = getHealAmount(template, character.level)
+    let healAmount = getHealAmount(template, character.level)
+    // RACIAL: Hobbit "Second Breakfast" - +25% potion healing
+    if (character.raceId === 'hobbit') {
+      healAmount = Math.floor(healAmount * 1.25)
+    }
     character.hp = Math.min(character.hp + healAmount, character.maxHp)
     messages.push('You feel better')
   }
