@@ -36,6 +36,7 @@ import { resolveMonsterAttacks, formatMonsterAttackMessage } from './monster-com
 import { shouldCastSpell, executeMonsterSpell } from './monster-spells'
 import { damageMinionById } from './minion-ai'
 import { rollDice } from './dice'
+import { incrementStat, checkCloseCall } from './stats-helpers'
 
 /** Victory boss name */
 const VICTORY_BOSS_NAME = 'Morgoth, Lord of Darkness'
@@ -832,6 +833,11 @@ function executeMonsterAction(
           }
           applyDamage(game.character, damage)
           game.stats.damageTaken += damage
+          game.stats.damageByMethod.spell += damage
+          incrementStat(game.stats.damageTakenByMonster, monster.template.name, damage)
+
+          // Check for close call
+          checkCloseCall(game.stats, game.character.hp, game.character.maxHp)
 
           // Check for Second Wind
           checkSecondWind(game, addMessage)
@@ -880,9 +886,27 @@ function executeMonsterAction(
     const message = formatMonsterAttackMessage(monster.template.name, attackResult)
     addMessage(game, message, 'combat')
 
+    // Track attacks dodged (misses from monster attacks)
+    const hitCount = attackResult.hits.filter((h) => h.hit).length
+    const missCount = attackResult.hits.length - hitCount
+    game.stats.attacksDodged += missCount
+
+    // Track status effects inflicted by monster attacks
+    for (const status of attackResult.statusEffectsInflicted) {
+      incrementStat(game.stats.statusEffectsSuffered, status, 1)
+    }
+
     if (totalDamage > 0) {
       applyDamage(game.character, totalDamage)
       game.stats.damageTaken += totalDamage
+      game.stats.damageByMethod.melee += totalDamage
+      incrementStat(game.stats.damageTakenByMonster, monster.template.name, totalDamage)
+
+      // Track physical damage (monster melee attacks are physical)
+      incrementStat(game.stats.damageByElement, 'physical', totalDamage)
+
+      // Check for close call
+      checkCloseCall(game.stats, game.character.hp, game.character.maxHp)
 
       // Check for Second Wind booster (auto-heal when critical)
       checkSecondWind(game, addMessage)

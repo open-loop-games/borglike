@@ -26,6 +26,7 @@ import { handleMonsterKill } from './actions/combat'
 import { getTile, findOpenPosition, isWalkable } from './dungeon'
 import { addStatusEffect, addTempResistance, clearPoison, isPoisoned } from './status-effects'
 import { DEFAULT_BONUSES } from './upgrade-effects'
+import { incrementStat } from './stats-helpers'
 
 // SpellCastResult has been unified into ActionResult in types.ts
 
@@ -498,8 +499,12 @@ export function castSpell(game: GameState, spellId: string, targetId?: string): 
     character.spellCooldowns[spellId] = game.turn + spell.cooldown
   }
 
-  // Track spell cast
+  // Track spell cast and initialize usage tracking
   game.stats.spellsCast++
+  const usage = game.stats.spellUsage[spell.name] ?? { casts: 0, damage: 0, mana: 0 }
+  usage.casts++
+  usage.mana += spell.manaCost
+  game.stats.spellUsage[spell.name] = usage
 
   // Handle Dark Pact HP cost
   if (spell.id === 'dark_pact') {
@@ -615,6 +620,9 @@ function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: strin
 
   // Update stats
   game.stats.damageDealt += damage
+  incrementStat(game.stats.damageBySource.spell, spell.name, damage)
+  const spellUsage = game.stats.spellUsage[spell.name]
+  if (spellUsage) spellUsage.damage += damage
 
   if (killed) {
     handleMonsterKill(game, target)
@@ -696,6 +704,9 @@ function castBeamSpell(
   }
 
   game.stats.damageDealt += totalDamage
+  incrementStat(game.stats.damageBySource.spell, spell.name, totalDamage)
+  const beamSpellUsage = game.stats.spellUsage[spell.name]
+  if (beamSpellUsage) beamSpellUsage.damage += totalDamage
 
   const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
   return {
@@ -792,11 +803,16 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
   }
 
   game.stats.damageDealt += totalDamage
+  incrementStat(game.stats.damageBySource.spell, spell.name, totalDamage)
+  const aoeSpellUsage = game.stats.spellUsage[spell.name]
+  if (aoeSpellUsage) aoeSpellUsage.damage += totalDamage
 
   // If spell has drain, heal
   if (spell.drainPercent) {
     const healAmount = Math.floor((totalDamage * spell.drainPercent) / 100)
+    const oldHp = game.character.hp
     game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
+    game.stats.healingBySource.spells += game.character.hp - oldHp
   }
 
   // Build result message
@@ -840,6 +856,9 @@ function castHealSpell(game: GameState, spell: SpellTemplate): ActionResult {
     game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
     actualHeal = game.character.hp - oldHp
   }
+
+  // Track spell healing
+  game.stats.healingBySource.spells += actualHeal
 
   const effects: string[] = []
 
@@ -978,6 +997,9 @@ function castLifedrainSpell(
   // Apply damage
   const killed = applyDamage(target, damage)
   game.stats.damageDealt += damage
+  incrementStat(game.stats.damageBySource.spell, spell.name, damage)
+  const drainSpellUsage = game.stats.spellUsage[spell.name]
+  if (drainSpellUsage) drainSpellUsage.damage += damage
 
   // Heal based on drain percent
   const drainPercent = spell.drainPercent ?? 50
@@ -985,6 +1007,7 @@ function castLifedrainSpell(
   const oldHp = game.character.hp
   game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
   const actualHeal = game.character.hp - oldHp
+  game.stats.healingBySource.spells += actualHeal
 
   if (killed) {
     handleMonsterKill(game, target)

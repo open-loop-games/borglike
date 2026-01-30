@@ -61,15 +61,22 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
   const message = formatMultiAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 
+  // Track melee combat accuracy
+  game.stats.meleeHits += attackResult.hits
+  game.stats.meleeMisses += attackResult.attackCount - attackResult.hits
+  game.stats.criticalHits += attackResult.criticals
+
   if (attackResult.hits > 0) {
     // Apply total damage to monster
     applyDamage(monster, attackResult.totalDamage)
     game.stats.damageDealt += attackResult.totalDamage
+    game.stats.damageBySource.melee += attackResult.totalDamage
 
     // COMBAT_REGEN: Lifesteal healing (Blackguard)
     const lifesteal = calculateLifesteal(game.character, attackResult.totalDamage)
     if (lifesteal > 0) {
       game.character.hp = Math.min(game.character.hp + lifesteal, game.character.maxHp)
+      game.stats.healingBySource.lifesteal += lifesteal
       addMessage(game, `You drain ${lifesteal} HP!`, 'good')
     }
 
@@ -149,10 +156,16 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
   const message = formatMultiRangedAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 
+  // Track ranged combat accuracy
+  game.stats.rangedHits += attackResult.hits
+  game.stats.rangedMisses += attackResult.attackCount - attackResult.hits
+  game.stats.criticalHits += attackResult.criticals
+
   if (attackResult.hits > 0) {
     // Apply total damage to monster
     applyDamage(monster, attackResult.totalDamage)
     game.stats.damageDealt += attackResult.totalDamage
+    game.stats.damageBySource.ranged += attackResult.totalDamage
 
     if (attackResult.killed) {
       handleMonsterKill(game, monster)

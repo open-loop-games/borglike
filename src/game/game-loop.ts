@@ -165,6 +165,33 @@ export function createGame(config: RunConfig): GameState {
     endTime: null,
     monsterKills: {},
     itemsDiscovered: {},
+    // Damage dealt breakdown
+    damageBySource: {
+      melee: 0,
+      ranged: 0,
+      spell: {},
+      ability: {},
+      minion: 0,
+    },
+    // Damage taken breakdown
+    damageByElement: {},
+    damageByMethod: { melee: 0, breath: 0, spell: 0, trap: 0 },
+    damageTakenByMonster: {},
+    // Resource usage
+    spellUsage: {},
+    abilityUsage: {},
+    consumablesUsed: { healingPotions: 0, buffPotions: 0, scrolls: {} },
+    // Combat accuracy
+    meleeHits: 0,
+    meleeMisses: 0,
+    rangedHits: 0,
+    rangedMisses: 0,
+    criticalHits: 0,
+    attacksDodged: 0,
+    // Survival
+    healingBySource: { potions: 0, spells: 0, regen: 0, lifesteal: 0, other: 0 },
+    statusEffectsSuffered: {},
+    closeCalls: 0,
   }
 
   // Initialize features for first level
@@ -377,7 +404,9 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
         healAmount = healAmount * 2
       }
 
+      const oldHp = game.character.hp
       game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
+      game.stats.healingBySource.regen += game.character.hp - oldHp
     }
   }
 

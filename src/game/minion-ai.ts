@@ -123,6 +123,7 @@ function processSingleMinionTurn(game: GameState, minion: Minion): GameEvent[] {
 function minionAttack(game: GameState, minion: Minion, target: Monster): boolean {
   const damage = minion.damage
   game.stats.damageDealt += damage
+  game.stats.damageBySource.minion += damage
   return applyDamage(target, damage)
 }
 

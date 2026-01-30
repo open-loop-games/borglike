@@ -27,6 +27,7 @@ import { getTrapById } from './data/traps'
 import type { MonsterTemplate } from './data/monsters'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 import { clearPoison, isPoisoned, applyPoison } from './status-effects'
+import { incrementStat, checkCloseCall } from './stats-helpers'
 
 // ============================================================================
 // MESSAGE HELPERS
@@ -629,7 +630,12 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       const damage = template.damage
       char.hp -= damage
       game.stats.damageTaken += damage
+      game.stats.damageByMethod.trap += damage
+      incrementStat(game.stats.damageByElement, 'physical', damage)
       addMessage(game, `You trigger a ${template.name}! You take ${damage} damage!`, 'danger')
+
+      // Check for close call
+      checkCloseCall(game.stats, char.hp, char.maxHp)
 
       // Check for death
       if (char.hp <= 0) {
@@ -642,6 +648,9 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       const damage = template.damage
       char.hp -= damage
       game.stats.damageTaken += damage
+      game.stats.damageByMethod.trap += damage
+      incrementStat(game.stats.damageByElement, 'poison', damage)
+      incrementStat(game.stats.statusEffectsSuffered, 'poisoned', 1)
 
       // Apply lingering poison
       const damagePerTurn = Math.max(1, Math.floor(template.damage / 4))
@@ -653,6 +662,9 @@ export function triggerTrap(game: GameState, position: Point): boolean {
         `A ${template.name} hits you! You take ${damage} damage and are poisoned!`,
         'danger'
       )
+
+      // Check for close call
+      checkCloseCall(game.stats, char.hp, char.maxHp)
 
       if (char.hp <= 0) {
         char.hp = 0
@@ -682,6 +694,9 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       const damage = template.damage
       char.hp -= damage
       game.stats.damageTaken += damage
+      game.stats.damageByMethod.trap += damage
+      incrementStat(game.stats.damageByElement, 'physical', damage)
+      incrementStat(game.stats.statusEffectsSuffered, 'stun', 1)
 
       // Apply stun (1-2 turns)
       char.statusEffects = char.statusEffects.filter((e) => e.type !== 'stun')
@@ -696,6 +711,9 @@ export function triggerTrap(game: GameState, position: Point): boolean {
         `You fall into a ${template.name}! You take ${damage} damage and are stunned!`,
         'danger'
       )
+
+      // Check for close call
+      checkCloseCall(game.stats, char.hp, char.maxHp)
 
       if (char.hp <= 0) {
         char.hp = 0

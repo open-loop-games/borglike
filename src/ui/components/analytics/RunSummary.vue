@@ -61,6 +61,81 @@ function getDiffClass(value: number): string {
   if (value < 0) return 'negative'
   return 'neutral'
 }
+
+// Combat accuracy
+const meleeAccuracy = computed(() => {
+  const hits = props.run.meleeHits ?? 0
+  const misses = props.run.meleeMisses ?? 0
+  const total = hits + misses
+  if (total === 0) return null
+  return Math.round((hits / total) * 100)
+})
+
+const rangedAccuracy = computed(() => {
+  const hits = props.run.rangedHits ?? 0
+  const misses = props.run.rangedMisses ?? 0
+  const total = hits + misses
+  if (total === 0) return null
+  return Math.round((hits / total) * 100)
+})
+
+// Top damage sources (spells/abilities)
+const topDamageSources = computed(() => {
+  const sources: Array<{ name: string; damage: number; type: 'spell' | 'ability' }> = []
+
+  // Add spells
+  if (props.run.damageBySource?.spell) {
+    for (const [name, damage] of Object.entries(props.run.damageBySource.spell)) {
+      sources.push({ name, damage, type: 'spell' })
+    }
+  }
+
+  // Add abilities
+  if (props.run.damageBySource?.ability) {
+    for (const [name, damage] of Object.entries(props.run.damageBySource.ability)) {
+      sources.push({ name, damage, type: 'ability' })
+    }
+  }
+
+  // Sort by damage and take top 5
+  return sources.sort((a, b) => b.damage - a.damage).slice(0, 5)
+})
+
+// Top threats (monsters by damage taken)
+const topThreats = computed(() => {
+  if (!props.run.damageTakenByMonster) return []
+
+  const threats = Object.entries(props.run.damageTakenByMonster)
+    .map(([name, damage]) => ({ name, damage }))
+    .sort((a, b) => b.damage - a.damage)
+    .slice(0, 3)
+
+  return threats
+})
+
+// Primary damage type
+const primaryDamageType = computed(() => {
+  if (!props.run.damageBySource) return null
+  const { melee, ranged, spell, ability, minion } = props.run.damageBySource
+  const spellTotal = Object.values(spell).reduce((a, b) => a + b, 0)
+  const abilityTotal = Object.values(ability).reduce((a, b) => a + b, 0)
+
+  const types = [
+    { type: 'Melee', damage: melee },
+    { type: 'Ranged', damage: ranged },
+    { type: 'Spell', damage: spellTotal },
+    { type: 'Ability', damage: abilityTotal },
+    { type: 'Minion', damage: minion },
+  ]
+
+  const max = types.reduce((a, b) => (b.damage > a.damage ? b : a))
+  return max.damage > 0 ? max.type : null
+})
+
+// Check if we have extended stats
+const hasExtendedStats = computed(() => {
+  return props.run.damageBySource !== undefined
+})
 </script>
 
 <template>
@@ -78,6 +153,7 @@ function getDiffClass(value: number): string {
       <div class="character-info">
         <span class="char-race">{{ run.race }}</span>
         <span class="char-class">{{ run.class }}</span>
+        <span v-if="primaryDamageType" class="char-damage-type">{{ primaryDamageType }}</span>
         <span class="char-time">{{ duration }}</span>
       </div>
 
@@ -126,6 +202,104 @@ function getDiffClass(value: number): string {
         <div class="death-label">Cause of Death</div>
         <div class="death-text">{{ run.deathCause }}</div>
       </PanelFrame>
+
+      <!-- Extended Stats Section -->
+      <template v-if="hasExtendedStats">
+        <!-- Combat Breakdown -->
+        <PanelFrame class="extended-section">
+          <div class="section-title">Combat</div>
+          <div class="combat-stats">
+            <div class="combat-row">
+              <span class="combat-label">Damage Dealt</span>
+              <span class="combat-value dealt">{{ (run.damageDealt ?? 0).toLocaleString() }}</span>
+            </div>
+            <div class="combat-row">
+              <span class="combat-label">Damage Taken</span>
+              <span class="combat-value taken">{{ (run.damageTaken ?? 0).toLocaleString() }}</span>
+            </div>
+            <div v-if="meleeAccuracy !== null" class="combat-row">
+              <span class="combat-label">Melee Accuracy</span>
+              <span class="combat-value">{{ meleeAccuracy }}%</span>
+            </div>
+            <div v-if="rangedAccuracy !== null" class="combat-row">
+              <span class="combat-label">Ranged Accuracy</span>
+              <span class="combat-value">{{ rangedAccuracy }}%</span>
+            </div>
+            <div v-if="run.criticalHits" class="combat-row">
+              <span class="combat-label">Critical Hits</span>
+              <span class="combat-value crit">{{ run.criticalHits }}</span>
+            </div>
+            <div v-if="run.attacksDodged" class="combat-row">
+              <span class="combat-label">Attacks Dodged</span>
+              <span class="combat-value">{{ run.attacksDodged }}</span>
+            </div>
+          </div>
+        </PanelFrame>
+
+        <!-- Top Damage Sources -->
+        <PanelFrame v-if="topDamageSources.length > 0" class="extended-section">
+          <div class="section-title">Top Damage Sources</div>
+          <div class="source-list">
+            <div v-for="source in topDamageSources" :key="source.name" class="source-row">
+              <span class="source-name" :class="source.type">{{ source.name }}</span>
+              <span class="source-damage">{{ source.damage.toLocaleString() }}</span>
+            </div>
+          </div>
+        </PanelFrame>
+
+        <!-- Top Threats -->
+        <PanelFrame v-if="topThreats.length > 0" class="extended-section">
+          <div class="section-title">Top Threats</div>
+          <div class="source-list">
+            <div v-for="threat in topThreats" :key="threat.name" class="source-row">
+              <span class="source-name threat">{{ threat.name }}</span>
+              <span class="source-damage threat">{{ threat.damage.toLocaleString() }}</span>
+            </div>
+          </div>
+        </PanelFrame>
+
+        <!-- Survival Stats -->
+        <PanelFrame v-if="run.closeCalls || run.healingBySource" class="extended-section">
+          <div class="section-title">Survival</div>
+          <div class="combat-stats">
+            <div v-if="run.healingBySource?.potions" class="combat-row">
+              <span class="combat-label">Potion Healing</span>
+              <span class="combat-value heal">{{ run.healingBySource.potions.toLocaleString() }}</span>
+            </div>
+            <div v-if="run.healingBySource?.spells" class="combat-row">
+              <span class="combat-label">Spell Healing</span>
+              <span class="combat-value heal">{{ run.healingBySource.spells.toLocaleString() }}</span>
+            </div>
+            <div v-if="run.healingBySource?.regen" class="combat-row">
+              <span class="combat-label">Regeneration</span>
+              <span class="combat-value heal">{{ run.healingBySource.regen.toLocaleString() }}</span>
+            </div>
+            <div v-if="run.closeCalls" class="combat-row">
+              <span class="combat-label">Close Calls</span>
+              <span class="combat-value danger">{{ run.closeCalls }}</span>
+            </div>
+          </div>
+        </PanelFrame>
+
+        <!-- Resources Used -->
+        <PanelFrame v-if="run.consumablesUsed" class="extended-section">
+          <div class="section-title">Resources</div>
+          <div class="combat-stats">
+            <div v-if="run.consumablesUsed.healingPotions" class="combat-row">
+              <span class="combat-label">Healing Potions</span>
+              <span class="combat-value">{{ run.consumablesUsed.healingPotions }}</span>
+            </div>
+            <div v-if="run.consumablesUsed.buffPotions" class="combat-row">
+              <span class="combat-label">Buff Potions</span>
+              <span class="combat-value">{{ run.consumablesUsed.buffPotions }}</span>
+            </div>
+            <div v-if="Object.keys(run.consumablesUsed.scrolls || {}).length > 0" class="combat-row">
+              <span class="combat-label">Scrolls Used</span>
+              <span class="combat-value">{{ Object.values(run.consumablesUsed.scrolls || {}).reduce((a, b) => a + b, 0) }}</span>
+            </div>
+          </div>
+        </PanelFrame>
+      </template>
 
       <!-- Essence Earned -->
       <PanelFrame class="essence-section">
@@ -262,6 +436,14 @@ function getDiffClass(value: number): string {
 
 .char-time {
   color: var(--text-dim);
+}
+
+.char-damage-type {
+  color: var(--amber);
+  font-size: 12px;
+  padding: 2px 6px;
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: 3px;
 }
 
 .grade-section {
@@ -477,5 +659,109 @@ function getDiffClass(value: number): string {
 
 .btn-icon {
   font-size: 12px;
+}
+
+/* Extended Stats Sections */
+.extended-section {
+  width: 100%;
+  max-width: 400px;
+  padding: 16px !important;
+}
+
+.section-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.combat-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.combat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.combat-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.combat-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.combat-value.dealt {
+  color: var(--green);
+}
+
+.combat-value.taken {
+  color: var(--red);
+}
+
+.combat-value.crit {
+  color: var(--amber);
+}
+
+.combat-value.heal {
+  color: var(--green);
+}
+
+.combat-value.danger {
+  color: var(--red);
+}
+
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.source-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.source-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.source-name.spell {
+  color: var(--cyan);
+}
+
+.source-name.ability {
+  color: var(--purple);
+}
+
+.source-name.threat {
+  color: var(--red);
+}
+
+.source-damage {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.source-damage.threat {
+  color: var(--red);
 }
 </style>

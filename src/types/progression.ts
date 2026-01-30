@@ -166,6 +166,35 @@ export interface RunStats {
   deathDepth?: number // Depth where death occurred (may differ from maxDepth)
   // Loadout
   boosters?: string[] // Booster names used this run
+
+  // === EXTENDED STATS (v2) ===
+  // Damage dealt breakdown
+  damageBySource?: {
+    melee: number
+    ranged: number
+    spell: Record<string, number>
+    ability: Record<string, number>
+    minion: number
+  }
+  // Damage taken breakdown
+  damageByElement?: Record<string, number>
+  damageByMethod?: { melee: number; breath: number; spell: number; trap: number }
+  damageTakenByMonster?: Record<string, number>
+  // Resource usage
+  spellUsage?: Record<string, { casts: number; damage: number; mana: number }>
+  abilityUsage?: Record<string, { uses: number; damage: number }>
+  consumablesUsed?: { healingPotions: number; buffPotions: number; scrolls: Record<string, number> }
+  // Combat accuracy
+  meleeHits?: number
+  meleeMisses?: number
+  rangedHits?: number
+  rangedMisses?: number
+  criticalHits?: number
+  attacksDodged?: number
+  // Survival
+  healingBySource?: { potions: number; spells: number; regen: number; lifesteal: number; other: number }
+  statusEffectsSuffered?: Record<string, number>
+  closeCalls?: number
 }
 
 export interface GlobalStats {

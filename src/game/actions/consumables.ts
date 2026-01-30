@@ -18,6 +18,7 @@ import {
 import { createTownPortal, enterTown, isInTown } from '../town'
 import { addMessage, BASE_ENERGY_COST, getHealAmount } from './helpers'
 import { handleAscend } from './movement'
+import { incrementStat } from '../stats-helpers'
 
 // ============================================================================
 // TYPES
@@ -50,6 +51,8 @@ function applyPotionEffect(game: GameState, item: Item): EffectResult {
   const template = item.template
   const character = game.character
   const messages: string[] = []
+  let isHealingPotion = false
+  let isBuffPotion = false
 
   // 1. Apply healing
   if (template.healBase !== undefined || template.healPerLevel !== undefined) {
@@ -58,7 +61,11 @@ function applyPotionEffect(game: GameState, item: Item): EffectResult {
     if (character.raceId === 'hobbit') {
       healAmount = Math.floor(healAmount * 1.25)
     }
+    const oldHp = character.hp
     character.hp = Math.min(character.hp + healAmount, character.maxHp)
+    const actualHeal = character.hp - oldHp
+    game.stats.healingBySource.potions += actualHeal
+    isHealingPotion = true
     messages.push('You feel better')
   }
 
@@ -84,6 +91,7 @@ function applyPotionEffect(game: GameState, item: Item): EffectResult {
       turnsRemaining: duration,
       value: template.buff.value,
     })
+    isBuffPotion = true
     switch (template.buff.type) {
       case 'speed':
         messages.push('you feel yourself moving faster')
@@ -112,6 +120,14 @@ function applyPotionEffect(game: GameState, item: Item): EffectResult {
   if (template.restoresMana) {
     character.mp = character.maxMp
     messages.push('your mana is restored')
+  }
+
+  // Track consumable usage
+  if (isHealingPotion) {
+    game.stats.consumablesUsed.healingPotions++
+  }
+  if (isBuffPotion) {
+    game.stats.consumablesUsed.buffPotions++
   }
 
   // Build message
@@ -432,6 +448,11 @@ export function handleUse(game: GameState, itemId: string): ActionResult {
   // Remove item from inventory if consumed
   if (!result.preventConsume) {
     game.character.inventory.splice(itemIndex, 1)
+
+    // Track scroll usage
+    if (template.type === 'scroll') {
+      incrementStat(game.stats.consumablesUsed.scrolls, template.name, 1)
+    }
   }
 
   return { success: true, energyCost: BASE_ENERGY_COST }

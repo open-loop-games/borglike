@@ -18,6 +18,7 @@ import { handleMonsterKill } from './combat'
 import { addStatusEffect } from '../status-effects'
 import { getTile } from '../dungeon'
 import { addMessage, BASE_ENERGY_COST } from './helpers'
+import { incrementStat, trackAbilityUsage } from '../stats-helpers'
 
 // ============================================================================
 // COOLDOWN HELPERS
@@ -359,6 +360,8 @@ function executeDraconianBreath(game: GameState, activation: ActivationTemplate)
   }
 
   game.stats.damageDealt += totalDamage
+  incrementStat(game.stats.damageBySource.ability, activation.name, totalDamage)
+  trackAbilityUsage(game.stats, activation.name, totalDamage)
 
   const elementName = element === 'nature' ? 'acid' : element
   const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
@@ -441,6 +444,8 @@ function executeAOEDamage(
   }
 
   game.stats.damageDealt += totalDamage
+  incrementStat(game.stats.damageBySource.ability, activation.name, totalDamage)
+  trackAbilityUsage(game.stats, activation.name, totalDamage)
 
   const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
   const message = `${activation.name} hits ${hitTargets.length} enemies for ${totalDamage} damage!${killedStr}`
@@ -500,6 +505,8 @@ function executeSingleDamage(
   const damage = baseDamage
   const killed = applyDamage(target, damage)
   game.stats.damageDealt += damage
+  incrementStat(game.stats.damageBySource.ability, activation.name, damage)
+  trackAbilityUsage(game.stats, activation.name, damage)
 
   if (killed) {
     handleMonsterKill(game, target)

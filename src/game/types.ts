@@ -591,6 +591,38 @@ export interface RunStats {
   endTime: number | null
   monsterKills: Record<string, number> // monster name → kill count
   itemsDiscovered: Record<string, { depth: number; isArtifact: boolean }> // item name → discovery info
+
+  // === DAMAGE DEALT BREAKDOWN ===
+  damageBySource: {
+    melee: number
+    ranged: number
+    spell: Record<string, number> // spell name -> damage
+    ability: Record<string, number> // ability name -> damage
+    minion: number
+  }
+
+  // === DAMAGE TAKEN BREAKDOWN ===
+  damageByElement: Record<string, number> // physical|fire|cold|elec|poison|acid|dark -> damage
+  damageByMethod: { melee: number; breath: number; spell: number; trap: number }
+  damageTakenByMonster: Record<string, number> // monster name -> damage
+
+  // === RESOURCE USAGE ===
+  spellUsage: Record<string, { casts: number; damage: number; mana: number }> // by spell name
+  abilityUsage: Record<string, { uses: number; damage: number }> // by ability name
+  consumablesUsed: { healingPotions: number; buffPotions: number; scrolls: Record<string, number> }
+
+  // === COMBAT ACCURACY ===
+  meleeHits: number
+  meleeMisses: number
+  rangedHits: number
+  rangedMisses: number
+  criticalHits: number
+  attacksDodged: number
+
+  // === SURVIVAL ===
+  healingBySource: { potions: number; spells: number; regen: number; lifesteal: number; other: number }
+  statusEffectsSuffered: Record<string, number> // effect type -> count
+  closeCalls: number // HP dropped below 20%
 }
 
 /** Active fountain state */

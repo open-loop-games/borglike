@@ -173,6 +173,23 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
     deathDepth: isVictory ? undefined : char.depth,
     // Loadout
     boosters,
+    // Extended stats (v2)
+    damageBySource: game.stats.damageBySource,
+    damageByElement: game.stats.damageByElement,
+    damageByMethod: game.stats.damageByMethod,
+    damageTakenByMonster: game.stats.damageTakenByMonster,
+    spellUsage: game.stats.spellUsage,
+    abilityUsage: game.stats.abilityUsage,
+    consumablesUsed: game.stats.consumablesUsed,
+    meleeHits: game.stats.meleeHits,
+    meleeMisses: game.stats.meleeMisses,
+    rangedHits: game.stats.rangedHits,
+    rangedMisses: game.stats.rangedMisses,
+    criticalHits: game.stats.criticalHits,
+    attacksDodged: game.stats.attacksDodged,
+    healingBySource: game.stats.healingBySource,
+    statusEffectsSuffered: game.stats.statusEffectsSuffered,
+    closeCalls: game.stats.closeCalls,
   }
 }
 
