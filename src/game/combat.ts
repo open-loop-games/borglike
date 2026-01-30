@@ -118,6 +118,75 @@ export function calculateBrandMultiplier(weapon: Item | undefined, target: Monst
 }
 
 // ============================================================================
+// WEAPON SLAYS
+// ============================================================================
+
+/** Monster flag types that can be targeted by slays */
+type SlayFlag = 'EVIL' | 'UNDEAD' | 'ORC' | 'TROLL' | 'DEMON' | 'DRAGON' | 'ANIMAL'
+
+/**
+ * Calculate damage multiplier from weapon slay abilities against a monster
+ *
+ * Slay multipliers:
+ * - "Slay X" = 1.5x damage
+ * - "Slay X x3" = 2.5x damage
+ * - "Slay X x5" = 3.5x damage
+ *
+ * Returns the highest applicable multiplier (slays don't stack).
+ *
+ * @param weapon - Equipped weapon (may be null)
+ * @param target - Monster being attacked
+ * @returns Damage multiplier (1.0 if no applicable slay)
+ */
+export function calculateSlayMultiplier(weapon: Item | undefined, target: Monster): number {
+  // Check both artifact abilities and template abilities
+  const abilities: string[] = []
+  if (weapon?.artifact?.abilities) {
+    abilities.push(...weapon.artifact.abilities)
+  }
+  if (weapon?.template.abilities) {
+    abilities.push(...weapon.template.abilities)
+  }
+  if (abilities.length === 0) return 1
+
+  // Map slay ability prefixes to monster flags
+  const slayMap: Record<string, SlayFlag> = {
+    'Slay Evil': 'EVIL',
+    'Slay Undead': 'UNDEAD',
+    'Slay Orc': 'ORC',
+    'Slay Troll': 'TROLL',
+    'Slay Demon': 'DEMON',
+    'Slay Dragon': 'DRAGON',
+    'Slay Animal': 'ANIMAL',
+  }
+
+  let bestMultiplier = 1
+
+  for (const ability of abilities) {
+    // Parse slay ability: "Slay X" or "Slay X xN"
+    for (const [slayPrefix, flag] of Object.entries(slayMap)) {
+      if (!ability.startsWith(slayPrefix)) continue
+
+      // Check if monster has this flag
+      if (!target.template.flags.includes(flag)) continue
+
+      // Parse multiplier: "Slay Evil x3" -> 3, "Slay Evil" -> 1
+      let multiplier = 1.5 // Base slay = 1.5x
+      const xMatch = ability.match(/x(\d+)$/)
+      if (xMatch?.[1]) {
+        const xValue = parseInt(xMatch[1], 10)
+        // xN means (N-1)*0.5 + 1.5: x3 = 2.5x, x5 = 3.5x
+        multiplier = 1.5 + (xValue - 1) * 0.5
+      }
+
+      bestMultiplier = Math.max(bestMultiplier, multiplier)
+    }
+  }
+
+  return bestMultiplier
+}
+
+// ============================================================================
 // STAT EXTRACTION
 // ============================================================================
 
@@ -693,10 +762,13 @@ export function attack(
       }
     }
 
-    // WEAPON BRANDS: Apply elemental damage multiplier
+    // WEAPON BRANDS & SLAYS: Apply damage multipliers vs monsters
     if (isMonster(defender)) {
       const brandMult = calculateBrandMultiplier(attacker.equipment.weapon, defender)
-      baseDamage = Math.floor(baseDamage * brandMult)
+      const slayMult = calculateSlayMultiplier(attacker.equipment.weapon, defender)
+      // Use higher of brand or slay (they don't stack)
+      const bestMult = Math.max(brandMult, slayMult)
+      baseDamage = Math.floor(baseDamage * bestMult)
     }
 
     // RACIAL: Half-Orc "Berserker Rage" - +20% damage when below 30% HP

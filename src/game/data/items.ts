@@ -1098,16 +1098,6 @@ export const AMULETS: ItemTemplate[] = [
     abilities: ['Resist Fire', 'Resist Cold', 'Resist Lightning', 'Resist Acid'],
   },
   {
-    name: 'Amulet of ESP',
-    type: 'amulet',
-    slot: 'amulet',
-    tier: 4,
-    weight: 3,
-    effect: 'Telepathy',
-    minDepth: 60,
-    abilities: ['Telepathy'],
-  },
-  {
     name: 'Amulet of the Magi',
     type: 'amulet',
     slot: 'amulet',

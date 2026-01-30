@@ -8,6 +8,89 @@
 import type { Character, StatusEffect, TempResistance, GameState, GameMessage } from './types'
 
 // ============================================================================
+// STATUS PROTECTIONS (from equipment abilities)
+// ============================================================================
+
+/** Map protection ability strings to status effect types they prevent */
+const PROTECTION_MAP: Record<string, StatusEffect['type'][]> = {
+  'Protection from Fear': ['terrified'],
+  'Protection from Blindness': ['blind'],
+  'Protection from Confusion': ['confused'],
+  'Protect Blind': ['blind'], // Amulet of the Magi variant
+  'Free Action': ['paralyzed', 'slowed'],
+}
+
+/**
+ * Check if character has protection against a status effect from equipment
+ *
+ * Scans all equipped items for protection abilities.
+ *
+ * @param character - The character to check
+ * @param statusType - The status effect type to check protection for
+ * @returns true if character is protected from this status
+ */
+export function hasProtectionFrom(character: Character, statusType: StatusEffect['type']): boolean {
+  // Check all equipped items
+  for (const item of Object.values(character.equipment)) {
+    if (!item) continue
+
+    // Check artifact abilities
+    if (item.artifact?.abilities) {
+      for (const ability of item.artifact.abilities) {
+        const protectedTypes = PROTECTION_MAP[ability]
+        if (protectedTypes?.includes(statusType)) {
+          return true
+        }
+      }
+    }
+
+    // Check template abilities (rings/amulets)
+    if (item.template.abilities) {
+      for (const ability of item.template.abilities) {
+        const protectedTypes = PROTECTION_MAP[ability]
+        if (protectedTypes?.includes(statusType)) {
+          return true
+        }
+      }
+    }
+  }
+
+  // WARRIOR BRAVERY_30: Fear immunity at level 30+
+  if (statusType === 'terrified' && hasStatusEffect(character, 'immunity_fear')) {
+    return true
+  }
+
+  return false
+}
+
+/**
+ * Check if character has a specific ability from any equipped item
+ *
+ * Used for abilities like Regeneration, Telepathy, etc.
+ *
+ * @param character - The character to check
+ * @param abilityName - The ability string to look for (exact match)
+ * @returns true if any equipped item has this ability
+ */
+export function hasEquipmentAbility(character: Character, abilityName: string): boolean {
+  for (const item of Object.values(character.equipment)) {
+    if (!item) continue
+
+    // Check artifact abilities
+    if (item.artifact?.abilities?.includes(abilityName)) {
+      return true
+    }
+
+    // Check template abilities (rings/amulets)
+    if (item.template.abilities?.includes(abilityName)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+// ============================================================================
 // STATUS EFFECTS
 // ============================================================================
 

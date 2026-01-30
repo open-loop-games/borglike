@@ -19,7 +19,7 @@ import type {
 import { STATUS_DURATIONS } from './types'
 import { rollDice } from './dice'
 import { random, randomInt } from './rng'
-import { addStatusEffect } from './status-effects'
+import { addStatusEffect, hasProtectionFrom } from './status-effects'
 import { findOpenPosition } from './dungeon'
 import { spawnMonster } from './monster-ai'
 import { getSpawnableMonsters } from './data/monsters'
@@ -393,6 +393,16 @@ function executeDebuff(
     }
   }
 
+  // EQUIPMENT PROTECTION: Check for protection abilities (Free Action, etc.)
+  if (hasProtectionFrom(character, statusType)) {
+    return {
+      success: false,
+      damage: 0,
+      statusInflicted: null,
+      message: 'You are protected!',
+    }
+  }
+
   // Apply status
   const duration = STATUS_DURATIONS[statusType] ?? 3
   const value = statusType === 'slowed' ? 50 : statusType === 'drained' ? 20 : 0
@@ -426,9 +436,9 @@ function executeBrainSmash(monster: Monster, character: Character): SpellResult 
     damage = Math.floor(damage / 2)
   }
 
-  // Try to confuse (unless saved)
+  // Try to confuse (unless saved or protected)
   let statusInflicted: StatusEffectType | null = null
-  if (!saved && random() < 0.5) {
+  if (!saved && random() < 0.5 && !hasProtectionFrom(character, 'confused')) {
     addStatusEffect(character, {
       type: 'confused',
       turnsRemaining: STATUS_DURATIONS['confused'] ?? 3,

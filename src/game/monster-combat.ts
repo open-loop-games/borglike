@@ -16,7 +16,7 @@ import type {
 import { STATUS_DURATIONS } from './types'
 import { rollDice, getDiceAverage } from './dice'
 import { random } from './rng'
-import { addStatusEffect, applyPoison } from './status-effects'
+import { addStatusEffect, applyPoison, hasProtectionFrom } from './status-effects'
 import { getRaceById } from './data/races'
 
 // ============================================================================
@@ -283,6 +283,11 @@ function tryInflictStatus(character: Character, effect: AttackEffect): StatusEff
 
   const statusType = statusMap[effect.type]
   if (!statusType) return null
+
+  // EQUIPMENT PROTECTION: Check for protection abilities (Free Action, etc.)
+  if (hasProtectionFrom(character, statusType)) {
+    return null
+  }
 
   // Get duration from constants
   const duration = (STATUS_DURATIONS as Record<string, number>)[statusType] ?? 3

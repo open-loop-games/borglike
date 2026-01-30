@@ -37,6 +37,7 @@ import {
   tickTempResistances,
   processPoison,
   checkPoisonExpired,
+  hasEquipmentAbility,
 } from './status-effects'
 import {
   addMessage,
@@ -368,6 +369,11 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
       }
       // RACIAL: Half-Troll "Regeneration" - 2x HP regen
       else if (game.character.raceId === 'half_troll') {
+        healAmount = healAmount * 2
+      }
+
+      // EQUIPMENT: "Regeneration" ability (Ringil, Amulet of Regeneration) - 2x HP regen
+      if (hasEquipmentAbility(game.character, 'Regeneration')) {
         healAmount = healAmount * 2
       }
 

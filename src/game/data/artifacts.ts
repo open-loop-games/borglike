@@ -389,7 +389,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Resist Fire',
       'Resist Cold',
       'Protection from Fear',
-      'Telepathy',
     ],
     description:
       'The legendary Dragon-helm, forged by one of the legendary Dwarven smiths of the First Age. The visage of mighty Glaurung forms its crest.',
