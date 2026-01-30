@@ -15,7 +15,6 @@ import type {
   BotGoal,
   BotContext,
 } from './types'
-import { getEffectiveCapabilities } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
 import { isPoisoned, getPoisonDamage } from '../status-effects'
@@ -69,34 +68,6 @@ export interface TownPortalDecision {
   reason: string
 }
 
-// ============================================================================
-// SURF THRESHOLDS (Bot Training)
-// ============================================================================
-
-/**
- * Surf levels control HP threshold for flee decisions.
- * L0 = face-rush (15%), L3 = personality-based.
- */
-const SURF_THRESHOLDS: Record<number, number | null> = {
-  0: 0.15, // L0: desperate only
-  1: 0.3, // L1: basic caution
-  2: 0.4, // L2: moderate caution
-  3: null, // L3: personality-based
-}
-
-/**
- * Get flee HP threshold based on surf level and personality.
- * Surf L0-L2 use fixed thresholds, L3 uses personality caution.
- */
-export function getSurfFleeThreshold(surfLevel: number, personalityCaution: number): number {
-  const level = Math.max(0, Math.min(3, surfLevel))
-  const fixedThreshold = SURF_THRESHOLDS[level]
-  if (fixedThreshold !== null && fixedThreshold !== undefined) {
-    return fixedThreshold
-  }
-  // L3: use personality-based threshold
-  return personalityCaution / 100
-}
 
 // ============================================================================
 // RETREAT DECISIONS
@@ -189,19 +160,16 @@ export function getStatusRetreatUrgency(
  *
  * Triggers:
  * - Status effects that make current position deadly
- * - HP below personality caution threshold (modified by surf level)
+ * - HP below personality caution threshold
  * - Outnumbered (2+ adjacent monsters)
  * - Losing the fight (combat advantage negative)
  * - High local danger
- *
- * @param surfLevel - Bot training surf level (0-3). Defaults to 3 (personality-based).
  */
 export function shouldRetreat(
   game: GameState,
   config: PersonalityConfig,
   dangers: DangerMap,
-  hpRate: number = 0,
-  surfLevel: number = 3
+  hpRate: number = 0
 ): RetreatEvaluation {
   const character = game.character
   const adjacentCount = countAdjacentMonsters(game, character.position)
@@ -213,8 +181,8 @@ export function shouldRetreat(
   }
 
   const hpRatio = character.hp / character.maxHp
-  // Surf level modifies flee threshold: L0=15%, L1=30%, L2=40%, L3=personality
-  const cautionThreshold = getSurfFleeThreshold(surfLevel, config.caution)
+  // Flee threshold is personality-based (caution 0-100 → 0%-100% HP)
+  const cautionThreshold = config.caution / 100
 
   // Check HP threshold
   if (hpRatio < cautionThreshold) {
@@ -484,15 +452,12 @@ export function getHitsTillDeath(game: GameState): number {
  * - Berserker: NEVER retreats (neverRetreats=true)
  * - Ranged classes: May want to kite instead of retreat
  * - Melee classes: Use standard retreat logic
- *
- * @param surfLevel - Bot training surf level (0-3). Defaults to 3 (personality-based).
  */
 export function shouldClassRetreat(
   game: GameState,
   config: PersonalityConfig,
   dangers: DangerMap,
-  classProfile: ClassBehaviorProfile,
-  surfLevel: number = 3
+  classProfile: ClassBehaviorProfile
 ): RetreatEvaluation {
   // Berserker never retreats
   if (classProfile.neverRetreats) {
@@ -504,7 +469,7 @@ export function shouldClassRetreat(
   }
 
   // Use base retreat evaluation
-  const baseEval = shouldRetreat(game, config, dangers, 0, surfLevel)
+  const baseEval = shouldRetreat(game, config, dangers)
 
   // Apply class modifier to urgency
   // Aggressive classes (positive aggressionMod) have lower urgency
@@ -802,12 +767,9 @@ export function getFleeGoal(
     return null
   }
 
-  // Get effective surf level for retreat threshold
-  const effective = getEffectiveCapabilities(context)
-
   // Check if retreat warranted (PASS HP RATE)
   // Use effectiveConfig to include class modifiers (aggression/caution)
-  const retreatEval = shouldRetreat(game, effectiveConfig, dangers, hpRate, effective.surf)
+  const retreatEval = shouldRetreat(game, effectiveConfig, dangers, hpRate)
   if (!retreatEval.shouldRetreat) return null
 
   // If fleeing due to high danger area while pursuing TAKE goal, blacklist that item

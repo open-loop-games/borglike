@@ -98,13 +98,13 @@ const sweep3: BotUpgradeDefinition = {
 }
 
 // =============================================================================
-// SURF UPGRADES (stair surfing HP thresholds)
+// SURF UPGRADES (tethered stair farming)
 // =============================================================================
 
 const surf1: BotUpgradeDefinition = {
   id: 'surf_1',
   name: 'Surf I',
-  description: 'Basic retreat thresholds (30% HP)',
+  description: 'Unlocks tethered stair farming (5×5 area)',
   cost: 200,
   category: 'graded',
   targetField: 'surf',
@@ -114,7 +114,7 @@ const surf1: BotUpgradeDefinition = {
 const surf2: BotUpgradeDefinition = {
   id: 'surf_2',
   name: 'Surf II',
-  description: 'Improved retreat thresholds (40% HP)',
+  description: 'Expanded tether range (adds 9×9 area)',
   cost: 360,
   requires: 'surf_1',
   category: 'graded',
@@ -125,7 +125,7 @@ const surf2: BotUpgradeDefinition = {
 const surf3: BotUpgradeDefinition = {
   id: 'surf_3',
   name: 'Surf III',
-  description: 'Optimal retreat thresholds (50% HP)',
+  description: 'Maximum tether range (adds 21×21 area)',
   cost: 648,
   requires: 'surf_2',
   category: 'graded',

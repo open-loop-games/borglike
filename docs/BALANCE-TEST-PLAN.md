@@ -1,10 +1,10 @@
 # Balance Test Plan
 
-## Current State (2026-01-29)
+## Current State (2026-01-30)
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `c00b685` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Codex Modal
+### Full Baseline @ `4113ace` (100 runs, 50k turns, seed=1000, max-upgrades) - Balance Testing Plan
 
 | Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|-------|---------|--------|
@@ -15,12 +15,12 @@
 | **Blackguard** | 46.6 | 50 | 0% | 13694 | 499 | 1 | ✅ Endgame |
 | **Priest** | 44.8 | 50 | 1% | 20822 | 626 | 0 | ✅ Endgame |
 | **Rogue** | 44.8 | 50 | 2% | 19047 | 535 | 0 | ✅ Endgame |
-| **Necromancer** | 43.5 | 48 | 14% | 28777 | 708 | 0 | ⚠️ CB Regression |
+| **Necromancer** | 43.5 | 48 | 14% | 19199 | 540 | 0 | ⚠️ CB Regression |
 | **Druid** | 43.3 | 50 | 0% | 18143 | 522 | 0 | ✅ Endgame |
-| **Mage** | 42.5 | 50 | 9% | 29590 | 656 | 0 | ⚠️ CB Regression |
-| **Archmage** | 40.9 | 48 | 9% | 28846 | 628 | 0 | ⚠️ CB Regression |
+| **Mage** | 42.6 | 48 | 9% | 20174 | 485 | 0 | ⚠️ CB Regression |
+| **Archmage** | 40.7 | 49 | 10% | 19242 | 460 | 0 | ⚠️ CB Regression |
 
-**Summary:** All classes endgame-viable. Caster CB rates persist (Necro 14%, Mage 9%, Archmage 9%). **13 Morgoth kills** (6 warrior, 5 berserker, 1 ranger, 1 blackguard). Rogue CB increased to 2%. UI-only changes (Codex modal, Wins tab) - no gameplay impact expected.
+**Summary:** All classes endgame-viable. Caster CB rates persist (Necro 14%, Mage 9%, Archmage 10%). **13 Morgoth kills** (6 warrior, 5 berserker, 1 ranger, 1 blackguard). Rogue CB at 2%.
 
 ### Previous Baseline @ `9bba82b` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Artifact Abilities
 
@@ -109,26 +109,46 @@ Pure casters show elevated circuit breaker rates after artifact ability implemen
 
 ---
 
-## Race Baseline
+## Race Baseline (Phase 1)
 
 > **Run:** `pnpm diagnose baseline-races --seed=1000 --turns=50000 --max-upgrades`
+> **Guide:** See `docs/BALANCE-TESTING-GUIDE.md` for methodology
 
-### Race Baseline @ `<commit>` (100 runs, 50k turns, seed=1000, class=warrior, max-upgrades)
+### Race Baseline @ `4113ace` (100 runs, 50k turns, seed=1000, class=warrior, max-upgrades)
 
-| Race | Avg Depth | Max Depth | CB Rate | Turns | Kills | Status |
-|------|-----------|-----------|---------|-------|-------|--------|
-| *Run baseline-races to populate* | | | | | | |
+| Race | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Kobold** | 49.3 | 50 | 2% | 14010 | 550 | 2 | ✅ Endgame |
+| **Half-Troll** | 48.9 | 50 | 1% | 14142 | 525 | 12 | ✅ Endgame |
+| **Dwarf** | 48.8 | 50 | 2% | 13755 | 534 | 5 | ✅ Endgame |
+| **Dunadan** | 48.6 | 50 | 2% | 14739 | 520 | 8 | ✅ Endgame |
+| **Human** | 48.5 | 50 | 1% | 14383 | 505 | 6 | ✅ Endgame |
+| **High-Elf** | 48.3 | 50 | 2% | 13809 | 527 | 4 | ✅ Endgame |
+| **Hobbit** | 48.0 | 50 | 1% | 13727 | 526 | 3 | ✅ Endgame |
+| **Elf** | 48.0 | 50 | 0% | 14128 | 507 | 4 | ✅ Endgame |
+| **Half-Orc** | 48.0 | 50 | 0% | 13942 | 514 | 5 | ✅ Endgame |
+| **Gnome** | 47.8 | 50 | 3% | 13644 | 515 | 6 | ✅ Endgame |
+| **Half-Elf** | 47.6 | 50 | 0% | 13963 | 503 | 4 | ✅ Endgame |
 
-**Expected Tiers:**
-- **Starter** (human, dwarf, elf): Average performance, baseline reference
-- **Unlockable** (half-elf, hobbit, gnome, half-orc, half-troll, dunadan, high-elf, kobold): Spread expected
-- **Prestige** (vampire, golem, draconian): Not yet included in baseline
+**Summary:** All 11 races endgame-viable (47.6-49.3 avg depth). **59 Morgoth kills** (12 half-troll, 8 dunadan, 6 human, 6 gnome, 5 dwarf, 5 half-orc, 4 high-elf, 4 elf, 4 half-elf, 3 hobbit, 2 kobold). CB rates 0-3%. Excellent race balance - spread of only 1.7 depth between best/worst.
+
+**Observed Tiers:**
+- **Top** (kobold, half-troll, dwarf, dunadan): 48.6-49.3 avg, slightly above human
+- **Middle** (human, high-elf, hobbit, elf, half-orc): 48.0-48.5 avg, baseline
+- **Bottom** (gnome, half-elf): 47.6-47.8 avg, slightly below but viable
+
+**Success Criteria:** ✅ All passed
+- ✅ All races reach depth 40+ average (lowest: 47.6)
+- ✅ No race exceeds human by >5 avg depth (max delta: +0.8)
+- ✅ No race falls below human by >8 avg depth (max delta: -0.9)
+- ✅ CB rates <5% (max: 3%)
 
 ---
 
-## Capability Progression Testing
+## Capability Progression (Phase 2)
 
 Tests bot performance at different unlock stages.
+> **Guide:** See `docs/BALANCE-TESTING-GUIDE.md` for methodology
 
 ### Capability Presets
 
@@ -151,11 +171,79 @@ pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capab
 pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=full --turns=50000
 ```
 
+### Capability Progression @ `4113ace` (50 runs, 40k turns, seed=1000, class=warrior, upgrades=mid)
+
+| Preset | Capabilities | Avg Depth | Max Depth | CB Rate | Delta |
+|--------|--------------|-----------|-----------|---------|-------|
+| `none` | (all disabled) | 31.8 | 50 | 0% | baseline |
+| `early` | town | 30.1 | 50 | 0% | -1.7 |
+| `mid` | town, farming, sweep_1, surf_1 | 31.4 | 50 | 0% | -0.4 |
+| `late` | +preparedness, sweep_2, surf_2, kiting_1 | 43.8 | 50 | 0% | +12.0 |
+| `full` | (all maxed) | 43.7 | 50 | 2% | +11.9 |
+
+**Observations:**
+- Big jump happens at `late` tier (+12 depth from mid)
+- Early/mid tiers don't differentiate well (town/farming/basic sweep+surf insufficient)
+- Key capabilities: preparedness, surf_2, kiting_1 drive the major improvement
+- Expected progression didn't materialize - late/full are the meaningful thresholds
+
+**Success Criteria:** ⚠️ Partial
+- ❌ Clear progression each tier (early/mid same as none)
+- ✅ Late tier provides major boost (+12 depth)
+
+### Surf Upgrade Refactor @ `298daa9`
+
+Testing revealed surf upgrades (HP thresholds) had inverted value - surf_3 was WORSE than surf_2. Refactored to control tether radii instead.
+
+**Before (HP thresholds):**
+| Level | HP Threshold | Result |
+|-------|--------------|--------|
+| surf_2 | 40% | Optimal |
+| surf_3 | 50% | **Worse** - too cautious |
+
+**After (tether radii) @ `298daa9` (30 runs, 30k turns, seed=1000, class=warrior, caps=town,farming,preparedness,surf_X, upgrades=mid):**
+
+| Level | Radii | Avg Depth | Delta from L0 |
+|-------|-------|-----------|---------------|
+| L0 (no surf) | [] | 30.1 | baseline |
+| surf_1 | [2] (5×5) | 40.7 | +10.6 |
+| surf_2 | [2, 4] (+9×9) | 41.9 | +11.8 |
+| surf_3 | [2, 4, 10] (+21×21) | 44.2 | +14.1 |
+
+**Result:** Linear progression restored. Each tier provides genuine value.
+
 ---
 
-## Upgrade Sensitivity Testing
+## Upgrade Progression (Phase 3)
+
+Tests meta-upgrade impact on bot performance.
+
+### Upgrade Progression @ `4113ace` (50 runs, 40k turns, seed=1000, class=warrior, capabilities=full)
+
+| Preset | Upgrades | Avg Depth | Max Depth | CB Rate | Delta | Morgoth |
+|--------|----------|-----------|-----------|---------|-------|---------|
+| `none` | No upgrades | 37.2 | 50 | 0% | baseline | 0 |
+| `early` | vitality 2, might 2, resilience 1 | 42.4 | 50 | 2% | +5.2 | 0 |
+| `mid` | vit 5, mgt 5, res 3, swf 2, prc 2, cel 2 | 43.7 | 50 | 2% | +6.5 | 0 |
+| `late` | vit 8, mgt 8, res 4, swf 4, prc 4, cel 4 | 45.9 | 50 | 0% | +8.7 | 1 |
+| `full` | All maxed | 46.5 | 50 | 0% | +9.3 | 0 |
+
+**Observations:**
+- Clear progression: 37.2 → 42.4 → 43.7 → 45.9 → 46.5
+- Early upgrades provide biggest single boost (+5.2 depth)
+- Diminishing returns after early tier
+- Morgoth kill only at late tier (1/50 runs)
+
+**Success Criteria:** ✅ Passed
+- ✅ Clear progression curve (each tier > previous)
+- ✅ Upgrades compound well with capabilities
+
+---
+
+## Upgrade Sensitivity (Phase 4)
 
 Measures per-upgrade impact on bot performance.
+> **Guide:** See `docs/BALANCE-TESTING-GUIDE.md` for methodology
 
 > **Run:** `pnpm diagnose sensitivity --seed=1000 --class=warrior`
 
@@ -169,6 +257,53 @@ Measures per-upgrade impact on bot performance.
 - 🔴 High impact (>10% loss): Critical upgrade, prioritize early
 - 🟡 Medium impact (5-10%): Important but not blocking
 - 🟢 Low impact (<5%): Nice-to-have, can defer
+
+**Success Criteria:**
+- No single upgrade > 15% impact (too dominant)
+- Stat upgrades roughly equal impact across classes
+- QoL upgrades < 5% impact (convenience, not power)
+
+---
+
+## Cross-Class Race Testing (Phase 5)
+
+Tests race/class synergies across archetypes.
+> **Guide:** See `docs/BALANCE-TESTING-GUIDE.md` for methodology
+
+### Cross-Class Race @ `<commit>` (50 runs, 50k turns, seed=1000, max-upgrades)
+
+| Race | Warrior | Mage | Ranger | Notes |
+|------|---------|------|--------|-------|
+| human | (baseline) | (baseline) | (baseline) | Reference |
+| *top race* | | | | |
+| *bottom race* | | | | |
+
+**Success Criteria:**
+- No race/class combo > 10% better than human/same-class
+- No race/class combo > 15% worse than human/same-class
+
+---
+
+## Personality Comparison (Phase 6 - Low Priority)
+
+Tests personality impact across class archetypes.
+
+```bash
+pnpm diagnose compare --runs=50 --seed=1000 --class=CLASS --turns=50000
+```
+
+### Personality @ `<commit>` (50 runs, 50k turns, seed=1000)
+
+| Personality | Warrior | Mage | Ranger | Notes |
+|-------------|---------|------|--------|-------|
+| cautious | (baseline) | (baseline) | (baseline) | Reference |
+| aggressive | | | | Higher variance expected |
+| greedy | | | | More gold, lower depth |
+| speedrunner | | | | Faster, lower depth |
+
+**Success Criteria:**
+- All personalities viable (reach depth 35+)
+- No personality strictly dominates cautious
 
 ---
 

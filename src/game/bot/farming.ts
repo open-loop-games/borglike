@@ -27,8 +27,26 @@ import { findTownPortalScroll } from './items'
 // CONSTANTS
 // ============================================================================
 
-/** Tethered exploration radii: 5x5 -> 9x9 -> 21x21 */
-export const TETHER_RADII = [2, 4, 10] as const
+/**
+ * Get available tether radii based on surf upgrade level.
+ * L0: No tethering (face-rush only)
+ * L1: 5×5 area
+ * L2: 5×5 → 9×9
+ * L3: 5×5 → 9×9 → 21×21
+ */
+export function getTetherRadii(surfLevel: number): readonly number[] {
+  switch (surfLevel) {
+    case 0:
+      return []
+    case 1:
+      return [2]
+    case 2:
+      return [2, 4]
+    case 3:
+    default:
+      return [2, 4, 10]
+  }
+}
 
 /** Base sweep threshold (% of floor tiles seen this visit) - used when sweep disabled */
 const SWEEP_BASE_THRESHOLD = 100 // Effectively disabled at L0
@@ -654,6 +672,14 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
     }
   } else {
     // Tethered exploration check
+    const effective = getEffectiveCapabilities(context)
+    const radii = getTetherRadii(effective.surf)
+
+    // No tethering available at this surf level - skip farming loop
+    if (radii.length === 0) {
+      return null
+    }
+
     if (botState.tetheredRadius > 0 && botState.tetheredOrigin) {
       const done = isTetheredExplorationComplete(
         context,
@@ -662,7 +688,7 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
       )
       if (!done) return null
 
-      if (!advanceTetherRadius(botState, TETHER_RADII)) {
+      if (!advanceTetherRadius(botState, radii)) {
         exitTetheredMode(botState)
       }
     } else if (botState.tetheredRadius === 0) {
@@ -673,7 +699,7 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
         getGoldTarget(blockedDepth, effectiveConfig.caution),
         game.turn
       )
-      botState.tetheredRadius = TETHER_RADII[0]!
+      botState.tetheredRadius = radii[0]!
       botState.tetheredFlipCount = 0
     }
   }
@@ -703,8 +729,13 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
 function handleTetherSweep(context: BotContext, goldTarget: number): BotGoal | null {
   const { game, botState } = context
   const character = game.character
+  const effective = getEffectiveCapabilities(context)
+  const radii = getTetherRadii(effective.surf)
 
-  let radius = botState.tetheredRadius || TETHER_RADII[0]!
+  // No tethering available
+  if (radii.length === 0) return null
+
+  let radius = botState.tetheredRadius || radii[0]!
   let flipCount = botState.tetheredFlipCount
 
   // Compute flow once - reuse for all radius checks
@@ -713,8 +744,8 @@ function handleTetherSweep(context: BotContext, goldTarget: number): BotGoal | n
   )
 
   // Keep advancing radius until we find unseen tiles or exhaust all radii
-  while (flipCount < TETHER_RADII.length) {
-    radius = TETHER_RADII[flipCount]!
+  while (flipCount < radii.length) {
+    radius = radii[flipCount]!
     const unseenTarget = profile('tether.findUnseen', () =>
       findUnseenTileInTether(context, botState.tetheredOrigin!, radius, flowCosts)
     )
@@ -834,7 +865,9 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   if (character.depth <= farmingFloor && botState.tetheredOrigin) {
     if (isTetheredExplorationComplete(context, botState.tetheredOrigin, botState.tetheredRadius)) {
       // Advance tether radius for after descent
-      if (!advanceTetherRadius(botState, TETHER_RADII)) {
+      const effective = getEffectiveCapabilities(context)
+      const radii = getTetherRadii(effective.surf)
+      if (radii.length === 0 || !advanceTetherRadius(botState, radii)) {
         exitTetheredMode(botState)
       }
       // Fall through to descent
