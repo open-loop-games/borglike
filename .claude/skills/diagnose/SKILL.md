@@ -57,7 +57,9 @@ pnpm diagnose [mode] [options]
 | `batch` | Aggregate statistics across runs | `batch --runs=100 --seed=1000` |
 | `find` | Search for problematic seeds | `find --runs=500 --seed=1000` |
 | `compare` | Compare across personalities | `compare --runs=20 --seed=1000` |
-| `baseline` | Full baseline across all 11 classes | `baseline` (100 runs, 30k turns per class) |
+| `baseline` | Full baseline across all 11 classes | `baseline` (100 runs, 50k turns per class) |
+| `baseline-races` | Full baseline across all 11 races | `baseline-races --class=warrior` |
+| `sensitivity` | Test per-upgrade impact | `sensitivity --class=warrior` |
 
 ### Seed Syntax
 
@@ -87,10 +89,15 @@ pnpm diagnose deep 1768965560201 --map
 --from=N          Start turn for output (deep mode)
 --to=N            End turn for output (deep mode)
 --log-only        Only turn log, skip analyzers (deep mode)
---max-upgrades    Apply all upgrades at max level
+--max-upgrades    Apply all upgrades at max level (legacy, prefer --upgrades=full)
+--upgrades=X      Upgrade preset (default: full)
+                  Values: none, early, mid, late, full
+--boosters=X      Booster preset (default: class)
+                  Values: none, class (primary stat + CON), or comma-separated IDs
+                  IDs: str_superior, con_superior, int_superior, etc.
 --exclude-upgrade=X,Y  Exclude specific upgrades when --max-upgrades (isolation testing)
 --capabilities=X  Bot capabilities (default: full)
-                  Values: none, full, or comma-separated IDs
+                  Values: none, early, mid, late, full, or comma-separated IDs
                   IDs: town,farming,preparedness,sweep_1-3,surf_1-3,kiting_1-3
 --randomize       Randomize race/class/personality per run
 --races           Compare races instead of personalities (compare mode)
@@ -187,8 +194,33 @@ Override balance parameters for testing:
 ```bash
 pnpm diagnose batch --runs=100 \
   --monster-hp=80 --monster-damage=90 \
-  --potion-rate=120 --max-upgrades
+  --potion-rate=120 --upgrades=full --boosters=class
 ```
+
+### Upgrade Presets (`--upgrades=X`)
+
+| Preset | Upgrades |
+|--------|----------|
+| `none` | No upgrades |
+| `early` | vitality 2, might 2, resilience 1 |
+| `mid` | vitality 5, might 5, resilience 3, swiftness 2, precision 2, celerity 2 |
+| `late` | vitality 8, might 8, resilience 4, swiftness 4, precision 4, celerity 4 |
+| `full` | All upgrades at max level |
+
+### Booster Presets (`--boosters=X`)
+
+| Preset | Description |
+|--------|-------------|
+| `none` | No boosters |
+| `class` | Primary stat (superior) + CON (superior) based on class |
+
+**Class defaults (--boosters=class):**
+- STR classes (warrior, berserker, blackguard): str_superior + con_superior
+- INT classes (mage, archmage, necromancer, bard): int_superior + con_superior
+- WIS classes (priest, paladin, druid): wis_superior + con_superior
+- DEX classes (rogue, ranger, monk): dex_superior + con_superior
+
+### Balance Overrides
 
 Tier 1: `--monster-hp`, `--monster-damage`, `--start-potions`, `--potion-rate`, `--regen`, `--armor-pen`
 Tier 2: `--enchant-rate`, `--item-rate`, `--levelup-hp`

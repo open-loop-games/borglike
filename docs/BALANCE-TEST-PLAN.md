@@ -4,7 +4,25 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `9bba82b` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Artifact Abilities
+### Full Baseline @ `c00b685` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Codex Modal
+
+| Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Warrior** | 48.5 | 50 | 1% | 14383 | 505 | 6 | ✅ Endgame |
+| **Ranger** | 48.5 | 50 | 0% | 19627 | 596 | 1 | ✅ Endgame |
+| **Berserker** | 48.4 | 50 | 0% | 13846 | 505 | 5 | ✅ Endgame |
+| **Paladin** | 47.0 | 50 | 0% | 18788 | 596 | 0 | ✅ Endgame |
+| **Blackguard** | 46.6 | 50 | 0% | 13694 | 499 | 1 | ✅ Endgame |
+| **Priest** | 44.8 | 50 | 1% | 20822 | 626 | 0 | ✅ Endgame |
+| **Rogue** | 44.8 | 50 | 2% | 19047 | 535 | 0 | ✅ Endgame |
+| **Necromancer** | 43.5 | 48 | 14% | 28777 | 708 | 0 | ⚠️ CB Regression |
+| **Druid** | 43.3 | 50 | 0% | 18143 | 522 | 0 | ✅ Endgame |
+| **Mage** | 42.5 | 50 | 9% | 29590 | 656 | 0 | ⚠️ CB Regression |
+| **Archmage** | 40.9 | 48 | 9% | 28846 | 628 | 0 | ⚠️ CB Regression |
+
+**Summary:** All classes endgame-viable. Caster CB rates persist (Necro 14%, Mage 9%, Archmage 9%). **13 Morgoth kills** (6 warrior, 5 berserker, 1 ranger, 1 blackguard). Rogue CB increased to 2%. UI-only changes (Codex modal, Wins tab) - no gameplay impact expected.
+
+### Previous Baseline @ `9bba82b` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Artifact Abilities
 
 | Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|-------|---------|--------|
@@ -91,9 +109,66 @@ Pure casters show elevated circuit breaker rates after artifact ability implemen
 
 ---
 
-## Future
+## Race Baseline
 
+> **Run:** `pnpm diagnose baseline-races --seed=1000 --turns=50000 --max-upgrades`
 
+### Race Baseline @ `<commit>` (100 runs, 50k turns, seed=1000, class=warrior, max-upgrades)
+
+| Race | Avg Depth | Max Depth | CB Rate | Turns | Kills | Status |
+|------|-----------|-----------|---------|-------|-------|--------|
+| *Run baseline-races to populate* | | | | | | |
+
+**Expected Tiers:**
+- **Starter** (human, dwarf, elf): Average performance, baseline reference
+- **Unlockable** (half-elf, hobbit, gnome, half-orc, half-troll, dunadan, high-elf, kobold): Spread expected
+- **Prestige** (vampire, golem, draconian): Not yet included in baseline
+
+---
+
+## Capability Progression Testing
+
+Tests bot performance at different unlock stages.
+
+### Capability Presets
+
+| Preset | Capabilities | Expected Depth |
+|--------|--------------|----------------|
+| `none` | (all disabled) | 5-10 (face-rush) |
+| `early` | town | 15-20 |
+| `mid` | town, farming, sweep_1, surf_1 | 25-35 |
+| `late` | town, farming, preparedness, sweep_2, surf_2, kiting_1 | 40-45 |
+| `full` | (all maxed) | 45+ (endgame) |
+
+### Progression Test Commands
+
+```bash
+# Test each progression stage
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=none --turns=20000
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=early --turns=20000
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=mid --turns=30000
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=late --turns=40000
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=full --turns=50000
+```
+
+---
+
+## Upgrade Sensitivity Testing
+
+Measures per-upgrade impact on bot performance.
+
+> **Run:** `pnpm diagnose sensitivity --seed=1000 --class=warrior`
+
+### Upgrade Impact @ `<commit>` (50 runs, 30k turns, seed=1000, class=warrior)
+
+| Upgrade | Baseline | Excluded | Delta | Impact |
+|---------|----------|----------|-------|--------|
+| *Run sensitivity to populate* | | | | |
+
+**Interpretation:**
+- 🔴 High impact (>10% loss): Critical upgrade, prioritize early
+- 🟡 Medium impact (5-10%): Important but not blocking
+- 🟢 Low impact (<5%): Nice-to-have, can defer
 
 ---
 
@@ -104,7 +179,8 @@ Pure casters show elevated circuit breaker rates after artifact ability implemen
 | `--turns` | 50,000 | Catches caster CB issues that emerge at higher turn counts |
 | `--runs` | 100 | Statistical significance, ~2-3 min per class |
 | `--seed` | 1000 | Reproducibility baseline |
-| `--max-upgrades` | always | Consistent meta-progression state |
+| `--upgrades` | full | Consistent meta-progression state (or use `--max-upgrades`) |
+| `--boosters` | class | Class-optimized booster loadout |
 
 **Standard command:**
 ```bash
@@ -138,6 +214,15 @@ pnpm diagnose find --runs=100 --seed=1000 --class=mage --turns=50000 > /tmp/[nam
 # Full baseline across all 11 classes (100 runs, 50k turns, max-upgrades)
 # ~16 min runtime
 pnpm diagnose baseline --seed=1000 --turns=50000 --max-upgrades > /tmp/[name].txt 2>&1
+
+# Race baseline across all 11 races (~16 min)
+pnpm diagnose baseline-races --seed=1000 --turns=50000 --max-upgrades > /tmp/[name].txt 2>&1
+
+# Upgrade sensitivity test (~10 min)
+pnpm diagnose sensitivity --seed=1000 --class=warrior > /tmp/[name].txt 2>&1
+
+# Test with capability preset
+pnpm diagnose batch --runs=50 --seed=1000 --capabilities=mid --class=warrior
 ```
 
 ### Balance Flags
@@ -156,6 +241,35 @@ pnpm diagnose baseline --seed=1000 --turns=50000 --max-upgrades > /tmp/[name].tx
 | `--enchant-rate=N` | 100 | Enchantment chance % |
 | `--item-rate=N` | 100 | Items per level % |
 | `--xp-rate=N` | 100 | XP gain % |
+
+### Upgrade & Booster Presets
+
+| Flag | Default | Options | Description |
+|------|---------|---------|-------------|
+| `--upgrades=X` | full | none, early, mid, late, full | Meta-progression upgrade level |
+| `--boosters=X` | class | none, class, IDs | Per-run booster loadout |
+
+**Upgrade Presets:**
+| Preset | Upgrades |
+|--------|----------|
+| `none` | No upgrades |
+| `early` | vitality 2, might 2, resilience 1 |
+| `mid` | vitality 5, might 5, resilience 3, swiftness 2, precision 2, celerity 2 |
+| `late` | vitality 8, might 8, resilience 4, swiftness 4, precision 4, celerity 4 |
+| `full` | All upgrades at max level |
+
+**Booster Presets:**
+| Preset | Description |
+|--------|-------------|
+| `none` | No boosters |
+| `class` | Primary stat (superior) + CON (superior) based on class |
+| `str_superior,con_superior` | Custom comma-separated booster IDs |
+
+**Class Booster Defaults (--boosters=class):**
+- STR classes (warrior, berserker, blackguard): `str_superior + con_superior`
+- INT classes (mage, archmage, necromancer, bard): `int_superior + con_superior`
+- WIS classes (priest, paladin, druid): `wis_superior + con_superior`
+- DEX classes (rogue, ranger, monk): `dex_superior + con_superior`
 
 ---
 
