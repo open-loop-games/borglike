@@ -54,7 +54,14 @@ export async function handleRunCompletion(result: RunResult): Promise<RunComplet
   const runStats = convertToRunStats(result, isVictory)
 
   // Calculate essence reward using the formula-based calculation
-  const essenceEarned = progression.calculateEssenceReward(runStats, isVictory)
+  let essenceEarned = progression.calculateEssenceReward(runStats, isVictory)
+
+  // Apply booster essence multiplier (Essence Magnet)
+  const boosterEssenceMult = result.game.boosterBonuses?.essenceMultiplier ?? 1
+  if (boosterEssenceMult > 1) {
+    essenceEarned = Math.floor(essenceEarned * boosterEssenceMult)
+  }
+
   runStats.essenceEarned = essenceEarned
 
   // Record the run in history (memory)

@@ -28,7 +28,7 @@ import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { generateLevel, computeFOV, setAllTilesVisible, findOpenPosition } from './dungeon'
 import { spawnMonstersForLevel, processMonsterTurns } from './monster-ai'
 import { processMinionTurns } from './minion-ai'
-import { spawnItemsForLevel, createStartingEquipment, createRandomPotion } from './items'
+import { spawnItemsForLevel, createStartingEquipment } from './items'
 import { initializeFeaturesFromVault } from './features'
 import { generateMerchantInventory } from './items'
 import { tickPortalTimer } from './town'
@@ -106,14 +106,6 @@ export function createGame(config: RunConfig): GameState {
     } else {
       // Put consumables in inventory
       character.inventory.push(item)
-    }
-  }
-
-  // Lucky Start booster: add random potion
-  if (boosterBonuses.startsWithPotion) {
-    const potion = createRandomPotion()
-    if (potion) {
-      character.inventory.push(potion)
     }
   }
 

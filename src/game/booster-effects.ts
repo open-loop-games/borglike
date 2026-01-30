@@ -27,12 +27,12 @@ export interface BoosterBonuses {
   // Multipliers (applied multiplicatively with upgrade multipliers)
   xpMultiplier: number
   goldMultiplier: number
+  essenceMultiplier: number
 
   // Special effects
-  startsWithPotion: boolean
   hasSecondWind: boolean
   secondWindPercent: number
-  inventoryBonus: number
+  adrenalineRushPercent: number // +damage% when below 50% HP
 }
 
 // ============================================================================
@@ -50,10 +50,10 @@ export const DEFAULT_BOOSTER_BONUSES: BoosterBonuses = {
   startingArmorBonus: 0,
   xpMultiplier: 1,
   goldMultiplier: 1,
-  startsWithPotion: false,
+  essenceMultiplier: 1,
   hasSecondWind: false,
   secondWindPercent: 0,
-  inventoryBonus: 0,
+  adrenalineRushPercent: 0,
 }
 
 // ============================================================================
@@ -154,13 +154,20 @@ function applyEquipmentBonus(
 /**
  * Apply a multiplier bonus
  */
-function applyMultiplier(bonuses: BoosterBonuses, stat: 'xp' | 'gold', percent: number): void {
+function applyMultiplier(
+  bonuses: BoosterBonuses,
+  stat: 'xp' | 'gold' | 'essence',
+  percent: number
+): void {
   switch (stat) {
     case 'xp':
       bonuses.xpMultiplier *= 1 + percent / 100
       break
     case 'gold':
       bonuses.goldMultiplier *= 1 + percent / 100
+      break
+    case 'essence':
+      bonuses.essenceMultiplier *= 1 + percent / 100
       break
   }
 }
@@ -170,15 +177,12 @@ function applyMultiplier(bonuses: BoosterBonuses, stat: 'xp' | 'gold', percent: 
  */
 function applySpecialEffect(bonuses: BoosterBonuses, effect: string, value?: number): void {
   switch (effect) {
-    case 'random_potion':
-      bonuses.startsWithPotion = true
-      break
     case 'second_wind':
       bonuses.hasSecondWind = true
       bonuses.secondWindPercent = value ?? 20
       break
-    case 'inventory_bonus':
-      bonuses.inventoryBonus += value ?? 0
+    case 'adrenaline_rush':
+      bonuses.adrenalineRushPercent = value ?? 25
       break
   }
 }

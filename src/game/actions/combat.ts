@@ -58,6 +58,13 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     knowledgeBonuses,
     game.balance.armorPenetration
   )
+
+  // Adrenaline Rush: +damage% when below 20% HP
+  const adrenalinePercent = game.boosterBonuses?.adrenalineRushPercent ?? 0
+  if (adrenalinePercent > 0 && game.character.hp < game.character.maxHp * 0.2) {
+    attackResult.totalDamage = Math.floor(attackResult.totalDamage * (1 + adrenalinePercent / 100))
+  }
+
   const message = formatMultiAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 
@@ -153,6 +160,13 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
     knowledgeBonuses,
     game.balance.armorPenetration
   )
+
+  // Adrenaline Rush: +damage% when below 20% HP
+  const adrenalinePercent = game.boosterBonuses?.adrenalineRushPercent ?? 0
+  if (adrenalinePercent > 0 && game.character.hp < game.character.maxHp * 0.2) {
+    attackResult.totalDamage = Math.floor(attackResult.totalDamage * (1 + adrenalinePercent / 100))
+  }
+
   const message = formatMultiRangedAttackMessage(`the ${monster.template.name}`, attackResult)
   addMessage(game, message, 'combat')
 

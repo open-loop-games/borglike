@@ -19,7 +19,7 @@ export type BoosterCategory = 'equipment' | 'stats' | 'special'
 export type BoosterEffect =
   | { type: 'stat_bonus'; stat: 'str' | 'dex' | 'con' | 'int' | 'wis'; value: number }
   | { type: 'equipment_bonus'; slot: 'weapon' | 'armor' | 'both'; value: number }
-  | { type: 'multiplier'; stat: 'xp' | 'gold'; percent: number }
+  | { type: 'multiplier'; stat: 'xp' | 'gold' | 'essence'; percent: number }
   | { type: 'special'; effect: string; value?: number }
 
 export interface BoosterDefinition {
@@ -274,14 +274,14 @@ const wisSuperior: BoosterDefinition = {
 // SPECIAL BOOSTERS
 // ============================================================================
 
-const luckyStart: BoosterDefinition = {
-  id: 'lucky_start',
-  name: 'Lucky Start',
-  description: 'Start with a random potion',
+const adrenalineRush: BoosterDefinition = {
+  id: 'adrenaline_rush',
+  name: 'Adrenaline Rush',
+  description: '+10% damage when below 20% HP',
   category: 'special',
   icon: '!',
   unlockCost: 400,
-  effect: { type: 'special', effect: 'random_potion' },
+  effect: { type: 'special', effect: 'adrenaline_rush', value: 10 },
 }
 
 const treasureHunter: BoosterDefinition = {
@@ -314,14 +314,14 @@ const secondWind: BoosterDefinition = {
   effect: { type: 'special', effect: 'second_wind', value: 20 },
 }
 
-const packMule: BoosterDefinition = {
-  id: 'pack_mule',
-  name: 'Pack Mule',
-  description: '+2 inventory slots',
+const essenceMagnet: BoosterDefinition = {
+  id: 'essence_magnet',
+  name: 'Essence Magnet',
+  description: '+15% essence gain this run',
   category: 'special',
   icon: '◇',
   unlockCost: 500,
-  effect: { type: 'special', effect: 'inventory_bonus', value: 2 },
+  effect: { type: 'multiplier', stat: 'essence', percent: 15 },
 }
 
 // ============================================================================
@@ -357,11 +357,11 @@ export const boosters: BoosterDefinition[] = [
   wisGreater,
   wisSuperior,
   // Special
-  luckyStart,
+  adrenalineRush,
   treasureHunter,
   quickStudy,
   secondWind,
-  packMule,
+  essenceMagnet,
 ]
 
 export const boostersByCategory = {

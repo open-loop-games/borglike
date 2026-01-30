@@ -243,10 +243,9 @@ export interface CombinedBonuses extends UpgradeBonuses {
   wisBonus: number
   startingWeaponBonus: number
   startingArmorBonus: number
-  startsWithPotion: boolean
   hasSecondWind: boolean
   secondWindPercent: number
-  inventoryBonus: number
+  adrenalineRushPercent: number
 }
 
 /**
@@ -272,6 +271,7 @@ export function mergeWithBoosterBonuses(
     // Multipliers stack multiplicatively
     xpMultiplier: upgradeBonuses.xpMultiplier * boosterBonuses.xpMultiplier,
     goldMultiplier: upgradeBonuses.goldMultiplier * boosterBonuses.goldMultiplier,
+    essenceMultiplier: upgradeBonuses.essenceMultiplier * boosterBonuses.essenceMultiplier,
 
     // Booster-specific stat bonuses (passed through to character creation)
     strBonus: boosterBonuses.strBonus,
@@ -285,9 +285,8 @@ export function mergeWithBoosterBonuses(
     startingArmorBonus: boosterBonuses.startingArmorBonus,
 
     // Special effects
-    startsWithPotion: boosterBonuses.startsWithPotion,
     hasSecondWind: boosterBonuses.hasSecondWind,
     secondWindPercent: boosterBonuses.secondWindPercent,
-    inventoryBonus: boosterBonuses.inventoryBonus,
+    adrenalineRushPercent: boosterBonuses.adrenalineRushPercent,
   }
 }
