@@ -14,6 +14,7 @@ import { getLocalDanger } from './danger'
 import { countAdjacentMonsters } from './combat'
 import { hasStatusEffect } from './items'
 import { hasAbility, getDiceAverage } from '../data/monsters'
+import { getMonsterEffectiveSpeed } from '../monster-ai'
 
 // ============================================================================
 // RACE RESTRICTIONS
@@ -552,15 +553,22 @@ export function getDebuffSpellAction(
 
   if (debuffSpells.length === 0) return null
 
-  // Priority 1: Slow FAST monsters (speed > 110) - breaks escape loops for squishies
-  const fastMonsters = visibleMonsters.filter(
-    (m) => m.template.speed > 110 && m.isAwake && !m.debuffs.some((d) => d.type === 'slow')
-  )
+  // Priority 1: Slow FAST or HASTED monsters - breaks escape loops for squishies
+  // Check effective speed (includes haste buff) OR explicit haste buff presence
+  const fastMonsters = visibleMonsters.filter((m) => {
+    if (!m.isAwake) return false
+    if (m.debuffs.some((d) => d.type === 'slow')) return false
+    const isHasted = m.buffs.some((b) => b.type === 'haste')
+    const effectiveSpeed = getMonsterEffectiveSpeed(m)
+    return effectiveSpeed > 110 || isHasted
+  })
   if (fastMonsters.length > 0) {
     const slowSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'slow')
     if (slowSpell) {
-      // Target the fastest one
-      const fastest = fastMonsters.reduce((a, b) => (a.template.speed > b.template.speed ? a : b))
+      // Target the fastest one (by effective speed)
+      const fastest = fastMonsters.reduce((a, b) =>
+        getMonsterEffectiveSpeed(a) > getMonsterEffectiveSpeed(b) ? a : b
+      )
       return { type: 'cast', spellId: slowSpell.spell.id, targetId: fastest.id }
     }
   }
@@ -596,7 +604,7 @@ export function getDebuffSpellAction(
  * Smart debuff action for DANGER tier
  *
  * Only slow monsters that are truly dangerous and worth the mana:
- * 1. Fast (speed > 110) - the escape loop problem
+ * 1. Fast (effective speed > 110) OR hasted - the escape loop problem
  * 2. High damage relative to our HP (can kill in <= 4 hits after armor)
  * 3. NOT easily killable (HP > 2x our best spell damage)
  * 4. Only if we have mana left for escape after casting
@@ -643,7 +651,7 @@ export function getSmartDebuffAction(
   // Calculate armor reduction for damage estimation
   const armorReduction = Math.min(character.combat.armor / 2, 50) // Max 50% reduction
 
-  // Find monsters worth slowing: fast AND high damage AND not easily killed
+  // Find monsters worth slowing: fast/hasted AND high damage AND not easily killed
   const worthSlowing = visibleMonsters.filter((m) => {
     // Must be awake
     if (!m.isAwake) return false
@@ -651,8 +659,10 @@ export function getSmartDebuffAction(
     // Must not already be slowed
     if (m.debuffs.some((d) => d.type === 'slow')) return false
 
-    // Must be FAST (speed > 110) - the main escape loop problem
-    if (m.template.speed <= 110) return false
+    // Must be FAST (effective speed > 110) OR HASTED - the escape loop problem
+    const isHasted = m.buffs.some((b) => b.type === 'haste')
+    const effectiveSpeed = getMonsterEffectiveSpeed(m)
+    if (effectiveSpeed <= 110 && !isHasted) return false
 
     // Calculate expected damage per turn after armor
     const rawDamage = m.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
@@ -671,12 +681,12 @@ export function getSmartDebuffAction(
 
   if (worthSlowing.length === 0) return null
 
-  // Target the most dangerous one (speed * effective damage)
+  // Target the most dangerous one (effective speed * damage)
   const target = worthSlowing.reduce((a, b) => {
     const aDamage = a.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
     const bDamage = b.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
-    const aDanger = a.template.speed * aDamage
-    const bDanger = b.template.speed * bDamage
+    const aDanger = getMonsterEffectiveSpeed(a) * aDamage
+    const bDanger = getMonsterEffectiveSpeed(b) * bDamage
     return aDanger > bDanger ? a : b
   })
 

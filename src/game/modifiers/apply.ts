@@ -160,7 +160,7 @@ export function calculateBaseCombatValues(
 // EQUIPMENT CONTRIBUTION
 // ============================================================================
 
-import type { Character } from '@game/types'
+import type { Character } from '../types'
 
 /** Equipment slots that provide armor */
 const ARMOR_SLOTS = ['armor', 'shield', 'helm', 'gloves', 'boots'] as const
@@ -258,7 +258,7 @@ export function getBowHitBonus(character: Character): number {
 // ENCUMBRANCE
 // ============================================================================
 
-import { getEncumbranceSpeedPenalty } from '@game/bot/preparation'
+import { getEncumbranceSpeedPenalty } from '../bot/preparation'
 
 // ============================================================================
 // FULL APPLICATION

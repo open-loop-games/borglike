@@ -12,16 +12,16 @@
  * ```
  */
 
-import type { Character, CombatStats, Stats } from '@game/types'
+import type { Character, CombatStats, Stats } from '../types'
 import type {
   EffectiveStats,
   EffectiveStatsOptions,
   StatModifier,
   ModifiableStatTarget,
 } from './types'
-import { getRaceById } from '@game/data/races'
-import { getClassById, calculateHitdie } from '@game/data/index'
-import { getFormById } from '@game/data/forms'
+import { getRaceById } from '../data/races'
+import { getClassById, calculateHitdie } from '../data'
+import { getFormById } from '../data/forms'
 import { collectAllModifiers } from './collectors'
 import type { CollectOptions } from './collectors'
 import { applyAllModifiers } from './apply'

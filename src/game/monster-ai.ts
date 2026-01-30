@@ -571,6 +571,34 @@ export function findRandomMove(
 const ENERGY_THRESHOLD = 100
 
 /**
+ * Get a monster's effective speed after buffs/debuffs
+ *
+ * Calculates actual speed considering:
+ * - Base template speed
+ * - Slow debuff (reduces speed by percentage)
+ * - Haste buff (increases speed by percentage)
+ *
+ * Used by bot AI to detect fast/hasted monsters for slowing.
+ */
+export function getMonsterEffectiveSpeed(monster: Monster): number {
+  let speed = monster.template.speed
+
+  // Apply slow debuff (reduces speed)
+  const slowDebuff = monster.debuffs.find((d) => d.type === 'slow')
+  if (slowDebuff) {
+    speed = Math.floor((speed * (100 - slowDebuff.value)) / 100)
+  }
+
+  // Apply haste buff (increases speed)
+  const hasteBuff = monster.buffs.find((b) => b.type === 'haste')
+  if (hasteBuff) {
+    speed = Math.floor((speed * (100 + hasteBuff.value)) / 100)
+  }
+
+  return speed
+}
+
+/**
  * Update a monster's energy based on its speed
  *
  * Energy accumulates each game turn based on the monster's speed.
@@ -585,21 +613,7 @@ const ENERGY_THRESHOLD = 100
  * @returns True if the monster has enough energy to act
  */
 export function updateMonsterEnergy(monster: Monster): boolean {
-  // Start with base speed
-  let effectiveSpeed = monster.template.speed
-
-  // Apply slow debuff (reduces speed)
-  const slowDebuff = monster.debuffs.find((d) => d.type === 'slow')
-  if (slowDebuff) {
-    effectiveSpeed = Math.floor((effectiveSpeed * (100 - slowDebuff.value)) / 100)
-  }
-
-  // Apply haste buff (increases speed)
-  const hasteBuff = monster.buffs.find((b) => b.type === 'haste')
-  if (hasteBuff) {
-    effectiveSpeed = Math.floor((effectiveSpeed * (100 + hasteBuff.value)) / 100)
-  }
-
+  const effectiveSpeed = getMonsterEffectiveSpeed(monster)
   monster.energy += effectiveSpeed
 
   if (monster.energy >= ENERGY_THRESHOLD) {

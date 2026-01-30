@@ -9,10 +9,10 @@
  * - Status effects
  */
 
-import type { Character, Item } from '@game/types'
-import type { Race } from '@game/data/races'
-import type { UpgradeBonuses } from '@game/upgrade-effects'
-import type { ShapeformTemplate } from '@game/data/forms'
+import type { Character, Item } from '../types'
+import type { Race } from '../data/races'
+import type { UpgradeBonuses } from '../upgrade-effects'
+import type { ShapeformTemplate } from '../data/forms'
 import type { StatModifier } from './types'
 import { parseBonusRecord, flatModifier, percentModifier } from './normalize'
 
