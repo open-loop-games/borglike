@@ -426,12 +426,6 @@ export function getUseAltarGoal(
         }
         break
       }
-
-      case 'curse_remove': {
-        // Purification altar: Remove curses
-        // Skip for now - curses not implemented
-        break
-      }
     }
 
     if (priority > bestPriority) {

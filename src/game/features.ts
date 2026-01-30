@@ -262,11 +262,6 @@ export function useAltar(game: GameState): boolean {
       }
       break
     }
-    case 'curse_remove': {
-      // TODO: Implement curses
-      addMessage(game, `The ${template.name} purifies your equipment.`, 'good')
-      break
-    }
     default:
       addMessage(game, `You pray at the ${template.name}.`, 'info')
   }

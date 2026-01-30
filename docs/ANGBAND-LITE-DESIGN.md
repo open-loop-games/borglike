@@ -144,7 +144,6 @@ Boss (depth 50) requires near-max level + good gear + upgrades to beat consisten
 ### Tier System
 
 ```
-Tier 0: Broken/Cursed    (-1 to stats, traps for the unwary)
 Tier 1: Normal           (basic sword, leather armor)
 Tier 2: Good             (+1 to +3, minor bonuses)
 Tier 3: Excellent        (+4 to +6, one special ability)
@@ -696,7 +695,6 @@ Modified rule runs for bonus essence and achievements. Challenges don't add cont
 | **Glass Cannon** | 50% max HP, 200% damage dealt | +75% | "High Risk, High Reward" |
 | **Blind** | No monster stats shown (ignores knowledge) | +100% | "Into the Unknown" |
 | **Ironman** | No healing items, healing only from regen/abilities | +125% | "What Doesn't Kill You" |
-| **Cursed** | Start with -2 to all stats | +50% | "Overcoming Adversity" |
 | **Hunted** | Monster spawn rate +50% | +60% | "No Rest for the Wicked" |
 | **Fragile** | Equipment breaks after 50 uses | +80% | "Handle With Care" |
 | **Time Crunch** | 50% mana/turn limit (faster death clock) | +90% | "Beat the Clock" |
@@ -713,7 +711,6 @@ Modified rule runs for bonus essence and achievements. Challenges don't add cont
 │  [ ] Glass Cannon    +75% ε   50% HP, 200% damage       │
 │  [■] Blind          +100% ε   No monster info           │
 │  [ ] 🔒 Ironman     +125% ε   Requires: Win 5 runs      │
-│  [ ] 🔒 Cursed       +50% ε   Requires: Depth 30        │
 │  [ ] 🔒 Hunted       +60% ε   Requires: Kill 1000       │
 ├─────────────────────────────────────────────────────────┤
 │  Selected: Blind (+100% essence)                        │
@@ -748,7 +745,6 @@ But: Pacifist + Poverty is brutal (can't buy escape items, can't fight)
 | Glass Cannon | Reach depth 20 |
 | Blind | Kill 500 monsters total |
 | Ironman | Win 5 runs |
-| Cursed | Reach depth 30 |
 | Hunted | Kill 1000 monsters total |
 | Fragile | Find 50 items total |
 | Time Crunch | Win a run under 20 minutes |

@@ -27,7 +27,7 @@ export type ActivationEffectType =
   // Activation-specific
   | 'illuminate'
   | 'detect'
-  | 'confuse'
+  | 'debuff'
   | 'probe'
   | 'haste'
 
@@ -92,15 +92,15 @@ export const ACTIVATIONS: Record<string, ActivationTemplate> = {
     description: 'Reveals all items on the current level.',
   },
 
-  confuse_monsters: {
-    id: 'confuse_monsters',
-    name: 'Confuse Monsters',
-    effectType: 'confuse',
+  blind_monsters: {
+    id: 'blind_monsters',
+    name: 'Blind Monsters',
+    effectType: 'debuff',
     mode: 'cooldown',
     cooldown: 40,
     maxTargets: 4,
     aoeRadius: 5,
-    description: 'Confuses up to 4 nearby monsters, causing them to move erratically.',
+    description: 'Blinds up to 4 nearby monsters, reducing their accuracy.',
   },
 
   fire_ball_72: {
@@ -204,7 +204,7 @@ export function parseArtifactActivation(ability: string): string | null {
   const mappings: Record<string, string> = {
     'Illuminate Area': 'illuminate_area',
     'Detect Objects': 'detect_objects',
-    'Confuse Monsters': 'confuse_monsters',
+    'Blind Monsters': 'blind_monsters',
     'Fire Ball (72 damage)': 'fire_ball_72',
     Probing: 'probing',
     'Detect All': 'detect_all',

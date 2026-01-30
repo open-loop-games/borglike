@@ -141,7 +141,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Brand Fire',
       'Resist Fire',
       'Protection from Confusion',
-      'Activation: Confuse Monsters',
+      'Activation: Blind Monsters',
     ],
     description:
       'A flail whose head befuddles those who stare as you whirl it round and becomes a fiery comet as you bring it down.',

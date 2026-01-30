@@ -97,7 +97,7 @@ export interface AltarTemplate {
   name: string
   char: string
   color: number
-  effect: 'bless' | 'identify' | 'enchant' | 'curse_remove'
+  effect: 'bless' | 'identify' | 'enchant'
   /** Cost in gold to use (0 = free) */
   cost: number
   minDepth: number
@@ -134,16 +134,6 @@ export const ALTARS: AltarTemplate[] = [
     cost: 200,
     minDepth: 25,
     rarity: 1,
-  },
-  {
-    id: 'purification_altar',
-    name: 'Altar of Purification',
-    char: '_',
-    color: 0x3b82f6, // blue
-    effect: 'curse_remove',
-    cost: 100,
-    minDepth: 15,
-    rarity: 2,
   },
 ]
 

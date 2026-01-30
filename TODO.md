@@ -83,7 +83,6 @@ Prestige Class Mechanics:
 - [x] Berserker `neverRetreats` (`class-profiles.ts:127`)
 
 ### Other Missing Systems
-- [ ] Curse system (`src/game/features.ts:246` has TODO, altars show message but curses don't exist)
 - [ ] Monster status effects (only debuffs exist, no status effect ticking for monsters)
 - [ ] Trap status effects (traps apply poison but not other debuffs)
 

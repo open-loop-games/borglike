@@ -1425,16 +1425,6 @@ export const SCROLLS: ItemTemplate[] = [
     effect: '+1 to armor AC',
     minDepth: 15,
   },
-  // Phase 4-5: Needs curse system
-  // {
-  //   name: 'Scroll of Remove Curse',
-  //   type: 'scroll',
-  //   tier: 2,
-  //   weight: 5,
-  //   effect: 'Remove weak curses',
-  //   minDepth: 10,
-  // },
-
   // Town Portal
   {
     name: 'Scroll of Town Portal',
@@ -1462,16 +1452,6 @@ export const SCROLLS: ItemTemplate[] = [
     effect: 'Protection from evil monsters',
     minDepth: 30,
   },
-  // Phase 4-5: Needs confusion status
-  // {
-  //   name: 'Scroll of Monster Confusion',
-  //   type: 'scroll',
-  //   tier: 1,
-  //   weight: 5,
-  //   effect: 'Next melee hit confuses monster',
-  //   minDepth: 5,
-  // },
-
   // Phase 4-5: Complex targeting/AOE - needs more work
   // {
   //   name: 'Scroll of Banishment',

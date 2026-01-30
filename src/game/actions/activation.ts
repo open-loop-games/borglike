@@ -273,8 +273,8 @@ function executeActivation(
     case 'detect':
       return executeDetect(game, activation)
 
-    case 'confuse':
-      return executeConfuse(game, activation)
+    case 'debuff':
+      return executeBlindMonsters(game, activation)
 
     case 'probe':
       return executeProbe(game, activation)
@@ -634,9 +634,9 @@ function executeDetect(game: GameState, activation: ActivationTemplate): ActionR
 }
 
 /**
- * Execute confuse effect (Totila flail)
+ * Execute blind effect (Totila flail)
  */
-function executeConfuse(game: GameState, activation: ActivationTemplate): ActionResult {
+function executeBlindMonsters(game: GameState, activation: ActivationTemplate): ActionResult {
   const maxTargets = activation.maxTargets ?? 4
   const radius = activation.aoeRadius ?? 5
   const charPos = game.character.position
@@ -667,16 +667,16 @@ function executeConfuse(game: GameState, activation: ActivationTemplate): Action
   })
   const hitTargets = targets.slice(0, maxTargets)
 
-  // Apply confusion debuff
+  // Apply blind debuff
   for (const target of hitTargets) {
     target.debuffs.push({
-      type: 'blind', // Using blind as confusion equivalent
+      type: 'blind',
       turnsRemaining: 5,
       value: 50,
     })
   }
 
-  const message = `${activation.name} confuses ${hitTargets.length} monsters!`
+  const message = `${activation.name} blinds ${hitTargets.length} monsters!`
   addMessage(game, message, 'good')
 
   return {
