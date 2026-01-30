@@ -1,10 +1,28 @@
 # Balance Test Plan
 
-## Current State (2026-01-28)
+## Current State (2026-01-29)
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `b6ccc40` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Gold Economy Rebalance
+### Full Baseline @ `9bba82b` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Artifact Abilities
+
+| Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Ranger** | 48.3 | 50 | 0% | 19404 | 594 | 3 | ✅ Endgame |
+| **Warrior** | 48.1 | 50 | 1% | 14311 | 498 | 5 | ✅ Endgame |
+| **Berserker** | 47.8 | 50 | 1% | 13610 | 496 | 2 | ✅ Endgame |
+| **Blackguard** | 46.8 | 50 | 0% | 13719 | 500 | 2 | ✅ Endgame |
+| **Paladin** | 46.4 | 50 | 0% | 18576 | 592 | 0 | ✅ Endgame |
+| **Necromancer** | 43.9 | 49 | 14% | 29585 | 701 | 0 | ⚠️ CB Regression |
+| **Priest** | 43.9 | 50 | 0% | 20406 | 598 | 0 | ✅ Endgame |
+| **Druid** | 43.7 | 50 | 0% | 18210 | 522 | 0 | ✅ Endgame |
+| **Rogue** | 43.5 | 50 | 0% | 18602 | 517 | 1 | ✅ Endgame |
+| **Mage** | 42.2 | 50 | 11% | 30713 | 642 | 0 | ⚠️ CB Regression |
+| **Archmage** | 41.1 | 48 | 17% | 30078 | 629 | 0 | ⚠️ CB Regression |
+
+**Summary:** All classes endgame-viable but caster CB rates regressed (Mage 11%, Necro 14%, Archmage 17%). **13 Morgoth kills** (5 warrior, 3 ranger, 2 berserker, 2 blackguard, 1 rogue). Implemented: slays, status protections, Free Action, equipment Regeneration. Removed unimplemented Telepathy.
+
+### Previous Baseline @ `b6ccc40` (100 runs, 50k turns, seed=1000, max-upgrades) - Post Gold Economy Rebalance
 
 | Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|-------|---------|--------|
@@ -62,7 +80,14 @@
 
 ## Known Issues
 
-_(None currently identified)_
+### Caster CB Rate Regression @ `9bba82b`
+
+Pure casters show elevated circuit breaker rates after artifact ability implementation:
+- Archmage: 2% → 17% CB
+- Necromancer: 3% → 14% CB
+- Mage: 1% → 11% CB
+
+**Likely unrelated to artifact changes** (slays/protections/regen should help, not hurt). May be coincidental with other unstaged changes or seed interaction. Needs investigation.
 
 ---
 
