@@ -97,7 +97,7 @@ export interface AltarTemplate {
   name: string
   char: string
   color: number
-  effect: 'bless' | 'identify' | 'enchant'
+  effect: 'bless' | 'enchant'
   /** Cost in gold to use (0 = free) */
   cost: number
   minDepth: number
@@ -114,16 +114,6 @@ export const ALTARS: AltarTemplate[] = [
     cost: 50,
     minDepth: 10,
     rarity: 3,
-  },
-  {
-    id: 'knowledge_altar',
-    name: 'Altar of Knowledge',
-    char: '_',
-    color: 0x8b5cf6, // purple
-    effect: 'identify',
-    cost: 25,
-    minDepth: 5,
-    rarity: 5,
   },
   {
     id: 'enchantment_altar',

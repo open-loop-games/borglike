@@ -229,22 +229,6 @@ export function useAltar(game: GameState): boolean {
       addMessage(game, `The ${template.name} blesses you! You are fully restored.`, 'good')
       break
     }
-    case 'identify': {
-      // Identify all items in inventory
-      let count = 0
-      for (const item of char.inventory) {
-        if (!item.identified) {
-          item.identified = true
-          count++
-        }
-      }
-      if (count > 0) {
-        addMessage(game, `The ${template.name} reveals the nature of ${count} items!`, 'good')
-      } else {
-        addMessage(game, 'All your items are already identified.', 'info')
-      }
-      break
-    }
     case 'enchant': {
       // Enchant equipped weapon
       const weapon = char.equipment.weapon
@@ -485,7 +469,6 @@ export function createGoldPile(depth: number): Item | null {
       minDepth: pileTemplate.minDepth,
     },
     enchantment: 0,
-    identified: true,
     artifact: null,
     goldTemplate: pileTemplate,
     goldValue: goldValue,

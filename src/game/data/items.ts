@@ -65,6 +65,11 @@ export interface ItemTemplate {
   /** True for edged weapons (swords, axes, daggers) - priests cannot use */
   isEdged?: boolean
 
+  /** Stat bonuses like artifacts (STR, DEX, SPEED, toHit, toDam, etc.) */
+  bonuses?: Record<string, number>
+  /** Special abilities like artifacts ('Resist Fire', 'Free Action', etc.) */
+  abilities?: string[]
+
   // ========== Potion-specific fields ==========
   /** Base HP healed (potions) */
   healBase?: number
@@ -901,8 +906,10 @@ export const RINGS: ItemTemplate[] = [
     slot: 'ring',
     tier: 2,
     weight: 2,
-    effect: '+1-5 STR, Sustain STR',
+    effect: '+3 STR, Sustain STR',
     minDepth: 30,
+    bonuses: { STR: 3 },
+    abilities: ['Sustain STR'],
   },
   {
     name: 'Ring of Dexterity',
@@ -910,8 +917,10 @@ export const RINGS: ItemTemplate[] = [
     slot: 'ring',
     tier: 2,
     weight: 2,
-    effect: '+1-5 DEX, Sustain DEX',
+    effect: '+3 DEX, Sustain DEX',
     minDepth: 30,
+    bonuses: { DEX: 3 },
+    abilities: ['Sustain DEX'],
   },
   {
     name: 'Ring of Constitution',
@@ -919,8 +928,10 @@ export const RINGS: ItemTemplate[] = [
     slot: 'ring',
     tier: 2,
     weight: 2,
-    effect: '+1-5 CON, Sustain CON',
+    effect: '+3 CON, Sustain CON',
     minDepth: 30,
+    bonuses: { CON: 3 },
+    abilities: ['Sustain CON'],
   },
 
   // Utility Rings
@@ -931,7 +942,7 @@ export const RINGS: ItemTemplate[] = [
     tier: 1,
     weight: 2,
     protection: 10,
-    effect: '+5-15 AC',
+    effect: '+10 AC',
     minDepth: 10,
   },
   {
@@ -942,15 +953,7 @@ export const RINGS: ItemTemplate[] = [
     weight: 2,
     effect: 'Free Action',
     minDepth: 20,
-  },
-  {
-    name: 'Ring of See Invisible',
-    type: 'ring',
-    slot: 'ring',
-    tier: 2,
-    weight: 2,
-    effect: 'See Invisible',
-    minDepth: 30,
+    abilities: ['Free Action'],
   },
   {
     name: 'Ring of Light',
@@ -970,6 +973,7 @@ export const RINGS: ItemTemplate[] = [
     weight: 2,
     effect: 'Resist Fire, Resist Cold',
     minDepth: 10,
+    abilities: ['Resist Fire', 'Resist Cold'],
   },
   {
     name: 'Ring of Resist Poison',
@@ -979,6 +983,7 @@ export const RINGS: ItemTemplate[] = [
     weight: 2,
     effect: 'Resist Poison',
     minDepth: 40,
+    abilities: ['Resist Poison'],
   },
 
   // Combat Rings
@@ -988,8 +993,9 @@ export const RINGS: ItemTemplate[] = [
     slot: 'ring',
     tier: 2,
     weight: 2,
-    effect: '+5-15 to damage',
+    effect: '+10 to damage',
     minDepth: 20,
+    bonuses: { toDam: 10 },
   },
   {
     name: 'Ring of Accuracy',
@@ -997,8 +1003,9 @@ export const RINGS: ItemTemplate[] = [
     slot: 'ring',
     tier: 2,
     weight: 2,
-    effect: '+10-20 to hit',
+    effect: '+15 to hit',
     minDepth: 20,
+    bonuses: { toHit: 15 },
   },
   {
     name: 'Ring of Slaying',
@@ -1006,8 +1013,9 @@ export const RINGS: ItemTemplate[] = [
     slot: 'ring',
     tier: 3,
     weight: 2,
-    effect: '+1-10 to hit, +1-5 to damage',
+    effect: '+5 to hit, +3 to damage',
     minDepth: 40,
+    bonuses: { toHit: 5, toDam: 3 },
   },
 
   // Top Tier
@@ -1017,8 +1025,9 @@ export const RINGS: ItemTemplate[] = [
     slot: 'ring',
     tier: 4,
     weight: 2,
-    effect: '+4-10 Speed',
+    effect: '+7 Speed',
     minDepth: 75,
+    bonuses: { SPEED: 7 },
   },
 ]
 
@@ -1033,8 +1042,10 @@ export const AMULETS: ItemTemplate[] = [
     slot: 'amulet',
     tier: 2,
     weight: 3,
-    effect: '+1-5 WIS, Sustain WIS',
+    effect: '+3 WIS, Sustain WIS',
     minDepth: 20,
+    bonuses: { WIS: 3 },
+    abilities: ['Sustain WIS'],
   },
   {
     name: 'Amulet of Resist Lightning',
@@ -1044,6 +1055,7 @@ export const AMULETS: ItemTemplate[] = [
     weight: 3,
     effect: 'Resist Lightning',
     minDepth: 10,
+    abilities: ['Resist Lightning'],
   },
   {
     name: 'Amulet of Resist Acid',
@@ -1053,6 +1065,7 @@ export const AMULETS: ItemTemplate[] = [
     weight: 3,
     effect: 'Resist Acid',
     minDepth: 10,
+    abilities: ['Resist Acid'],
   },
   {
     name: 'Amulet of Regeneration',
@@ -1062,6 +1075,7 @@ export const AMULETS: ItemTemplate[] = [
     weight: 3,
     effect: 'Regeneration',
     minDepth: 30,
+    abilities: ['Regeneration'],
   },
   {
     name: 'Amulet of Infravision',
@@ -1069,8 +1083,9 @@ export const AMULETS: ItemTemplate[] = [
     slot: 'amulet',
     tier: 1,
     weight: 3,
-    effect: '+1-5 Infravision',
+    effect: '+3 Infravision',
     minDepth: 10,
+    bonuses: { INFRAVISION: 3 },
   },
   {
     name: 'Amulet of Resistance',
@@ -1080,6 +1095,7 @@ export const AMULETS: ItemTemplate[] = [
     weight: 3,
     effect: 'Resist Fire, Cold, Lightning, Acid',
     minDepth: 60,
+    abilities: ['Resist Fire', 'Resist Cold', 'Resist Lightning', 'Resist Acid'],
   },
   {
     name: 'Amulet of ESP',
@@ -1089,6 +1105,7 @@ export const AMULETS: ItemTemplate[] = [
     weight: 3,
     effect: 'Telepathy',
     minDepth: 60,
+    abilities: ['Telepathy'],
   },
   {
     name: 'Amulet of the Magi',
@@ -1096,8 +1113,10 @@ export const AMULETS: ItemTemplate[] = [
     slot: 'amulet',
     tier: 4,
     weight: 3,
-    effect: '+1-3 INT, Free Action, See Invisible, Protect Blind',
+    effect: '+2 INT, Free Action, Protect Blind',
     minDepth: 70,
+    bonuses: { INT: 2 },
+    abilities: ['Free Action', 'Protect Blind'],
   },
   {
     name: 'Amulet of Trickery',
@@ -1105,8 +1124,10 @@ export const AMULETS: ItemTemplate[] = [
     slot: 'amulet',
     tier: 4,
     weight: 3,
-    effect: '+DEX, +Speed, +Stealth, Resist Nexus, Resist Poison',
+    effect: '+2 DEX, +5 Speed, +2 Stealth, Resist Nexus, Resist Poison',
     minDepth: 70,
+    bonuses: { DEX: 2, SPEED: 5, STEALTH: 2 },
+    abilities: ['Resist Nexus', 'Resist Poison'],
   },
 ]
 
@@ -1121,7 +1142,7 @@ export const LIGHTS: ItemTemplate[] = [
     slot: 'light',
     tier: 1,
     weight: 22,
-    effect: 'Light radius 2, Burns out',
+    effect: 'Light radius 2',
     minDepth: 1,
     lightRadius: 2,
   },
@@ -1131,7 +1152,7 @@ export const LIGHTS: ItemTemplate[] = [
     slot: 'light',
     tier: 2,
     weight: 50,
-    effect: 'Light radius 3, Takes fuel',
+    effect: 'Light radius 3',
     minDepth: 5,
     lightRadius: 3,
   },
@@ -1309,15 +1330,6 @@ export const POTIONS: ItemTemplate[] = [
     effect: 'Cures all ailments',
     minDepth: 15,
   },
-  // Phase 4-5: Needs invisible system
-  // {
-  //   name: 'Potion of True Seeing',
-  //   type: 'potion',
-  //   tier: 2,
-  //   weight: 4,
-  //   effect: 'Cure blind, see invisible for 50-60 turns',
-  //   minDepth: 3,
-  // },
 ]
 
 // ============================================================================
@@ -1370,15 +1382,6 @@ export const SCROLLS: ItemTemplate[] = [
     effect: 'Magic Mapping - reveal level',
     minDepth: 5,
   },
-  // Phase 4-5: Needs invisible system
-  // {
-  //   name: 'Scroll of Detect Invisible',
-  //   type: 'scroll',
-  //   tier: 1,
-  //   weight: 5,
-  //   effect: 'Detect invisible monsters',
-  //   minDepth: 1,
-  // },
   {
     name: 'Scroll of Treasure Detection',
     type: 'scroll',
@@ -1388,17 +1391,7 @@ export const SCROLLS: ItemTemplate[] = [
     minDepth: 0,
   },
 
-  // Phase 4-5: Needs unidentified items system
-  // {
-  //   name: 'Scroll of Identify Rune',
-  //   type: 'scroll',
-  //   tier: 1,
-  //   weight: 5,
-  //   effect: 'Identify one item',
-  //   minDepth: 5,
-  // },
-
-  // Utility - Removed: Word of Recall (needs town), Remove Hunger (needs hunger)
+  // Utility
   {
     name: 'Scroll of Light',
     type: 'scroll',
@@ -1452,31 +1445,6 @@ export const SCROLLS: ItemTemplate[] = [
     effect: 'Protection from evil monsters',
     minDepth: 30,
   },
-  // Phase 4-5: Complex targeting/AOE - needs more work
-  // {
-  //   name: 'Scroll of Banishment',
-  //   type: 'scroll',
-  //   tier: 4,
-  //   weight: 5,
-  //   effect: 'Banish one type of monster',
-  //   minDepth: 40,
-  // },
-  // {
-  //   name: 'Scroll of *Destruction*',
-  //   type: 'scroll',
-  //   tier: 4,
-  //   weight: 5,
-  //   effect: 'Destroy nearby area',
-  //   minDepth: 40,
-  // },
-  // {
-  //   name: 'Scroll of Rune of Protection',
-  //   type: 'scroll',
-  //   tier: 4,
-  //   weight: 5,
-  //   effect: 'Create protective glyph',
-  //   minDepth: 70,
-  // },
 ]
 
 // ============================================================================

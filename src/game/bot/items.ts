@@ -423,6 +423,37 @@ export function calculateEquipmentScore(item: Item, classId?: string): number {
     score += template.lightRadius * 10
   }
 
+  // Template bonuses (rings/amulets with structured bonuses)
+  if (template.bonuses) {
+    // Stat bonuses
+    score += (template.bonuses.STR ?? 0) * 8
+    score += (template.bonuses.DEX ?? 0) * 8
+    score += (template.bonuses.CON ?? 0) * 8
+    score += (template.bonuses.INT ?? 0) * 5
+    score += (template.bonuses.WIS ?? 0) * 5
+    // Combat bonuses
+    score += (template.bonuses.toHit ?? 0) * 2
+    score += (template.bonuses.toDam ?? 0) * 3
+    // Speed is very valuable
+    score += (template.bonuses.SPEED ?? 0) * 10
+  }
+
+  // Template abilities (rings/amulets with structured abilities)
+  if (template.abilities) {
+    for (const ability of template.abilities) {
+      // Resistances
+      if (ability.startsWith('Resist ')) score += 20
+      // Free Action is valuable against paralysis
+      if (ability === 'Free Action') score += 25
+      // Sustain abilities
+      if (ability.startsWith('Sustain ')) score += 10
+      // Regeneration
+      if (ability === 'Regeneration') score += 15
+      // Telepathy is very valuable
+      if (ability === 'Telepathy') score += 30
+    }
+  }
+
   // Apply class affinity for weapons/staves
   if (classId && (template.type === 'weapon' || template.type === 'staff')) {
     const affinity = WEAPON_CLASS_AFFINITY[classId]

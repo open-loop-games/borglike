@@ -130,7 +130,6 @@ export function handleDrop(game: GameState, itemId: string): ActionResult {
     id: item.id,
     template: item.template,
     enchantment: item.enchantment,
-    identified: item.identified,
     artifact: item.artifact,
     position: { ...game.character.position },
   }

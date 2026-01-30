@@ -330,8 +330,14 @@ export function calculateStats(character: Character): Stats {
       stats.con += getArtifactStatBonus(item.artifact.bonuses, 'con')
     }
 
-    // Note: Regular ItemTemplates don't have stat bonuses in the current data
-    // structure, but we can add support for it via enchantments in the future
+    // Template bonuses (rings/amulets)
+    if (item.template.bonuses) {
+      stats.str += item.template.bonuses.STR ?? 0
+      stats.int += item.template.bonuses.INT ?? 0
+      stats.wis += item.template.bonuses.WIS ?? 0
+      stats.dex += item.template.bonuses.DEX ?? 0
+      stats.con += item.template.bonuses.CON ?? 0
+    }
   }
 
   return stats
@@ -350,10 +356,20 @@ export function calculateResistances(character: Character): Resistances {
   // Start with racial resistances
   const resistances = calculateResistancesFromRace(race)
 
-  // Sum resistances from equipped artifacts
+  // Sum resistances from equipped artifacts and template abilities
   for (const item of Object.values(character.equipment)) {
+    // Artifact abilities
     if (item?.artifact?.abilities) {
       for (const ability of item.artifact.abilities) {
+        const parsed = parseResistanceAbility(ability)
+        if (parsed) {
+          resistances[parsed.type] = (resistances[parsed.type] ?? 0) + parsed.value
+        }
+      }
+    }
+    // Template abilities (rings/amulets)
+    if (item?.template.abilities) {
+      for (const ability of item.template.abilities) {
         const parsed = parseResistanceAbility(ability)
         if (parsed) {
           resistances[parsed.type] = (resistances[parsed.type] ?? 0) + parsed.value
@@ -491,6 +507,12 @@ export function calculateCombatStats(character: Character): CombatStats {
       meleeDamage += weapon.artifact.bonuses.toDam
     }
   }
+  // Template toDam bonuses (rings like Ring of Damage)
+  for (const item of Object.values(character.equipment)) {
+    if (item?.template.bonuses?.toDam) {
+      meleeDamage += item.template.bonuses.toDam
+    }
+  }
   // Apply might upgrade (damage percent)
   meleeDamage = Math.floor(meleeDamage * (1 + bonuses.damagePercent / 100))
   // SHAPESHIFTING: Apply form melee damage modifier (percent)
@@ -502,6 +524,12 @@ export function calculateCombatStats(character: Character): CombatStats {
   let accuracy = 50 + stats.dex + character.level + bonuses.accuracyBonus
   if (weapon?.artifact?.bonuses?.toHit) {
     accuracy += weapon.artifact.bonuses.toHit
+  }
+  // Template toHit bonuses (rings like Ring of Accuracy)
+  for (const item of Object.values(character.equipment)) {
+    if (item?.template.bonuses?.toHit) {
+      accuracy += item.template.bonuses.toHit
+    }
   }
   // RACIAL: High-Elf "Keen Senses" - +10 accuracy
   if (race.abilities.some((a) => a.id === 'keen_senses')) {
@@ -526,11 +554,15 @@ export function calculateCombatStats(character: Character): CombatStats {
   }
 
   // Speed: base 100 + celerity upgrade + equipment modifiers
-  // Artifacts use 'SPEED' in bonuses Record
+  // Artifacts and templates use 'SPEED' in bonuses Record
   let speed = 100 + bonuses.speedBonus
   for (const item of Object.values(character.equipment)) {
     if (item?.artifact?.bonuses?.SPEED) {
       speed += item.artifact.bonuses.SPEED
+    }
+    // Template SPEED bonuses (rings/amulets like Ring of Speed, Amulet of Trickery)
+    if (item?.template.bonuses?.SPEED) {
+      speed += item.template.bonuses.SPEED
     }
   }
   // SHAPESHIFTING: Apply form speed modifier

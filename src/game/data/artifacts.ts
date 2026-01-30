@@ -30,7 +30,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
     bonuses: {
       LIGHT: 4,
     },
-    abilities: ['No Fuel Required', 'Activation: Illuminate Area'],
+    abilities: ['Activation: Illuminate Area'],
     description:
       "A small crystal phial containing the light of Earendil's Star. Its light is imperishable, and near it darkness cannot endure.",
   },
@@ -60,7 +60,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Resist Light',
       'Protection from Fear',
       'Free Action',
-      'See Invisible',
     ],
     description:
       '"I will give you a name, and I shall call you Sting." The perfect size for Bilbo, this sturdy little blade grants combat prowess and survival abilities.',
@@ -79,7 +78,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       toHit: 12,
       toDam: 12,
     },
-    abilities: ['Slay Troll x3', 'Slay Orc x3', 'Feather Fall', 'See Invisible'],
+    abilities: ['Slay Troll x3', 'Slay Orc x3', 'Feather Fall'],
     description:
       'The "Singing Blade", whose wearer can slay Orcs and Trolls in the hidden and secret places of the earth.',
   },
@@ -114,7 +113,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       toHit: 13,
       toDam: 15,
     },
-    abilities: ['Slay Evil', 'Resist Light', 'See Invisible', 'Activation: Detect Objects'],
+    abilities: ['Slay Evil', 'Resist Light', 'Activation: Detect Objects'],
     description:
       "The radiant golden staff of an Istar of legend, this wizard's companion grants keen sight and clear knowledge of many hidden things.",
   },
@@ -186,7 +185,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Resist Fire',
       'Resist Nether',
       'Hold Life',
-      'See Invisible',
       'Activation: Probing',
     ],
     description:
@@ -247,7 +245,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Blessed',
       'Sustain STR',
       'Sustain DEX',
-      'See Invisible',
       'Activation: Fire Ball (72 damage)',
     ],
     description:
@@ -267,12 +264,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       SEARCH: 2,
       toAC: 10,
     },
-    abilities: [
-      'Protection from Blindness',
-      'Protection from Confusion',
-      'See Invisible',
-      'Activation: Detect All',
-    ],
+    abilities: ['Protection from Blindness', 'Protection from Confusion', 'Activation: Detect All'],
     description: 'A famous forged iron helm granting extraordinary powers of mind and awareness.',
   },
 
@@ -321,7 +313,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Free Action',
       'Protection from Fear',
       'Blessed',
-      'See Invisible',
       'Slow Digestion',
       'Regeneration',
       'Activation: Cold Ball (100 damage)',
@@ -373,7 +364,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Resist Nexus',
       'Free Action',
       'Protection from Fear',
-      'See Invisible',
     ],
     description:
       'The wondrous hammer of Aule, creator of the wise Dwarven lords of old. It bears demolishing magics that no serpent or demon can withstand.',
@@ -399,7 +389,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Resist Fire',
       'Resist Cold',
       'Protection from Fear',
-      'See Invisible',
       'Telepathy',
     ],
     description:

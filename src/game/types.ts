@@ -357,8 +357,6 @@ export interface Item {
   template: ItemTemplate
   /** For equipment: bonus beyond base (e.g., +2 sword) */
   enchantment: number
-  /** Is this item identified? */
-  identified: boolean
   /** Is this an artifact? */
   artifact: ArtifactTemplate | null
   /** Shop price (set when item is from merchant) */

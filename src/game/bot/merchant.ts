@@ -415,17 +415,6 @@ export function getUseAltarGoal(
         }
         break
       }
-
-      case 'identify': {
-        // Knowledge altar: Identify all items
-        // Use if we have 3+ unidentified items
-        const unidentifiedCount = character.inventory.filter((item) => !item.identified).length
-        if (unidentifiedCount >= 3) {
-          priority = 20
-          reason = `Identifying ${unidentifiedCount} items`
-        }
-        break
-      }
     }
 
     if (priority > bestPriority) {

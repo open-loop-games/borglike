@@ -52,7 +52,6 @@ export function createItem(template: ItemTemplate, enchantment: number = 0): Ite
     id: generateItemId(),
     template,
     enchantment,
-    identified: false,
     artifact: null,
   }
 }
@@ -94,7 +93,6 @@ export function createArtifact(artifact: ArtifactTemplate): Item {
     id: generateItemId(),
     template: baseTemplate,
     enchantment: 0,
-    identified: false,
     artifact,
   }
 }
@@ -397,11 +395,6 @@ export function getItemDisplayName(item: Item): string {
     parts.push(item.artifact.name)
   } else {
     parts.push(item.template.name)
-  }
-
-  // Unidentified marker
-  if (!item.identified && (item.enchantment !== 0 || item.artifact)) {
-    return `${parts.join(' ')} {unidentified}`
   }
 
   return parts.join(' ')
