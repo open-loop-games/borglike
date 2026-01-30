@@ -51,6 +51,7 @@ export function formatResult(result: DiagnoseResult): string {
   lines.push(`  End reason: ${result.endReason}`)
   lines.push(`  Turn: ${result.finalState.turn}`)
   lines.push(`  Depth: ${result.finalState.depth}`)
+  lines.push(`  Level: ${result.finalState.level} (${result.finalState.xp} XP)`)
   lines.push(`  HP: ${result.finalState.hp}/${result.finalState.maxHp}`)
   lines.push(`  Kills: ${result.finalState.kills}`)
   lines.push(`  Gold: ${result.finalState.gold}`)

@@ -184,6 +184,59 @@ function applySpecialEffect(bonuses: BoosterBonuses, effect: string, value?: num
 }
 
 // ============================================================================
+// CLASS BOOSTER PRESETS
+// ============================================================================
+
+/**
+ * Recommended booster loadouts per class.
+ * Each class gets their primary stat (superior) + CON (superior).
+ * Maps class ID to array of booster IDs.
+ */
+export const CLASS_BOOSTER_PRESETS: Record<string, [string, string]> = {
+  // STR classes
+  warrior: ['str_superior', 'con_superior'],
+  berserker: ['str_superior', 'con_superior'],
+  blackguard: ['str_superior', 'con_superior'],
+
+  // INT classes
+  mage: ['int_superior', 'con_superior'],
+  archmage: ['int_superior', 'con_superior'],
+  necromancer: ['int_superior', 'con_superior'],
+  bard: ['int_superior', 'con_superior'],
+
+  // WIS classes
+  priest: ['wis_superior', 'con_superior'],
+  paladin: ['wis_superior', 'con_superior'],
+  druid: ['wis_superior', 'con_superior'],
+
+  // DEX classes
+  rogue: ['dex_superior', 'con_superior'],
+  ranger: ['dex_superior', 'con_superior'],
+  monk: ['dex_superior', 'con_superior'],
+}
+
+/**
+ * Get the recommended booster loadout for a class.
+ *
+ * @param classId - Class ID
+ * @returns Array of 2 booster IDs, or empty array if no preset
+ */
+export function getClassBoosterPreset(classId: string): string[] {
+  return CLASS_BOOSTER_PRESETS[classId] ?? []
+}
+
+/**
+ * Compute booster bonuses using class-based preset.
+ *
+ * @param classId - Class ID to get preset for
+ * @returns Computed booster bonuses
+ */
+export function computeClassBoosterBonuses(classId: string): BoosterBonuses {
+  const preset = getClassBoosterPreset(classId)
+  return computeBoosterBonuses(preset)
+}
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 

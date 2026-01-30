@@ -26,6 +26,8 @@ interface WorkerInput {
     circuitBreakerTurns?: number
     maxUpgrades?: boolean
     excludeUpgrades?: string[]
+    upgrades?: string
+    boosters?: string
     randomize?: boolean
     balance?: Partial<BalanceOverrides>
     capabilities?: string
@@ -50,6 +52,8 @@ const DEFAULT_CONFIG = {
   verbosity: 1 as const,
   maxUpgrades: false,
   excludeUpgrades: [] as string[],
+  upgrades: 'full',
+  boosters: 'class',
   randomize: false,
   balance: DEFAULT_BALANCE,
   capabilities: 'full',
@@ -276,11 +280,13 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
 
   return {
     seed: cfg.seed,
-    config: { ...cfg, personality: cfg.personality as BotPersonality, excludeUpgrades: cfg.excludeUpgrades ?? [], capabilities: cfg.capabilities },
+    config: { ...cfg, personality: cfg.personality as BotPersonality, excludeUpgrades: cfg.excludeUpgrades ?? [], capabilities: cfg.capabilities, upgrades: cfg.upgrades ?? 'none', boosters: cfg.boosters ?? 'none' },
     endReason,
     finalState: {
       turn: game.turn,
       depth: game.character.depth,
+      level: game.character.level,
+      xp: game.character.xp,
       hp: game.character.hp,
       maxHp: game.character.maxHp,
       kills: game.stats.kills,

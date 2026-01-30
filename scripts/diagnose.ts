@@ -54,6 +54,9 @@ import {
   DEFAULT_RACES,
   MapVisualizer,
   runBaseline,
+  runBaselineRaces,
+  runSensitivityTest,
+  CAPABILITY_PRESETS,
 } from './lib/diagnose'
 import type { CompareVariant } from './lib/diagnose'
 import type { AnalyzerName } from './lib/diagnose'
@@ -64,7 +67,7 @@ import type { BotPersonality } from '@game/types'
 // ============================================================================
 
 interface Args {
-  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'help'
+  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'baseline-races' | 'sensitivity' | 'help'
   seed?: number
   runs: number
   turns: number
@@ -95,6 +98,10 @@ interface Args {
   raceList: string[]
   /** Bot capabilities spec: 'none', 'full', or comma-separated upgrade IDs */
   capabilities: string
+  /** Upgrade preset: 'none', 'early', 'mid', 'late', 'full' */
+  upgrades: string
+  /** Booster preset: 'none', 'class', or comma-separated booster IDs */
+  boosters: string
   // Balance overrides (Tier 1)
   monsterHp: number
   monsterDamage: number
@@ -148,6 +155,8 @@ function parseArgs(): Args {
     compareRaces: false,
     raceList: [],
     capabilities: 'full',
+    upgrades: 'full',
+    boosters: 'class',
     // Balance defaults (100 = normal)
     monsterHp: 100,
     monsterDamage: 100,
@@ -172,6 +181,8 @@ function parseArgs(): Args {
     mode === 'find' ||
     mode === 'compare' ||
     mode === 'baseline' ||
+    mode === 'baseline-races' ||
+    mode === 'sensitivity' ||
     mode === 'help'
   ) {
     result.mode = mode
@@ -231,6 +242,10 @@ function parseArgs(): Args {
       result.raceList = arg.slice(8).split(',').filter(Boolean)
     } else if (arg.startsWith('--capabilities=')) {
       result.capabilities = arg.slice(15)
+    } else if (arg.startsWith('--upgrades=')) {
+      result.upgrades = arg.slice(11)
+    } else if (arg.startsWith('--boosters=')) {
+      result.boosters = arg.slice(11)
     // Balance overrides (Tier 1)
     } else if (arg.startsWith('--monster-hp=')) {
       result.monsterHp = parseInt(arg.slice(13), 10)
@@ -284,7 +299,9 @@ MODES:
   batch           Run multiple seeds and aggregate results
   find            Find problematic seeds automatically
   compare         Compare behavior across all personalities
-  baseline        Run full baseline across all 11 classes (100 runs, 30k turns)
+  baseline        Run full baseline across all 11 classes (100 runs, 50k turns)
+  baseline-races  Run full baseline across all 11 races (100 runs, 50k turns)
+  sensitivity     Test per-upgrade impact on performance
   help            Show this help message
 
 OPTIONS:
@@ -302,10 +319,15 @@ OPTIONS:
   --from=N        Start of turn range for output (deep mode only)
   --to=N          End of turn range for output (deep mode only)
   --log-only      Only show turn log, skip analyzer output (deep mode)
-  --max-upgrades  Apply all upgrades at max level
+  --max-upgrades  Apply all upgrades at max level (legacy, prefer --upgrades=full)
+  --upgrades=X    Upgrade preset (default: full)
+                  Presets: none, early, mid, late, full
+  --boosters=X    Booster preset (default: class)
+                  Presets: none, class (primary stat + CON)
+                  Or comma-separated IDs: str_superior,con_superior
   --capabilities=X Bot capabilities (default: full)
-                  Values: none, full, or comma-separated IDs
-                  IDs: town,farming,preparedness,sweep_1-3,surf_1-3,kiting_1-3
+                  Presets: none, early, mid, late, full
+                  Or comma-separated IDs: town,farming,sweep_1,surf_2,etc.
   --randomize     Randomize race/class/personality per run (batch mode)
   --races         Compare races instead of personalities (compare mode)
   --races=a,b,c   Compare specific races (e.g., --races=human,dwarf,elf)
@@ -337,6 +359,15 @@ EXAMPLES:
 
   # Compare specific races
   pnpm diagnose compare --races=human,dwarf,elf,half_orc --runs=20
+
+  # Run race baseline (all 11 races)
+  pnpm diagnose baseline-races --seed=1000 --max-upgrades
+
+  # Test upgrade sensitivity
+  pnpm diagnose sensitivity --seed=1000 --class=warrior
+
+  # Test with mid-game capabilities
+  pnpm diagnose batch --runs=50 --capabilities=mid --class=warrior
 
 ANALYZERS:
   stuck       - Detects repeated actions, waits, twitch counter issues
@@ -387,6 +418,8 @@ async function main(): Promise<void> {
       threads: args.threads,
       seed: args.seed,
       maxUpgrades: args.maxUpgrades,
+      upgrades: args.upgrades,
+      boosters: args.boosters,
     })
     console.log(formatVariantComparison(result))
     return
@@ -402,6 +435,8 @@ async function main(): Promise<void> {
       race: args.race,
       personality: args.personality,
       maxUpgrades: args.maxUpgrades,
+      upgrades: args.upgrades,
+      boosters: args.boosters,
       monsterHp: args.monsterHp,
       monsterDamage: args.monsterDamage,
       startPotions: args.startPotions,
@@ -414,6 +449,49 @@ async function main(): Promise<void> {
       xpRate: args.xpRate,
       upgradePower: args.upgradePower,
       bestiary: args.bestiary,
+    })
+    return
+  }
+
+  // Handle baseline-races mode - run all races with standard parameters
+  if (args.mode === 'baseline-races') {
+    await runBaselineRaces({
+      runs: args.runs !== 50 ? args.runs : undefined,
+      turns: args.turns !== 5000 ? args.turns : undefined,
+      seed: args.seed,
+      threads: args.threads !== 8 ? args.threads : undefined,
+      classId: args.classId,
+      personality: args.personality,
+      maxUpgrades: args.maxUpgrades,
+      upgrades: args.upgrades,
+      boosters: args.boosters,
+      capabilities: args.capabilities,
+      monsterHp: args.monsterHp,
+      monsterDamage: args.monsterDamage,
+      startPotions: args.startPotions,
+      potionRate: args.potionRate,
+      regen: args.regen,
+      armorPen: args.armorPen,
+      enchantRate: args.enchantRate,
+      itemRate: args.itemRate,
+      levelupHp: args.levelupHp,
+      xpRate: args.xpRate,
+      upgradePower: args.upgradePower,
+      bestiary: args.bestiary,
+    })
+    return
+  }
+
+  // Handle sensitivity mode - test upgrade impact
+  if (args.mode === 'sensitivity') {
+    await runSensitivityTest({
+      runs: args.runs !== 50 ? args.runs : undefined,
+      turns: args.turns !== 5000 ? args.turns : undefined,
+      seed: args.seed,
+      threads: args.threads !== 8 ? args.threads : undefined,
+      classId: args.classId,
+      raceId: args.race,
+      personality: args.personality,
     })
     return
   }
@@ -454,6 +532,8 @@ async function main(): Promise<void> {
     analyzers,
     maxUpgrades: args.maxUpgrades,
     excludeUpgrades: args.excludeUpgrades,
+    upgrades: args.upgrades,
+    boosters: args.boosters,
     randomize: args.randomize,
     balance,
     capabilities: args.capabilities,

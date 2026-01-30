@@ -95,10 +95,14 @@ export interface DiagnoseConfig {
   analyzers?: Analyzer[]
   /** Verbosity: 0=silent, 1=summary, 2=issues, 3=all turns */
   verbosity?: 0 | 1 | 2 | 3
-  /** Use max upgrade bonuses */
+  /** Use max upgrade bonuses (legacy, prefer --upgrades=full) */
   maxUpgrades?: boolean
   /** Upgrade IDs to exclude when maxUpgrades is true (for isolation testing) */
   excludeUpgrades?: string[]
+  /** Upgrade preset: 'none', 'early', 'mid', 'late', 'full' */
+  upgrades?: string
+  /** Booster preset: 'none', 'class' (uses class default), or comma-separated IDs */
+  boosters?: string
   /** Randomize race/class/personality per run (batch mode) */
   randomize?: boolean
   /** Balance overrides for A/B testing */
@@ -115,6 +119,8 @@ export interface DiagnoseResult {
   finalState: {
     turn: number
     depth: number
+    level: number
+    xp: number
     hp: number
     maxHp: number
     kills: number

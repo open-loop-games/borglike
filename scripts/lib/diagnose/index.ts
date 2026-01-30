@@ -14,12 +14,16 @@
  */
 
 // Core runner
-export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis, parseCapabilities } from './runner'
+export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis, parseCapabilities, CAPABILITY_PRESETS } from './runner'
 export type { TurnLogEntry, ParallelBatchConfig } from './runner'
 
 // Modes
-export { runBaseline, BASELINE_CLASSES, BASELINE_DEFAULTS } from './baseline'
-export type { BaselineConfig, BaselineResult } from './baseline'
+export { runBaseline, runBaselineRaces, BASELINE_CLASSES, BASELINE_RACES, BASELINE_DEFAULTS } from './baseline'
+export type { BaselineConfig, BaselineResult, BaselineRacesConfig, BaselineRaceResult } from './baseline'
+
+// Sensitivity testing
+export { runSensitivityTest, SENSITIVITY_UPGRADES } from './sensitivity'
+export type { SensitivityConfig, SensitivityResult, UpgradeImpact } from './sensitivity'
 
 // Types
 export type {

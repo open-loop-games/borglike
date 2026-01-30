@@ -9,7 +9,8 @@ import { cpus } from 'os'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { createGame, processTurn } from '@game/game-loop'
-import { computeMaxUpgradeBonuses } from '@game/upgrade-effects'
+import { computeMaxUpgradeBonuses, computeUpgradeBonusesFromPreset, UPGRADE_PRESETS, DEFAULT_BONUSES } from '@game/upgrade-effects'
+import { computeBoosterBonuses, computeClassBoosterBonuses, DEFAULT_BOOSTER_BONUSES } from '@game/booster-effects'
 import { DEFAULT_BALANCE, type BalanceOverrides } from '@game/types'
 import { runBotTick, createBotState } from '@game/bot'
 import { reportProfile } from '@bot/profiler'
@@ -38,13 +39,29 @@ const __dirname = dirname(__filename)
 // ============================================================================
 
 /**
+ * Named capability presets for progression testing.
+ * Maps preset name to comma-separated capability IDs.
+ */
+export const CAPABILITY_PRESETS: Record<string, string> = {
+  early: 'town',
+  mid: 'town,farming,sweep_1,surf_1',
+  late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1',
+}
+
+/**
  * Parse capabilities spec string into BotCapabilities object.
  *
- * @param spec - 'none', 'full', or comma-separated IDs like 'town,farming,sweep_2'
+ * @param spec - 'none', 'full', preset name, or comma-separated IDs like 'town,farming,sweep_2'
  * @returns BotCapabilities object
  */
 export function parseCapabilities(spec: string): BotCapabilities {
   const normalized = spec.toLowerCase().trim()
+
+  // Check for named presets first (resolve to comma-separated, then parse)
+  const preset = CAPABILITY_PRESETS[normalized]
+  if (preset) {
+    return parseCapabilities(preset)
+  }
 
   // Special keywords
   if (normalized === 'none' || normalized === 'face-rush') {
@@ -97,9 +114,46 @@ const DEFAULT_CONFIG: Required<Omit<DiagnoseConfig, 'analyzers'>> = {
   verbosity: 1,
   maxUpgrades: false,
   excludeUpgrades: [],
+  upgrades: 'none',
+  boosters: 'none',
   randomize: false,
   balance: DEFAULT_BALANCE,
   capabilities: 'full',
+}
+
+/**
+ * Compute upgrade bonuses from config options.
+ * Handles both legacy maxUpgrades flag and new upgrades preset.
+ */
+function computeUpgradesFromConfig(cfg: typeof DEFAULT_CONFIG) {
+  // Legacy --max-upgrades flag takes precedence if set
+  if (cfg.maxUpgrades) {
+    return computeMaxUpgradeBonuses(cfg.balance.upgradePowerPercent)
+  }
+  // New --upgrades preset
+  if (cfg.upgrades && cfg.upgrades !== 'none') {
+    return computeUpgradeBonusesFromPreset(cfg.upgrades, cfg.balance.upgradePowerPercent)
+  }
+  return undefined
+}
+
+/**
+ * Compute booster bonuses from config options.
+ * 'none' = no boosters, 'class' = class default, or comma-separated IDs
+ */
+function computeBoostersFromConfig(cfg: typeof DEFAULT_CONFIG) {
+  if (!cfg.boosters || cfg.boosters === 'none') {
+    return undefined
+  }
+  if (cfg.boosters === 'class') {
+    return computeClassBoosterBonuses(cfg.classId)
+  }
+  // Parse comma-separated booster IDs
+  const boosterIds = cfg.boosters.split(',').map(s => s.trim()).filter(Boolean)
+  if (boosterIds.length > 0) {
+    return computeBoosterBonuses(boosterIds)
+  }
+  return undefined
 }
 
 // ============================================================================
@@ -116,12 +170,13 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
   // Parse bot capabilities
   const capabilities = parseCapabilities(cfg.capabilities)
 
-  // Create game
+  // Create game with upgrade and booster bonuses
   const game: GameState = createGame({
     raceId: cfg.raceId,
     classId: cfg.classId,
     seed: cfg.seed,
-    upgradeBonuses: cfg.maxUpgrades ? computeMaxUpgradeBonuses(cfg.balance.upgradePowerPercent) : undefined,
+    upgradeBonuses: computeUpgradesFromConfig(cfg),
+    boosterBonuses: computeBoostersFromConfig(cfg),
     balanceOverrides: cfg.balance,
   })
 
@@ -229,6 +284,8 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
     finalState: {
       turn: game.turn,
       depth: game.character.depth,
+      level: game.character.level,
+      xp: game.character.xp,
       hp: game.character.hp,
       maxHp: game.character.maxHp,
       kills: game.stats.kills,
@@ -548,12 +605,13 @@ export function runDeepDiagnosis(
   invalidateFrontierCache()
   invalidateUnexploredCache()
 
-  // Create game
+  // Create game with upgrade and booster bonuses
   const game: GameState = createGame({
     raceId: cfg.raceId,
     classId: cfg.classId,
     seed: cfg.seed,
-    upgradeBonuses: cfg.maxUpgrades ? computeMaxUpgradeBonuses(cfg.balance.upgradePowerPercent) : undefined,
+    upgradeBonuses: computeUpgradesFromConfig(cfg),
+    boosterBonuses: computeBoostersFromConfig(cfg),
     balanceOverrides: cfg.balance,
   })
 
@@ -721,6 +779,8 @@ export function runDeepDiagnosis(
     finalState: {
       turn: game.turn,
       depth: game.character.depth,
+      level: game.character.level,
+      xp: game.character.xp,
       hp: game.character.hp,
       maxHp: game.character.maxHp,
       kills: game.stats.kills,

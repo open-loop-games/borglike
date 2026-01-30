@@ -90,6 +90,65 @@ function getEffectValue(levels: UpgradeLevels, upgradeId: string): number {
 }
 
 // ============================================================================
+// UPGRADE PRESETS
+// ============================================================================
+
+/**
+ * Predefined upgrade level configurations for testing progression.
+ * Maps preset name to upgrade level configuration.
+ */
+export const UPGRADE_PRESETS: Record<string, UpgradeLevels> = {
+  none: {},
+  early: {
+    vitality: 2,
+    might: 2,
+    resilience: 1,
+  },
+  mid: {
+    vitality: 5,
+    might: 5,
+    resilience: 3,
+    swiftness: 2,
+    precision: 2,
+    celerity: 2,
+  },
+  late: {
+    vitality: 8,
+    might: 8,
+    resilience: 4,
+    swiftness: 4,
+    precision: 4,
+    celerity: 4,
+  },
+  // 'full' is handled specially via computeMaxUpgradeBonuses()
+}
+
+/**
+ * Compute upgrade bonuses from a preset name
+ *
+ * @param preset - Preset name: 'none', 'early', 'mid', 'late', 'full'
+ * @param upgradePowerPercent - Power multiplier (100 = normal)
+ */
+export function computeUpgradeBonusesFromPreset(
+  preset: string,
+  upgradePowerPercent = 100
+): UpgradeBonuses {
+  const normalized = preset.toLowerCase().trim()
+
+  if (normalized === 'full') {
+    return computeMaxUpgradeBonuses(upgradePowerPercent)
+  }
+
+  const levels = UPGRADE_PRESETS[normalized]
+  if (levels) {
+    return computeUpgradeBonuses(levels, upgradePowerPercent)
+  }
+
+  // Unknown preset - return default (no upgrades)
+  return DEFAULT_BONUSES
+}
+
+// ============================================================================
 // DEFAULT BONUSES
 // ============================================================================
 

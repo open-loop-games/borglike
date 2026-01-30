@@ -36,6 +36,10 @@ export interface VariantCompareConfig {
   seed?: number
   /** Use max upgrade bonuses */
   maxUpgrades: boolean
+  /** Upgrade preset: 'none', 'early', 'mid', 'late', 'full' */
+  upgrades?: string
+  /** Booster preset: 'none', 'class', or comma-separated IDs */
+  boosters?: string
 }
 
 /** Default personalities to compare */
@@ -374,6 +378,8 @@ export async function compareVariants(
       startSeed: cfg.seed,
       threads: cfg.threads,
       maxUpgrades: cfg.maxUpgrades,
+      upgrades: cfg.upgrades,
+      boosters: cfg.boosters,
       analyzers: createAllAnalyzers(),
       onProgress: (completed: number, total: number) => {
         const pct = Math.floor((completed / total) * 20)
