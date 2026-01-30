@@ -436,7 +436,10 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
 
   // Under-leveled check: only matters if NOT already in farming mode
   // When farming (yo-yoing between depths), being under-leveled for current depth is expected
-  if (!botState.farmingMode && isUnderLeveled(character.level, character.depth, character.classId))
+  if (
+    !botState.farmingMode &&
+    isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses)
+  )
     return null
 
   // Tether constraints
@@ -624,10 +627,12 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
   const blockedDepth = findBlockedDepth(context)
 
   // Only ascend if under-leveled for the BLOCKED depth
-  if (!isUnderLeveled(character.level, blockedDepth, character.classId)) return null
+  if (!isUnderLeveled(character.level, blockedDepth, character.classId, character.upgradeBonuses))
+    return null
 
   // If leveled enough for CURRENT depth, explore it fully before ascending
-  if (!isUnderLeveled(character.level, character.depth, character.classId)) return null
+  if (!isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses))
+    return null
 
   // Farming depth floor: only farm on depths (blockedDepth - 2) to (blockedDepth - 1)
   const farmingFloor = Math.max(1, blockedDepth - 2)

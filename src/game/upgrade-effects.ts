@@ -211,6 +211,21 @@ export function applyGoldBonus(baseGold: number, bonuses: UpgradeBonuses): numbe
   return Math.floor(baseGold * bonuses.goldMultiplier)
 }
 
+/**
+ * Determine upgrade tier (0-4) based on total upgrade power.
+ * Uses maxHpBonus as proxy since it directly reflects survivability.
+ * Vitality: 5 + 5*(level-1), max level 10 → 5-50 HP range
+ */
+export function getUpgradeTier(bonuses: UpgradeBonuses): number {
+  // maxHpBonus from vitality: none=0, early(2)=10, mid(5)=25, late(8)=40, full(10)=50
+  const hp = bonuses.maxHpBonus
+  if (hp >= 45) return 4 // full (vitality 9-10)
+  if (hp >= 35) return 3 // late (vitality 7-8)
+  if (hp >= 20) return 2 // mid (vitality 4-6)
+  if (hp >= 5) return 1 // early (vitality 1-3)
+  return 0 // none
+}
+
 // ============================================================================
 // BOOSTER INTEGRATION
 // ============================================================================

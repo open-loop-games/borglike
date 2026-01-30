@@ -16,6 +16,7 @@
  */
 
 import type { Point, GameState } from '../types'
+import type { UpgradeBonuses } from '../upgrade-effects'
 import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
 import { SQUISHY_CLASSES, getEffectiveCapabilities } from './types'
@@ -93,12 +94,12 @@ export function getDescentBlocker(
  * Check if should ascend to farm easier content (under-leveled).
  */
 export function shouldAscendToFarm(
-  character: { level: number; depth: number; classId?: string },
+  character: { level: number; depth: number; classId?: string; upgradeBonuses?: UpgradeBonuses },
   knownStairsUp: Point | null
 ): boolean {
   if (!knownStairsUp) return false
   if (character.depth <= 1) return false
-  return isUnderLeveled(character.level, character.depth, character.classId)
+  return isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses)
 }
 
 // ============================================================================

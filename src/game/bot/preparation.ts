@@ -13,6 +13,8 @@ import { POTIONS, SCROLLS } from '../data/items'
 import { monsters as MONSTERS } from '../data/monsters'
 import type { BotContext, BotGoal } from './types'
 import { getClassTier, type ClassTier } from './types'
+import type { UpgradeBonuses } from '../upgrade-effects'
+import { getUpgradeTier } from '../upgrade-effects'
 
 // ============================================================================
 // CONSUMABLE CAPS (Soft Separation)
@@ -449,9 +451,9 @@ export function getDepthReadiness(
   caution: number = 50
 ): string | null {
   // Level check: class-specific requirements
-  // Warriors can go deep early, mages need to overlevel
+  // Warriors can go deep early, mages need to overlevel (scaled by upgrade tier)
   const classId = (character as { classId?: string }).classId
-  const minLevel = getMinLevel(targetDepth, classId)
+  const minLevel = getMinLevel(targetDepth, classId, character.upgradeBonuses)
   if (character.level < minLevel) {
     return `Need level ${minLevel} for depth ${targetDepth} (have ${character.level})`
   }
@@ -698,32 +700,40 @@ export function getEffectiveGold(character: Character): number {
  * Negative = can be lower level than depth.
  *
  * Formula: required level = depth + offset
+ *
+ * SQUISHY classes scale from +5 (no upgrades) to +0 (full upgrades)
+ * based on survivability from meta-progression upgrades.
  */
-function getClassLevelOffset(tier: ClassTier): number {
+function getClassLevelOffset(tier: ClassTier, upgradeBonuses?: UpgradeBonuses): number {
   switch (tier) {
     case 'TANK':
       return -4 // level >= depth - 4
     case 'MEDIUM':
       return 0 // level >= depth
-    case 'SQUISHY':
-      return 5 // level >= depth + 5
+    case 'SQUISHY': {
+      // Scale from +5 (no upgrades) to +0 (full upgrades)
+      const upgradeTier = upgradeBonuses ? getUpgradeTier(upgradeBonuses) : 0
+      const offsets = [5, 4, 3, 1, 0] // none → early → mid → late → full
+      return offsets[upgradeTier] ?? 5
+    }
   }
 }
 
 /**
- * Get minimum character level for a depth, accounting for class.
+ * Get minimum character level for a depth, accounting for class and upgrades.
  *
  * Angband borg-inspired:
  * - Warriors: can handle depth 4 levels above their level
  * - Hybrids: need to match depth with level
- * - Mages: need to be 5 levels above depth
+ * - Mages: need to be 5 levels above depth (scales down with upgrades)
  *
  * @param depth - Target dungeon depth
  * @param classId - Character's class ID (defaults to medium tier)
+ * @param upgradeBonuses - Meta-progression bonuses (affects SQUISHY requirement)
  */
-export function getMinLevel(depth: number, classId?: string): number {
+export function getMinLevel(depth: number, classId?: string, upgradeBonuses?: UpgradeBonuses): number {
   const tier = classId ? getClassTier(classId) : 'MEDIUM'
-  const offset = getClassLevelOffset(tier)
+  const offset = getClassLevelOffset(tier, upgradeBonuses)
   // Cap at 50 (max level) - SQUISHY classes can't reach level 55 for depth 50
   return Math.min(50, Math.max(1, depth + offset))
 }
@@ -735,9 +745,15 @@ export function getMinLevel(depth: number, classId?: string): number {
  * @param characterLevel - Current character level
  * @param depth - Target depth to check against
  * @param classId - Character's class ID (defaults to medium tier)
+ * @param upgradeBonuses - Meta-progression bonuses (affects SQUISHY requirement)
  */
-export function isUnderLeveled(characterLevel: number, depth: number, classId?: string): boolean {
-  return characterLevel < getMinLevel(depth, classId)
+export function isUnderLeveled(
+  characterLevel: number,
+  depth: number,
+  classId?: string,
+  upgradeBonuses?: UpgradeBonuses
+): boolean {
+  return characterLevel < getMinLevel(depth, classId, upgradeBonuses)
 }
 
 // ============================================================================
