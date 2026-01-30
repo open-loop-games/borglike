@@ -192,7 +192,13 @@ export interface RunStats {
   criticalHits?: number
   attacksDodged?: number
   // Survival
-  healingBySource?: { potions: number; spells: number; regen: number; lifesteal: number; other: number }
+  healingBySource?: {
+    potions: number
+    spells: number
+    regen: number
+    lifesteal: number
+    other: number
+  }
   statusEffectsSuffered?: Record<string, number>
   closeCalls?: number
 }

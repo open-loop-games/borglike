@@ -620,7 +620,13 @@ export interface RunStats {
   attacksDodged: number
 
   // === SURVIVAL ===
-  healingBySource: { potions: number; spells: number; regen: number; lifesteal: number; other: number }
+  healingBySource: {
+    potions: number
+    spells: number
+    regen: number
+    lifesteal: number
+    other: number
+  }
   statusEffectsSuffered: Record<string, number> // effect type -> count
   closeCalls: number // HP dropped below 20%
 }

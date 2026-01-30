@@ -264,15 +264,21 @@ const hasExtendedStats = computed(() => {
           <div class="combat-stats">
             <div v-if="run.healingBySource?.potions" class="combat-row">
               <span class="combat-label">Potion Healing</span>
-              <span class="combat-value heal">{{ run.healingBySource.potions.toLocaleString() }}</span>
+              <span class="combat-value heal">{{
+                run.healingBySource.potions.toLocaleString()
+              }}</span>
             </div>
             <div v-if="run.healingBySource?.spells" class="combat-row">
               <span class="combat-label">Spell Healing</span>
-              <span class="combat-value heal">{{ run.healingBySource.spells.toLocaleString() }}</span>
+              <span class="combat-value heal">{{
+                run.healingBySource.spells.toLocaleString()
+              }}</span>
             </div>
             <div v-if="run.healingBySource?.regen" class="combat-row">
               <span class="combat-label">Regeneration</span>
-              <span class="combat-value heal">{{ run.healingBySource.regen.toLocaleString() }}</span>
+              <span class="combat-value heal">{{
+                run.healingBySource.regen.toLocaleString()
+              }}</span>
             </div>
             <div v-if="run.closeCalls" class="combat-row">
               <span class="combat-label">Close Calls</span>
@@ -293,9 +299,14 @@ const hasExtendedStats = computed(() => {
               <span class="combat-label">Buff Potions</span>
               <span class="combat-value">{{ run.consumablesUsed.buffPotions }}</span>
             </div>
-            <div v-if="Object.keys(run.consumablesUsed.scrolls || {}).length > 0" class="combat-row">
+            <div
+              v-if="Object.keys(run.consumablesUsed.scrolls || {}).length > 0"
+              class="combat-row"
+            >
               <span class="combat-label">Scrolls Used</span>
-              <span class="combat-value">{{ Object.values(run.consumablesUsed.scrolls || {}).reduce((a, b) => a + b, 0) }}</span>
+              <span class="combat-value">{{
+                Object.values(run.consumablesUsed.scrolls || {}).reduce((a, b) => a + b, 0)
+              }}</span>
             </div>
           </div>
         </PanelFrame>

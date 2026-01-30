@@ -40,6 +40,7 @@ const emit = defineEmits<{
   openRunHistory: []
   openBestiary: []
   openArmory: []
+  openCodex: []
   openAchievements: []
 }>()
 
@@ -105,6 +106,9 @@ function debugAddEssence() {
       </button>
       <button class="header-btn" title="Armory" @click="emit('openArmory')">
         <span>&#x1F4E6;</span>
+      </button>
+      <button class="header-btn" title="Codex" @click="emit('openCodex')">
+        <span>&#x1F4DC;</span>
       </button>
       <button class="header-btn" title="Settings" @click="emit('openSettings')">
         <span>&#x2699;</span>

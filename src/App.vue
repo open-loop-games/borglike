@@ -8,6 +8,7 @@ import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
 import RunHistoryModal from './ui/components/history/RunHistoryModal.vue'
 import BestiaryModal from './ui/components/bestiary/BestiaryModal.vue'
 import ItemArmoryModal from './ui/components/armory/ItemArmoryModal.vue'
+import CodexModal from './ui/components/codex/CodexModal.vue'
 import AchievementsModal from './ui/components/achievements/AchievementsModal.vue'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
@@ -34,6 +35,7 @@ const showSettings = ref(false)
 const showRunHistory = ref(false)
 const showBestiary = ref(false)
 const showArmory = ref(false)
+const showCodex = ref(false)
 const showAchievements = ref(false)
 
 function handleOpenSettings() {
@@ -68,6 +70,14 @@ function handleCloseArmory() {
   showArmory.value = false
 }
 
+function handleOpenCodex() {
+  showCodex.value = true
+}
+
+function handleCloseCodex() {
+  showCodex.value = false
+}
+
 function handleOpenAchievements() {
   showAchievements.value = true
 }
@@ -100,6 +110,7 @@ function handleOpenHelp() {
       @open-run-history="handleOpenRunHistory"
       @open-bestiary="handleOpenBestiary"
       @open-armory="handleOpenArmory"
+      @open-codex="handleOpenCodex"
       @open-achievements="handleOpenAchievements"
     />
     <main class="game">
@@ -142,6 +153,15 @@ function handleOpenHelp() {
       <div v-if="showArmory" class="modal-overlay" @click="handleCloseArmory">
         <div class="modal-container modal-lg" @click.stop>
           <ItemArmoryModal @close="handleCloseArmory" />
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Codex Modal -->
+    <Teleport to="body">
+      <div v-if="showCodex" class="modal-overlay" @click="handleCloseCodex">
+        <div class="modal-container modal-lg" @click.stop>
+          <CodexModal @close="handleCloseCodex" />
         </div>
       </div>
     </Teleport>
