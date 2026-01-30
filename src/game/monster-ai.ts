@@ -19,7 +19,8 @@ import type {
 } from './types'
 import { MAX_DEPTH, getDirectionFromDelta, DIRECTION_VECTORS } from './types'
 import { randomInt, random } from './rng'
-import { applyDamage, getStatusSpeedBonus } from './combat'
+import { applyDamage } from './combat'
+import { getEffectiveStats } from './modifiers'
 import { checkSecondWind } from './status-effects'
 import { getKnowledgeBonuses } from './knowledge-effects'
 import { getSpawnableMonsters, getMonsterByName } from './data/index'
@@ -686,8 +687,8 @@ function addMessage(game: GameState, text: string, type: GameMessage['type']): v
 export function processMonsterTurns(game: GameState): GameEvent[] {
   const events: GameEvent[] = []
 
-  // Get player's effective speed (base from combat stats + status effects like haste)
-  const playerSpeed = game.character.combat.speed + getStatusSpeedBonus(game.character)
+  // Get player's effective speed (including status effects like haste/slow)
+  const playerSpeed = getEffectiveStats(game.character).speed
 
   for (const monster of game.monsters) {
     // Apply slow debuff to speed calculation

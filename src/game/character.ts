@@ -23,8 +23,7 @@ import type { BoosterBonuses } from './booster-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { getSpellIdsForLevel, getNewSpellsAtLevel } from './data/class-spells'
 import { addStatusEffect, hasStatusEffect } from './status-effects'
-import { getFormById } from './data/forms'
-import { getEncumbranceSpeedPenalty } from './bot/preparation'
+import { getEffectiveStats, toStats, toCombatStats, recalculateAllStats } from './modifiers'
 
 // ============================================================================
 // CONSTANTS
@@ -32,9 +31,6 @@ import { getEncumbranceSpeedPenalty } from './bot/preparation'
 
 /** Base stat value before race/class modifiers */
 const BASE_STAT = 10
-
-/** Equipment slots that can provide armor/protection bonuses */
-const ARMOR_SLOTS: EquipSlot[] = ['armor', 'shield', 'helm', 'gloves', 'boots']
 
 /** Map ItemTemplate slot names to EquipSlot names */
 const SLOT_MAP: Record<string, EquipSlot> = {
@@ -67,33 +63,6 @@ function generateId(): string {
  */
 function getConModifier(con: number): number {
   return Math.max(-2, Math.floor((con - 10) / 2))
-}
-
-/**
- * Parse dice notation (e.g., "2d5") and return average damage
- * @param dice - Dice notation string like "2d5" or "1d6"
- * @returns Average damage value (rounded down)
- */
-function parseDiceAverage(dice: string | undefined): number {
-  if (!dice) return 0
-  const match = dice.match(/(\d+)d(\d+)/)
-  if (!match || !match[1] || !match[2]) return 0
-  const numDice = parseInt(match[1], 10)
-  const sides = parseInt(match[2], 10)
-  // Average roll = numDice * (sides + 1) / 2
-  return Math.floor((numDice * (sides + 1)) / 2)
-}
-
-/**
- * Get stat bonus from artifact bonuses Record
- * Artifacts use uppercase keys like 'STR', 'DEX', etc.
- */
-function getArtifactStatBonus(
-  bonuses: Record<string, number> | undefined,
-  stat: 'str' | 'int' | 'wis' | 'dex' | 'con'
-): number {
-  if (!bonuses) return 0
-  return bonuses[stat.toUpperCase()] || 0
 }
 
 /**
@@ -197,7 +166,6 @@ export function createCharacter(config: {
   // Initialize empty status effects
   const statusEffects: Character['statusEffects'] = []
   const tempResistances: Character['tempResistances'] = []
-  const poison: Character['poison'] = null
 
   const character: Character = {
     // Identity
@@ -230,7 +198,6 @@ export function createCharacter(config: {
     // Status effects
     statusEffects,
     tempResistances,
-    poison,
 
     // Inventory
     equipment: {},
@@ -310,37 +277,15 @@ function calculateResistancesFromRace(race: Race): Resistances {
 /**
  * Calculate effective stats with equipment bonuses
  *
+ * Uses the unified modifier system to compute stats from all sources:
+ * equipment, racial abilities, upgrades, forms, and status effects.
+ *
  * @param character - The character to calculate stats for
  * @returns Computed Stats including all equipment modifiers
  */
 export function calculateStats(character: Character): Stats {
-  // Start with base stats
-  const stats: Stats = { ...character.baseStats }
-
-  // Add equipment bonuses
-  for (const item of Object.values(character.equipment)) {
-    if (!item) continue
-
-    // Artifact bonuses (artifacts use 'bonuses' Record with uppercase keys)
-    if (item.artifact?.bonuses) {
-      stats.str += getArtifactStatBonus(item.artifact.bonuses, 'str')
-      stats.int += getArtifactStatBonus(item.artifact.bonuses, 'int')
-      stats.wis += getArtifactStatBonus(item.artifact.bonuses, 'wis')
-      stats.dex += getArtifactStatBonus(item.artifact.bonuses, 'dex')
-      stats.con += getArtifactStatBonus(item.artifact.bonuses, 'con')
-    }
-
-    // Template bonuses (rings/amulets)
-    if (item.template.bonuses) {
-      stats.str += item.template.bonuses.STR ?? 0
-      stats.int += item.template.bonuses.INT ?? 0
-      stats.wis += item.template.bonuses.WIS ?? 0
-      stats.dex += item.template.bonuses.DEX ?? 0
-      stats.con += item.template.bonuses.CON ?? 0
-    }
-  }
-
-  return stats
+  const effective = getEffectiveStats(character, { includeStatusEffects: false })
+  return toStats(effective)
 }
 
 /**
@@ -430,218 +375,27 @@ function parseResistanceAbility(ability: string): { type: ResistanceType; value:
 /**
  * Calculate derived combat stats from character stats and equipment
  *
+ * Uses the unified modifier system to compute combat stats from all sources:
+ * equipment, racial abilities, upgrades, forms, and status effects.
+ *
  * @param character - The character to calculate combat stats for
  * @returns Computed CombatStats
  */
 export function calculateCombatStats(character: Character): CombatStats {
-  const stats = calculateStats(character)
-  const gameClass = getClassById(character.classId)
-  const race = getRaceById(character.raceId)
-  const bonuses = character.upgradeBonuses ?? DEFAULT_BONUSES
-
-  if (!gameClass || !race) {
-    throw new Error('Invalid character race or class')
-  }
-
-  // SHAPESHIFTING: Apply form stat modifiers
-  const activeForm = character.activeFormId ? getFormById(character.activeFormId) : null
-  if (activeForm?.statMods) {
-    const mods = activeForm.statMods
-    if (mods.strMod) stats.str += mods.strMod
-    if (mods.dexMod) stats.dex += mods.dexMod
-    if (mods.conMod) stats.con += mods.conMod
-    if (mods.intMod) stats.int += mods.intMod
-    if (mods.wisMod) stats.wis += mods.wisMod
-  }
-
-  // Calculate hitdie
-  const hitdie = calculateHitdie(race.hitdie, gameClass.hitdie)
-
-  // HP formula: (raceHitdie + classHitdie) * level * (1 + CON/20) + vitality bonus
-  const conMultiplier = 1 + stats.con / 20
-  let maxHp = Math.floor(hitdie * character.level * conMultiplier)
-  maxHp += bonuses.maxHpBonus // Apply vitality upgrade
-
-  // MP formula: (INT + WIS) * level / 4 (if class has magic)
-  const maxMp = gameClass.usesMagic
-    ? Math.floor(((stats.int + stats.wis) * character.level) / 4)
-    : 0
-
-  // Armor: sum of equipment protection + DEX/4 + resilience bonus
-  // ItemTemplate uses 'protection', artifacts use 'protection' and 'toAC' bonus
-  let armor = Math.floor(stats.dex / 4)
-  armor += bonuses.armorBonus // Apply resilience upgrade
-  for (const slot of ARMOR_SLOTS) {
-    const item = character.equipment[slot]
-    if (item) {
-      // Base item protection
-      if (item.template.protection) {
-        armor += item.template.protection + item.enchantment
-      }
-      // Artifact protection and AC bonus
-      if (item.artifact?.protection) {
-        armor += item.artifact.protection
-      }
-      if (item.artifact?.bonuses?.toAC) {
-        armor += item.artifact.bonuses.toAC
-      }
-    }
-  }
-  // SHAPESHIFTING: Apply form armor modifier
-  if (activeForm?.statMods.armorMod) {
-    armor += activeForm.statMods.armorMod
-  }
-
-  // Melee damage: weapon damage + STR/3, with might bonus
-  // ItemTemplate uses dice notation for damage (e.g., "2d5")
-  let meleeDamage = Math.floor(stats.str / 3)
-  const weapon = character.equipment.weapon
-  if (weapon) {
-    // Parse dice notation for base item damage
-    meleeDamage += parseDiceAverage(weapon.template.damage) + weapon.enchantment
-    // Artifact damage (also dice notation) and toDam bonus
-    if (weapon.artifact?.damage) {
-      meleeDamage += parseDiceAverage(weapon.artifact.damage)
-    }
-    if (weapon.artifact?.bonuses?.toDam) {
-      meleeDamage += weapon.artifact.bonuses.toDam
-    }
-  }
-  // Template toDam bonuses (rings like Ring of Damage)
-  for (const item of Object.values(character.equipment)) {
-    if (item?.template.bonuses?.toDam) {
-      meleeDamage += item.template.bonuses.toDam
-    }
-  }
-  // Apply might upgrade (damage percent)
-  meleeDamage = Math.floor(meleeDamage * (1 + bonuses.damagePercent / 100))
-  // SHAPESHIFTING: Apply form melee damage modifier (percent)
-  if (activeForm?.statMods.meleeDamageMod) {
-    meleeDamage = Math.floor(meleeDamage * (1 + activeForm.statMods.meleeDamageMod / 100))
-  }
-
-  // Accuracy: 50 + DEX + level + artifact toHit bonuses + precision upgrade
-  let accuracy = 50 + stats.dex + character.level + bonuses.accuracyBonus
-  if (weapon?.artifact?.bonuses?.toHit) {
-    accuracy += weapon.artifact.bonuses.toHit
-  }
-  // Template toHit bonuses (rings like Ring of Accuracy)
-  for (const item of Object.values(character.equipment)) {
-    if (item?.template.bonuses?.toHit) {
-      accuracy += item.template.bonuses.toHit
-    }
-  }
-  // RACIAL: High-Elf "Keen Senses" - +10 accuracy
-  if (race.abilities.some((a) => a.id === 'keen_senses')) {
-    accuracy += 10
-  }
-
-  // Evasion: DEX/2 + swiftness bonus
-  // Note: current ItemTemplate doesn't have evasion field, but artifacts might
-  let evasion = Math.floor(stats.dex / 2)
-  evasion += bonuses.dodgePercent // Apply swiftness upgrade
-  // SHAPESHIFTING: Apply form evasion modifier
-  if (activeForm?.statMods.evasionMod) {
-    evasion += activeForm.statMods.evasionMod
-  }
-  // RACIAL: Kobold "Slippery" - +5 evasion
-  if (race.abilities.some((a) => a.id === 'slippery')) {
-    evasion += 5
-  }
-  // RACIAL: Hobbit "Small Target" / Elf "Elven Grace" - +3 evasion
-  if (race.abilities.some((a) => a.id === 'small_target' || a.id === 'elven_grace')) {
-    evasion += 3
-  }
-
-  // Speed: base 100 + celerity upgrade + equipment modifiers
-  // Artifacts and templates use 'SPEED' in bonuses Record
-  let speed = 100 + bonuses.speedBonus
-  for (const item of Object.values(character.equipment)) {
-    if (item?.artifact?.bonuses?.SPEED) {
-      speed += item.artifact.bonuses.SPEED
-    }
-    // Template SPEED bonuses (rings/amulets like Ring of Speed, Amulet of Trickery)
-    if (item?.template.bonuses?.SPEED) {
-      speed += item.template.bonuses.SPEED
-    }
-  }
-  // SHAPESHIFTING: Apply form speed modifier
-  if (activeForm?.statMods.speedMod) {
-    speed += activeForm.statMods.speedMod
-  }
-  // RACIAL: Gnome "Nimble" - +5 speed
-  if (race.abilities.some((a) => a.id === 'nimble')) {
-    speed += 5
-  }
-  // RACIAL: Elf "Swift Feet" - +3 speed
-  if (race.abilities.some((a) => a.id === 'swift_feet')) {
-    speed += 3
-  }
-  // ENCUMBRANCE: Apply speed penalty for being overweight
-  speed -= getEncumbranceSpeedPenalty(character)
-
-  // Ranged combat stats (DEX-based)
-  let rangedDamage = Math.floor(stats.dex / 3)
-  let rangedAccuracy = 50 + stats.dex + character.level
-
-  // Apply bow bonuses if equipped
-  const bow = character.equipment.bow
-  if (bow) {
-    // Launcher multiplier (Angband-style: multiplies dice damage)
-    const launcherMult = bow.template.multiplier ?? 1
-    // Parse dice notation for bow damage and apply multiplier
-    rangedDamage += parseDiceAverage(bow.template.damage) * launcherMult + bow.enchantment
-    // Artifact bow bonuses (also multiplied)
-    if (bow.artifact?.damage) {
-      rangedDamage += parseDiceAverage(bow.artifact.damage) * launcherMult
-    }
-    if (bow.artifact?.bonuses?.toDam) {
-      rangedDamage += bow.artifact.bonuses.toDam
-    }
-    // Hit bonus from bow template
-    if (bow.template.hitBonus) {
-      rangedAccuracy += bow.template.hitBonus
-    }
-    // Artifact hit bonus
-    if (bow.artifact?.bonuses?.toHit) {
-      rangedAccuracy += bow.artifact.bonuses.toHit
-    }
-  }
-  // Apply might upgrade to ranged damage too
-  rangedDamage = Math.floor(rangedDamage * (1 + bonuses.damagePercent / 100))
-
-  return {
-    maxHp,
-    maxMp,
-    armor,
-    accuracy,
-    evasion,
-    meleeDamage,
-    rangedDamage,
-    rangedAccuracy,
-    speed,
-  }
+  const effective = getEffectiveStats(character, { includeStatusEffects: false })
+  return toCombatStats(effective)
 }
 
 /**
  * Recalculate and update a character's combat stats in place
  *
- * Used after equipment changes, form changes, or other stat modifications.
+ * Uses the unified modifier system. Called after equipment changes,
+ * form changes, level ups, or other stat modifications.
  *
  * @param character - The character to update (mutated in place)
  */
 export function recalculateCombatStats(character: Character): void {
-  const newCombat = calculateCombatStats(character)
-  character.combat = newCombat
-
-  // Also update current stats
-  character.stats = calculateStats(character)
-
-  // Cap HP/MP at new maximums
-  character.maxHp = newCombat.maxHp
-  character.maxMp = newCombat.maxMp
-  if (character.hp > character.maxHp) character.hp = character.maxHp
-  if (character.mp > character.maxMp) character.mp = character.maxMp
+  recalculateAllStats(character)
 }
 
 // ============================================================================

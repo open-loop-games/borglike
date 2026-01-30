@@ -249,11 +249,14 @@ export function getDefenderStats(entity: Character | Monster): DefenderStats {
 }
 
 // ============================================================================
-// STATUS EFFECT BONUSES
+// STATUS EFFECT BONUSES (for combat resolution)
+// Note: These are used in attack/rangedAttack to add status bonuses to combat.
+// For stat display/calculation, use getEffectiveStats() from @game/modifiers.
 // ============================================================================
 
 /**
  * Get hit bonus from status effects (heroism, blessing)
+ * Used in attack resolution to add to accuracy checks.
  */
 export function getStatusHitBonus(character: Character): number {
   let bonus = 0
@@ -265,6 +268,7 @@ export function getStatusHitBonus(character: Character): number {
 
 /**
  * Get damage bonus from status effects (berserk)
+ * Applied as flat bonus during attack resolution.
  */
 export function getStatusDamageBonus(character: Character): number {
   const berserk = character.statusEffects.find((e) => e.type === 'berserk')
@@ -273,26 +277,11 @@ export function getStatusDamageBonus(character: Character): number {
 
 /**
  * Get AC bonus from status effects (blessing)
+ * Used in attack resolution to add to defender's armor.
  */
 export function getStatusACBonus(character: Character): number {
   const blessing = character.statusEffects.find((e) => e.type === 'blessing')
   return blessing?.value ?? 0
-}
-
-/**
- * Get speed bonus from status effects (speed/haste - slowed)
- * Returns net bonus (can be negative if slowed)
- */
-export function getStatusSpeedBonus(character: Character): number {
-  const speed = character.statusEffects.find((e) => e.type === 'speed')
-  const speedBonus = speed?.value ?? 0
-
-  const slowed = character.statusEffects.find((e) => e.type === 'slowed')
-  // Slowed value is percentage reduction (e.g., 50 = -50% speed)
-  // Convert to speed penalty: 50% reduction = -50 speed points
-  const slowPenalty = slowed ? Math.floor((slowed.value ?? 50) / 2) : 0
-
-  return speedBonus - slowPenalty
 }
 
 /**
