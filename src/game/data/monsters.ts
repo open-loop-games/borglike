@@ -236,7 +236,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 30,
     experience: 12,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [{ method: 'HIT', dice: '1d6', effect: { type: 'HURT' } }],
   },
 
@@ -293,7 +293,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 48,
     experience: 15,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [{ method: 'HIT', dice: '1d8', effect: { type: 'HURT' } }],
   },
   {
@@ -305,7 +305,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 100,
     armor: 30,
     experience: 12,
-    flags: ['DEMON'],
+    flags: ['DEMON', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '1d4', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '1d4', effect: { type: 'HURT' } },
@@ -323,7 +323,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 40,
     experience: 18,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [{ method: 'HIT', dice: '2d4', effect: { type: 'HURT' } }],
   },
   {
@@ -335,7 +335,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 35,
     experience: 15,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [{ method: 'HIT', dice: '1d8', effect: { type: 'HURT' } }],
     resist: ['COLD'],
     immune: ['POISON'],
@@ -364,7 +364,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 45,
     experience: 150,
-    flags: ['UNIQUE'],
+    flags: ['UNIQUE', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '1d5', effect: { type: 'HURT' } },
       { method: 'TOUCH', dice: '1d5', effect: { type: 'ELEMENTAL', element: 'POISON' } },
@@ -383,7 +383,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 48,
     experience: 20,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '1d10', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '1d10', effect: { type: 'HURT' } },
@@ -444,7 +444,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 30,
     experience: 160,
-    flags: ['UNIQUE', 'ORC'],
+    flags: ['UNIQUE', 'ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '2d5', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '2d5', effect: { type: 'HURT' } },
@@ -503,7 +503,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 55,
     experience: 35,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
@@ -518,7 +518,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 100,
     armor: 40,
     experience: 30,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '2d4', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '2d4', effect: { type: 'HURT' } },
@@ -537,7 +537,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 30,
     experience: 40,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [
       { method: 'TOUCH', dice: '2d4', effect: { type: 'DRAIN' } },
       { method: 'TOUCH', dice: '2d4', effect: { type: 'DRAIN' } },
@@ -554,7 +554,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 35,
     experience: 45,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [{ method: 'HIT', dice: '2d4', effect: { type: 'HURT' } }],
     spells: { freq: 4, list: ['HEAL'] },
   },
@@ -569,7 +569,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 50,
     experience: 60,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
       { method: 'TOUCH', dice: '1d6', effect: { type: 'DRAIN' } },
@@ -586,7 +586,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 60,
     experience: 55,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '3d4', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '3d4', effect: { type: 'HURT' } },
@@ -603,7 +603,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 60,
     experience: 40,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
@@ -632,7 +632,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 100,
     armor: 80,
     experience: 80,
-    flags: ['TROLL'],
+    flags: ['TROLL', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '3d4', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '3d4', effect: { type: 'HURT' } },
@@ -647,7 +647,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 70,
     experience: 70,
-    flags: ['ORC'],
+    flags: ['ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
@@ -664,7 +664,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 55,
     experience: 90,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [
       { method: 'TOUCH', dice: '2d4', effect: { type: 'ELEMENTAL', element: 'COLD' } },
       { method: 'TOUCH', dice: '1d6', effect: { type: 'DRAIN' } },
@@ -697,7 +697,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 60,
     experience: 150,
-    flags: ['TROLL'],
+    flags: ['TROLL', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '2d8', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '2d8', effect: { type: 'HURT' } },
@@ -713,7 +713,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 60,
     experience: 120,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '2d6', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '2d6', effect: { type: 'HURT' } },
@@ -730,7 +730,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 60,
     experience: 800,
-    flags: ['UNIQUE', 'ORC'],
+    flags: ['UNIQUE', 'ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
@@ -765,7 +765,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 36,
     experience: 150,
-    flags: [],
+    flags: ['EVIL'],
     attacks: [
       { method: 'CLAW', dice: '2d6', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '2d6', effect: { type: 'HURT' } },
@@ -783,7 +783,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 96,
     experience: 1111,
-    flags: ['UNIQUE', 'ORC'],
+    flags: ['UNIQUE', 'ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '5d4', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '5d4', effect: { type: 'HURT' } },
@@ -821,7 +821,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 50,
     experience: 450,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [
       { method: 'TOUCH', dice: '2d6', effect: { type: 'DRAIN' } },
       { method: 'CLAW', dice: '2d4', effect: { type: 'HURT' } },
@@ -839,7 +839,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 70,
     experience: 400,
-    flags: [],
+    flags: ['EVIL'],
     attacks: [{ method: 'HIT', dice: '2d5', effect: { type: 'HURT' } }],
     spells: { freq: 3, list: ['BO_COLD', 'BLINK'] },
   },
@@ -852,7 +852,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 80,
     experience: 900,
-    flags: ['UNIQUE', 'ORC'],
+    flags: ['UNIQUE', 'ORC', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
@@ -892,7 +892,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 72,
     experience: 200,
-    flags: [],
+    flags: ['EVIL'],
     attacks: [
       { method: 'GAZE', dice: '2d4', effect: { type: 'HURT' } },
       { method: 'GAZE', dice: '2d4', effect: { type: 'HURT' } },
@@ -908,7 +908,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 67,
     experience: 200,
-    flags: ['TROLL'],
+    flags: ['TROLL', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '2d4', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '2d4', effect: { type: 'HURT' } },
@@ -947,7 +947,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 115,
     armor: 70,
     experience: 550,
-    flags: ['TROLL'],
+    flags: ['TROLL', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '3d5', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '3d5', effect: { type: 'HURT' } },
@@ -965,7 +965,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 85,
     experience: 600,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [
       { method: 'BITE', dice: '3d4', effect: { type: 'DRAIN' } },
       { method: 'TOUCH', dice: '2d6', effect: { type: 'DRAIN' } },
@@ -984,7 +984,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 75,
     experience: 650,
-    flags: ['TROLL'],
+    flags: ['TROLL', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '3d4', effect: { type: 'ELEMENTAL', element: 'ELEC' } },
       { method: 'CLAW', dice: '3d4', effect: { type: 'ELEMENTAL', element: 'ELEC' } },
@@ -1003,7 +1003,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 60,
     experience: 600,
-    flags: ['TROLL'],
+    flags: ['TROLL', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '3d4', effect: { type: 'ELEMENTAL', element: 'COLD' } },
       { method: 'CLAW', dice: '3d4', effect: { type: 'ELEMENTAL', element: 'COLD' } },
@@ -1058,7 +1058,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 120,
     experience: 1500,
-    flags: ['UNIQUE'],
+    flags: ['UNIQUE', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '6d6', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '6d6', effect: { type: 'HURT' } },
@@ -1092,7 +1092,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 115,
     armor: 60,
     experience: 450,
-    flags: ['TROLL'],
+    flags: ['TROLL', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '3d4', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '3d4', effect: { type: 'HURT' } },
@@ -1168,7 +1168,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 96,
     experience: 6000,
-    flags: [],
+    flags: ['EVIL'],
     attacks: [
       { method: 'GAZE', dice: '2d6', effect: { type: 'DRAIN' } },
       { method: 'GAZE', dice: '2d6', effect: { type: 'BLIND' } },
@@ -1205,7 +1205,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 75,
     experience: 2000,
-    flags: ['DEMON'],
+    flags: ['DEMON', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '4d6', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '4d6', effect: { type: 'HURT' } },
@@ -1241,7 +1241,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 110,
     armor: 60,
     experience: 5000,
-    flags: ['DEMON'],
+    flags: ['DEMON', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '3d4', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '3d4', effect: { type: 'HURT' } },
@@ -1259,7 +1259,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 120,
     experience: 8000,
-    flags: ['UNDEAD'],
+    flags: ['UNDEAD', 'EVIL'],
     attacks: [
       { method: 'GAZE', dice: '4d6', effect: { type: 'DRAIN' } },
       { method: 'GAZE', dice: '4d6', effect: { type: 'DRAIN' } },
@@ -1310,7 +1310,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 112,
     experience: 7000,
-    flags: ['DEMON'],
+    flags: ['DEMON', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '4d6', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '4d6', effect: { type: 'HURT' } },
@@ -1353,7 +1353,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 120,
     armor: 195,
     experience: 30000,
-    flags: ['UNIQUE', 'DRAGON'],
+    flags: ['UNIQUE', 'DRAGON', 'EVIL'],
     attacks: [
       { method: 'CLAW', dice: '6d8', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '6d8', effect: { type: 'HURT' } },
@@ -1375,7 +1375,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 130,
     armor: 168,
     experience: 43000,
-    flags: ['UNIQUE', 'DEMON'],
+    flags: ['UNIQUE', 'DEMON', 'EVIL'],
     attacks: [
       { method: 'HIT', dice: '8d8', effect: { type: 'ELEMENTAL', element: 'FIRE' } },
       { method: 'HIT', dice: '8d8', effect: { type: 'ELEMENTAL', element: 'FIRE' } },
@@ -1397,7 +1397,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 130,
     armor: 192,
     experience: 50000,
-    flags: ['UNIQUE'],
+    flags: ['UNIQUE', 'EVIL'],
     attacks: [
       { method: 'TOUCH', dice: '8d8', effect: { type: 'DRAIN' } },
       { method: 'TOUCH', dice: '8d8', effect: { type: 'DRAIN' } },
@@ -1418,7 +1418,7 @@ export const monsters: MonsterTemplate[] = [
     speed: 140,
     armor: 180,
     experience: 60000,
-    flags: ['UNIQUE'],
+    flags: ['UNIQUE', 'EVIL'],
     attacks: [
       { method: 'CRUSH', dice: '20d8', effect: { type: 'HURT' } },
       { method: 'CRUSH', dice: '20d8', effect: { type: 'HURT' } },

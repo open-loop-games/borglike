@@ -292,16 +292,34 @@ function executeBlink(game: GameState, monster: Monster): SpellResult {
 }
 
 /**
- * Monster hastens itself
+ * Monster hastens itself (+50% speed for 10 turns)
  */
-function executeHaste(_monster: Monster): SpellResult {
-  // Haste would need a monster buff system - for now just a message
-  // The effect is implicit in faster monsters having higher speed templates
+function executeHaste(monster: Monster): SpellResult {
+  // Check if already hasted
+  const existingHaste = monster.buffs.find((b) => b.type === 'haste')
+  if (existingHaste) {
+    // Refresh duration
+    existingHaste.turnsRemaining = 10
+    return {
+      success: true,
+      damage: 0,
+      statusInflicted: null,
+      message: '', // Silent refresh
+    }
+  }
+
+  // Apply haste buff: +50% speed for 10 turns
+  monster.buffs.push({
+    type: 'haste',
+    turnsRemaining: 10,
+    value: 50, // +50% speed
+  })
+
   return {
     success: true,
     damage: 0,
     statusInflicted: null,
-    message: '', // Silent - haste is handled by template speed
+    message: `${monster.template.name} speeds up!`,
   }
 }
 

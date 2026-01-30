@@ -124,6 +124,15 @@ function resolveSingleAttack(
     damage = applyElementalResistance(damage, attack.effect.element, character)
   }
 
+  // Apply Protection from Evil (halves damage from EVIL monsters)
+  // Requires: player has buff, monster is EVIL, player level >= monster depth
+  const hasPFE = character.statusEffects.some((e) => e.type === 'prot_from_evil')
+  const isEvil = monster.template.flags.includes('EVIL')
+  const levelCheck = character.level >= monster.template.minDepth
+  if (hasPFE && isEvil && levelCheck) {
+    damage = Math.floor(damage * 0.5)
+  }
+
   // Ensure minimum 1 damage on hit
   damage = Math.max(1, damage)
 

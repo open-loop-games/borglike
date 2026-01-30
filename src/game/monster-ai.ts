@@ -83,6 +83,7 @@ export function spawnMonster(template: MonsterTemplate, position: Point, hpPerce
     isAwake: false,
     seen: false,
     debuffs: [],
+    buffs: [],
   }
 }
 
@@ -583,11 +584,20 @@ const ENERGY_THRESHOLD = 100
  * @returns True if the monster has enough energy to act
  */
 export function updateMonsterEnergy(monster: Monster): boolean {
-  // Apply slow debuff to speed calculation
+  // Start with base speed
+  let effectiveSpeed = monster.template.speed
+
+  // Apply slow debuff (reduces speed)
   const slowDebuff = monster.debuffs.find((d) => d.type === 'slow')
-  const effectiveSpeed = slowDebuff
-    ? Math.floor((monster.template.speed * (100 - slowDebuff.value)) / 100)
-    : monster.template.speed
+  if (slowDebuff) {
+    effectiveSpeed = Math.floor((effectiveSpeed * (100 - slowDebuff.value)) / 100)
+  }
+
+  // Apply haste buff (increases speed)
+  const hasteBuff = monster.buffs.find((b) => b.type === 'haste')
+  if (hasteBuff) {
+    effectiveSpeed = Math.floor((effectiveSpeed * (100 + hasteBuff.value)) / 100)
+  }
 
   monster.energy += effectiveSpeed
 
@@ -608,6 +618,18 @@ export function tickMonsterDebuffs(monster: Monster): void {
   monster.debuffs = monster.debuffs.filter((debuff) => {
     debuff.turnsRemaining--
     return debuff.turnsRemaining > 0
+  })
+}
+
+/**
+ * Tick down monster buffs, removing expired ones
+ *
+ * @param monster - The monster to tick buffs for
+ */
+export function tickMonsterBuffs(monster: Monster): void {
+  monster.buffs = monster.buffs.filter((buff) => {
+    buff.turnsRemaining--
+    return buff.turnsRemaining > 0
   })
 }
 
@@ -691,8 +713,9 @@ export function processMonsterTurns(game: GameState): GameEvent[] {
       }
     }
 
-    // Tick debuffs at end of monster's turn
+    // Tick debuffs and buffs at end of monster's turn
     tickMonsterDebuffs(monster)
+    tickMonsterBuffs(monster)
   }
 
   return events

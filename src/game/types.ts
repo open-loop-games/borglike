@@ -452,6 +452,14 @@ export interface MonsterDebuff {
   value: number
 }
 
+/** A buff effect on a monster */
+export interface MonsterBuff {
+  type: 'haste'
+  turnsRemaining: number
+  /** Speed bonus percentage (e.g., 50 = +50% speed) */
+  value: number
+}
+
 /** A monster instance in the game */
 export interface Monster {
   id: string
@@ -467,6 +475,8 @@ export interface Monster {
   seen: boolean
   /** Active debuffs on this monster */
   debuffs: MonsterDebuff[]
+  /** Active buffs on this monster */
+  buffs: MonsterBuff[]
 }
 
 /** Check if monster is a boss or unique (dangerous target) */
