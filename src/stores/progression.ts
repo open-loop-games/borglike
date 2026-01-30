@@ -120,6 +120,9 @@ export const useProgressionStore = defineStore('progression', () => {
   const topRunsByKills = ref<RunStats[]>([])
   const MAX_TOP_RUNS = 5
 
+  // Win history - all victories, never trimmed
+  const winHistory = ref<RunStats[]>([])
+
   // Bestiary - tracks monster kills across all runs
   const bestiary = ref<Record<string, BestiaryEntry>>({})
 
@@ -601,6 +604,8 @@ export const useProgressionStore = defineStore('progression', () => {
     globalStats.value.totalRuns++
     if (isVictory) {
       totalVictories.value++
+      // Add to win history (never trimmed - wins are rare and precious)
+      winHistory.value.unshift(stats)
       // Track victories per race and class for prestige unlock conditions
       if (!globalStats.value.victoriesPerRace) {
         globalStats.value.victoriesPerRace = {}
@@ -891,6 +896,7 @@ export const useProgressionStore = defineStore('progression', () => {
     unlocks,
     globalStats,
     runHistory,
+    winHistory,
     topRunsByDepth,
     topRunsByEssence,
     topRunsByKills,

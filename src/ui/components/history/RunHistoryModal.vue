@@ -10,7 +10,7 @@ const emit = defineEmits<{
 }>()
 
 // Tab state
-const activeTab = ref<'recent' | 'top'>('recent')
+const activeTab = ref<'recent' | 'wins' | 'top'>('recent')
 
 // Expanded row state
 const expandedRunId = ref<string | null>(null)
@@ -21,6 +21,7 @@ function toggleExpanded(runId: string) {
 
 // Computed data
 const recentRuns = computed(() => progression.runHistory.slice(0, 50))
+const wins = computed(() => progression.winHistory)
 
 // Use independent top runs storage (persisted separately from recent history)
 const topByDepth = computed(() => progression.topRunsByDepth)
@@ -50,6 +51,9 @@ function formatTimeAgo(timestamp: number): string {
       <button :class="{ active: activeTab === 'recent' }" @click="activeTab = 'recent'">
         Recent ({{ recentRuns.length }})
       </button>
+      <button :class="{ active: activeTab === 'wins' }" @click="activeTab = 'wins'">
+        Wins ({{ wins.length }})
+      </button>
       <button :class="{ active: activeTab === 'top' }" @click="activeTab = 'top'">Top Runs</button>
     </nav>
 
@@ -71,8 +75,26 @@ function formatTimeAgo(timestamp: number): string {
         </div>
       </div>
 
+      <!-- Wins tab -->
+      <div v-else-if="activeTab === 'wins'" class="wins-runs">
+        <div v-if="wins.length === 0" class="empty-state">
+          No victories yet. Defeat Morgoth to record a win!
+        </div>
+        <div v-else class="run-list">
+          <RunHistoryRow
+            v-for="(run, index) in wins"
+            :key="run.id"
+            :run="run"
+            :rank="index + 1"
+            :expanded="expandedRunId === run.id"
+            :time-ago="formatTimeAgo(run.endTime ?? run.startTime)"
+            @toggle="toggleExpanded(run.id)"
+          />
+        </div>
+      </div>
+
       <!-- Top runs tab -->
-      <div v-else class="top-runs">
+      <div v-else-if="activeTab === 'top'" class="top-runs">
         <section class="top-section">
           <h3>Deepest Runs</h3>
           <div class="run-list">

@@ -66,6 +66,8 @@ interface ProgressionData {
   topRunsByDepth?: RunStats[]
   topRunsByEssence?: RunStats[]
   topRunsByKills?: RunStats[]
+  // Win history - all victories
+  winHistory?: RunStats[]
 }
 
 /** Database schema for type safety */
@@ -270,6 +272,8 @@ function serializeProgression(): ProgressionData {
     topRunsByDepth: [...progression.topRunsByDepth],
     topRunsByEssence: [...progression.topRunsByEssence],
     topRunsByKills: [...progression.topRunsByKills],
+    // Win history
+    winHistory: [...progression.winHistory],
   }
 }
 
@@ -345,6 +349,12 @@ function restoreProgressionFromData(data: ProgressionData): void {
   if (data.topRunsByKills) {
     progression.topRunsByKills.length = 0
     progression.topRunsByKills.push(...data.topRunsByKills)
+  }
+
+  // Restore win history
+  if (data.winHistory) {
+    progression.winHistory.length = 0
+    progression.winHistory.push(...data.winHistory)
   }
 
   // Run migrations to ensure data integrity
@@ -604,6 +614,8 @@ export function setupAutoSave(): () => void {
       topRunsByDepthLength: progression.topRunsByDepth.length,
       topRunsByEssenceLength: progression.topRunsByEssence.length,
       topRunsByKillsLength: progression.topRunsByKills.length,
+      // Track win history
+      winHistoryLength: progression.winHistory.length,
       // Track achievements
       achievementsUnlocked: Array.from(progression.achievementState.unlocked).join(','),
       achievementsProgress: JSON.stringify(progression.achievementState.progress),
@@ -649,6 +661,7 @@ export async function exportDataAsJSON(): Promise<string> {
       topRunsByDepth: [...progression.topRunsByDepth],
       topRunsByEssence: [...progression.topRunsByEssence],
       topRunsByKills: [...progression.topRunsByKills],
+      winHistory: [...progression.winHistory],
     },
     runHistory: runs,
   }
@@ -690,6 +703,7 @@ export async function importDataFromJSON(jsonString: string): Promise<boolean> {
       topRunsByDepth: prog.topRunsByDepth,
       topRunsByEssence: prog.topRunsByEssence,
       topRunsByKills: prog.topRunsByKills,
+      winHistory: prog.winHistory,
     }
 
     restoreProgressionFromData(progressionData)
