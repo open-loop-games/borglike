@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useProgressionStore } from '@/stores/progression'
+import { clearData } from '@/ui/composables/use-persistence'
 import PanelFrame from '../common/PanelFrame.vue'
 
 const emit = defineEmits<{
@@ -11,7 +12,7 @@ const emit = defineEmits<{
 const settingsStore = useSettingsStore()
 const progression = useProgressionStore()
 
-const activeTab = ref<'display' | 'gameplay' | 'audio' | 'data'>('display')
+const activeTab = ref<'gameplay' | 'data'>('gameplay')
 
 // Confirmation dialog state
 const showResetConfirm = ref(false)
@@ -19,9 +20,7 @@ const showExportSuccess = ref(false)
 
 // Tab definitions
 const tabs = [
-  { id: 'display', label: 'Display', icon: '&#x1F5B5;' },
   { id: 'gameplay', label: 'Gameplay', icon: '&#x1F3AE;' },
-  { id: 'audio', label: 'Audio', icon: '&#x1F50A;' },
   { id: 'data', label: 'Data', icon: '&#x1F4BE;' },
 ] as const
 
@@ -70,8 +69,9 @@ function handleResetProgress() {
   showResetConfirm.value = true
 }
 
-function confirmReset() {
-  // Reset would require clearing localStorage and reloading
+async function confirmReset() {
+  // Clear IndexedDB (primary storage) and localStorage (backup)
+  await clearData()
   localStorage.clear()
   window.location.reload()
 }
@@ -103,100 +103,6 @@ function cancelReset() {
     </nav>
 
     <div class="settings-content">
-      <!-- Display Settings -->
-      <div v-if="activeTab === 'display'" class="settings-section">
-        <PanelFrame class="setting-group">
-          <h3>Visual Settings</h3>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Font Size</span>
-              <span class="setting-desc">Adjust dungeon grid text size</span>
-            </div>
-            <select
-              :value="settingsStore.settings.fontSize"
-              class="setting-select"
-              @change="
-                settingsStore.updateSetting(
-                  'fontSize',
-                  ($event.target as HTMLSelectElement).value as 'small' | 'medium' | 'large'
-                )
-              "
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Animation Speed</span>
-              <span class="setting-desc">Speed of visual effects</span>
-            </div>
-            <select
-              :value="settingsStore.settings.animationSpeed"
-              class="setting-select"
-              @change="
-                settingsStore.updateSetting(
-                  'animationSpeed',
-                  ($event.target as HTMLSelectElement).value as
-                    | 'slow'
-                    | 'normal'
-                    | 'fast'
-                    | 'instant'
-                )
-              "
-            >
-              <option value="slow">Slow</option>
-              <option value="normal">Normal</option>
-              <option value="fast">Fast</option>
-              <option value="instant">Instant</option>
-            </select>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Show Minimap</span>
-              <span class="setting-desc">Display floor minimap in expanded view</span>
-            </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.showMinimap"
-                @change="
-                  settingsStore.updateSetting(
-                    'showMinimap',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Show FPS Counter</span>
-              <span class="setting-desc">Display frames per second</span>
-            </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.showFPS"
-                @change="
-                  settingsStore.updateSetting(
-                    'showFPS',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-        </PanelFrame>
-      </div>
-
       <!-- Gameplay Settings -->
       <div v-if="activeTab === 'gameplay'" class="settings-section">
         <PanelFrame class="setting-group">
@@ -296,84 +202,6 @@ function cancelReset() {
             </label>
           </div>
         </PanelFrame>
-      </div>
-
-      <!-- Audio Settings -->
-      <div v-if="activeTab === 'audio'" class="settings-section">
-        <PanelFrame class="setting-group">
-          <h3>Sound</h3>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Sound Effects</span>
-              <span class="setting-desc">Enable game sound effects</span>
-            </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.soundEnabled"
-                @change="
-                  settingsStore.updateSetting(
-                    'soundEnabled',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Music</span>
-              <span class="setting-desc">Enable background music</span>
-            </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.musicEnabled"
-                @change="
-                  settingsStore.updateSetting(
-                    'musicEnabled',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Volume</span>
-              <span class="setting-desc">Master volume level</span>
-            </div>
-            <div class="volume-control">
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                :value="settingsStore.settings.volume"
-                class="volume-slider"
-                @input="
-                  settingsStore.updateSetting(
-                    'volume',
-                    parseFloat(($event.target as HTMLInputElement).value)
-                  )
-                "
-              />
-              <span class="volume-value"
-                >{{ Math.round(settingsStore.settings.volume * 100) }}%</span
-              >
-            </div>
-          </div>
-        </PanelFrame>
-
-        <div class="audio-note">
-          <span class="note-icon">&#x1F4DD;</span>
-          <span>Audio features coming soon!</span>
-        </div>
       </div>
 
       <!-- Data Settings -->
@@ -642,54 +470,6 @@ function cancelReset() {
 .toggle input:checked + .toggle-slider:before {
   transform: translateX(20px);
   background: var(--indigo);
-}
-
-/* Volume Control */
-.volume-control {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.volume-slider {
-  width: 100px;
-  height: 4px;
-  background: var(--highlight);
-  border-radius: 2px;
-  outline: none;
-  -webkit-appearance: none;
-}
-
-.volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: var(--indigo);
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.volume-value {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-secondary);
-  min-width: 40px;
-  text-align: right;
-}
-
-/* Audio Note */
-.audio-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid var(--indigo);
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-secondary);
 }
 
 /* Stats Grid */

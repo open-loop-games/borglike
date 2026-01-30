@@ -44,10 +44,6 @@ const emit = defineEmits<{
   openAchievements: []
 }>()
 
-// Debug function to add essence
-function debugAddEssence() {
-  progression.debugAddEssence(100)
-}
 </script>
 
 <template>
@@ -64,10 +60,6 @@ function debugAddEssence() {
         <span class="essence-label">Essence</span>
       </div>
 
-      <!-- Debug button (remove in production) -->
-      <button class="debug-btn" title="Debug: Add 100 Essence" @click="debugAddEssence">
-        +100
-      </button>
     </div>
 
     <div class="header-right">
@@ -200,24 +192,6 @@ function debugAddEssence() {
   font-size: 11px;
   color: var(--text-secondary);
   text-transform: uppercase;
-}
-
-.debug-btn {
-  padding: 4px 8px;
-  background: var(--highlight);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.debug-btn:hover {
-  background: var(--purple);
-  border-color: var(--purple);
-  color: white;
 }
 
 .header-right {

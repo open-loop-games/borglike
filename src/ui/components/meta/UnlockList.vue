@@ -102,6 +102,10 @@ function getPrereqNames(boosterId: string): string[] {
 
     <div class="unlock-header">
       <span class="header-text">{{ unlockedCount }} / {{ totalCount }} Unlocked</span>
+      <span v-if="activeTab !== 'boosters'" class="codex-hint">
+        <span class="codex-icon">&#x1F4DC;</span>
+        Codex has details
+      </span>
     </div>
 
     <div class="unlocks-scroll">
@@ -296,6 +300,9 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .unlock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
 }
@@ -305,6 +312,18 @@ function getPrereqNames(boosterId: string): string[] {
   font-size: 10px;
   color: var(--text-dim);
   text-transform: uppercase;
+}
+
+.codex-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.codex-icon {
+  font-size: 11px;
 }
 
 .unlocks-scroll {

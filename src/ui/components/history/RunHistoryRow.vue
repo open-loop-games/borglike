@@ -72,6 +72,41 @@ const duration = computed(() => {
   const remainingMinutes = minutes % 60
   return `${hours}h ${remainingMinutes}m`
 })
+
+// Consumable keywords for detection
+const consumableKeywords = ['Potion', 'Scroll']
+
+function isConsumable(name: string): boolean {
+  return consumableKeywords.some((kw) => name.includes(kw))
+}
+
+// Process inventory: split consumables from items, stack duplicates
+const processedInventory = computed(() => {
+  if (!props.run.inventory || props.run.inventory.length === 0) {
+    return { consumables: [], items: [] }
+  }
+
+  const consumableMap = new Map<string, number>()
+  const items: string[] = []
+
+  for (const item of props.run.inventory) {
+    if (isConsumable(item)) {
+      consumableMap.set(item, (consumableMap.get(item) || 0) + 1)
+    } else {
+      items.push(item)
+    }
+  }
+
+  // Convert consumable map to sorted array with counts
+  const consumables = Array.from(consumableMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  // Sort items alphabetically
+  items.sort((a, b) => a.localeCompare(b))
+
+  return { consumables, items }
+})
 </script>
 
 <template>
@@ -235,10 +270,26 @@ const duration = computed(() => {
         </div>
       </div>
 
-      <div v-if="run.inventory && run.inventory.length > 0" class="expanded-section">
-        <h4>Inventory ({{ run.inventory.length }})</h4>
+      <div
+        v-if="processedInventory.consumables.length > 0"
+        class="expanded-section"
+      >
+        <h4>Consumables ({{ processedInventory.consumables.reduce((sum, c) => sum + c.count, 0) }})</h4>
         <div class="inventory-list">
-          <span v-for="(item, index) in run.inventory" :key="index" class="inventory-item">{{
+          <span
+            v-for="item in processedInventory.consumables"
+            :key="item.name"
+            class="inventory-item consumable"
+          >
+            {{ item.name }}<span v-if="item.count > 1" class="item-count"> x{{ item.count }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div v-if="processedInventory.items.length > 0" class="expanded-section">
+        <h4>Items ({{ processedInventory.items.length }})</h4>
+        <div class="inventory-list">
+          <span v-for="(item, index) in processedInventory.items" :key="index" class="inventory-item">{{
             item
           }}</span>
         </div>

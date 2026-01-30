@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { races } from '@/game/data/races'
 import { classes } from '@/game/data/classes'
@@ -17,6 +17,68 @@ const activeTab = ref<Tab>('stats')
 const totalRaces = races.length
 const totalClasses = classes.length
 const totalBoosters = boosters.length
+
+// Show victories instead of max depth after first win
+const hasVictories = computed(() => progression.totalVictories > 0)
+
+// Count total bot upgrades across all slots
+// Each slot can have: 3 toggles + 3 sweep + 3 surf + 3 kiting = 12 max
+const totalBotUpgrades = computed(() => {
+  let count = 0
+  for (let i = 0; i < 4; i++) {
+    const config = progression.getSlotConfig(i)
+    const caps = config?.capabilities
+    if (!caps) continue
+    if (caps.town) count++
+    if (caps.farming) count++
+    if (caps.preparedness) count++
+    count += (caps.sweep || 0) + (caps.surf || 0) + (caps.kiting || 0)
+  }
+  return count
+})
+const maxBotUpgrades = 4 * 12 // 4 slots × 12 upgrades each
+
+// Format bot training upgrades for a slot (2-letter codes)
+function formatSlotUpgrades(slotIndex: number): string {
+  const config = progression.getSlotConfig(slotIndex)
+  const caps = config.capabilities
+  const parts: string[] = []
+
+  if (caps.town) parts.push('Tn')
+  if (caps.farming) parts.push('Fm')
+  if (caps.preparedness) parts.push('Pr')
+  if (caps.sweep > 0) parts.push(`Sw${caps.sweep}`)
+  if (caps.surf > 0) parts.push(`Sf${caps.surf}`)
+  if (caps.kiting > 0) parts.push(`Kt${caps.kiting}`)
+
+  return parts.length > 0 ? parts.join(' ') : '—'
+}
+
+// Get slot training summaries for display
+const slotTrainingSummaries = computed(() => {
+  const unlocked = progression.unlocks.runSlots
+  const summaries: { slot: number; label: string; upgrades: string; locked: boolean }[] = []
+
+  for (let i = 0; i < 4; i++) {
+    if (i < unlocked) {
+      summaries.push({
+        slot: i,
+        label: `Slot ${i + 1}`,
+        upgrades: formatSlotUpgrades(i),
+        locked: false,
+      })
+    } else {
+      summaries.push({
+        slot: i,
+        label: `Slot ${i + 1}`,
+        upgrades: 'Locked',
+        locked: true,
+      })
+    }
+  }
+
+  return summaries
+})
 </script>
 
 <template>
@@ -55,7 +117,12 @@ const totalBoosters = boosters.length
               <span class="stat-label">Total Runs</span>
               <span class="stat-value">{{ progression.globalStats.totalRuns }}</span>
             </PanelFrame>
-            <PanelFrame class="stat">
+            <!-- Show victories after first win, otherwise max depth -->
+            <PanelFrame v-if="hasVictories" class="stat">
+              <span class="stat-label">Victories</span>
+              <span class="stat-value victory">{{ progression.totalVictories }}</span>
+            </PanelFrame>
+            <PanelFrame v-else class="stat">
               <span class="stat-label">Max Depth</span>
               <span class="stat-value depth">{{ progression.globalStats.maxDepthEver }}</span>
             </PanelFrame>
@@ -111,35 +178,28 @@ const totalBoosters = boosters.length
                 >{{ progression.unlocks.boosters.size }} / {{ totalBoosters }}</span
               >
             </div>
+            <div class="summary-row">
+              <span class="summary-label">Bot Upgrades</span>
+              <span class="summary-value"
+                >{{ totalBotUpgrades }} / {{ maxBotUpgrades }}</span
+              >
+            </div>
           </PanelFrame>
         </section>
 
         <section class="section">
-          <h2>Available</h2>
-          <div class="available-lists">
-            <div class="available-group">
-              <h3>Races</h3>
-              <div class="available-items">
-                <span
-                  v-for="race in progression.availableRaces"
-                  :key="race"
-                  class="available-item race"
-                  >{{ race }}</span
-                >
-              </div>
+          <h2>Bot Training</h2>
+          <PanelFrame class="training-summary">
+            <div
+              v-for="slot in slotTrainingSummaries"
+              :key="slot.slot"
+              class="training-row"
+              :class="{ locked: slot.locked }"
+            >
+              <span class="training-label">{{ slot.label }}</span>
+              <span class="training-value">{{ slot.upgrades }}</span>
             </div>
-            <div class="available-group">
-              <h3>Classes</h3>
-              <div class="available-items">
-                <span
-                  v-for="cls in progression.availableClasses"
-                  :key="cls"
-                  class="available-item class"
-                  >{{ cls }}</span
-                >
-              </div>
-            </div>
-          </div>
+          </PanelFrame>
         </section>
       </div>
 
@@ -271,6 +331,11 @@ const totalBoosters = boosters.length
   text-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
 }
 
+.stat-value.victory {
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+}
+
 .unlock-summary {
   padding: 12px !important;
 }
@@ -295,41 +360,37 @@ const totalBoosters = boosters.length
   color: var(--cyan);
 }
 
-.available-lists {
+.training-summary {
+  padding: 12px !important;
+}
+
+.training-row {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.available-group h3 {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin: 0 0 6px;
-  text-transform: uppercase;
-}
-
-.available-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.available-item {
-  padding: 3px 8px;
-  background: var(--highlight);
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  justify-content: space-between;
+  padding: 6px 0;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
 }
 
-.available-item.race {
+.training-row:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.training-row.locked {
+  opacity: 0.5;
+}
+
+.training-label {
+  color: var(--text-secondary);
+}
+
+.training-value {
   color: var(--cyan);
-  border-color: rgba(6, 182, 212, 0.3);
+  text-align: right;
+  letter-spacing: 1px;
 }
 
-.available-item.class {
-  color: var(--green);
-  border-color: rgba(34, 197, 94, 0.3);
+.training-row.locked .training-value {
+  color: var(--text-dim);
 }
 </style>
