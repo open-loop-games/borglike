@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
+import { getBoosterById } from '@game/data/boosters'
 
 const props = defineProps<{
   slot: number
@@ -15,13 +16,21 @@ const emit = defineEmits<{
 
 const progression = useProgressionStore()
 
-// Race/class selection state
-const selectedRace = ref(progression.availableRaces[0] || 'Human')
-const selectedClass = ref(progression.availableClasses[0] || 'Warrior')
-const showConfig = ref(false)
+const slotConfig = computed(() => progression.getSlotConfig(props.slot))
+
+const boosterNames = computed(() => {
+  const names: string[] = []
+  for (const id of slotConfig.value.boosters) {
+    if (id) {
+      const booster = getBoosterById(id)
+      if (booster) names.push(booster.name)
+    }
+  }
+  return names
+})
 
 function handleQuickStart() {
-  const savedConfig = progression.getSlotConfig(props.slot)
+  const savedConfig = slotConfig.value
   // Set active boosters from saved slot config
   progression.setActiveBooster(0, savedConfig.boosters[0])
   progression.setActiveBooster(1, savedConfig.boosters[1])
@@ -32,20 +41,8 @@ function handleQuickStart() {
   })
 }
 
-function handleConfiguredStart() {
-  emit('startRun', props.slot, {
-    race: selectedRace.value,
-    class: selectedClass.value,
-    personality: 'cautious',
-  })
-}
-
 function handleOpenLoadout() {
   emit('openLoadout', props.slot)
-}
-
-function toggleConfig() {
-  showConfig.value = !showConfig.value
 }
 </script>
 
@@ -56,45 +53,23 @@ function toggleConfig() {
     </div>
 
     <div class="slot-content">
-      <!-- Quick Start -->
-      <div v-if="!showConfig" class="quick-start">
+      <div class="quick-start">
         <button class="start-btn" @click="handleQuickStart">
           <span class="btn-icon">&#x25B6;</span>
           <span>Quick Start</span>
         </button>
-        <div class="quick-actions">
-          <button class="config-btn" @click="toggleConfig">Simple Config</button>
-          <button class="config-btn" @click="handleOpenLoadout">Full Loadout</button>
-        </div>
-      </div>
 
-      <!-- Configuration Panel -->
-      <div v-else class="config-panel">
-        <div class="config-row">
-          <label class="config-label">Race</label>
-          <select v-model="selectedRace" class="config-select">
-            <option v-for="race in progression.availableRaces" :key="race" :value="race">
-              {{ race }}
-            </option>
-          </select>
+        <div class="config-summary">
+          <span class="summary-main">
+            {{ slotConfig.race }} {{ slotConfig.class }}
+            <span class="personality">({{ slotConfig.personality }})</span>
+          </span>
+          <span v-if="boosterNames.length" class="summary-boosters">
+            {{ boosterNames.join(', ') }}
+          </span>
         </div>
 
-        <div class="config-row">
-          <label class="config-label">Class</label>
-          <select v-model="selectedClass" class="config-select">
-            <option v-for="cls in progression.availableClasses" :key="cls" :value="cls">
-              {{ cls }}
-            </option>
-          </select>
-        </div>
-
-        <div class="config-actions">
-          <button class="start-btn small" @click="handleConfiguredStart">
-            <span class="btn-icon">&#x25B6;</span>
-            Start
-          </button>
-          <button class="cancel-btn" @click="toggleConfig">Cancel</button>
-        </div>
+        <button class="config-btn" @click="handleOpenLoadout">Configure Run</button>
       </div>
     </div>
 
@@ -140,9 +115,26 @@ function toggleConfig() {
   gap: 12px;
 }
 
-.quick-actions {
+.config-summary {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.summary-main {
+  color: var(--text-secondary);
+}
+
+.summary-main .personality {
+  color: var(--text-dim);
+}
+
+.summary-boosters {
+  color: var(--text-dim);
+  font-size: 10px;
 }
 
 .start-btn {
@@ -158,11 +150,6 @@ function toggleConfig() {
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s;
-}
-
-.start-btn.small {
-  padding: 8px 16px;
-  font-size: 12px;
 }
 
 .start-btn:hover {
@@ -183,8 +170,7 @@ function toggleConfig() {
   text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
 }
 
-.config-btn,
-.cancel-btn {
+.config-btn {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text-dim);
@@ -196,56 +182,9 @@ function toggleConfig() {
   transition: all 0.2s;
 }
 
-.config-btn:hover,
-.cancel-btn:hover {
+.config-btn:hover {
   border-color: var(--text-secondary);
   color: var(--text-secondary);
-}
-
-.config-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  min-width: 200px;
-}
-
-.config-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.config-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-
-.config-select {
-  background: var(--highlight);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 6px 8px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.config-select:focus {
-  outline: none;
-  border-color: var(--indigo);
-}
-
-.config-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
 }
 
 .slot-decoration {
