@@ -13,7 +13,7 @@
 
 import type { Point, GameState, Tile } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL, getEffectiveCapabilities } from './types'
+import { getEffectiveCapabilities } from './types'
 import { MAX_DEPTH } from '../types'
 import { getTile } from '../dungeon'
 import type { FlowGrid } from './flow'
@@ -363,22 +363,32 @@ export function isSweepTimedOut(game: GameState, botState: BotState): boolean {
 }
 
 // ============================================================================
-// QUERIES - Caster Behavior
+// QUERIES - Sweep Mode
 // ============================================================================
 
 /**
- * Check if bot is in early-game caster sweep mode.
- * Early-game casters (level < 10) use sweep exploration instead of
- * stair-surfing because respawns reset monsters, which is deadly for low-HP classes.
+ * Check if bot should use sweep exploration based on configuration.
+ * Sweep mode is activated when:
+ * - Bot has sweep mode enabled in state (set on level change in tick.ts)
+ * - OR character level is within configured sweep range AND capability unlocked AND toggle enabled
+ *
+ * This allows any class to use sweep exploration if configured, not just casters.
  */
-function isEarlyCasterSweeping(
-  character: { classId: string; level: number },
-  botState: { sweepMode: boolean }
-): boolean {
+function shouldUseSweep(context: BotContext): boolean {
+  const { game, botState, capabilities, toggles, sweepLevelRange } = context
+  const charLevel = game.character.level
+
+  // If sweep mode is already active (set on level change), use it
+  if (botState.sweepMode) return true
+
+  // Check if conditions are met to use sweep
+  // (this handles cases where sweepMode wasn't set on level entry)
   return (
-    botState.sweepMode &&
-    SQUISHY_CLASSES.has(character.classId) &&
-    character.level < CASTER_STAIR_SURF_MIN_LEVEL
+    capabilities.sweep >= 1 &&
+    toggles.sweepEnabled &&
+    sweepLevelRange.start > 0 &&
+    charLevel >= sweepLevelRange.start &&
+    charLevel < sweepLevelRange.end
   )
 }
 
@@ -446,8 +456,8 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
   const character = game.character
   const pos = character.position
 
-  // Early-game casters in sweep mode use sweep exploration instead of tethered farming
-  if (isEarlyCasterSweeping(character, botState)) return null
+  // Sweep mode uses sweep exploration instead of tethered farming
+  if (shouldUseSweep(context)) return null
 
   // Already have enough effective gold? Don't need to farm
   if (getEffectiveGold(character) >= goldTarget) return null
@@ -529,11 +539,9 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
  */
 export function getSweepGoal(context: BotContext): BotGoal | null {
   const { game, botState } = context
-  const character = game.character
 
-  // Only for casters in sweep mode
-  if (!botState.sweepMode) return null
-  if (!SQUISHY_CLASSES.has(character.classId)) return null
+  // Only when sweep mode is active (any class can sweep if configured)
+  if (!shouldUseSweep(context)) return null
 
   const progress = getSweepProgress(game, botState)
 
@@ -634,8 +642,8 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
   // Can't ascend from depth 1
   if (character.depth <= 1) return null
 
-  // CASTER SWEEP MODE: Casters must complete sweep before ascending again
-  if (isEarlyCasterSweeping(character, botState)) {
+  // SWEEP MODE: Must complete sweep before ascending again
+  if (shouldUseSweep(context)) {
     const sweepGoal = getSweepGoal(context)
     if (sweepGoal) return sweepGoal
     // Sweep complete - getSweepGoal already called exitSweepMode
@@ -649,7 +657,9 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
     return null
 
   // If leveled enough for CURRENT depth, explore it fully before ascending
-  if (!isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses))
+  if (
+    !isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses)
+  )
     return null
 
   // Farming depth floor: only farm on depths (blockedDepth - 2) to (blockedDepth - 1)
@@ -660,8 +670,8 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
   const stairsUp = botState.knownStairsUp
   if (!stairsUp) return null
 
-  // Early-game casters use sweep instead of tethered exploration
-  if (isEarlyCasterSweeping(character, botState)) {
+  // Sweep mode uses sweep instead of tethered exploration
+  if (shouldUseSweep(context)) {
     if (!botState.farmingMode) {
       enterFarmingMode(
         botState,
@@ -854,8 +864,8 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
     return farm
   }
 
-  // 4. Tether sweep - actively walk to unseen tiles within tether radius
-  if (botState.tetheredOrigin && !isEarlyCasterSweeping(character, botState)) {
+  // 4. Tether sweep - actively walk to unseen tiles within tether radius (non-sweep mode only)
+  if (botState.tetheredOrigin && !shouldUseSweep(context)) {
     const sweepGoal = profile('farm.tetherSweep', () => handleTetherSweep(context, goldTarget))
     if (sweepGoal) return sweepGoal
   }

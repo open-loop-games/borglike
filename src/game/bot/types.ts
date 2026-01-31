@@ -14,7 +14,7 @@ import type {
   AltarState,
   MerchantState,
 } from '../types'
-import type { BotCapabilities, BotToggles } from '@/types/progression'
+import type { BotCapabilities, BotToggles, SweepLevelRange } from '@/types/progression'
 import type { ClassBehaviorProfile } from './class-profiles'
 import type { FlowGrid } from './flow'
 
@@ -296,6 +296,9 @@ export interface BotContext {
   capabilities: BotCapabilities
   toggles: BotToggles
 
+  // Sweep configuration (per-slot)
+  sweepLevelRange: SweepLevelRange
+
   // Derived data
   visibleMonsters: Monster[]
   visibleItems: GroundItem[]
@@ -400,5 +403,13 @@ export function getClassTier(classId: string): ClassTier {
 /** Caster classes that use sweep exploration instead of stair surfing */
 export const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
 
-/** Minimum character level before casters can safely stair surf */
-export const CASTER_STAIR_SURF_MIN_LEVEL = 10
+/**
+ * Get default sweep level range based on class tier.
+ * SQUISHY classes sweep L1-10 by default, others have sweep disabled.
+ */
+export function getDefaultSweepLevelRange(classId: string): SweepLevelRange {
+  if (SQUISHY_CLASSES.has(classId)) {
+    return { start: 1, end: 10 } // Sweep L1-9, surf at L10+
+  }
+  return { start: 0, end: 0 } // Disabled
+}

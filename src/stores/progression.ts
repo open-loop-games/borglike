@@ -19,6 +19,7 @@ import {
   DEFAULT_BOT_TOGGLES,
   FULL_BOT_CAPABILITIES,
 } from '../types/progression'
+import { getDefaultSweepLevelRange } from '@game/bot/types'
 import {
   type BotUpgradeId,
   type ToggleUpgradeId,
@@ -84,6 +85,7 @@ export const useProgressionStore = defineStore('progression', () => {
 
   // Default slot config factory
   function createDefaultSlotConfig(): SlotConfig {
+    const classId = (availableClasses.value[0] || 'Warrior').toLowerCase()
     return {
       race: availableRaces.value[0] || 'Human',
       class: availableClasses.value[0] || 'Warrior',
@@ -91,6 +93,7 @@ export const useProgressionStore = defineStore('progression', () => {
       boosters: [null, null],
       capabilities: { ...DEFAULT_BOT_CAPABILITIES },
       toggles: { ...DEFAULT_BOT_TOGGLES },
+      sweepLevelRange: getDefaultSweepLevelRange(classId),
     }
   }
 
@@ -493,12 +496,16 @@ export const useProgressionStore = defineStore('progression', () => {
       // Migration: old saves without capabilities get FULL capabilities (reward existing players)
       const capabilities = saved.capabilities ?? { ...FULL_BOT_CAPABILITIES }
       const toggles = saved.toggles ?? { ...DEFAULT_BOT_TOGGLES }
+      // Migration: old saves without sweepLevelRange get class-based defaults
+      const effectiveClass = unlocks.value.classes.has(saved.class)
+        ? saved.class
+        : availableClasses.value[0] || 'Warrior'
+      const sweepLevelRange =
+        saved.sweepLevelRange ?? getDefaultSweepLevelRange(effectiveClass.toLowerCase())
 
       return {
         race: unlocks.value.races.has(saved.race) ? saved.race : availableRaces.value[0] || 'Human',
-        class: unlocks.value.classes.has(saved.class)
-          ? saved.class
-          : availableClasses.value[0] || 'Warrior',
+        class: effectiveClass,
         personality: saved.personality,
         boosters: [
           saved.boosters[0] && unlocks.value.boosters.has(saved.boosters[0])
@@ -510,6 +517,7 @@ export const useProgressionStore = defineStore('progression', () => {
         ],
         capabilities,
         toggles,
+        sweepLevelRange,
       }
     }
     return createDefaultSlotConfig()

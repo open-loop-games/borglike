@@ -5,8 +5,9 @@
  */
 
 import type { GameState, BotPersonality, Point, AltarState } from '../types'
-import type { BotCapabilities, BotToggles } from '../../types/progression'
+import type { BotCapabilities, BotToggles, SweepLevelRange } from '../../types/progression'
 import { FULL_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../../types/progression'
+import { getDefaultSweepLevelRange } from './types'
 import { manhattanDistance } from '../types'
 import type { BotContext, BotState, PersonalityConfig } from './types'
 import { getTile } from '../dungeon'
@@ -102,13 +103,16 @@ export function buildBotContext(
   personality: BotPersonality,
   botState?: BotState,
   capabilities?: BotCapabilities,
-  toggles?: BotToggles
+  toggles?: BotToggles,
+  sweepLevelRange?: SweepLevelRange
 ): BotContext {
   const config = getPersonalityConfig(personality)
 
   // Default to full capabilities for backwards compatibility
   const effectiveCapabilities = capabilities ?? FULL_BOT_CAPABILITIES
   const effectiveToggles = toggles ?? DEFAULT_BOT_TOGGLES
+  // Default sweep range based on class
+  const effectiveSweepRange = sweepLevelRange ?? getDefaultSweepLevelRange(game.character.classId)
 
   // Get class-aware information
   const classId = game.character.classId
@@ -168,6 +172,7 @@ export function buildBotContext(
     effectiveConfig,
     capabilities: effectiveCapabilities,
     toggles: effectiveToggles,
+    sweepLevelRange: effectiveSweepRange,
     visibleMonsters,
     visibleItems,
     visibleAltars,

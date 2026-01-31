@@ -12,12 +12,12 @@
  */
 
 import type { GameState, GameAction, BotPersonality, DungeonLevel } from '../types'
-import type { BotCapabilities, BotToggles } from '@/types/progression'
+import type { BotCapabilities, BotToggles, SweepLevelRange } from '@/types/progression'
 import { getTile } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 
 import type { BotState, BotGoal, BotContext, DangerResult, PersonalityConfig } from './types'
-import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from './types'
+import { getDefaultSweepLevelRange } from './types'
 import type { FlowGrid } from './flow'
 import {
   createBotState,
@@ -87,7 +87,8 @@ export function runBotTick(
   personality: BotPersonality,
   existingState?: BotState,
   capabilities?: BotCapabilities,
-  toggles?: BotToggles
+  toggles?: BotToggles,
+  sweepLevelRange?: SweepLevelRange
 ): GameAction {
   // Get or create bot state
   const botState = existingState ?? createBotState()
@@ -117,18 +118,42 @@ export function runBotTick(
       }
     }
 
-    // Initialize sweep mode for early-game casters on any dungeon level change
-    // Casters use sweep exploration instead of tethered exploration during farming
-    const isCaster = SQUISHY_CLASSES.has(game.character.classId)
-    const isEarlyGame = game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
+    // Initialize sweep mode on dungeon level change if conditions are met
+    // Get effective sweep range (use provided or default based on class)
+    const effectiveSweepRange = sweepLevelRange ?? getDefaultSweepLevelRange(game.character.classId)
+    const effectiveToggles = toggles ?? {
+      town: true,
+      farming: true,
+      preparedness: true,
+      sweepEnabled: true,
+    }
+    const effectiveCapabilities = capabilities ?? {
+      town: true,
+      farming: true,
+      preparedness: true,
+      sweep: 3,
+      surf: 3,
+      kiting: 3,
+    }
     const inDungeon = game.character.depth !== 0
-    if (isCaster && isEarlyGame && inDungeon) {
+    const charLevel = game.character.level
+
+    // Sweep activates when: in dungeon, capability unlocked, toggle on, and level in range
+    const sweepActive =
+      inDungeon &&
+      effectiveCapabilities.sweep >= 1 &&
+      effectiveToggles.sweepEnabled &&
+      effectiveSweepRange.start > 0 &&
+      charLevel >= effectiveSweepRange.start &&
+      charLevel < effectiveSweepRange.end
+
+    if (sweepActive) {
       botState.sweepMode = true
       botState.sweepStartTurn = game.turn
       initializeSweepDirection(game, botState)
-      // Don't set tetheredOrigin - casters use sweep, not tether
+      // Don't set tetheredOrigin - sweep mode uses sweep exploration, not tether
     } else if (wasInFarmingMode && inDungeon) {
-      // Set tethered origin for non-casters in farming mode
+      // Set tethered origin for non-sweep farming mode
       // Origin = current position (where we entered the level)
       // The tether check in getAscendToFarmGoal will block flipping until exploration is done
       botState.tetheredOrigin = { x: game.character.position.x, y: game.character.position.y }
@@ -143,7 +168,7 @@ export function runBotTick(
 
   // Build context
   const context = profile('buildBotContext', () =>
-    buildBotContext(game, personality, botState, capabilities, toggles)
+    buildBotContext(game, personality, botState, capabilities, toggles, sweepLevelRange)
   )
 
   // Update known stairs if visible
@@ -270,14 +295,12 @@ function isAtGoal(pos: { x: number; y: number }, goal: BotGoal): boolean {
 }
 
 /**
- * Check if EXPLORE goal should use sweep mode flow (casters re-exploring).
+ * Check if EXPLORE goal should use sweep mode flow.
+ * Sweep mode is set on level change based on configurable sweep level range.
  */
-function shouldUseSweepFlow(game: GameState, botState: BotState): boolean {
-  return (
-    botState.sweepMode &&
-    SQUISHY_CLASSES.has(game.character.classId) &&
-    game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
-  )
+function shouldUseSweepFlow(_game: GameState, botState: BotState): boolean {
+  // Sweep mode is already configured based on class defaults or user settings
+  return botState.sweepMode
 }
 
 // ============================================================================

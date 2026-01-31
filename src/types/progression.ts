@@ -38,6 +38,7 @@ export interface BotToggles {
   town: boolean
   farming: boolean
   preparedness: boolean
+  sweepEnabled: boolean // Can disable sweep exploration even when in-range
 }
 
 /** Default capabilities - face-rush mode (all disabled) */
@@ -65,6 +66,13 @@ export const DEFAULT_BOT_TOGGLES: BotToggles = {
   town: true,
   farming: true,
   preparedness: true,
+  sweepEnabled: true,
+}
+
+/** Sweep level range - character levels where sweep is active */
+export interface SweepLevelRange {
+  start: number // First level where sweep activates (0 = disabled)
+  end: number // Last level where sweep is active (exclusive)
 }
 
 /** Per-slot configuration - remembers last used settings */
@@ -76,6 +84,8 @@ export interface SlotConfig {
   // Per-slot bot training
   capabilities: BotCapabilities
   toggles: BotToggles
+  // Sweep exploration level range (class-specific defaults)
+  sweepLevelRange: SweepLevelRange
 }
 
 export interface Upgrade {
