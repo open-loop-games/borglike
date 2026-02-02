@@ -61,6 +61,10 @@ export function createBotState(): BotState {
     sweepMode: false,
     sweepDirection: null,
     sweepStartTurn: 0,
+    // Sweep flip state (yo-yo into blocked depth)
+    sweepFlipActive: false,
+    sweepFlipTargetDepth: null,
+    sweepFlipVisitedBlocked: false,
     // Unique hunt level flip
     huntingUniqueBlocker: null,
     uniqueHuntFlipDepth: null,

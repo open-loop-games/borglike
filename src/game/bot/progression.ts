@@ -359,7 +359,8 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
     if (sweepGoal) return sweepGoal
   }
 
-  return profile('prog.getDescendGoal', () => getDescendGoal(context))
+  const descendGoal = profile('prog.getDescendGoal', () => getDescendGoal(context))
+  return descendGoal
 }
 
 // ============================================================================

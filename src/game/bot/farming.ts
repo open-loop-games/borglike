@@ -142,6 +142,35 @@ export function exitSweepMode(botState: BotState): void {
   botState.sweepStartTurn = 0
 }
 
+// ============================================================================
+// STATE TRANSITIONS - Sweep Flip (yo-yo descent into blocked depth)
+// ============================================================================
+
+/**
+ * Enter sweep flip mode - about to descend into blocked depth.
+ */
+export function enterSweepFlip(botState: BotState, targetDepth: number): void {
+  botState.sweepFlipActive = true
+  botState.sweepFlipTargetDepth = targetDepth
+  botState.sweepFlipVisitedBlocked = false
+}
+
+/**
+ * Mark that we've visited the blocked depth during flip.
+ */
+export function markSweepFlipVisitedBlocked(botState: BotState): void {
+  botState.sweepFlipVisitedBlocked = true
+}
+
+/**
+ * Exit sweep flip mode - arrived at target depth with fresh level.
+ */
+export function exitSweepFlip(botState: BotState): void {
+  botState.sweepFlipActive = false
+  botState.sweepFlipTargetDepth = null
+  botState.sweepFlipVisitedBlocked = false
+}
+
 /**
  * Set sweep direction toward level center (away from entry point).
  * Called when initializing sweep mode for casters.
@@ -383,13 +412,14 @@ function shouldUseSweep(context: BotContext): boolean {
 
   // Check if conditions are met to use sweep
   // (this handles cases where sweepMode wasn't set on level entry)
-  return (
+  const result =
     capabilities.sweep >= 1 &&
     toggles.sweepEnabled &&
     sweepLevelRange.start > 0 &&
     charLevel >= sweepLevelRange.start &&
     charLevel < sweepLevelRange.end
-  )
+
+  return result
 }
 
 /**
@@ -420,6 +450,81 @@ function findBlockedDepth(context: BotContext): number {
     blockedDepth++
   }
   return blockedDepth
+}
+
+// ============================================================================
+// GOAL CREATORS - Sweep Flip Return
+// ============================================================================
+
+/**
+ * Get goal to return from sweep flip (after descending into blocked depth).
+ * Similar to getMorgothFlipReturnGoal but for sweep mode farming.
+ *
+ * Flow:
+ * 1. enterSweepFlip called at target depth, DESCEND goal issued
+ * 2. Bot descends into blocked depth
+ * 3. This function returns ASCEND to return to target depth
+ * 4. Bot arrives at target depth (fresh level), flip exits
+ */
+export function getSweepFlipReturnGoal(context: BotContext): BotGoal | null {
+  const { game, botState } = context
+  const character = game.character
+
+  if (!botState.sweepFlipActive || botState.sweepFlipTargetDepth === null) {
+    return null
+  }
+
+  // Still at target depth waiting to descend - let the DESCEND goal execute
+  // (flip was just entered, bot hasn't descended yet)
+  if (character.depth === botState.sweepFlipTargetDepth) {
+    return null // Let the DESCEND goal from step 6 execute
+  }
+
+  // At blocked depth: ascend back to target depth
+  if (character.depth === botState.farmBlockedDepth) {
+    const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+    if (stairsUp) {
+      return {
+        type: 'ASCEND_TO_FARM',
+        target: stairsUp,
+        targetId: null,
+        reason: `Sweep flip: ascending to fresh D${botState.sweepFlipTargetDepth}`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // Above blocked depth but below target: descending toward blocked
+  if (character.depth < botState.farmBlockedDepth && character.depth > botState.sweepFlipTargetDepth) {
+    const stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
+    if (stairsDown) {
+      return {
+        type: 'DESCEND',
+        target: stairsDown,
+        targetId: null,
+        reason: `Sweep flip: descending to D${botState.farmBlockedDepth}`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // Above target depth: ascending back after flip
+  if (character.depth > botState.sweepFlipTargetDepth && character.depth < botState.farmBlockedDepth) {
+    const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+    if (stairsUp) {
+      return {
+        type: 'ASCEND_TO_FARM',
+        target: stairsUp,
+        targetId: null,
+        reason: `Sweep flip: ascending to D${botState.sweepFlipTargetDepth}`,
+        startTurn: game.turn,
+      }
+    }
+  }
+
+  // Arrived back at target depth after flip - exit flip mode
+  // This case is handled earlier, but just in case
+  return null
 }
 
 // ============================================================================
@@ -543,6 +648,12 @@ export function getSweepGoal(context: BotContext): BotGoal | null {
   // Only when sweep mode is active (any class can sweep if configured)
   if (!shouldUseSweep(context)) return null
 
+  // Initialize sweep state if entering via conditions (not via sweepMode flag)
+  if (!botState.sweepMode && botState.sweepStartTurn === 0) {
+    botState.sweepMode = true
+    botState.sweepStartTurn = game.turn
+  }
+
   const progress = getSweepProgress(game, botState)
 
   // Check if sweep is complete (70% of floor tiles seen this visit)
@@ -653,14 +764,12 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
   const blockedDepth = findBlockedDepth(context)
 
   // Only ascend if under-leveled for the BLOCKED depth
-  if (!isUnderLeveled(character.level, blockedDepth, character.classId, character.upgradeBonuses))
-    return null
+  const underForBlocked = isUnderLeveled(character.level, blockedDepth, character.classId, character.upgradeBonuses)
+  if (!underForBlocked) return null
 
   // If leveled enough for CURRENT depth, explore it fully before ascending
-  if (
-    !isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses)
-  )
-    return null
+  const underForCurrent = isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses)
+  if (!underForCurrent) return null
 
   // Farming depth floor: only farm on depths (blockedDepth - 2) to (blockedDepth - 1)
   const farmingFloor = Math.max(1, blockedDepth - 2)
@@ -823,6 +932,8 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   const character = game.character
   const goldTarget =
     botState.farmGoldTarget || getGoldTarget(botState.farmBlockedDepth, effectiveConfig.caution)
+  const useSweep = shouldUseSweep(context)
+
 
   // Check if ready for blocked depth
   const blockedReadiness = profile('farm.readiness', () =>
@@ -837,7 +948,85 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   if (!blockedReadiness) {
     // Ready for blocked depth - exit farming mode
     exitFarmingMode(botState)
+    exitSweepFlip(botState)
     return null // Fall through to normal descent
+  }
+
+  // 0. Handle active sweep flip (yo-yo into blocked depth to trigger regen)
+  if (useSweep && botState.sweepFlipActive && botState.sweepFlipTargetDepth !== null) {
+    // At target depth: either waiting to descend OR completed round trip
+    if (character.depth === botState.sweepFlipTargetDepth) {
+      if (botState.sweepFlipVisitedBlocked) {
+        // Completed round trip - arrived back at target with fresh level
+        exitSweepFlip(botState)
+        botState.seenThisVisit.clear()
+        // Fall through to normal sweep
+      } else {
+        // Haven't visited blocked yet - keep descending
+        const stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
+        if (stairsDown) {
+          return {
+            type: 'DESCEND',
+            target: stairsDown,
+            targetId: null,
+            reason: `Sweep flip: descending to D${botState.farmBlockedDepth}`,
+            startTurn: game.turn,
+          }
+        }
+        // No stairs - can't descend, exit flip
+        exitSweepFlip(botState)
+      }
+    }
+    // At blocked depth - mark visited and ascend back
+    else if (character.depth === botState.farmBlockedDepth) {
+      markSweepFlipVisitedBlocked(botState)
+      const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+      if (stairsUp) {
+        return {
+          type: 'ASCEND_TO_FARM',
+          target: stairsUp,
+          targetId: null,
+          reason: `Sweep flip: ascending to fresh D${botState.sweepFlipTargetDepth}`,
+          startTurn: game.turn,
+        }
+      }
+      // No stairs up - exit flip (shouldn't happen at blocked depth)
+      exitSweepFlip(botState)
+    }
+    // Between target and blocked - navigate
+    else if (character.depth > botState.sweepFlipTargetDepth && character.depth < botState.farmBlockedDepth) {
+      if (botState.sweepFlipVisitedBlocked) {
+        // Ascending back from blocked
+        const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+        if (stairsUp) {
+          return {
+            type: 'ASCEND_TO_FARM',
+            target: stairsUp,
+            targetId: null,
+            reason: `Sweep flip: ascending to D${botState.sweepFlipTargetDepth}`,
+            startTurn: game.turn,
+          }
+        }
+      } else {
+        // Descending toward blocked
+        const stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
+        if (stairsDown) {
+          return {
+            type: 'DESCEND',
+            target: stairsDown,
+            targetId: null,
+            reason: `Sweep flip: descending to D${botState.farmBlockedDepth}`,
+            startTurn: game.turn,
+          }
+        }
+      }
+      // No stairs - exit flip
+      exitSweepFlip(botState)
+    }
+    // Unexpected depth - exit flip
+    else {
+      exitSweepFlip(botState)
+    }
   }
 
   // 1. If ready for town trip, use portal (unless at depth 1 - just walk)
@@ -865,12 +1054,12 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   }
 
   // 4. Tether sweep - actively walk to unseen tiles within tether radius (non-sweep mode only)
-  if (botState.tetheredOrigin && !shouldUseSweep(context)) {
+  if (botState.tetheredOrigin && !useSweep) {
     const sweepGoal = profile('farm.tetherSweep', () => handleTetherSweep(context, goldTarget))
     if (sweepGoal) return sweepGoal
   }
 
-  // 5. At farming floor with complete tether? Allow descent
+  // 5. At farming floor with complete tether? Allow descent (tether mode only)
   const farmingFloor = Math.max(1, botState.farmBlockedDepth - 2)
   if (character.depth <= farmingFloor && botState.tetheredOrigin) {
     if (isTetheredExplorationComplete(context, botState.tetheredOrigin, botState.tetheredRadius)) {
@@ -887,6 +1076,64 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   // Still tethered? Need to explore
   if (botState.tetheredOrigin) {
     return null // Let EXPLORE find content
+  }
+
+  // 6. Sweep mode descent logic (yo-yo pattern)
+  if (useSweep) {
+    const sweepDone = isSweepComplete(game, botState) || isSweepTimedOut(game, botState)
+
+    if (sweepDone) {
+      exitSweepMode(botState)
+
+      // At blockedDepth - 1: flip INTO blocked depth to trigger level regen above
+      if (character.depth === botState.farmBlockedDepth - 1) {
+        const stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
+        if (stairsDown) {
+          enterSweepFlip(botState, character.depth) // Return to this depth after flip
+          botState.seenThisVisit.clear()
+          return {
+            type: 'DESCEND',
+            target: stairsDown,
+            targetId: null,
+            reason: `Sweep flip: descending into D${botState.farmBlockedDepth} to trigger regen`,
+            startTurn: game.turn,
+          }
+        }
+      }
+
+      // Between farmingFloor and blockedDepth-1: descend toward blockedDepth-1
+      if (character.depth >= farmingFloor && character.depth < botState.farmBlockedDepth - 1) {
+        const stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
+        if (stairsDown) {
+          botState.seenThisVisit.clear()
+          return {
+            type: 'DESCEND',
+            target: stairsDown,
+            targetId: null,
+            reason: `Sweep: descending to D${character.depth + 1}`,
+            startTurn: game.turn,
+          }
+        }
+      }
+
+      // At or below farmingFloor: descend
+      if (character.depth < farmingFloor) {
+        const stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
+        if (stairsDown) {
+          botState.seenThisVisit.clear()
+          return {
+            type: 'DESCEND',
+            target: stairsDown,
+            targetId: null,
+            reason: `Sweep: descending to D${character.depth + 1}`,
+            startTurn: game.turn,
+          }
+        }
+      }
+    }
+
+    // Sweep not done - let EXPLORE/sweep goal handle it
+    return null
   }
 
   // Tether cleared - fall through to normal descent

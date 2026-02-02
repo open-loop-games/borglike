@@ -238,6 +238,14 @@ export interface BotState {
   /** Turn when sweep started (for timeout tracking) */
   sweepStartTurn: number
 
+  // Sweep flip state (yo-yo descent into blocked depth to trigger level regen)
+  /** Whether we're in a sweep flip (descended into blocked, ascending back) */
+  sweepFlipActive: boolean
+  /** Depth to return to after descending into blocked depth */
+  sweepFlipTargetDepth: number | null
+  /** Whether we've actually descended into the blocked depth during this flip */
+  sweepFlipVisitedBlocked: boolean
+
   // Unique hunt level flip (when unique blocks descent but isn't on current level)
   /** Name of unique we're hunting that blocks descent */
   huntingUniqueBlocker: string | null
