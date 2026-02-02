@@ -322,27 +322,6 @@ export const WEAPONS: ItemTemplate[] = [
     effect: 'Slay Undead x3',
     minDepth: 45,
   },
-  {
-    name: 'Blade of Chaos',
-    type: 'weapon',
-    slot: 'weapon',
-    tier: 4,
-    damage: '6d5',
-    weight: 180,
-    effect: 'Resist Chaos',
-    minDepth: 70,
-    isEdged: true,
-  },
-  {
-    name: 'Scythe of Slicing',
-    type: 'weapon',
-    slot: 'weapon',
-    tier: 4,
-    damage: '8d4',
-    weight: 250,
-    minDepth: 60,
-    isEdged: true,
-  },
 ]
 
 // ============================================================================
@@ -607,46 +586,6 @@ export const ARMOR: ItemTemplate[] = [
     minDepth: 45,
   },
 
-  // Tier 4 - Endgame
-  {
-    name: 'Full Plate Armour',
-    type: 'armor',
-    slot: 'body',
-    tier: 4,
-    protection: 62,
-    weight: 360,
-    minDepth: 55,
-  },
-  {
-    name: 'Mithril Chain Mail',
-    type: 'armor',
-    slot: 'body',
-    tier: 4,
-    protection: 28,
-    weight: 150,
-    effect: 'Ignore Acid',
-    minDepth: 55,
-  },
-  {
-    name: 'Mithril Plate Mail',
-    type: 'armor',
-    slot: 'body',
-    tier: 4,
-    protection: 60,
-    weight: 300,
-    effect: 'Ignore Acid',
-    minDepth: 65,
-  },
-  {
-    name: 'Adamantite Plate Mail',
-    type: 'armor',
-    slot: 'body',
-    tier: 4,
-    protection: 80,
-    weight: 420,
-    effect: 'Ignore Acid',
-    minDepth: 75,
-  },
 ]
 
 // ============================================================================
@@ -698,16 +637,6 @@ export const SHIELDS: ItemTemplate[] = [
     protection: 15,
     weight: 160,
     minDepth: 50,
-  },
-  {
-    name: 'Mithril Shield',
-    type: 'shield',
-    slot: 'shield',
-    tier: 4,
-    protection: 16,
-    weight: 100,
-    effect: 'Ignore Acid',
-    minDepth: 70,
   },
 ]
 
@@ -873,16 +802,6 @@ export const BOOTS: ItemTemplate[] = [
     minDepth: 20,
   },
   {
-    name: 'Mithril Shod Boots',
-    type: 'boots',
-    slot: 'boots',
-    tier: 4,
-    protection: 8,
-    weight: 40,
-    effect: 'Ignore Acid, Fire',
-    minDepth: 60,
-  },
-  {
     name: 'Ethereal Slippers',
     type: 'boots',
     slot: 'boots',
@@ -1019,16 +938,6 @@ export const RINGS: ItemTemplate[] = [
   },
 
   // Top Tier
-  {
-    name: 'Ring of Speed',
-    type: 'ring',
-    slot: 'ring',
-    tier: 4,
-    weight: 2,
-    effect: '+7 Speed',
-    minDepth: 75,
-    bonuses: { SPEED: 7 },
-  },
 ]
 
 // ============================================================================
@@ -1086,38 +995,6 @@ export const AMULETS: ItemTemplate[] = [
     effect: '+3 Infravision',
     minDepth: 10,
     bonuses: { INFRAVISION: 3 },
-  },
-  {
-    name: 'Amulet of Resistance',
-    type: 'amulet',
-    slot: 'amulet',
-    tier: 4,
-    weight: 3,
-    effect: 'Resist Fire, Cold, Lightning, Acid',
-    minDepth: 60,
-    abilities: ['Resist Fire', 'Resist Cold', 'Resist Lightning', 'Resist Acid'],
-  },
-  {
-    name: 'Amulet of the Magi',
-    type: 'amulet',
-    slot: 'amulet',
-    tier: 4,
-    weight: 3,
-    effect: '+2 INT, Free Action, Protect Blind',
-    minDepth: 70,
-    bonuses: { INT: 2 },
-    abilities: ['Free Action', 'Protect Blind'],
-  },
-  {
-    name: 'Amulet of Trickery',
-    type: 'amulet',
-    slot: 'amulet',
-    tier: 4,
-    weight: 3,
-    effect: '+2 DEX, +5 Speed, +2 Stealth, Resist Nexus, Resist Poison',
-    minDepth: 70,
-    bonuses: { DEX: 2, SPEED: 5, STEALTH: 2 },
-    abilities: ['Resist Nexus', 'Resist Poison'],
   },
 ]
 
