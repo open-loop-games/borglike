@@ -7,6 +7,46 @@ description: Investigate bot behavior issues. Use when user mentions "stuck", "o
 
 Unified CLI for investigating bot behavior issues in Borglike. Replaces 35+ individual diagnostic scripts with a single entry point.
 
+## Two Testing Contexts
+
+**CRITICAL: Understand which context you're working in to avoid misleading results.**
+
+| Context | Turns | Runs | Purpose | When to Use |
+|---------|-------|------|---------|-------------|
+| **Standard** | 20k | 50 | Bug hunting, quick iteration | Finding/fixing specific bugs |
+| **Baseline** | 50k | 100 | Balance tracking, regression detection | Measuring overall health |
+
+### Why This Matters
+
+**CB rates scale with turn count.** A bot that looks healthy at 20k turns may show problems at 50k:
+
+```
+Necromancer @ 20k turns: 10% CB rate  ← looks OK
+Necromancer @ 50k turns: 20% CB rate  ← actual baseline issue
+```
+
+### Matching Settings
+
+When investigating a baseline issue, **use baseline settings**:
+
+```bash
+# WRONG - uses 20k turns, won't reproduce baseline CB
+pnpm diagnose batch --seed=1000 --class=necromancer
+
+# RIGHT - matches baseline's 50k turns
+pnpm diagnose batch --seed=1000 --class=necromancer --turns=50000
+```
+
+### Default Settings (same for both contexts)
+
+All modes share these defaults:
+- `--upgrades=full` (all upgrades at max)
+- `--boosters=class` (primary stat + CON)
+- `--capabilities=full` (all bot features enabled)
+- `--seed` defaults to `Date.now()` (random) - **always specify for reproducibility**
+
+The ONLY difference between standard and baseline is turn count and run count.
+
 ## Seeds and Determinism
 
 **The game engine is fully deterministic.** Given identical inputs (seed, race, class, personality, upgrades, balance), a run produces identical output every time. This enables:
@@ -36,11 +76,36 @@ pnpm diagnose batch --seed=1000 --runs=100 > after.txt
 diff before.txt after.txt
 ```
 
-### Workflow
+## Diagnostic Workflow
 
-1. **`find`** discovers problematic seeds from batch runs
+### Standard Bug Hunting (20k turns)
+
+1. **`find`** discovers problematic seeds
+   ```bash
+   pnpm diagnose find --runs=100 --seed=1000
+   ```
 2. **`deep`** analyzes a specific seed turn-by-turn
-3. Fix code, then re-run **`deep`** on same seed to verify
+   ```bash
+   pnpm diagnose deep --seed=<problem-seed> --map
+   ```
+3. Fix code, re-run **`deep`** on same seed to verify
+
+### Investigating Baseline Issues (50k turns)
+
+When baseline shows a problem (e.g., high CB rate):
+
+1. **Reproduce with matching settings**:
+   ```bash
+   pnpm diagnose batch --seed=1000 --runs=50 --class=necromancer --turns=50000
+   ```
+2. **Find specific CB seeds**:
+   ```bash
+   pnpm diagnose batch ... 2>&1 | grep circuit_breaker
+   ```
+3. **Deep dive with same turn count**:
+   ```bash
+   pnpm diagnose deep --seed=<cb-seed> --class=necromancer --turns=50000 --from=45000 --to=50000
+   ```
 
 ## Quick Reference
 
@@ -55,7 +120,7 @@ pnpm diagnose [mode] [options]
 | `deep` | Full turn-by-turn analysis | `deep --seed=1768965560201 --map` |
 | `quick` | Summary metrics only | `quick --seed=1768965560201` |
 | `batch` | Aggregate statistics across runs | `batch --runs=100 --seed=1000` |
-| `find` | Search for problematic seeds | `find --runs=500 --seed=1000` |
+| `find` | Search for problematic seeds | `find --runs=100 --seed=1000` |
 | `compare` | Compare across personalities | `compare --runs=20 --seed=1000` |
 | `baseline` | Full baseline across all 11 classes | `baseline` (100 runs, 50k turns per class) |
 | `baseline-races` | Full baseline across all 11 races | `baseline-races --class=warrior` |
@@ -78,7 +143,7 @@ pnpm diagnose deep 1768965560201 --map
 
 ```
 --seed=N          Specific seed to test
---turns=N         Max turns per run (default: 5000)
+--turns=N         Max turns per run (default: 20000)
 --runs=N          Runs for batch/find/compare (default: 50)
 --threads=N       Worker threads (default: 8)
 --personality=P   cautious|aggressive|greedy|speedrunner
@@ -104,54 +169,56 @@ pnpm diagnose deep 1768965560201 --map
 --races=a,b,c     Compare specific races (e.g., --races=human,dwarf,elf)
 ```
 
-## Diagnostic Workflow
+## Common Pitfalls
+
+### Pitfall 1: Testing with wrong turn count
+```bash
+# You see baseline CB rate of 20%
+# You run this and get 5% - "fixed!"
+pnpm diagnose batch --seed=1000 --class=necromancer  # 20k turns
+
+# But the fix is illusory - 20k ≠ 50k baseline
+# Always match: --turns=50000
+```
+
+### Pitfall 2: Comparing different seeds
+```bash
+# Run A (no --seed, uses Date.now())
+pnpm diagnose batch --runs=50
+
+# Run B (different random seeds!)
+pnpm diagnose batch --runs=50
+
+# These test DIFFERENT scenarios - not comparable!
+# Always specify: --seed=1000
+```
+
+### Pitfall 3: Forgetting class-specific behavior
+```bash
+# Warrior at depth 20 is fine
+# Necromancer at depth 20 might be underleveled (caster penalty)
+# Always test the specific class showing issues
+```
+
+## Additional Workflows
 
 **💡 For detailed navigation tips, grep patterns, and filtering strategies, see `references/navigation.md`**
-
-### Investigating a Reported Issue
-
-1. **Reproduce with deep mode**: Get full turn log for the problematic seed
-   ```bash
-   pnpm diagnose deep <seed> --map
-   ```
-
-2. **Narrow the turn range**: Focus on specific turns where issue occurs
-   ```bash
-   pnpm diagnose deep <seed> --from=500 --to=600
-   ```
-
-3. **Check specific analyzers**: Isolate the detection mechanism
-   ```bash
-   pnpm diagnose deep <seed> --analyzers=stuck,movement
-   ```
-
-### Finding New Issues
-
-1. **Run batch search**: Find problematic seeds automatically
-   ```bash
-   pnpm diagnose find --runs=500
-   ```
-
-2. **Deep dive on flagged seeds**: Investigate each problem
-   ```bash
-   pnpm diagnose deep <flagged-seed> --map
-   ```
 
 ### Comparing Bot Behavior
 
 Compare performance across all personalities:
 ```bash
-pnpm diagnose compare --runs=50
+pnpm diagnose compare --runs=50 --seed=1000
 ```
 
 ### Running a Full Baseline
 
-Generate baseline metrics for all 11 classes (100 runs, 30k turns each):
+Generate baseline metrics for all 11 classes (100 runs, 50k turns each):
 ```bash
 pnpm diagnose baseline
 ```
 
-Output includes a markdown table ready to paste into `docs/BALANCE-TEST-PLAN.md`. Classes tested: archmage, berserker, blackguard, druid, mage, necromancer, paladin, priest, ranger, rogue, warrior.
+Output includes a markdown table ready to paste into `docs/BALANCE-TEST-PLAN.md`.
 
 ## Analyzers
 

@@ -19,7 +19,7 @@
  * Options:
  *   --seed=N        - Specific seed to test
  *   --runs=N        - Number of runs for batch mode (default: 50)
- *   --turns=N       - Max turns per run (default: 5000)
+ *   --turns=N       - Max turns per run (default: 20000)
  *   --race=ID       - Race ID (default: human)
  *   --class=ID      - Class ID (default: warrior)
  *   --personality=P - Bot personality (default: cautious)
@@ -140,7 +140,7 @@ function parseArgs(): Args {
   const result: Args = {
     mode: 'help',
     runs: 50,
-    turns: 5000,
+    turns: 20000,
     race: 'human',
     classId: 'warrior',
     personality: 'cautious',
@@ -307,7 +307,7 @@ MODES:
 OPTIONS:
   --seed=N        Specific seed to test (default: random)
   --runs=N        Number of runs for batch/find/compare modes (default: 50)
-  --turns=N       Max turns per run (default: 5000)
+  --turns=N       Max turns per run (default: 20000)
   --threads=N     Worker threads for batch/find modes (default: 8)
   --race=ID       Race ID (default: human)
   --class=ID      Class ID (default: warrior)
@@ -429,7 +429,7 @@ async function main(): Promise<void> {
   if (args.mode === 'baseline') {
     await runBaseline({
       runs: args.runs !== 50 ? args.runs : undefined,
-      turns: args.turns !== 5000 ? args.turns : undefined,
+      turns: args.turns !== 20000 ? args.turns : undefined,
       seed: args.seed,
       threads: args.threads !== 8 ? args.threads : undefined,
       race: args.race,
@@ -457,7 +457,7 @@ async function main(): Promise<void> {
   if (args.mode === 'baseline-races') {
     await runBaselineRaces({
       runs: args.runs !== 50 ? args.runs : undefined,
-      turns: args.turns !== 5000 ? args.turns : undefined,
+      turns: args.turns !== 20000 ? args.turns : undefined,
       seed: args.seed,
       threads: args.threads !== 8 ? args.threads : undefined,
       classId: args.classId,
@@ -486,7 +486,7 @@ async function main(): Promise<void> {
   if (args.mode === 'sensitivity') {
     await runSensitivityTest({
       runs: args.runs !== 50 ? args.runs : undefined,
-      turns: args.turns !== 5000 ? args.turns : undefined,
+      turns: args.turns !== 20000 ? args.turns : undefined,
       seed: args.seed,
       threads: args.threads !== 8 ? args.threads : undefined,
       classId: args.classId,

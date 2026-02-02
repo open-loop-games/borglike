@@ -7,6 +7,7 @@
 
 import { createGame, processTurn } from '../../../src/game/game-loop'
 import { computeMaxUpgradeBonuses, computeUpgradeBonuses, computeUpgradeBonusesFromPreset } from '../../../src/game/upgrade-effects'
+import { computeBoosterBonuses, computeClassBoosterBonuses } from '../../../src/game/booster-effects'
 import { upgrades as allUpgrades } from '../../../src/game/data/upgrades'
 import { runBotTick, createBotState } from '../../../src/game/bot'
 import { calculateCombatStats, calculateStats } from '../../../src/game/character'
@@ -126,6 +127,25 @@ function computeUpgradesWithExclusions(
   return computeUpgradeBonuses(levels, upgradePowerPercent)
 }
 
+/**
+ * Compute booster bonuses from config options.
+ * 'none' = no boosters, 'class' = class default, or comma-separated IDs
+ */
+function computeBoostersFromConfig(boosters: string | undefined, classId: string) {
+  if (!boosters || boosters === 'none') {
+    return undefined
+  }
+  if (boosters === 'class') {
+    return computeClassBoosterBonuses(classId)
+  }
+  // Parse comma-separated booster IDs
+  const boosterIds = boosters.split(',').map(s => s.trim()).filter(Boolean)
+  if (boosterIds.length > 0) {
+    return computeBoosterBonuses(boosterIds)
+  }
+  return undefined
+}
+
 function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
   const { seed, config } = input
   const cfg = { ...DEFAULT_CONFIG, ...config, seed }
@@ -158,11 +178,15 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
   // Parse bot capabilities
   const capabilities = parseCapabilities(cfg.capabilities)
 
+  // Compute booster bonuses
+  const boosterBonuses = computeBoostersFromConfig(cfg.boosters, cfg.classId)
+
   const game: GameState = createGame({
     raceId: cfg.raceId,
     classId: cfg.classId,
     seed: cfg.seed,
     upgradeBonuses,
+    boosterBonuses,
     balanceOverrides: balance,
   })
 

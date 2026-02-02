@@ -1,10 +1,64 @@
 # Balance Test Plan
 
-## Current State (2026-01-30)
+## Current State (2026-02-02)
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `4113ace` (100 runs, 50k turns, seed=1000, max-upgrades) - Balance Testing Plan
+### Full Baseline @ `12fa009` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Berserker** | 48.9 | 50 | 2% | 13861 | 517 | 6 | ✅ Endgame |
+| **Blackguard** | 48.7 | 50 | 0% | 14181 | 535 | 4 | ✅ Endgame |
+| **Ranger** | 48.7 | 50 | 4% | 19774 | 605 | 1 | ✅ Endgame |
+| **Warrior** | 48.4 | 50 | 1% | 14427 | 506 | 5 | ✅ Endgame |
+| **Paladin** | 48.0 | 50 | 0% | 19018 | 614 | 2 | ✅ Endgame |
+| **Rogue** | 45.3 | 50 | 1% | 19022 | 541 | 0 | ✅ Endgame |
+| **Priest** | 44.6 | 50 | 0% | 20547 | 624 | 0 | ✅ Endgame |
+| **Druid** | 44.5 | 50 | 0% | 18491 | 538 | 0 | ✅ Endgame |
+| **Necromancer** | 43.9 | 50 | 9% | 19540 | 570 | 0 | ✅ Endgame |
+| **Mage** | 41.3 | 49 | 14% | 19841 | 491 | 0 | ⚠️ CB Elevated |
+| **Archmage** | 41.0 | 48 | 13% | 19717 | 475 | 0 | ⚠️ CB Elevated |
+
+**Summary:** All classes endgame-viable. Fixed lifedrain healing bug (Necro tried to lifedrain heal without visible targets after teleport). **18 Morgoth kills** (6 berserker, 5 warrior, 4 blackguard, 2 paladin, 1 ranger). Necro CB improved 16%→9%, Archmage 16%→13%. Mage CB elevated at 14% (no lifedrain spells, unrelated cause).
+
+### Previous Baseline @ `TBD` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Status |
+|-------|-----------|-----------|---------|-----------|-------|--------|
+| **Ranger** | 47.3 | 50 | 0% | 19279 | 575 | ✅ Endgame |
+| **Berserker** | 46.4 | 50 | 1% | 13490 | 474 | ✅ Endgame |
+| **Warrior** | 45.6 | 50 | 0% | 13773 | 459 | ✅ Endgame |
+| **Paladin** | 44.0 | 50 | 0% | 18191 | 556 | ✅ Endgame |
+| **Priest** | 42.7 | 50 | 0% | 20181 | 578 | ✅ Endgame |
+| **Necromancer** | 41.0 | 47 | 16% | 18780 | 511 | ✅ Endgame |
+| **Blackguard** | 40.4 | 50 | 3% | 12067 | 410 | ✅ Endgame |
+| **Mage** | 40.3 | 48 | 8% | 20039 | 468 | ✅ Endgame |
+| **Rogue** | 39.4 | 50 | 0% | 17202 | 462 | ✅ Endgame |
+| **Archmage** | 38.7 | 47 | 16% | 19280 | 445 | ✅ Endgame |
+| **Druid** | 36.6 | 49 | 0% | 16202 | 431 | ✅ Endgame |
+
+**Summary:** All classes endgame-viable. Fixed KILL goal persistence bug (goals persisted after teleport due to stale visibility check). CB rates improved: Necro 21%→16%, Archmage 19%→16%, Mage 6%→8%. Remaining CB cases are legitimate deep-dungeon stalls, not goal bugs.
+
+### Previous Baseline @ `3672f59` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-------|-------|---------|--------|
+| **Warrior** | 48.5 | 50 | 1% | 14383 | 505 | 6 | ✅ Endgame |
+| **Ranger** | 48.5 | 50 | 0% | 19627 | 596 | 1 | ✅ Endgame |
+| **Berserker** | 48.4 | 50 | 0% | 13846 | 505 | 5 | ✅ Endgame |
+| **Paladin** | 47.0 | 50 | 0% | 18788 | 596 | 0 | ✅ Endgame |
+| **Blackguard** | 46.6 | 50 | 0% | 13694 | 499 | 1 | ✅ Endgame |
+| **Priest** | 44.8 | 50 | 1% | 20822 | 626 | 0 | ✅ Endgame |
+| **Rogue** | 44.8 | 50 | 2% | 19047 | 535 | 0 | ✅ Endgame |
+| **Druid** | 43.3 | 50 | 0% | 18143 | 522 | 0 | ✅ Endgame |
+| **Mage** | 41.9 | 50 | 6% | 20420 | 488 | 0 | ⚠️ CB Regression |
+| **Necromancer** | 41.6 | 50 | 21% | 19156 | 524 | 0 | ⚠️ CB Regression |
+| **Archmage** | 39.7 | 48 | 19% | 19596 | 461 | 0 | ⚠️ CB Regression |
+
+**Summary:** All classes endgame-viable. Caster CB rates worsened (Necro 21%, Archmage 19%, Mage 6%). **13 Morgoth kills** (6 warrior, 5 berserker, 1 ranger, 1 blackguard). Archmage max depth dropped to 48.
+
+### Previous Baseline @ `4113ace` (100 runs, 50k turns, seed=1000, max-upgrades) - Balance Testing Plan
 
 | Class | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-------|-------|---------|--------|
@@ -365,7 +419,7 @@ pnpm diagnose batch --runs=50 --seed=1000 --capabilities=mid --class=warrior
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--max-upgrades` | off | Apply all upgrades at max (includes 25% bestiary) |
-| `--turns=N` | 5000 | Max turns per run |
+| `--turns=N` | 20000 | Max turns per run |
 | `--monster-hp=N` | 100 | Monster HP % |
 | `--monster-damage=N` | 100 | Monster damage % |
 | `--bestiary=N` | 0 | Fixed bestiary bonus % (0=use kills) |
