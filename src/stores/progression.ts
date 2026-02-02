@@ -590,11 +590,7 @@ export const useProgressionStore = defineStore('progression', () => {
   }
 
   /** Set active level for a graded capability (sweep/surf) */
-  function setActiveGradedLevel(
-    slot: number,
-    field: 'sweep' | 'surf',
-    level: number
-  ): void {
+  function setActiveGradedLevel(slot: number, field: 'sweep' | 'surf', level: number): void {
     const config = getSlotConfig(slot)
     const maxLevel = config.capabilities[field]
 
@@ -613,8 +609,14 @@ export const useProgressionStore = defineStore('progression', () => {
   function getEffectiveCapabilities(slot: number): BotCapabilities & BotToggles {
     const config = getSlotConfig(slot)
     // Use active levels if set, otherwise use max unlocked
-    const activeSweep = Math.min(config.activeSweepLevel ?? config.capabilities.sweep, config.capabilities.sweep)
-    const activeSurf = Math.min(config.activeSurfLevel ?? config.capabilities.surf, config.capabilities.surf)
+    const activeSweep = Math.min(
+      config.activeSweepLevel ?? config.capabilities.sweep,
+      config.capabilities.sweep
+    )
+    const activeSurf = Math.min(
+      config.activeSurfLevel ?? config.capabilities.surf,
+      config.capabilities.surf
+    )
     return {
       town: config.capabilities.town && config.toggles.town,
       farming: config.capabilities.farming && config.toggles.farming,

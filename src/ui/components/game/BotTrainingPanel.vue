@@ -44,9 +44,27 @@ interface GradedUpgrade {
   selectable: boolean // Can user select active level?
 }
 const gradedUpgrades: GradedUpgrade[] = [
-  { key: 'sweep', name: 'Sweep', desc: 'Explore before descent', segments: ['60%', '75%', '90%'], selectable: true },
-  { key: 'surf', name: 'Surf', desc: 'Stair farming radius', segments: ['5×5', '9×9', '21×21'], selectable: true },
-  { key: 'kiting', name: 'Kiting', desc: 'Ranged positioning', segments: ['2', '3', '4'], selectable: false },
+  {
+    key: 'sweep',
+    name: 'Sweep',
+    desc: 'Explore before descent',
+    segments: ['60%', '75%', '90%'],
+    selectable: true,
+  },
+  {
+    key: 'surf',
+    name: 'Surf',
+    desc: 'Stair farming radius',
+    segments: ['5×5', '9×9', '21×21'],
+    selectable: true,
+  },
+  {
+    key: 'kiting',
+    name: 'Kiting',
+    desc: 'Ranged positioning',
+    segments: ['2', '3', '4'],
+    selectable: false,
+  },
 ]
 
 function getUpgradeInfo(id: BotUpgradeId) {
@@ -99,7 +117,10 @@ function isKitingLocked(): boolean {
   return capabilities.value.sweep < 1
 }
 
-function getSegmentState(key: 'sweep' | 'surf' | 'kiting', segmentLevel: number): 'selected' | 'available' | 'locked' {
+function getSegmentState(
+  key: 'sweep' | 'surf' | 'kiting',
+  segmentLevel: number
+): 'selected' | 'available' | 'locked' {
   const unlocked = getGradedLevel(key)
   const active = getActiveLevel(key)
 
@@ -185,7 +206,7 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
                 class="level-segment"
                 :class="[
                   getSegmentState(up.key, n),
-                  { selectable: up.selectable && n <= getGradedLevel(up.key) }
+                  { selectable: up.selectable && n <= getGradedLevel(up.key) },
                 ]"
                 :disabled="n > getGradedLevel(up.key) || !up.selectable"
                 :title="up.selectable && n <= getGradedLevel(up.key) ? 'Click to select' : ''"

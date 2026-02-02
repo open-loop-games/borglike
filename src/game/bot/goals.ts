@@ -622,23 +622,20 @@ function selectTownGoal(context: BotContext, botState: BotState, hpRatio: number
   const { game } = context
   const turn = game.turn
 
-  // PRIORITY: Always return through active portal if one exists
-  // This takes precedence over town capability check - we don't want to
-  // abandon a portal and lose progress by descending from town
-  if (game.townPortal) {
-    return {
-      type: 'RETURN_PORTAL',
-      target: { ...game.townPortal.townPosition },
-      targetId: null,
-      reason: `Returning through portal (${game.townPortal.turnsRemaining} turns left)`,
-      startTurn: turn,
-    }
-  }
-
   // GATE: Town capability must be unlocked AND enabled
   const effective = getEffectiveCapabilities(context)
   if (!effective.town) {
-    // Face-rush mode: exit town immediately via dungeon entrance
+    // Face-rush mode: exit town immediately
+    // Prefer portal if exists to preserve dungeon position
+    if (game.townPortal) {
+      return {
+        type: 'RETURN_PORTAL',
+        target: { ...game.townPortal.townPosition },
+        targetId: null,
+        reason: 'Face-rush mode - returning through portal',
+        startTurn: turn,
+      }
+    }
     return {
       type: 'EXIT_TOWN',
       target: { ...DUNGEON_ENTRANCE_POSITION },
@@ -687,7 +684,16 @@ function selectTownGoal(context: BotContext, botState: BotState, hpRatio: number
     }
   }
 
-  // 4. Portal return is handled at function start (before town capability check)
+  // 4. Return through portal if one exists (after shopping is complete)
+  if (game.townPortal) {
+    return {
+      type: 'RETURN_PORTAL',
+      target: { ...game.townPortal.townPosition },
+      targetId: null,
+      reason: `Returning through portal (${game.townPortal.turnsRemaining} turns left)`,
+      startTurn: turn,
+    }
+  }
 
   // 5. Exit town via dungeon entrance (fallback - no portal active)
   return {

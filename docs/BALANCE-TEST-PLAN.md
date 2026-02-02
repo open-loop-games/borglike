@@ -4,25 +4,25 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `12fa009` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Full Baseline @ `e2e8144` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
-| **Berserker** | 48.9 | 50 | 2% | 13861 | 517 | 6 | ✅ Endgame |
-| **Blackguard** | 48.7 | 50 | 0% | 14181 | 535 | 4 | ✅ Endgame |
-| **Ranger** | 48.7 | 50 | 4% | 19774 | 605 | 1 | ✅ Endgame |
-| **Warrior** | 48.4 | 50 | 1% | 14427 | 506 | 5 | ✅ Endgame |
-| **Paladin** | 48.0 | 50 | 0% | 19018 | 614 | 2 | ✅ Endgame |
-| **Rogue** | 45.3 | 50 | 1% | 19022 | 541 | 0 | ✅ Endgame |
-| **Priest** | 44.6 | 50 | 0% | 20547 | 624 | 0 | ✅ Endgame |
-| **Druid** | 44.5 | 50 | 0% | 18491 | 538 | 0 | ✅ Endgame |
-| **Necromancer** | 43.9 | 50 | 9% | 19540 | 570 | 0 | ✅ Endgame |
-| **Mage** | 41.3 | 49 | 14% | 19841 | 491 | 0 | ⚠️ CB Elevated |
-| **Archmage** | 41.0 | 48 | 13% | 19717 | 475 | 0 | ⚠️ CB Elevated |
+| **Ranger** | 49.6 | 50 | 2% | 22099 | 650 | 7 | ✅ Endgame |
+| **Berserker** | 49.4 | 50 | 0% | 14715 | 530 | 20 | ✅ Endgame |
+| **Warrior** | 49.4 | 50 | 0% | 16774 | 548 | 8 | ✅ Endgame |
+| **Paladin** | 49.0 | 50 | 0% | 21880 | 665 | 3 | ✅ Endgame |
+| **Blackguard** | 48.9 | 50 | 0% | 15681 | 558 | 2 | ✅ Endgame |
+| **Rogue** | 47.9 | 50 | 1% | 22257 | 625 | 0 | ✅ Endgame |
+| **Necromancer** | 47.5 | 50 | 0% | 22782 | 649 | 0 | ✅ Endgame |
+| **Mage** | 47.1 | 50 | 2% | 25396 | 616 | 0 | ✅ Endgame |
+| **Druid** | 47.1 | 50 | 0% | 21348 | 619 | 0 | ✅ Endgame |
+| **Archmage** | 46.6 | 50 | 1% | 25441 | 603 | 0 | ✅ Endgame |
+| **Priest** | 46.5 | 50 | 0% | 24121 | 727 | 0 | ✅ Endgame |
 
-**Summary:** All classes endgame-viable. Fixed lifedrain healing bug (Necro tried to lifedrain heal without visible targets after teleport). **18 Morgoth kills** (6 berserker, 5 warrior, 4 blackguard, 2 paladin, 1 ranger). Necro CB improved 16%→9%, Archmage 16%→13%. Mage CB elevated at 14% (no lifedrain spells, unrelated cause).
+**Summary:** All classes healthy. Fixed two caster CB bugs: (1) sweep timeout reset loop (sweepExhausted flag prevents re-enabling after timeout), (2) town shopping bypass (RETURN_PORTAL moved after sell/heal/buy steps). **40 Morgoth kills** (20 berserker, 8 warrior, 7 ranger, 3 paladin, 2 blackguard). Mage CB 14%→2%, Archmage 13%→1%, Necromancer 9%→0%. All CB rates now ≤2%.
 
-### Previous Baseline @ `TBD` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Previous Baseline @ `12fa009` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Status |
 |-------|-----------|-----------|---------|-----------|-------|--------|
@@ -38,7 +38,7 @@
 | **Archmage** | 38.7 | 47 | 16% | 19280 | 445 | ✅ Endgame |
 | **Druid** | 36.6 | 49 | 0% | 16202 | 431 | ✅ Endgame |
 
-**Summary:** All classes endgame-viable. Fixed KILL goal persistence bug (goals persisted after teleport due to stale visibility check). CB rates improved: Necro 21%→16%, Archmage 19%→16%, Mage 6%→8%. Remaining CB cases are legitimate deep-dungeon stalls, not goal bugs.
+**Summary:** All classes endgame-viable. Fixed KILL goal persistence bug (goals persisted after teleport due to stale visibility check). CB rates improved: Necro 21%→16%, Archmage 19%→16%, Mage 6%→8%.
 
 ### Previous Baseline @ `3672f59` (100 runs, 50k turns, seed=1000, max-upgrades)
 
