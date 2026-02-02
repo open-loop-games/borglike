@@ -168,11 +168,11 @@ function claimAchievement(achievement: Achievement) {
         <h2>Achievements</h2>
         <span class="achievement-count"> {{ stats.unlocked }}/{{ stats.total }} Unlocked </span>
         <span class="essence-earned">
-          <span class="essence-icon">&#x25C6;</span>
+          <span class="essence-icon">◆</span>
           {{ stats.essenceCollected }} earned
         </span>
         <span v-if="stats.essencePending > 0" class="essence-pending">
-          <span class="essence-icon">&#x25C6;</span>
+          <span class="essence-icon">◆</span>
           {{ stats.essencePending }} to claim
         </span>
       </div>

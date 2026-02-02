@@ -10,7 +10,7 @@ const emit = defineEmits<{
   <div class="help-modal">
     <header class="help-header">
       <h2>Borglike</h2>
-      <button class="close-btn" @click="emit('close')">&#x2715;</button>
+      <button class="close-btn" @click="emit('close')">✕</button>
     </header>
 
     <div class="help-content">
@@ -59,11 +59,11 @@ const emit = defineEmits<{
             <span class="control-desc">Expand to detailed view</span>
           </div>
           <div class="control-item">
-            <span class="control-key">Turbo (&#x23E9;)</span>
+            <span class="control-key">Turbo (⏩)</span>
             <span class="control-desc">Speed up simulation</span>
           </div>
           <div class="control-item">
-            <span class="control-key">Auto (&#x21BB;)</span>
+            <span class="control-key">Auto (↻)</span>
             <span class="control-desc">Auto-restart on death</span>
           </div>
         </div>

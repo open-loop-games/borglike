@@ -54,7 +54,7 @@ const emit = defineEmits<{
 
     <div class="header-center">
       <div class="essence-display" :class="{ animating: isAnimating }">
-        <span class="essence-icon">&#x25C6;</span>
+        <span class="essence-icon">◆</span>
         <span class="essence-value">{{ progression.currency.essence.toLocaleString() }}</span>
         <span class="essence-label">Essence</span>
       </div>
@@ -76,11 +76,11 @@ const emit = defineEmits<{
         "
         @click="toggleAutoRestart"
       >
-        <span class="toggle-icon">&#x21BB;</span>
+        <span class="toggle-icon">↻</span>
         <span class="toggle-label">Auto</span>
       </button>
       <button class="header-btn" title="Run History" @click="emit('openRunHistory')">
-        <span>&#x2261;</span>
+        <span>≡</span>
       </button>
       <button
         class="header-btn"
@@ -88,20 +88,20 @@ const emit = defineEmits<{
         title="Achievements"
         @click="emit('openAchievements')"
       >
-        <span>&#x1F3C6;</span>
+        <span>🏆</span>
         <span v-if="progression.hasNewAchievements" class="notification-dot"></span>
       </button>
       <button class="header-btn" title="Bestiary" @click="emit('openBestiary')">
-        <span>&#x1F4D6;</span>
+        <span>📖</span>
       </button>
       <button class="header-btn" title="Armory" @click="emit('openArmory')">
-        <span>&#x1F4E6;</span>
+        <span>📦</span>
       </button>
       <button class="header-btn" title="Codex" @click="emit('openCodex')">
-        <span>&#x1F4DC;</span>
+        <span>📜</span>
       </button>
       <button class="header-btn" title="Settings" @click="emit('openSettings')">
-        <span>&#x2699;</span>
+        <span>⚙</span>
       </button>
       <button class="header-btn" title="Help" @click="emit('openHelp')">
         <span>?</span>

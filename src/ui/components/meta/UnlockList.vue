@@ -103,7 +103,7 @@ function getPrereqNames(boosterId: string): string[] {
     <div class="unlock-header">
       <span class="header-text">{{ unlockedCount }} / {{ totalCount }} Unlocked</span>
       <span v-if="activeTab !== 'boosters'" class="codex-hint">
-        <span class="codex-icon">&#x1F4DC;</span>
+        <span class="codex-icon">📜</span>
         Codex has details
       </span>
     </div>
@@ -166,9 +166,9 @@ function getPrereqNames(boosterId: string): string[] {
               </div>
             </div>
             <div class="booster-status">
-              <span v-if="booster.isUnlocked" class="status-unlocked">&#x2713;</span>
+              <span v-if="booster.isUnlocked" class="status-unlocked">✓</span>
               <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <span class="cost-icon">&#x25C6;</span>
+                <span class="cost-icon">◆</span>
                 {{ booster.cost.toLocaleString() }}
               </button>
             </div>
@@ -198,9 +198,9 @@ function getPrereqNames(boosterId: string): string[] {
               </div>
             </div>
             <div class="booster-status">
-              <span v-if="booster.isUnlocked" class="status-unlocked">&#x2713;</span>
+              <span v-if="booster.isUnlocked" class="status-unlocked">✓</span>
               <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <span class="cost-icon">&#x25C6;</span>
+                <span class="cost-icon">◆</span>
                 {{ booster.cost.toLocaleString() }}
               </button>
             </div>
@@ -227,9 +227,9 @@ function getPrereqNames(boosterId: string): string[] {
               <div class="booster-desc">{{ booster.description }}</div>
             </div>
             <div class="booster-status">
-              <span v-if="booster.isUnlocked" class="status-unlocked">&#x2713;</span>
+              <span v-if="booster.isUnlocked" class="status-unlocked">✓</span>
               <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <span class="cost-icon">&#x25C6;</span>
+                <span class="cost-icon">◆</span>
                 {{ booster.cost.toLocaleString() }}
               </button>
             </div>

@@ -94,7 +94,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
     </div>
 
     <div v-if="isDiscovered" class="discovered-badge">
-      <span>&#x2713;</span>
+      <span>✓</span>
     </div>
   </div>
 </template>

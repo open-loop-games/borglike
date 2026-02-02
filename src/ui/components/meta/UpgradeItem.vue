@@ -73,7 +73,7 @@ function handlePurchase() {
     <div class="upgrade-action">
       <div class="effect-value">{{ effectText }}</div>
       <button class="purchase-btn" :disabled="isMaxed || !canAfford" @click="handlePurchase">
-        <span v-if="!isMaxed" class="cost-icon">&#x25C6;</span>
+        <span v-if="!isMaxed" class="cost-icon">◆</span>
         <span class="cost-text">{{ costText }}</span>
       </button>
     </div>

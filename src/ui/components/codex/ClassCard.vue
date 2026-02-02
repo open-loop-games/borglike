@@ -120,12 +120,12 @@ const primaryStat = computed(() => {
 
     <!-- Unlocked badge -->
     <div v-if="unlocked" class="unlocked-badge">
-      <span>&#x2713;</span>
+      <span>✓</span>
     </div>
 
     <!-- Lock icon for locked -->
     <div v-if="!unlocked" class="lock-icon">
-      <span>&#x1F512;</span>
+      <span>🔒</span>
     </div>
   </div>
 </template>

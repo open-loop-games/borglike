@@ -133,7 +133,7 @@ const processedInventory = computed(() => {
         >{{ run.goldEarned }} gold</span
       >
       <span class="essence" :title="`Essence earned: ${run.essenceEarned}`">
-        <span class="essence-icon">&#x25C6;</span>
+        <span class="essence-icon">◆</span>
         {{ run.essenceEarned }}
       </span>
       <span v-if="run.deathCause" class="death-cause" :title="fullDeathCause">

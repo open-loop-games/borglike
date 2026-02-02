@@ -91,12 +91,10 @@ function handleUnlock() {
     @mouseleave="handleMouseLeave"
   >
     <div class="unlock-badge">
-      <span v-if="isUnlocked" class="badge-icon unlocked">&#x2713;</span>
-      <span v-else-if="prestige && meetsCondition === false" class="badge-icon locked"
-        >&#x1F512;</span
-      >
-      <span v-else-if="prestige" class="badge-icon prestige">&#x2605;</span>
-      <span v-else class="badge-icon locked">&#x25CF;</span>
+      <span v-if="isUnlocked" class="badge-icon unlocked">✓</span>
+      <span v-else-if="prestige && meetsCondition === false" class="badge-icon locked">🔒</span>
+      <span v-else-if="prestige" class="badge-icon prestige">★</span>
+      <span v-else class="badge-icon locked">●</span>
     </div>
 
     <div class="unlock-info">
@@ -114,10 +112,10 @@ function handleUnlock() {
     </div>
 
     <div class="unlock-status">
-      <span v-if="isUnlocked" class="status-unlocked">&#x2713;</span>
+      <span v-if="isUnlocked" class="status-unlocked">✓</span>
       <template v-else>
         <button class="unlock-btn" :disabled="!canUnlock">
-          <span class="cost-icon">&#x25C6;</span>
+          <span class="cost-icon">◆</span>
           <span>{{ cost.toLocaleString() }}</span>
         </button>
       </template>

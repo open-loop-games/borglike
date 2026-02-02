@@ -28,7 +28,12 @@ import {
 } from './exploration'
 import { getDepthReadiness, getUniqueBlocker, isUnderLeveled } from './preparation'
 import { monsters as MONSTERS } from '../data/monsters'
-import { handleActiveFarmingLoop, initiateFarmingLoop, getSweepGoal, getFlipNavigationGoal } from './farming'
+import {
+  handleActiveFarmingLoop,
+  initiateFarmingLoop,
+  getSweepGoal,
+  getFlipNavigationGoal,
+} from './farming'
 
 // Re-export farming functions that other modules need
 export { initializeSweepDirection } from './farming'

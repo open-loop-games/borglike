@@ -55,7 +55,7 @@ function handleOpenLoadout() {
     <div class="slot-content">
       <div class="quick-start">
         <button class="start-btn" @click="handleQuickStart">
-          <span class="btn-icon">&#x25B6;</span>
+          <span class="btn-icon">▶</span>
           <span>Quick Start</span>
         </button>
 

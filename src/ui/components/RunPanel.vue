@@ -126,10 +126,10 @@ function handleDismiss() {
           title="Toggle turbo mode"
           @click="handleToggleTurbo"
         >
-          &#x25B6;&#x25B6;
+          ▶▶
         </button>
         <button class="control-btn expand" title="Expand to full view" @click="handleExpand">
-          &#x26F6;
+          ⛶
         </button>
         <button
           class="control-btn kill"
@@ -143,7 +143,7 @@ function handleDismiss() {
           @touchend="cancelKillHold"
           @touchcancel="cancelKillHold"
         >
-          <span class="kill-icon">&#x2717;</span>
+          <span class="kill-icon">✗</span>
           <span
             v-if="killHoldProgress > 0"
             class="kill-progress"
@@ -180,7 +180,7 @@ function handleDismiss() {
       </div>
       <div class="stat-group">
         <span class="stat kills">
-          <span class="stat-icon">&#x2694;</span>
+          <span class="stat-icon">⚔</span>
           {{ run.kills }}
         </span>
         <span class="stat gold">
@@ -188,7 +188,7 @@ function handleDismiss() {
           {{ run.gold }}
         </span>
         <span class="stat xp">
-          <span class="stat-icon">&#x2605;</span>
+          <span class="stat-icon">★</span>
           {{ run.xp }}
         </span>
       </div>
@@ -203,9 +203,7 @@ function handleDismiss() {
         <span>{{ run.kills }} kills</span>
       </div>
       <div class="death-actions">
-        <button class="death-btn restart" @click="handleRestart">
-          <span>&#x21BB;</span> Restart
-        </button>
+        <button class="death-btn restart" @click="handleRestart"><span>↻</span> Restart</button>
         <button class="death-btn dismiss" @click="handleDismiss">Dismiss</button>
       </div>
     </div>

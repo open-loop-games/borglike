@@ -76,7 +76,7 @@ const categoryColor = computed(() => {
         </div>
       </div>
       <div v-if="!isHidden" class="achievement-reward">
-        <span class="reward-icon">&#x25C6;</span>
+        <span class="reward-icon">◆</span>
         <span class="reward-value">{{ achievement.reward }}</span>
       </div>
     </div>
@@ -95,7 +95,7 @@ const categoryColor = computed(() => {
     <!-- Claim button overlay for uncollected achievements -->
     <div v-if="canClaim" class="claim-overlay" @click.stop="emit('claim')">
       <button class="claim-btn">
-        <span class="claim-icon">&#x25C6;</span>
+        <span class="claim-icon">◆</span>
         Claim {{ achievement.reward }}
       </button>
     </div>

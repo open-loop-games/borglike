@@ -95,7 +95,7 @@ const monsterColor = computed(() => {
     </div>
 
     <div v-if="isFullyUnlocked" class="unlocked-badge">
-      <span>&#x2713;</span>
+      <span>✓</span>
     </div>
   </div>
 </template>

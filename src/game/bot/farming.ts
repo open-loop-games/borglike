@@ -191,7 +191,9 @@ function countTilesInBounds(
   const minX = bounds ? Math.max(0, bounds.origin.x - bounds.radius) : 0
   const maxX = bounds ? Math.min(level.width - 1, bounds.origin.x + bounds.radius) : level.width - 1
   const minY = bounds ? Math.max(0, bounds.origin.y - bounds.radius) : 0
-  const maxY = bounds ? Math.min(level.height - 1, bounds.origin.y + bounds.radius) : level.height - 1
+  const maxY = bounds
+    ? Math.min(level.height - 1, bounds.origin.y + bounds.radius)
+    : level.height - 1
 
   for (let y = minY; y <= maxY; y++) {
     const row = level.tiles[y]
@@ -476,11 +478,10 @@ function isTetheredExplorationComplete(
   radius: number
 ): boolean {
   const { game, botState } = context
-  const { total, seen } = countTilesInBounds(
-    game.currentLevel,
-    botState.seenThisVisit,
-    { origin, radius }
-  )
+  const { total, seen } = countTilesInBounds(game.currentLevel, botState.seenThisVisit, {
+    origin,
+    radius,
+  })
   // Need 80% seen this visit to be "done" with this tether
   return total === 0 || seen / total >= 0.8
 }
@@ -857,11 +858,21 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
   const blockedDepth = findBlockedDepth(context)
 
   // Only ascend if under-leveled for the BLOCKED depth
-  const underForBlocked = isUnderLeveled(character.level, blockedDepth, character.classId, character.upgradeBonuses)
+  const underForBlocked = isUnderLeveled(
+    character.level,
+    blockedDepth,
+    character.classId,
+    character.upgradeBonuses
+  )
   if (!underForBlocked) return null
 
   // If leveled enough for CURRENT depth, explore it fully before ascending
-  const underForCurrent = isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses)
+  const underForCurrent = isUnderLeveled(
+    character.level,
+    character.depth,
+    character.classId,
+    character.upgradeBonuses
+  )
   if (!underForCurrent) return null
 
   // Farming depth floor: only farm on depths (blockedDepth - 2) to (blockedDepth - 1)
@@ -1027,7 +1038,6 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
     botState.farmGoldTarget || getGoldTarget(botState.farmBlockedDepth, effectiveConfig.caution)
   const useSweep = shouldUseSweep(context)
 
-
   // Check if ready for blocked depth
   const blockedReadiness = profile('farm.readiness', () =>
     getDepthReadiness(
@@ -1114,7 +1124,11 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
       if (character.depth === botState.farmBlockedDepth - 1) {
         enterSweepFlip(botState, character.depth) // Return to this depth after flip
         botState.seenThisVisit.clear()
-        return makeDescendGoal(game, stairs, `Sweep flip: descending into D${botState.farmBlockedDepth} to trigger regen`)
+        return makeDescendGoal(
+          game,
+          stairs,
+          `Sweep flip: descending into D${botState.farmBlockedDepth} to trigger regen`
+        )
       }
 
       // Between farmingFloor and blockedDepth-1: descend toward blockedDepth-1

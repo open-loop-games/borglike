@@ -217,7 +217,7 @@ function formatGoal(goal: string | undefined): string {
     <header class="expanded-header">
       <div class="header-left">
         <button class="collapse-btn" title="Return to grid view" @click="handleCollapse">
-          <span>&#x2716;</span>
+          <span>✖</span>
         </button>
         <div class="run-identity">
           <span class="run-class">{{ run.config.class }}</span>
@@ -232,7 +232,7 @@ function formatGoal(goal: string | undefined): string {
 
       <div class="header-right">
         <button class="turbo-btn" :class="{ active: run.turbo }" @click="handleToggleTurbo">
-          <span class="turbo-icon">&#x25B6;&#x25B6;</span>
+          <span class="turbo-icon">▶▶</span>
           Turbo
         </button>
         <button
@@ -247,7 +247,7 @@ function formatGoal(goal: string | undefined): string {
           @touchend="killHold.cancel"
           @touchcancel="killHold.cancel"
         >
-          <span class="kill-icon">&#x2717;</span>
+          <span class="kill-icon">✗</span>
           Kill
           <span
             v-if="killHold.progress.value > 0"
@@ -533,7 +533,7 @@ function formatGoal(goal: string | undefined): string {
       />
       <!-- Fallback if no finalStats (shouldn't happen normally) -->
       <div v-else class="death-content">
-        <span class="death-icon">&#x2620;</span>
+        <span class="death-icon">☠</span>
         <span class="death-text">DEFEATED</span>
         <div class="death-stats">
           <span>Reached Depth {{ run.depth }}</span>
@@ -542,7 +542,7 @@ function formatGoal(goal: string | undefined): string {
         </div>
         <div class="death-actions">
           <button class="action-btn primary" @click="handleRestart">
-            <span>&#x21BB;</span> Restart Run
+            <span>↻</span> Restart Run
           </button>
           <button class="action-btn secondary" @click="handleDismiss">Dismiss</button>
           <button class="action-btn secondary" @click="handleCollapse">Return to Grid</button>

@@ -145,7 +145,7 @@ const hasExtendedStats = computed(() => {
         <h2>Run Complete</h2>
         <span v-if="isNewBest" class="new-best-badge">NEW BEST!</span>
       </div>
-      <button class="close-btn" @click="emit('close')">&#x2715;</button>
+      <button class="close-btn" @click="emit('close')">✕</button>
     </header>
 
     <div class="summary-content">
@@ -316,7 +316,7 @@ const hasExtendedStats = computed(() => {
       <PanelFrame class="essence-section">
         <div class="essence-header">
           <span class="essence-label">Essence Earned</span>
-          <span class="essence-icon">&#x25C6;</span>
+          <span class="essence-icon">◆</span>
         </div>
         <div class="essence-value">+{{ run.essenceEarned.toLocaleString() }}</div>
         <ProgressBar
@@ -335,7 +335,7 @@ const hasExtendedStats = computed(() => {
     <footer class="summary-footer">
       <button class="action-btn secondary" @click="emit('close')">Return to Grid</button>
       <button class="action-btn primary" @click="emit('restart')">
-        <span class="btn-icon">&#x25B6;</span>
+        <span class="btn-icon">▶</span>
         Start New Run
       </button>
     </footer>

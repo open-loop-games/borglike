@@ -314,7 +314,7 @@ function handleCancel() {
     <footer class="editor-footer">
       <button class="cancel-btn" @click="handleCancel">Cancel</button>
       <button class="start-btn" @click="handleStart">
-        <span class="start-icon">&#x25B6;</span>
+        <span class="start-icon">▶</span>
         Start Run
       </button>
     </footer>

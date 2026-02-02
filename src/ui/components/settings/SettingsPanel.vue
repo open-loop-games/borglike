@@ -20,8 +20,8 @@ const showExportSuccess = ref(false)
 
 // Tab definitions
 const tabs = [
-  { id: 'gameplay', label: 'Gameplay', icon: '&#x1F3AE;' },
-  { id: 'data', label: 'Data', icon: '&#x1F4BE;' },
+  { id: 'gameplay', label: 'Gameplay', icon: '🎮' },
+  { id: 'data', label: 'Data', icon: '💾' },
 ] as const
 
 // Stats for data tab
@@ -85,7 +85,7 @@ function cancelReset() {
   <div class="settings-panel">
     <header class="settings-header">
       <h2>Settings</h2>
-      <button class="close-btn" @click="emit('close')">&#x2715;</button>
+      <button class="close-btn" @click="emit('close')">✕</button>
     </header>
 
     <!-- Tabs -->
@@ -97,7 +97,7 @@ function cancelReset() {
         :class="{ active: activeTab === tab.id }"
         @click="activeTab = tab.id"
       >
-        <span class="tab-icon" v-html="tab.icon"></span>
+        <span class="tab-icon">{{ tab.icon }}</span>
         <span class="tab-label">{{ tab.label }}</span>
       </button>
     </nav>
@@ -225,11 +225,11 @@ function cancelReset() {
 
           <div class="data-actions">
             <button class="data-btn" @click="handleExportData">
-              <span class="btn-icon">&#x1F4E5;</span>
+              <span class="btn-icon">📥</span>
               Export Save
             </button>
             <button class="data-btn">
-              <span class="btn-icon">&#x1F4E4;</span>
+              <span class="btn-icon">📤</span>
               Import Save
             </button>
           </div>

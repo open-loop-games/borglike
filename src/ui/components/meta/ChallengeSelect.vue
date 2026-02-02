@@ -19,7 +19,7 @@ const challenges: Challenge[] = [
     id: 'pacifist',
     name: 'Pacifist',
     description: 'Complete the run without killing any monster',
-    icon: '&#x262E;',
+    icon: '☮',
     difficulty: 'hard',
     modifiers: ['Cannot attack monsters', 'Must evade all enemies'],
     essenceMultiplier: 2.5,
@@ -29,7 +29,7 @@ const challenges: Challenge[] = [
     id: 'speedrun',
     name: 'Speedrun',
     description: 'Reach depth 10 in under 500 turns',
-    icon: '&#x23F1;',
+    icon: '⏱',
     difficulty: 'medium',
     modifiers: ['500 turn limit', 'Target: Depth 10'],
     essenceMultiplier: 1.5,
@@ -39,7 +39,7 @@ const challenges: Challenge[] = [
     id: 'ironman',
     name: 'Ironman',
     description: 'No healing items or regeneration',
-    icon: '&#x2694;',
+    icon: '⚔',
     difficulty: 'hard',
     modifiers: ['No potions', 'No natural HP regen', 'Starting HP only'],
     essenceMultiplier: 2.0,
@@ -49,7 +49,7 @@ const challenges: Challenge[] = [
     id: 'minimalist',
     name: 'Minimalist',
     description: 'Complete with no equipment',
-    icon: '&#x1F44A;',
+    icon: '👊',
     difficulty: 'brutal',
     modifiers: ['Cannot equip items', 'Fists only'],
     essenceMultiplier: 3.0,
@@ -60,7 +60,7 @@ const challenges: Challenge[] = [
     id: 'darkness',
     name: 'Shroud of Darkness',
     description: 'Reduced vision radius',
-    icon: '&#x1F441;',
+    icon: '👁',
     difficulty: 'medium',
     modifiers: ['FOV reduced to 3 tiles', 'Enemies harder to spot'],
     essenceMultiplier: 1.75,
@@ -70,7 +70,7 @@ const challenges: Challenge[] = [
     id: 'horde',
     name: 'Horde Mode',
     description: 'Double monster spawns',
-    icon: '&#x1F47E;',
+    icon: '👾',
     difficulty: 'hard',
     modifiers: ['2x monster spawns', 'Faster respawns'],
     essenceMultiplier: 2.0,
@@ -136,7 +136,7 @@ function handleClose() {
   <div class="challenge-select">
     <header class="select-header">
       <h2>Challenge Modifiers</h2>
-      <button class="close-btn" @click="handleClose">&#x2715;</button>
+      <button class="close-btn" @click="handleClose">✕</button>
     </header>
 
     <div class="select-content">
@@ -152,7 +152,7 @@ function handleClose() {
           @click="toggleChallenge(challenge.id)"
         >
           <div class="challenge-header">
-            <span class="challenge-icon" v-html="challenge.icon"></span>
+            <span class="challenge-icon">{{ challenge.icon }}</span>
             <span class="challenge-name">{{ challenge.name }}</span>
             <span
               class="challenge-difficulty"
@@ -176,12 +176,12 @@ function handleClose() {
           </div>
 
           <div v-if="!challenge.unlocked" class="locked-overlay">
-            <span class="lock-icon">&#x1F512;</span>
+            <span class="lock-icon">🔒</span>
             <span class="lock-condition">{{ challenge.unlockCondition }}</span>
           </div>
 
           <div v-if="selectedChallenges.has(challenge.id)" class="selected-indicator">
-            <span>&#x2713;</span>
+            <span>✓</span>
           </div>
         </PanelFrame>
       </div>
