@@ -237,6 +237,8 @@ export interface BotState {
   sweepDirection: Direction | null
   /** Turn when sweep started (for timeout tracking) */
   sweepStartTurn: number
+  /** Whether sweep has been exhausted on this level (timed out or unreachable tiles) */
+  sweepExhausted: boolean
 
   // Sweep flip state (yo-yo descent into blocked depth to trigger level regen)
   /** Whether we're in a sweep flip (descended into blocked, ascending back) */

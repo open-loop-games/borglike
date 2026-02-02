@@ -502,6 +502,9 @@ export const useProgressionStore = defineStore('progression', () => {
         : availableClasses.value[0] || 'Warrior'
       const sweepLevelRange =
         saved.sweepLevelRange ?? getDefaultSweepLevelRange(effectiveClass.toLowerCase())
+      // Migration: old saves without active levels default to max unlocked
+      const activeSweepLevel = saved.activeSweepLevel ?? capabilities.sweep
+      const activeSurfLevel = saved.activeSurfLevel ?? capabilities.surf
 
       return {
         race: unlocks.value.races.has(saved.race) ? saved.race : availableRaces.value[0] || 'Human',
@@ -518,6 +521,8 @@ export const useProgressionStore = defineStore('progression', () => {
         capabilities,
         toggles,
         sweepLevelRange,
+        activeSweepLevel,
+        activeSurfLevel,
       }
     }
     return createDefaultSlotConfig()
@@ -584,15 +589,39 @@ export const useProgressionStore = defineStore('progression', () => {
     })
   }
 
-  /** Get effective capabilities (unlocked AND toggled on) */
+  /** Set active level for a graded capability (sweep/surf) */
+  function setActiveGradedLevel(
+    slot: number,
+    field: 'sweep' | 'surf',
+    level: number
+  ): void {
+    const config = getSlotConfig(slot)
+    const maxLevel = config.capabilities[field]
+
+    // Clamp to unlocked level
+    const activeLevel = Math.min(Math.max(0, level), maxLevel)
+
+    // Save updated config
+    saveSlotConfig(slot, {
+      ...config,
+      activeSweepLevel: field === 'sweep' ? activeLevel : config.activeSweepLevel,
+      activeSurfLevel: field === 'surf' ? activeLevel : config.activeSurfLevel,
+    })
+  }
+
+  /** Get effective capabilities (unlocked AND toggled on, with active levels) */
   function getEffectiveCapabilities(slot: number): BotCapabilities & BotToggles {
     const config = getSlotConfig(slot)
+    // Use active levels if set, otherwise use max unlocked
+    const activeSweep = Math.min(config.activeSweepLevel ?? config.capabilities.sweep, config.capabilities.sweep)
+    const activeSurf = Math.min(config.activeSurfLevel ?? config.capabilities.surf, config.capabilities.surf)
     return {
       town: config.capabilities.town && config.toggles.town,
       farming: config.capabilities.farming && config.toggles.farming,
       preparedness: config.capabilities.preparedness && config.toggles.preparedness,
-      sweep: config.capabilities.sweep,
-      surf: config.capabilities.surf,
+      sweepEnabled: config.toggles.sweepEnabled,
+      sweep: activeSweep,
+      surf: activeSurf,
       kiting: config.capabilities.kiting,
     }
   }
@@ -985,6 +1014,7 @@ export const useProgressionStore = defineStore('progression', () => {
     // Bot capability actions
     purchaseBotUpgrade,
     toggleBotCapability,
+    setActiveGradedLevel,
     getEffectiveCapabilities,
 
     // Achievement getters and actions

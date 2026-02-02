@@ -208,6 +208,21 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
   // Get per-slot bot capabilities (training unlocks)
   const slotConfig = progression.getSlotConfig(slot)
 
+  // Build effective capabilities with active levels (player can select lower levels)
+  const activeSweep = Math.min(
+    slotConfig.activeSweepLevel ?? slotConfig.capabilities.sweep,
+    slotConfig.capabilities.sweep
+  )
+  const activeSurf = Math.min(
+    slotConfig.activeSurfLevel ?? slotConfig.capabilities.surf,
+    slotConfig.capabilities.surf
+  )
+  const effectiveCapabilities = {
+    ...slotConfig.capabilities,
+    sweep: activeSweep,
+    surf: activeSurf,
+  }
+
   // Create the actual game runner
   const runner = createGameRunner({
     raceId: RACE_IDS[raceName] || 'human',
@@ -219,8 +234,8 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     bestiary,
     maxDepthEver,
     maxTurns: 0, // Unlimited
-    // Per-slot bot training unlocks
-    botCapabilities: slotConfig.capabilities,
+    // Per-slot bot training unlocks (uses active levels for sweep/surf)
+    botCapabilities: effectiveCapabilities,
     botToggles: slotConfig.toggles,
   })
 

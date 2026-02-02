@@ -68,7 +68,7 @@ const preparednessUpgrade: BotUpgradeDefinition = {
 const sweep1: BotUpgradeDefinition = {
   id: 'sweep_1',
   name: 'Sweep I',
-  description: 'Basic sweep exploration (60% threshold)',
+  description: 'Explore 60% of floor tiles before descent',
   cost: 150,
   category: 'graded',
   targetField: 'sweep',
@@ -78,7 +78,7 @@ const sweep1: BotUpgradeDefinition = {
 const sweep2: BotUpgradeDefinition = {
   id: 'sweep_2',
   name: 'Sweep II',
-  description: 'Improved sweep exploration (75% threshold)',
+  description: 'Explore 75% of floor tiles before descent',
   cost: 270,
   requires: 'sweep_1',
   category: 'graded',
@@ -89,7 +89,7 @@ const sweep2: BotUpgradeDefinition = {
 const sweep3: BotUpgradeDefinition = {
   id: 'sweep_3',
   name: 'Sweep III',
-  description: 'Maximum sweep exploration (90% threshold)',
+  description: 'Explore 90% of floor tiles before descent',
   cost: 486,
   requires: 'sweep_2',
   category: 'graded',
@@ -104,7 +104,7 @@ const sweep3: BotUpgradeDefinition = {
 const surf1: BotUpgradeDefinition = {
   id: 'surf_1',
   name: 'Surf I',
-  description: 'Unlocks tethered stair farming (5×5 area)',
+  description: 'Farm within 5×5 area around stairs',
   cost: 200,
   category: 'graded',
   targetField: 'surf',
@@ -114,7 +114,7 @@ const surf1: BotUpgradeDefinition = {
 const surf2: BotUpgradeDefinition = {
   id: 'surf_2',
   name: 'Surf II',
-  description: 'Expanded tether range (adds 9×9 area)',
+  description: 'Farm within 9×9 area around stairs',
   cost: 360,
   requires: 'surf_1',
   category: 'graded',
@@ -125,7 +125,7 @@ const surf2: BotUpgradeDefinition = {
 const surf3: BotUpgradeDefinition = {
   id: 'surf_3',
   name: 'Surf III',
-  description: 'Maximum tether range (adds 21×21 area)',
+  description: 'Farm within 21×21 area around stairs',
   cost: 648,
   requires: 'surf_2',
   category: 'graded',

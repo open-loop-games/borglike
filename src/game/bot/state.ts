@@ -61,6 +61,7 @@ export function createBotState(): BotState {
     sweepMode: false,
     sweepDirection: null,
     sweepStartTurn: 0,
+    sweepExhausted: false,
     // Sweep flip state (yo-yo into blocked depth)
     sweepFlipActive: false,
     sweepFlipTargetDepth: null,
@@ -129,6 +130,8 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   // Sweep exploration - reset direction (will be re-initialized based on entry point)
   // Keep sweepMode active across levels (part of multi-level pattern)
   state.sweepDirection = null
+  // Clear sweep exhaustion flag - new level gets fresh attempt
+  state.sweepExhausted = false
 }
 
 /**

@@ -86,6 +86,9 @@ export interface SlotConfig {
   toggles: BotToggles
   // Sweep exploration level range (class-specific defaults)
   sweepLevelRange: SweepLevelRange
+  // Active levels for graded capabilities (can be lower than unlocked level)
+  activeSweepLevel?: number // 0-3, capped by capabilities.sweep
+  activeSurfLevel?: number // 0-3, capped by capabilities.surf
 }
 
 export interface Upgrade {

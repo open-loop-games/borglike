@@ -286,11 +286,15 @@ export function exitTetheredMode(botState: BotState): void {
 
 /**
  * Exit sweep mode - clears all sweep state.
+ * @param exhausted - If true, marks sweep as exhausted on this level (won't re-enable)
  */
-export function exitSweepMode(botState: BotState): void {
+export function exitSweepMode(botState: BotState, exhausted: boolean = false): void {
   botState.sweepMode = false
   botState.sweepDirection = null
   botState.sweepStartTurn = 0
+  if (exhausted) {
+    botState.sweepExhausted = true
+  }
 }
 
 // ============================================================================
@@ -576,6 +580,9 @@ function shouldUseSweep(context: BotContext): boolean {
   const { game, botState, capabilities, toggles, sweepLevelRange } = context
   const charLevel = game.character.level
 
+  // Don't re-enable sweep if it was exhausted on this level (timed out or unreachable tiles)
+  if (botState.sweepExhausted) return false
+
   // If sweep mode is already active (set on level change), use it
   if (botState.sweepMode) return true
 
@@ -758,15 +765,15 @@ export function getSweepGoal(context: BotContext): BotGoal | null {
 
   // Check for timeout (prevent infinite sweep on weird maps)
   if (isSweepTimedOut(game, botState)) {
-    exitSweepMode(botState)
+    exitSweepMode(botState, true) // Mark exhausted - don't re-enable on this level
     return null
   }
 
   // Find sweep target using standard exploration logic with sweep mode
   const target = findExplorationTarget(game, botState, true)
   if (!target) {
-    // No reachable unseen tiles left - sweep considered complete (may be blocked by terrain)
-    exitSweepMode(botState)
+    // No reachable unseen tiles left - mark exhausted so we don't re-enable
+    exitSweepMode(botState, true)
     return null
   }
 
@@ -1115,10 +1122,15 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
     const sweepDone = isSweepComplete(game, botState) || isSweepTimedOut(game, botState)
 
     if (sweepDone) {
-      exitSweepMode(botState)
-
       const stairs = getStairsDown(context)
-      if (!stairs) return null
+      if (!stairs) {
+        // Don't exit sweep mode yet - keep sweeping until stairs are found
+        // This prevents state corruption where sweep is marked done but flip can't happen
+        return null
+      }
+
+      // Only exit sweep mode when we can actually proceed with flip/descent
+      exitSweepMode(botState)
 
       // At blockedDepth - 1: flip INTO blocked depth to trigger level regen above
       if (character.depth === botState.farmBlockedDepth - 1) {
