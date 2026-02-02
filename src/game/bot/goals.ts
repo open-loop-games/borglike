@@ -12,6 +12,7 @@ import type { BotState, BotGoal, BotContext, GoalType, DangerMap } from './types
 import { getEffectiveCapabilities } from './types'
 import type { GameState } from '../types'
 import { isAdjacent } from '../types'
+import { getTile } from '../dungeon'
 import { getLocalDanger } from './danger'
 import { findAdjacentMonster, hasRangedWeapon } from './combat'
 import { isInTown, HEALER_POSITION, DUNGEON_ENTRANCE_POSITION, TOWN_SHOP_POSITIONS } from '../town'
@@ -285,7 +286,9 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       if (!targetMonster) return false
 
       // Check if monster is still visible or adjacent
-      const isVisible = context.visibleMonsters.some((m) => m.id === goal.targetId)
+      // IMPORTANT: Query actual tile visibility, not context.visibleMonsters which can be stale after teleport
+      const tile = getTile(game.currentLevel, targetMonster.position.x, targetMonster.position.y)
+      const isVisible = tile?.visible ?? false
       const isAdjacentToPlayer = isAdjacent(game.character.position, targetMonster.position)
 
       // Invalidate if monster went out of sight and isn't adjacent

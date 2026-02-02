@@ -75,6 +75,23 @@ export function getHealingSpellAction(
   // Select appropriate heal based on wound size and danger
   const spell = selectHealSpell(healSpells, hpDown, danger)
   if (spell) {
+    // Lifedrain requires a visible target to drain from
+    if (spell.effectType === 'lifedrain') {
+      const target = getNearestVisibleMonster(game)
+      if (!target) {
+        // No target for lifedrain - can't heal this way
+        // Try pure heal fallback (in case selectHealSpell picked lifedrain over a pure heal)
+        const pureHeals = healSpells.filter((e) => e.spell.effectType === 'heal')
+        if (pureHeals.length > 0) {
+          const fallback = selectHealSpell(pureHeals, hpDown, danger)
+          if (fallback) {
+            return { type: 'cast', spellId: fallback.id }
+          }
+        }
+        return null
+      }
+      return { type: 'cast', spellId: spell.id, targetId: target.id }
+    }
     return { type: 'cast', spellId: spell.id }
   }
 
