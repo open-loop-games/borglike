@@ -99,7 +99,12 @@ export function shouldAscendToFarm(
 ): boolean {
   if (!knownStairsUp) return false
   if (character.depth <= 1) return false
-  return isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses)
+  return isUnderLeveled(
+    character.level,
+    character.depth,
+    character.classId,
+    character.upgradeBonuses
+  )
 }
 
 // ============================================================================

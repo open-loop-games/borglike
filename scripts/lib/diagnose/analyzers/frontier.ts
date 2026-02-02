@@ -26,7 +26,6 @@ import {
   getFrontierPositions,
   getSweepFrontierPositions,
 } from '@bot/exploration'
-import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from '@bot/types'
 import { computeExplorationFlow, getFlowCost, isReachable } from '@bot/flow'
 import { getTile, getAdjacentPositions, isWalkable } from '@game/dungeon'
 import { computeDangerGrid, buildAvoidSet, getDangerThreshold } from '@bot/danger'
@@ -291,11 +290,8 @@ export class FrontierAnalyzer implements Analyzer {
       const context = buildBotContext(game, 'cautious', botState)
       const contextUnexploredLength = context.unexploredTiles.length
 
-      // Check sweep mode (casters use sweep exploration at early levels)
-      // This is the REAL flow the game uses for mage/archmage/necromancer at level < 10
-      const isCaster = SQUISHY_CLASSES.has(game.character.classId)
-      const isEarlyGame = game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
-      const sweepMode = isCaster && isEarlyGame && game.character.depth > 0 && botState.sweepMode
+      // Check sweep mode - trust the bot's sweep state (now configurable per-slot)
+      const sweepMode = botState.sweepMode
 
       // Get sweep frontiers (explored tiles not seen this visit)
       const sweepFrontiers = sweepMode ? getSweepFrontierPositions(game, botState) : []

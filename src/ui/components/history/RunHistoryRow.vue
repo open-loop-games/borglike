@@ -270,11 +270,10 @@ const processedInventory = computed(() => {
         </div>
       </div>
 
-      <div
-        v-if="processedInventory.consumables.length > 0"
-        class="expanded-section"
-      >
-        <h4>Consumables ({{ processedInventory.consumables.reduce((sum, c) => sum + c.count, 0) }})</h4>
+      <div v-if="processedInventory.consumables.length > 0" class="expanded-section">
+        <h4>
+          Consumables ({{ processedInventory.consumables.reduce((sum, c) => sum + c.count, 0) }})
+        </h4>
         <div class="inventory-list">
           <span
             v-for="item in processedInventory.consumables"
@@ -289,9 +288,12 @@ const processedInventory = computed(() => {
       <div v-if="processedInventory.items.length > 0" class="expanded-section">
         <h4>Items ({{ processedInventory.items.length }})</h4>
         <div class="inventory-list">
-          <span v-for="(item, index) in processedInventory.items" :key="index" class="inventory-item">{{
-            item
-          }}</span>
+          <span
+            v-for="(item, index) in processedInventory.items"
+            :key="index"
+            class="inventory-item"
+            >{{ item }}</span
+          >
         </div>
       </div>
     </div>

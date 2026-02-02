@@ -43,8 +43,8 @@ const __dirname = dirname(__filename)
  * Maps preset name to comma-separated capability IDs.
  */
 export const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town',
-  mid: 'town,farming,sweep_1,surf_1',
+  early: 'town,farming,preparedness',
+  mid: 'town,farming,preparedness,sweep_1,surf_1',
   late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1',
 }
 

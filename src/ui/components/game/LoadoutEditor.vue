@@ -326,6 +326,8 @@ function handleCancel() {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
   background: var(--panel);
 }
 
@@ -359,6 +361,7 @@ function handleCancel() {
 
 .editor-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px;
   display: flex;

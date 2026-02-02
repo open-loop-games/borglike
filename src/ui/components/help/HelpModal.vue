@@ -46,8 +46,8 @@ const emit = defineEmits<{
         </p>
         <p>
           <span class="training">Bot Upgrades</span> unlock smarter behaviors: town visits, resource
-          farming, exploration sweeps, retreat tactics, and ranged kiting. Upgrade each slot's bot to
-          suit different strategies.
+          farming, exploration sweeps, retreat tactics, and ranged kiting. Upgrade each slot's bot
+          to suit different strategies.
         </p>
       </PanelFrame>
 

@@ -43,7 +43,6 @@ const emit = defineEmits<{
   openCodex: []
   openAchievements: []
 }>()
-
 </script>
 
 <template>
@@ -59,7 +58,6 @@ const emit = defineEmits<{
         <span class="essence-value">{{ progression.currency.essence.toLocaleString() }}</span>
         <span class="essence-label">Essence</span>
       </div>
-
     </div>
 
     <div class="header-right">

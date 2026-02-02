@@ -731,7 +731,11 @@ function getClassLevelOffset(tier: ClassTier, upgradeBonuses?: UpgradeBonuses): 
  * @param classId - Character's class ID (defaults to medium tier)
  * @param upgradeBonuses - Meta-progression bonuses (affects SQUISHY requirement)
  */
-export function getMinLevel(depth: number, classId?: string, upgradeBonuses?: UpgradeBonuses): number {
+export function getMinLevel(
+  depth: number,
+  classId?: string,
+  upgradeBonuses?: UpgradeBonuses
+): number {
   const tier = classId ? getClassTier(classId) : 'MEDIUM'
   const offset = getClassLevelOffset(tier, upgradeBonuses)
   // Cap at 50 (max level) - SQUISHY classes can't reach level 55 for depth 50

@@ -30,7 +30,6 @@ import {
   getFrontierPositions,
   getSweepFrontierPositions,
 } from '@bot/exploration'
-import { SQUISHY_CLASSES, CASTER_STAIR_SURF_MIN_LEVEL } from '@bot/types'
 import { computeExplorationFlow, getFlowCost, isReachable, MAX_FLOW_COST } from '@bot/flow'
 import { getTile, getAdjacentPositions, isWalkable } from '@game/dungeon'
 import { computeDangerGrid, buildAvoidSet, getDangerThreshold } from '@bot/danger'
@@ -549,10 +548,8 @@ export class ExplorationAnalyzer implements Analyzer {
       }
     }
 
-    // Sweep mode check
-    const isCaster = SQUISHY_CLASSES.has(game.character.classId)
-    const isEarlyGame = game.character.level < CASTER_STAIR_SURF_MIN_LEVEL
-    const sweepMode = isCaster && isEarlyGame && game.character.depth > 0 && botState.sweepMode
+    // Sweep mode check - trust the bot's sweep state (now configurable per-slot)
+    const sweepMode = botState.sweepMode
     const sweepFrontiers = sweepMode ? getSweepFrontierPositions(game, botState) : []
 
     this.frontierSnapshots.push({

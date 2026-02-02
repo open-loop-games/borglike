@@ -180,9 +180,7 @@ const slotTrainingSummaries = computed(() => {
             </div>
             <div class="summary-row">
               <span class="summary-label">Bot Upgrades</span>
-              <span class="summary-value"
-                >{{ totalBotUpgrades }} / {{ maxBotUpgrades }}</span
-              >
+              <span class="summary-value">{{ totalBotUpgrades }} / {{ maxBotUpgrades }}</span>
             </div>
           </PanelFrame>
         </section>

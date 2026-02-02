@@ -65,8 +65,8 @@ const DEFAULT_CONFIG = {
  * (Duplicated from runner.ts since workers can't import from other modules easily)
  */
 const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town',
-  mid: 'town,farming,sweep_1,surf_1',
+  early: 'town,farming,preparedness',
+  mid: 'town,farming,preparedness,sweep_1,surf_1',
   late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1',
 }
 
