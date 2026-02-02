@@ -20,7 +20,6 @@ import type { UpgradeBonuses } from '../upgrade-effects'
 import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
 import { SQUISHY_CLASSES, getEffectiveCapabilities } from './types'
-import { getTile } from '../dungeon'
 import { profile } from './profiler'
 import {
   getExplorationProgress,
@@ -29,7 +28,7 @@ import {
 } from './exploration'
 import { getDepthReadiness, getUniqueBlocker, isUnderLeveled } from './preparation'
 import { monsters as MONSTERS } from '../data/monsters'
-import { handleActiveFarmingLoop, initiateFarmingLoop, getSweepGoal } from './farming'
+import { handleActiveFarmingLoop, initiateFarmingLoop, getSweepGoal, getFlipNavigationGoal } from './farming'
 
 // Re-export farming functions that other modules need
 export { initializeSweepDirection } from './farming'
@@ -156,45 +155,19 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
  */
 export function getReturnToUniqueHuntGoal(context: BotContext): BotGoal | null {
   const { game, botState } = context
-  const character = game.character
 
   if (!botState.huntingUniqueBlocker || botState.uniqueHuntFlipDepth === null) {
     return null
   }
 
-  if (character.depth === 0) return null
+  if (game.character.depth === 0) return null
 
-  if (character.depth === botState.uniqueHuntFlipDepth) {
-    return null
-  }
-
-  if (character.depth < botState.uniqueHuntFlipDepth) {
-    const stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
-    if (!stairsDown) return null
-
-    return {
-      type: 'DESCEND',
-      target: stairsDown,
-      targetId: null,
-      reason: `Returning to depth ${botState.uniqueHuntFlipDepth} to hunt ${botState.huntingUniqueBlocker}`,
-      startTurn: game.turn,
-    }
-  }
-
-  if (character.depth > botState.uniqueHuntFlipDepth) {
-    const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
-    if (!stairsUp) return null
-
-    return {
-      type: 'ASCEND_TO_FARM',
-      target: stairsUp,
-      targetId: null,
-      reason: `Returning to depth ${botState.uniqueHuntFlipDepth} to hunt ${botState.huntingUniqueBlocker}`,
-      startTurn: game.turn,
-    }
-  }
-
-  return null
+  return getFlipNavigationGoal(
+    context,
+    botState.uniqueHuntFlipDepth,
+    MAX_DEPTH,
+    `Returning to depth ${botState.uniqueHuntFlipDepth} to hunt ${botState.huntingUniqueBlocker}`
+  )
 }
 
 // ============================================================================
@@ -203,55 +176,17 @@ export function getReturnToUniqueHuntGoal(context: BotContext): BotGoal | null {
 
 const MORGOTH_FLIP_EXPLORATION_THRESHOLD = 0.9
 
+/**
+ * Get navigation goal to return to a target depth (for flips).
+ * Uses shared getFlipNavigationGoal from farming.ts with MAX_DEPTH as upper bound.
+ */
 function getLevelFlipReturnGoal(
   context: BotContext,
   targetDepth: number,
   reason: string
 ): BotGoal | null {
-  const { game, botState } = context
-  const character = game.character
-
-  if (character.depth === 0) return null
-
-  if (character.depth === targetDepth) {
-    return null
-  }
-
-  if (character.depth < targetDepth) {
-    let stairsDown = botState.knownStairsDown ?? game.currentLevel.stairsDown
-
-    if (!stairsDown) {
-      const currentTile = getTile(game.currentLevel, character.position.x, character.position.y)
-      if (currentTile?.type === 'stairs_down') {
-        stairsDown = character.position
-      }
-    }
-
-    if (!stairsDown) return null
-
-    return {
-      type: 'DESCEND',
-      target: stairsDown,
-      targetId: null,
-      reason,
-      startTurn: game.turn,
-    }
-  }
-
-  if (character.depth > targetDepth) {
-    const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
-    if (!stairsUp) return null
-
-    return {
-      type: 'ASCEND_TO_FARM',
-      target: stairsUp,
-      targetId: null,
-      reason,
-      startTurn: game.turn,
-    }
-  }
-
-  return null
+  if (context.game.character.depth === 0) return null
+  return getFlipNavigationGoal(context, targetDepth, MAX_DEPTH, reason)
 }
 
 export function getMorgothFlipReturnGoal(context: BotContext): BotGoal | null {
