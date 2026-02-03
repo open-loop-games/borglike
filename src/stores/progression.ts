@@ -628,6 +628,44 @@ export const useProgressionStore = defineStore('progression', () => {
     }
   }
 
+  /** Aggregated performance stats for a race/class/personality combination */
+  interface ConfigPerformance {
+    runCount: number
+    avgDepth: number
+    avgEssence: number
+    avgKills: number
+    bestDepth: number
+    bestEssence: number
+  }
+
+  /** Get aggregated performance stats for a specific config combination */
+  function getConfigPerformance(
+    race: string,
+    cls: string,
+    personality: string
+  ): ConfigPerformance | null {
+    const matchingRuns = runHistory.value.filter(
+      (run) => run.race === race && run.class === cls && run.personality === personality
+    )
+
+    if (matchingRuns.length === 0) return null
+
+    const totalDepth = matchingRuns.reduce((sum, r) => sum + r.maxDepth, 0)
+    const totalEssence = matchingRuns.reduce((sum, r) => sum + r.essenceEarned, 0)
+    const totalKills = matchingRuns.reduce((sum, r) => sum + r.kills, 0)
+    const bestDepth = Math.max(...matchingRuns.map((r) => r.maxDepth))
+    const bestEssence = Math.max(...matchingRuns.map((r) => r.essenceEarned))
+
+    return {
+      runCount: matchingRuns.length,
+      avgDepth: totalDepth / matchingRuns.length,
+      avgEssence: totalEssence / matchingRuns.length,
+      avgKills: totalKills / matchingRuns.length,
+      bestDepth,
+      bestEssence,
+    }
+  }
+
   function recordRun(stats: RunStats, isVictory: boolean = false) {
     runHistory.value.unshift(stats)
     if (runHistory.value.length > MAX_HISTORY) {
@@ -1012,6 +1050,9 @@ export const useProgressionStore = defineStore('progression', () => {
     slotConfigs,
     getSlotConfig,
     saveSlotConfig,
+
+    // Config performance analytics
+    getConfigPerformance,
 
     // Bot capability actions
     purchaseBotUpgrade,

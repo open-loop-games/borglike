@@ -82,6 +82,15 @@ const personalities = [
   { id: 'speedrunner', name: 'Speedrunner', desc: 'Beelines for stairs' },
 ] as const
 
+// Config performance from run history
+const configPerformance = computed(() => {
+  return progression.getConfigPerformance(
+    selectedRace.value,
+    selectedClass.value,
+    selectedPersonality.value
+  )
+})
+
 // Bonuses from upgrades
 const activeBonuses = computed(() => {
   const bonuses: { name: string; value: string }[] = []
@@ -235,23 +244,6 @@ function handleCancel() {
           </div>
         </PanelFrame>
 
-        <!-- Personality Selection -->
-        <PanelFrame class="selection-section">
-          <h3>Bot Personality</h3>
-          <div class="personality-list">
-            <button
-              v-for="p in personalities"
-              :key="p.id"
-              class="personality-btn"
-              :class="{ active: selectedPersonality === p.id }"
-              @click="selectedPersonality = p.id"
-            >
-              <span class="personality-name">{{ p.name }}</span>
-              <span class="personality-desc">{{ p.desc }}</span>
-            </button>
-          </div>
-        </PanelFrame>
-
         <!-- Booster Selection -->
         <PanelFrame v-if="unlockedBoosters.length > 0" class="selection-section booster-section">
           <h3>Boosters <span class="booster-hint">(max 2)</span></h3>
@@ -293,20 +285,68 @@ function handleCancel() {
           </div>
         </PanelFrame>
 
-        <!-- Active Bonuses -->
-        <PanelFrame v-if="activeBonuses.length > 0" class="bonuses-section">
+        <!-- Active Bonuses & Config Performance -->
+        <PanelFrame
+          v-if="activeBonuses.length > 0 || (configPerformance && configPerformance.runCount >= 3)"
+          class="bonuses-section"
+        >
           <h3>Active Bonuses</h3>
-          <div class="bonus-list">
+          <div v-if="activeBonuses.length > 0" class="bonus-list">
             <div v-for="bonus in activeBonuses" :key="bonus.name" class="bonus-item">
               <span class="bonus-name">{{ bonus.name }}</span>
               <span class="bonus-value">{{ bonus.value }}</span>
             </div>
           </div>
+          <div v-else class="no-bonuses">No upgrade bonuses active</div>
+
+          <!-- Config Performance Stats -->
+          <div
+            v-if="configPerformance && configPerformance.runCount >= 3"
+            class="config-performance"
+          >
+            <div class="perf-divider"></div>
+            <h4>Config History</h4>
+            <div class="perf-grid">
+              <div class="perf-stat">
+                <span class="perf-value">{{ configPerformance.runCount }}</span>
+                <span class="perf-label">runs</span>
+              </div>
+              <div class="perf-stat">
+                <span class="perf-value">D:{{ configPerformance.avgDepth.toFixed(1) }}</span>
+                <span class="perf-label">avg</span>
+              </div>
+              <div class="perf-stat">
+                <span class="perf-value">◆{{ configPerformance.avgEssence.toFixed(0) }}</span>
+                <span class="perf-label">avg</span>
+              </div>
+              <div class="perf-stat best">
+                <span class="perf-value">D:{{ configPerformance.bestDepth }}</span>
+                <span class="perf-label">best</span>
+              </div>
+            </div>
+          </div>
         </PanelFrame>
       </div>
 
-      <!-- Right Column: Bot Training -->
+      <!-- Right Column: Personality + Bot Training -->
       <div class="training-column">
+        <!-- Personality Selection -->
+        <PanelFrame class="selection-section">
+          <h3>Bot Personality</h3>
+          <div class="personality-list">
+            <button
+              v-for="p in personalities"
+              :key="p.id"
+              class="personality-btn"
+              :class="{ active: selectedPersonality === p.id }"
+              @click="selectedPersonality = p.id"
+            >
+              <span class="personality-name">{{ p.name }}</span>
+              <span class="personality-desc">{{ p.desc }}</span>
+            </button>
+          </div>
+        </PanelFrame>
+
         <BotTrainingPanel :slot="slot" />
       </div>
     </div>
@@ -378,6 +418,9 @@ function handleCancel() {
 
 .training-column {
   flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .selection-section {
@@ -595,6 +638,63 @@ function handleCancel() {
   font-weight: bold;
   color: var(--green);
   text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+}
+
+.no-bonuses {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* Config Performance Stats */
+.config-performance {
+  margin-top: 12px;
+}
+
+.perf-divider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 12px;
+}
+
+.config-performance h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 10px;
+}
+
+.perf-grid {
+  display: flex;
+  gap: 20px;
+}
+
+.perf-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.perf-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--cyan);
+}
+
+.perf-stat.best .perf-value {
+  color: var(--amber);
+}
+
+.perf-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
 }
 
 .editor-footer {
