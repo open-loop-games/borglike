@@ -25,6 +25,7 @@ import {
   getExplorationProgress,
   isLabyrinthLevel,
   getLabyrinthExplorationThreshold,
+  findExplorationTarget,
 } from './exploration'
 import { getDepthReadiness, getUniqueBlocker, isUnderLeveled } from './preparation'
 import { monsters as MONSTERS } from '../data/monsters'
@@ -179,7 +180,9 @@ export function getReturnToUniqueHuntGoal(context: BotContext): BotGoal | null {
 // MORGOTH HUNT
 // ============================================================================
 
-const MORGOTH_FLIP_EXPLORATION_THRESHOLD = 0.9
+// High threshold for Morgoth flip - want thorough sweep before triggering respawn
+// Depth 50 is exempt from circuit breaker so bot has time to explore fully
+const MORGOTH_FLIP_EXPLORATION_THRESHOLD = 0.8
 
 /**
  * Get navigation goal to return to a target depth (for flips).
@@ -226,13 +229,30 @@ export function getMorgothHuntGoal(context: BotContext): BotGoal | null {
   const totalFloor = getLevelFloorCount(context)
   const seenThisVisitRate = totalFloor > 0 ? botState.seenThisVisit.size / totalFloor : 0
 
-  if (botState.morgothFlipActive && botState.morgothFlipTargetDepth === MAX_DEPTH) {
-    if (seenThisVisitRate < MORGOTH_FLIP_EXPLORATION_THRESHOLD) {
+  // Sweep the level to build seenThisVisit before triggering flip
+  // This handles returning from town portal (seenThisVisit cleared) and post-flip exploration
+  if (seenThisVisitRate < MORGOTH_FLIP_EXPLORATION_THRESHOLD) {
+    // Find tiles that are explored but not seen this visit
+    const sweepTarget = findExplorationTarget(game, botState, true)
+    if (sweepTarget) {
+      return {
+        type: 'EXPLORE',
+        target: sweepTarget,
+        targetId: null,
+        reason: `Sweeping D50 to find Morgoth (${Math.round(seenThisVisitRate * 100)}% seen)`,
+        startTurn: game.turn,
+      }
+    }
+    // No sweep target found - clear flip state and fall through
+    if (botState.morgothFlipActive) {
       botState.morgothFlipActive = false
       botState.morgothFlipTargetDepth = null
-      return null
     }
+    return null
+  }
 
+  // Sweep complete - if flip active, continue ascending to trigger respawn
+  if (botState.morgothFlipActive && botState.morgothFlipTargetDepth === MAX_DEPTH) {
     const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
     if (stairsUp) {
       return {
@@ -245,10 +265,6 @@ export function getMorgothHuntGoal(context: BotContext): BotGoal | null {
     }
     botState.morgothFlipActive = false
     botState.morgothFlipTargetDepth = null
-    return null
-  }
-
-  if (seenThisVisitRate < MORGOTH_FLIP_EXPLORATION_THRESHOLD) {
     return null
   }
 

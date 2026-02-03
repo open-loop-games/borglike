@@ -488,6 +488,14 @@ function checkHighPriorityOverride(
     }
   }
 
+  // Check MORGOTH_HUNT at depth 50 (priority 35, above EXPLORE)
+  // This ensures Morgoth sweep can interrupt stale EXPLORE goals at endgame
+  // but doesn't interrupt combat (KILL) or other higher priority actions
+  if (currentPriority < 35 && game.character.depth === 50) {
+    const morgothGoal = getMorgothHuntGoal(context)
+    if (morgothGoal) return morgothGoal
+  }
+
   return null
 }
 

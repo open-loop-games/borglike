@@ -11,7 +11,7 @@ import { dirname, join } from 'path'
 import { createGame, processTurn } from '@game/game-loop'
 import { computeMaxUpgradeBonuses, computeUpgradeBonusesFromPreset, UPGRADE_PRESETS, DEFAULT_BONUSES } from '@game/upgrade-effects'
 import { computeBoosterBonuses, computeClassBoosterBonuses, DEFAULT_BOOSTER_BONUSES } from '@game/booster-effects'
-import { DEFAULT_BALANCE, type BalanceOverrides } from '@game/types'
+import { DEFAULT_BALANCE, MAX_DEPTH, type BalanceOverrides } from '@game/types'
 import { runBotTick, createBotState } from '@game/bot'
 import { reportProfile } from '@bot/profiler'
 import { invalidateFrontierCache } from '@bot/exploration'
@@ -258,8 +258,8 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
       break
     }
 
-    // Circuit breaker
-    if (turnsOnCurrentLevel >= cfg.circuitBreakerTurns) {
+    // Circuit breaker - exempt depth 50 (Morgoth hunt needs more turns)
+    if (turnsOnCurrentLevel >= cfg.circuitBreakerTurns && game.character.depth < MAX_DEPTH) {
       endReason = 'circuit_breaker'
       break
     }
@@ -755,8 +755,8 @@ export function runDeepDiagnosis(
       break
     }
 
-    // Circuit breaker
-    if (turnsOnCurrentLevel >= cfg.circuitBreakerTurns) {
+    // Circuit breaker - exempt depth 50 (Morgoth hunt needs more turns)
+    if (turnsOnCurrentLevel >= cfg.circuitBreakerTurns && game.character.depth < MAX_DEPTH) {
       endReason = 'circuit_breaker'
       break
     }

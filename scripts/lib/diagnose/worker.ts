@@ -12,7 +12,7 @@ import { upgrades as allUpgrades } from '../../../src/game/data/upgrades'
 import { runBotTick, createBotState } from '../../../src/game/bot'
 import { calculateCombatStats, calculateStats } from '../../../src/game/character'
 import type { GameState, BotPersonality, BalanceOverrides } from '../../../src/game/types'
-import { DEFAULT_BALANCE } from '../../../src/game/types'
+import { DEFAULT_BALANCE, MAX_DEPTH } from '../../../src/game/types'
 import type { BotState } from '../../../src/game/bot/types'
 import { DEFAULT_BOT_CAPABILITIES, FULL_BOT_CAPABILITIES, type BotCapabilities } from '../../../src/types/progression'
 import type { DiagnoseResult, EndReason, DiagnosticIssue, AnalyzerResult } from './types'
@@ -260,7 +260,8 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
       endReason = 'victory'
       break
     }
-    if (turnsOnCurrentLevel >= cfg.circuitBreakerTurns) {
+    // Exempt depth 50 (Morgoth hunt needs more turns)
+    if (turnsOnCurrentLevel >= cfg.circuitBreakerTurns && game.character.depth < MAX_DEPTH) {
       endReason = 'circuit_breaker'
       break
     }
