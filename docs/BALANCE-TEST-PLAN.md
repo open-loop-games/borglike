@@ -4,7 +4,25 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `e48b77c` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Full Baseline @ `bdd0fe4` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 49.6 | 50 | 2% | 22093 | 650 | 8 | ✅ Endgame |
+| **Berserker** | 49.4 | 50 | 0% | 14710 | 530 | 20 | ✅ Endgame |
+| **Warrior** | 49.4 | 50 | 0% | 16774 | 548 | 8 | ✅ Endgame |
+| **Paladin** | 49.0 | 50 | 0% | 21880 | 665 | 3 | ✅ Endgame |
+| **Blackguard** | 48.9 | 50 | 0% | 15372 | 558 | 2 | ✅ Endgame |
+| **Mage** | 48.1 | 50 | 3% | 27231 | 655 | 3 | ✅ Endgame |
+| **Rogue** | 48.0 | 50 | 0% | 22278 | 626 | 0 | ✅ Endgame |
+| **Archmage** | 48.0 | 50 | 0% | 26244 | 642 | 2 | ✅ Endgame |
+| **Necromancer** | 47.6 | 50 | 0% | 23453 | 660 | 1 | ✅ Endgame |
+| **Druid** | 47.0 | 50 | 0% | 21315 | 616 | 0 | ✅ Endgame |
+| **Priest** | 46.5 | 50 | 0% | 24104 | 726 | 0 | ✅ Endgame |
+
+**Summary:** All classes healthy. Added mana pot requirements and restocking for pure casters (mage, archmage, necromancer). **47 Morgoth kills** (20 berserker, 8 warrior, 8 ranger, 3 paladin, 3 mage, 2 blackguard, 2 archmage, 1 necromancer). Pure casters now get Morgoth kills! Mage 46.4→48.1, Archmage 45.8→48.0. All CB rates ≤3%.
+
+### Previous Baseline @ `e48b77c` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
