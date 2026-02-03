@@ -16,7 +16,7 @@ import { canRangedAttack } from '../combat'
 
 import type { BotState, BotContext, DangerResult, DangerTier } from './types'
 import { getEffectiveCapabilities } from './types'
-import { recordProgress, setGoal } from './state'
+import { recordProgress, setGoal, resetAfterTeleport } from './state'
 import { isSamePosition } from './movement'
 import {
   getLocalDanger,
@@ -31,7 +31,7 @@ import {
   findKitePosition,
   countAdjacentMonsters,
 } from './combat'
-import { findEquipmentUpgrades } from './items'
+import { findEquipmentUpgrades, isTeleportAction, findManaPotion } from './items'
 import {
   getSurvivalConsumableAction,
   getCombatBuffAction,
@@ -119,8 +119,7 @@ function handleCriticalTier(
   // 1. Try escape spell first (renewable resource)
   const escapeSpell = getEscapeSpellAction(game, config, dangerResult.dangers)
   if (escapeSpell) {
-    // TODO: resetAfterTeleport causes regression, disabled pending investigation
-    // resetAfterTeleport(botState)
+    resetAfterTeleport(botState)
     recordProgress(botState, game.turn)
     return escapeSpell
   }
@@ -137,10 +136,9 @@ function handleCriticalTier(
     effective.town
   )
   if (survivalAction) {
-    // TODO: resetAfterTeleport causes regression, disabled pending investigation
-    // if (isTeleportAction(game.character, survivalAction)) {
-    //   resetAfterTeleport(botState)
-    // }
+    if (isTeleportAction(game.character, survivalAction)) {
+      resetAfterTeleport(botState)
+    }
     recordProgress(botState, game.turn)
     return survivalAction
   }
@@ -242,8 +240,7 @@ function handleDangerTier(
         if ((hpRatio < 0.5 || adjacentCount >= 2) && !closeToStairs) {
           const phaseDoorAction = getPhaseDoorSpellAction(game)
           if (phaseDoorAction) {
-            // TODO: resetAfterTeleport causes regression, disabled pending investigation
-            // resetAfterTeleport(botState)
+            resetAfterTeleport(botState)
             recordProgress(botState, game.turn)
             return phaseDoorAction
           }
@@ -339,8 +336,7 @@ function handleDangerTier(
   // 7. Escape spell as fallback
   const escapeSpellFallback = getEscapeSpellAction(game, config, dangerResult.dangers)
   if (escapeSpellFallback) {
-    // TODO: resetAfterTeleport causes regression, disabled pending investigation
-    // resetAfterTeleport(botState)
+    resetAfterTeleport(botState)
     recordProgress(botState, game.turn)
     return escapeSpellFallback
   }

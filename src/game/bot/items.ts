@@ -651,6 +651,18 @@ export function findHealingPotion(character: Character, minTier: number = 1): It
 }
 
 /**
+ * Find a mana potion in inventory
+ */
+export function findManaPotion(character: Character): Item | null {
+  return (
+    character.inventory.find((item) => {
+      if (item.template.type !== 'potion') return false
+      return item.template.restoresMana === true
+    }) ?? null
+  )
+}
+
+/**
  * Find an escape scroll (teleport/phase door) in inventory
  */
 export function findEscapeScroll(character: Character): Item | null {

@@ -176,13 +176,14 @@ export function clearGoal(state: BotState): void {
 }
 
 /**
- * Reset exploration state after teleport (position discontinuity).
- * Only clears EXPLORE goals - combat/item goals may still be valid.
+ * Reset state after teleport (position discontinuity).
+ * Clears KILL goals since we teleported away from the target.
  * Clears flow caches since they're computed from old position.
  */
 export function resetAfterTeleport(state: BotState): void {
-  // Only clear exploration goals - KILL/TAKE/FLEE may still be valid
-  if (state.currentGoal?.type === 'EXPLORE') {
+  // Clear KILL goals - we teleported away, target is no longer adjacent/reachable
+  // EXPLORE/TAKE/FLEE may still be valid (recalculated from new position)
+  if (state.currentGoal?.type === 'KILL') {
     state.currentGoal = null
     state.goalTarget = null
   }
