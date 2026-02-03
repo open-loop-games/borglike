@@ -52,7 +52,7 @@ const warrior: GameClass = {
   name: 'Warrior',
   stats: { str: 3, int: -2, wis: -2, dex: 2, con: 2 },
   hitdie: 9, // Highest HP
-  maxAttacks: 6, // Most attacks
+  maxAttacks: 4,
   primaryStat: 'str',
   titles: [
     'Rookie',
@@ -184,7 +184,7 @@ const paladin: GameClass = {
   name: 'Paladin',
   stats: { str: 1, int: -3, wis: 1, dex: -1, con: 2 },
   hitdie: 6,
-  maxAttacks: 5,
+  maxAttacks: 4,
   primaryStat: 'wis', // Divine power
   titles: [
     'Gallant',
@@ -241,9 +241,9 @@ const necromancer: GameClass = {
 const berserker: GameClass = {
   id: 'berserker',
   name: 'Berserker',
-  stats: { str: 4, int: -4, wis: -4, dex: 2, con: 3 },
+  stats: { str: 3, int: -4, wis: -4, dex: 2, con: 3 },
   hitdie: 10, // Even higher than warrior
-  maxAttacks: 7, // Most attacks in game
+  maxAttacks: 5, // d10 hitdie + STR is the differentiator
   primaryStat: 'str',
   titles: [
     'Brawler',
