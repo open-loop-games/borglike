@@ -574,9 +574,12 @@ export function getDebuffSpellAction(
 
   // Priority 1: Slow FAST or HASTED monsters - breaks escape loops for squishies
   // Check effective speed (includes haste buff) OR explicit haste buff presence
+  // Skip if already slowed with enough duration for kite cycle (DD cooldown = 4 turns)
+  const MIN_SLOW_DURATION = 4
   const fastMonsters = visibleMonsters.filter((m) => {
     if (!m.isAwake) return false
-    if (m.debuffs.some((d) => d.type === 'slow')) return false
+    const existingSlow = m.debuffs.find((d) => d.type === 'slow')
+    if (existingSlow && existingSlow.turnsRemaining >= MIN_SLOW_DURATION) return false
     const isHasted = m.buffs.some((b) => b.type === 'haste')
     const effectiveSpeed = getMonsterEffectiveSpeed(m)
     return effectiveSpeed > 110 || isHasted
@@ -593,15 +596,17 @@ export function getDebuffSpellAction(
   }
 
   // Priority 2: Slow TANKY monsters (HP > 50% of ours)
+  // Skip if already slowed with enough duration for kite cycle
   const sortedByHp = [...visibleMonsters].sort((a, b) => b.hp - a.hp)
   const tankiestMonster = sortedByHp[0]
 
   if (!tankiestMonster) return null
 
-  const isAlreadySlowed = tankiestMonster.debuffs.some((d) => d.type === 'slow')
+  const existingSlow = tankiestMonster.debuffs.find((d) => d.type === 'slow')
+  const hasEnoughSlow = existingSlow && existingSlow.turnsRemaining >= MIN_SLOW_DURATION
   const isTanky = tankiestMonster.hp > character.maxHp * 0.5
 
-  if (isTanky && !isAlreadySlowed) {
+  if (isTanky && !hasEnoughSlow) {
     const slowSpell = debuffSpells.find((entry) => entry.spell.debuff?.type === 'slow')
     if (slowSpell) {
       return { type: 'cast', spellId: slowSpell.spell.id, targetId: tankiestMonster.id }

@@ -31,7 +31,7 @@ import {
   findKitePosition,
   countAdjacentMonsters,
 } from './combat'
-import { findEquipmentUpgrades, isTeleportAction } from './items'
+import { findEquipmentUpgrades, isTeleportAction, findManaPotion } from './items'
 import {
   getSurvivalConsumableAction,
   getCombatBuffAction,
@@ -297,6 +297,17 @@ function handleDangerTier(
           return { type: 'ranged_attack', targetId: rangedTarget.id }
         }
       } else {
+        // Casters: MP pot if low AND in combat (KITE/FLEE goal) - save pots for emergencies
+        const manaRatio = game.character.maxMp > 0 ? game.character.mp / game.character.maxMp : 1
+        const goalType = botState.currentGoal?.type
+        const inCombatGoal = goalType === 'KITE' || goalType === 'FLEE'
+        if (manaRatio < 0.3 && inCombatGoal) {
+          const mpPot = findManaPotion(game.character)
+          if (mpPot) {
+            recordProgress(botState, game.turn)
+            return { type: 'use', itemId: mpPot.id }
+          }
+        }
         // Damage spell for casters (mage, archmage, necromancer)
         const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
         if (damageSpell) {
@@ -413,6 +424,17 @@ function handleCautionTier(
           return { type: 'ranged_attack', targetId: rangedTarget.id }
         }
       } else {
+        // Casters: MP pot if low AND in combat (KITE/FLEE goal) - save pots for emergencies
+        const manaRatio = game.character.maxMp > 0 ? game.character.mp / game.character.maxMp : 1
+        const goalType = botState.currentGoal?.type
+        const inCombatGoal = goalType === 'KITE' || goalType === 'FLEE'
+        if (manaRatio < 0.3 && inCombatGoal) {
+          const mpPot = findManaPotion(game.character)
+          if (mpPot) {
+            recordProgress(botState, game.turn)
+            return { type: 'use', itemId: mpPot.id }
+          }
+        }
         // Damage spell for casters (mage, archmage, necromancer)
         const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
         if (damageSpell) {
@@ -620,17 +642,37 @@ function handleSafeTier(
       }
     }
 
-    // Casters should debuff (slow) tanky targets before blasting
+    // Casters: debuff for control, then pot if low, then damage
     const isCaster = ['mage', 'archmage', 'necromancer'].includes(game.character.classId)
     if (isCaster) {
+      // Debuff (slow) first for kite control - function checks duration to avoid over-applying
       const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters)
       if (debuffSpell) {
         recordProgress(botState, game.turn)
         return debuffSpell
       }
+
+      // MP pot if low AND in combat (KITE/FLEE goal) - save pots for emergencies
+      const manaRatio = game.character.maxMp > 0 ? game.character.mp / game.character.maxMp : 1
+      const goalType = botState.currentGoal?.type
+      const inCombatGoal = goalType === 'KITE' || goalType === 'FLEE'
+      if (manaRatio < 0.3 && inCombatGoal) {
+        const mpPot = findManaPotion(game.character)
+        if (mpPot) {
+          recordProgress(botState, game.turn)
+          return { type: 'use', itemId: mpPot.id }
+        }
+      }
+
+      // Damage spell
+      const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
+      if (damageSpell) {
+        recordProgress(botState, game.turn)
+        return damageSpell
+      }
     }
 
-    // Engage distant enemies with spells
+    // Non-caster: engage distant enemies with spells
     const damageSpell = getDamageSpellAction(game, config, visibleMonsters)
     if (damageSpell) {
       recordProgress(botState, game.turn)
