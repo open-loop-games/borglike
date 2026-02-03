@@ -41,6 +41,7 @@ const mageSpells: ClassSpellList = {
     { spellId: 'frost_bolt', learnLevel: 5 },
     { spellId: 'slow_monster', learnLevel: 8 }, // CC for dangerous monsters
     { spellId: 'teleport_other', learnLevel: 12 }, // Banish dangerous threats
+    { spellId: 'dimension_door', learnLevel: 12 }, // Tactical kiting teleport
     { spellId: 'lightning_bolt', learnLevel: 15 },
     { spellId: 'shield', learnLevel: 18 }, // Strong AC buff (+15)
     { spellId: 'fireball', learnLevel: 20 },
@@ -80,6 +81,7 @@ const archmageSpells: ClassSpellList = {
     { spellId: 'slow_monster', learnLevel: 5 }, // Early CC for glass cannon
     { spellId: 'lightning_bolt', learnLevel: 5 },
     { spellId: 'teleport_other', learnLevel: 8 }, // Banish dangerous threats (earlier than Mage)
+    { spellId: 'dimension_door', learnLevel: 8 }, // Tactical kiting (earlier than Mage)
     { spellId: 'fireball', learnLevel: 12 },
     { spellId: 'shield', learnLevel: 14 }, // Strong AC buff (+15, earlier than Mage)
     { spellId: 'teleport', learnLevel: 18 },
@@ -184,6 +186,7 @@ const necromancerSpells: ClassSpellList = {
     { spellId: 'shadow_sight', learnLevel: 1 }, // Early visibility buff
     { spellId: 'shadow_bolt', learnLevel: 5 },
     { spellId: 'weaken', learnLevel: 12 },
+    { spellId: 'dimension_door', learnLevel: 12 }, // Tactical kiting (cross-school utility)
     { spellId: 'dark_pact', learnLevel: 18 },
     { spellId: 'soul_rend', learnLevel: 28 },
     // Late-game shadow power

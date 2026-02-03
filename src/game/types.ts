@@ -794,6 +794,7 @@ export type SpellEffectType =
   | 'lifedrain'
   | 'teleport'
   | 'teleport_other'
+  | 'targeted_teleport'
   | 'summon'
 
 /** Damage types for spells */

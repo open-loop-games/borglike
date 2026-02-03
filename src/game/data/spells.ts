@@ -132,6 +132,18 @@ const phase_door: SpellTemplate = {
   description: 'Blink a short distance away.',
 }
 
+const dimension_door: SpellTemplate = {
+  id: 'dimension_door',
+  name: 'Dimension Door',
+  school: 'arcane',
+  level: 12,
+  manaCost: 8,
+  cooldown: 4,
+  effectType: 'targeted_teleport',
+  teleportRange: 0, // 0 = dynamic (use calculateLightRadius at cast time)
+  description: 'Step through dimensions to any visible location.',
+}
+
 const lightning_bolt: SpellTemplate = {
   id: 'lightning_bolt',
   name: 'Lightning Bolt',
@@ -755,6 +767,7 @@ export const SPELLS: Record<string, SpellTemplate> = {
   magic_missile,
   frost_bolt,
   phase_door,
+  dimension_door,
   lightning_bolt,
   fireball,
   teleport,

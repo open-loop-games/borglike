@@ -5,16 +5,18 @@
  * Determines when to cast healing, damage, buff, and escape spells.
  */
 
-import type { GameState, GameAction, Monster, Character } from '../types'
-import { MINION_TEMPLATES } from '../types'
+import type { GameState, GameAction, Monster, Character, Point } from '../types'
+import { MINION_TEMPLATES, chebyshevDistance } from '../types'
 import type { PersonalityConfig, DangerMap } from './types'
 import type { SpellTemplate } from '../data/spells'
 import { getAvailableSpells, getNearestVisibleMonster, selectAOETargets } from '../spell-resolution'
 import { getLocalDanger } from './danger'
-import { countAdjacentMonsters } from './combat'
+import { countAdjacentMonsters, findClosestMonster } from './combat'
 import { hasStatusEffect } from './items'
 import { hasAbility, getDiceAverage } from '../data/monsters'
-import { getMonsterEffectiveSpeed } from '../monster-ai'
+import { getMonsterEffectiveSpeed, hasLineOfSight } from '../monster-ai'
+import { calculateLightRadius } from '../lighting'
+import { getTile, isWalkable } from '../dungeon'
 
 // ============================================================================
 // RACE RESTRICTIONS
@@ -1061,4 +1063,154 @@ export function getLightOrbSpellAction(game: GameState): GameAction | null {
   }
 
   return null
+}
+
+// ============================================================================
+// DIMENSION DOOR KITING
+// ============================================================================
+
+/**
+ * Get Dimension Door kite action for tactical caster repositioning.
+ *
+ * Used when:
+ * - Monster within 2 tiles (closing in)
+ * - Have DD spell available and off cooldown
+ * - Have damage spell ready (for follow-up cast after DD)
+ *
+ * Target selection:
+ * - Find position at max FOV distance from threat
+ * - Position is in opposite direction from nearest threat
+ * - Position must keep threat in new FOV after teleport (can continue casting)
+ *
+ * @returns GameAction to cast dimension_door with destination, or null
+ */
+export function getDimensionDoorKiteAction(
+  game: GameState,
+  visibleMonsters: Monster[]
+): GameAction | null {
+  const character = game.character
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
+  // Only for caster classes (no bow = caster, bow = archer who uses physical kiting)
+  if (character.equipment.bow) return null
+
+  if (visibleMonsters.length === 0) return null
+
+  // Check if DD is available
+  const available = getAvailableSpells(character, game.turn)
+  const ddSpell = available.find((entry) => entry.canCast && entry.spell.id === 'dimension_door')
+  if (!ddSpell) return null
+
+  // Check if we have a damage spell ready (for follow-up kiting)
+  const hasDamageSpell = available.some(
+    (entry) =>
+      entry.canCast &&
+      (entry.spell.effectType === 'damage' ||
+        entry.spell.effectType === 'lifedrain' ||
+        entry.spell.effectType === 'aoe_damage')
+  )
+  if (!hasDamageSpell) return null
+
+  // Find nearest threat
+  const pos = character.position
+  const nearest = findClosestMonster(visibleMonsters, pos)
+  if (!nearest) return null
+
+  // Only DD kite when threat is close (within 2 tiles)
+  if (nearest.distance > 2) return null
+
+  // Calculate current FOV radius (DD range is dynamic)
+  const fovRadius = calculateLightRadius(character, character.depth)
+
+  // Find best DD destination
+  const destination = findDDKiteDestination(game, pos, nearest.monster.position, fovRadius)
+  if (!destination) return null
+
+  // Return cast action with destination encoded as "x,y"
+  return {
+    type: 'cast',
+    spellId: 'dimension_door',
+    targetId: `${destination.x},${destination.y}`,
+  }
+}
+
+/**
+ * Find optimal DD destination for kiting.
+ *
+ * Algorithm:
+ * 1. Calculate escape vector (opposite from threat)
+ * 2. Search tiles at max FOV range in escape direction (cone ±60°)
+ * 3. Verify: walkable, visible, LOS from current pos
+ * 4. Score positions: prefer max distance + threat stays in new FOV
+ */
+function findDDKiteDestination(
+  game: GameState,
+  currentPos: Point,
+  threatPos: Point,
+  maxRange: number
+): Point | null {
+  // Calculate escape direction (away from threat)
+  const dx = currentPos.x - threatPos.x
+  const dy = currentPos.y - threatPos.y
+  const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy))
+  const escapeDirX = dx / dist
+  const escapeDirY = dy / dist
+
+  let bestPos: Point | null = null
+  let bestScore = -Infinity
+
+  // Search in a cone opposite the threat (±60° from escape direction)
+  for (let angle = -60; angle <= 60; angle += 15) {
+    // Rotate escape direction by angle
+    const rad = (angle * Math.PI) / 180
+    const dirX = escapeDirX * Math.cos(rad) - escapeDirY * Math.sin(rad)
+    const dirY = escapeDirX * Math.sin(rad) + escapeDirY * Math.cos(rad)
+
+    // Try positions at various distances (prefer max range)
+    for (let r = maxRange; r >= Math.max(2, maxRange - 2); r--) {
+      const destX = Math.round(currentPos.x + dirX * r)
+      const destY = Math.round(currentPos.y + dirY * r)
+      const dest: Point = { x: destX, y: destY }
+
+      // Skip if same as current position
+      if (destX === currentPos.x && destY === currentPos.y) continue
+
+      // Verify tile is valid
+      const tile = getTile(game.currentLevel, destX, destY)
+      if (!tile || !tile.visible || !isWalkable(tile)) continue
+
+      // Verify LOS from current position
+      if (!hasLineOfSight(currentPos, dest, game.currentLevel)) continue
+
+      // Check no monster at destination
+      const blocked = game.monsters.some(
+        (m) => m.position.x === destX && m.position.y === destY && m.hp > 0
+      )
+      if (blocked) continue
+
+      // Score: prefer further distance
+      let score = r * 10
+
+      // Bonus if threat will still be visible from new position (can continue casting)
+      const threatDistFromDest = chebyshevDistance(dest, threatPos)
+      if (threatDistFromDest <= maxRange) {
+        // Threat stays in FOV - can continue casting
+        score += 50
+
+        // Prefer keeping threat at optimal casting range (3-5 tiles)
+        if (threatDistFromDest >= 3 && threatDistFromDest <= 5) {
+          score += 20
+        }
+      }
+
+      if (score > bestScore) {
+        bestScore = score
+        bestPos = dest
+      }
+    }
+  }
+
+  return bestPos
 }

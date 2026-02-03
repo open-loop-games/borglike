@@ -246,7 +246,7 @@ export function canSeePlayer(monster: Monster, playerPos: Point, level: DungeonL
  * @param level - The dungeon level
  * @returns True if there's a clear line of sight
  */
-function hasLineOfSight(from: Point, to: Point, level: DungeonLevel): boolean {
+export function hasLineOfSight(from: Point, to: Point, level: DungeonLevel): boolean {
   let x0 = from.x
   let y0 = from.y
   const x1 = to.x

@@ -31,7 +31,7 @@ import {
   findKitePosition,
   countAdjacentMonsters,
 } from './combat'
-import { findEquipmentUpgrades, isTeleportAction, findManaPotion } from './items'
+import { findEquipmentUpgrades, isTeleportAction } from './items'
 import {
   getSurvivalConsumableAction,
   getCombatBuffAction,
@@ -50,6 +50,7 @@ import {
   getRootShotAction,
   classShouldSummon,
   getLightOrbSpellAction,
+  getDimensionDoorKiteAction,
 } from './spells'
 
 // ============================================================================
@@ -223,7 +224,19 @@ function handleDangerTier(
         }
       }
 
-      // Mage/Archmage: Try Phase Door at DANGER tier (tactical escape)
+      // Casters: Try Dimension Door for tactical kiting (targeted escape + continue casting)
+      // DD is preferred over Phase Door because it maintains combat engagement
+      if (!hasRangedWeapon(game)) {
+        const ddAction = getDimensionDoorKiteAction(game, visibleMonsters)
+        if (ddAction) {
+          resetAfterTeleport(botState)
+          recordProgress(botState, game.turn)
+          return ddAction
+        }
+      }
+
+      // Mage/Archmage: Try Phase Door at DANGER tier (random tactical escape)
+      // Fallback when DD not available
       // Only when actually threatened: HP < 50% OR surrounded (2+ adjacent)
       // Avoids disrupting exploration when bot could just fight
       // EXCEPTION: Skip phase door when close to stairs with DESCEND goal - push through

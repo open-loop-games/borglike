@@ -17,7 +17,9 @@ import type {
   Element,
   SpellDamageType,
 } from './types'
-import { MINION_TEMPLATES } from './types'
+import { MINION_TEMPLATES, chebyshevDistance } from './types'
+import { hasLineOfSight } from './monster-ai'
+import { calculateLightRadius } from './lighting'
 import { randomInt, random } from './rng'
 import { getSpellById, getSchoolStat, type SpellTemplate } from './data/spells'
 import { getSpellIdsForLevel } from './data/class-spells'
@@ -536,6 +538,9 @@ export function castSpell(game: GameState, spellId: string, targetId?: string): 
 
     case 'teleport_other':
       return castTeleportOtherSpell(game, spell, targetId)
+
+    case 'targeted_teleport':
+      return castTargetedTeleportSpell(game, spell, targetId)
 
     case 'summon':
       return castSummonSpell(game, spell)
@@ -1075,6 +1080,69 @@ function castTeleportOtherSpell(
     success: true,
     message: `You cast ${spell.name}! ${target.template.name} vanishes!`,
     targets: [target.id],
+  }
+}
+
+/**
+ * Cast a targeted teleport spell (Dimension Door)
+ * Teleports to a specific visible position within FOV range.
+ * Range is dynamic based on calculateLightRadius().
+ *
+ * @param targetId - Destination as "x,y" string
+ */
+function castTargetedTeleportSpell(
+  game: GameState,
+  spell: SpellTemplate,
+  targetId?: string
+): ActionResult {
+  if (!targetId) {
+    return { success: false, message: 'Must specify destination for Dimension Door.' }
+  }
+
+  // Parse target position from "x,y" format
+  const [xStr, yStr] = targetId.split(',')
+  const destX = parseInt(xStr ?? '0', 10)
+  const destY = parseInt(yStr ?? '0', 10)
+  if (isNaN(destX) || isNaN(destY)) {
+    return { success: false, message: 'Invalid destination coordinates.' }
+  }
+  const destination: Point = { x: destX, y: destY }
+
+  // Calculate dynamic range based on current FOV
+  const maxRange = calculateLightRadius(game.character, game.character.depth)
+  const dist = chebyshevDistance(game.character.position, destination)
+  if (dist > maxRange) {
+    return { success: false, message: 'Destination is beyond your vision.' }
+  }
+
+  // Verify LOS to destination
+  if (!hasLineOfSight(game.character.position, destination, game.currentLevel)) {
+    return { success: false, message: 'Cannot see destination clearly.' }
+  }
+
+  // Verify destination tile is visible and walkable
+  const tile = getTile(game.currentLevel, destX, destY)
+  if (!tile?.visible) {
+    return { success: false, message: 'Destination must be visible.' }
+  }
+  if (!isWalkable(tile)) {
+    return { success: false, message: 'Cannot teleport to that location.' }
+  }
+
+  // Verify no monster at destination
+  const monsterAtDest = game.monsters.find(
+    (m) => m.position.x === destX && m.position.y === destY && m.hp > 0
+  )
+  if (monsterAtDest) {
+    return { success: false, message: 'Cannot teleport onto a creature.' }
+  }
+
+  // Execute teleport
+  game.character.position = destination
+
+  return {
+    success: true,
+    message: `You step through a dimensional door!`,
   }
 }
 
