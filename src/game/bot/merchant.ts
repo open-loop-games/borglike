@@ -7,7 +7,7 @@
 import type { GameState, Point } from '../types'
 import type { BotGoal, BotContext, BotState } from './types'
 import { findAdjacentMerchant, sellToMerchant, buyFromMerchant } from '../features'
-import { countHealingPotions, countManaPotions, findOutdatedHealingPotions, isPureCaster } from './preparation'
+import { countHealingPotions, countManaPotions, findOutdatedHealingPotions, isManaDependent } from './preparation'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
 
 // ============================================================================
@@ -163,7 +163,7 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
   const inventory = game.character.inventory
   const char = game.character
   const classId = (char as { classId?: string }).classId
-  const isCaster = isPureCaster(classId)
+  const needsMana = isManaDependent(classId)
 
   let tpScrollCount = 0
   let healingPotionCount = 0
@@ -201,7 +201,7 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
 
   const wantedTP = Math.max(0, baseTP + goldBonus - tpScrollCount) // max 4
   const wantedHealing = Math.max(0, baseHealing + goldBonus - healingPotionCount) // max 5
-  const wantedMana = isCaster ? Math.max(0, baseMana + goldBonus - manaPotionCount) : 0 // max 4, casters only
+  const wantedMana = needsMana ? Math.max(0, baseMana + goldBonus - manaPotionCount) : 0 // max 4, mana-dependent classes
   const wantedEscape = Math.max(0, baseEscape + Math.floor(goldBonus / 2) - escapeScrollCount) // max 3
 
   // Build priority buy list

@@ -267,9 +267,20 @@ export interface DepthRequirement {
 /** Pure caster classes that depend on mana for survival (DD kite loop) */
 export const PURE_CASTER_CLASSES = ['mage', 'archmage', 'necromancer'] as const
 
+/** Healer classes that depend on mana for survival (heal-spam without escape spells) */
+export const HEALER_CLASSES = ['priest', 'druid', 'paladin'] as const
+
+/** All classes that need mana pots for survival */
+export const MANA_DEPENDENT_CLASSES = [...PURE_CASTER_CLASSES, ...HEALER_CLASSES] as const
+
 /** Check if a class is a pure caster (requires mana pots for survival) */
 export function isPureCaster(classId: string | undefined): boolean {
   return classId !== undefined && PURE_CASTER_CLASSES.includes(classId as (typeof PURE_CASTER_CLASSES)[number])
+}
+
+/** Check if a class depends on mana for survival (pure casters + healers) */
+export function isManaDependent(classId: string | undefined): boolean {
+  return classId !== undefined && MANA_DEPENDENT_CLASSES.includes(classId as (typeof MANA_DEPENDENT_CLASSES)[number])
 }
 
 /**
@@ -526,8 +537,8 @@ export function getDepthReadiness(
     }
   }
 
-  // Mana potion requirement (for pure casters only - mage, archmage, necromancer)
-  if (req.manaPotions && req.manaPotions > 0 && isPureCaster(classId)) {
+  // Mana potion requirement (for mana-dependent classes - casters + healers)
+  if (req.manaPotions && req.manaPotions > 0 && isManaDependent(classId)) {
     const mana = countManaPotions(inventory)
     if (mana < req.manaPotions) {
       return `Need ${req.manaPotions} mana potions (have ${mana})`
