@@ -764,6 +764,12 @@ export function attack(
     if (attacker.raceId === 'half_orc' && attacker.hp < attacker.maxHp * 0.3) {
       baseDamage = Math.floor(baseDamage * 1.2)
     }
+
+    // SNEAK ATTACK: Rogue's post-teleport 2.5x damage
+    const sneakAttack = attacker.statusEffects.find((e) => e.type === 'sneak_attack')
+    if (sneakAttack) {
+      baseDamage = Math.floor(baseDamage * 2.5)
+    }
   } else {
     // Monster attacks use pre-calculated average (actual dice rolled in monster-combat.ts)
     baseDamage = attackerStats.damage + damageBonus

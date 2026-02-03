@@ -64,7 +64,7 @@ const rogue: ClassBehaviorProfile = {
   prefersMelee: true,
   prefersRanged: false,
   neverRetreats: false,
-  usesTeleport: false,
+  usesTeleport: true, // Shadow Step + Phase Door
   healsPriority: false,
   aggressionMod: 5,
   cautionMod: 5,

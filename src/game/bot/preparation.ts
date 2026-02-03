@@ -275,12 +275,18 @@ export const MANA_DEPENDENT_CLASSES = [...PURE_CASTER_CLASSES, ...HEALER_CLASSES
 
 /** Check if a class is a pure caster (requires mana pots for survival) */
 export function isPureCaster(classId: string | undefined): boolean {
-  return classId !== undefined && PURE_CASTER_CLASSES.includes(classId as (typeof PURE_CASTER_CLASSES)[number])
+  return (
+    classId !== undefined &&
+    PURE_CASTER_CLASSES.includes(classId as (typeof PURE_CASTER_CLASSES)[number])
+  )
 }
 
 /** Check if a class depends on mana for survival (pure casters + healers) */
 export function isManaDependent(classId: string | undefined): boolean {
-  return classId !== undefined && MANA_DEPENDENT_CLASSES.includes(classId as (typeof MANA_DEPENDENT_CLASSES)[number])
+  return (
+    classId !== undefined &&
+    MANA_DEPENDENT_CLASSES.includes(classId as (typeof MANA_DEPENDENT_CLASSES)[number])
+  )
 }
 
 /**
@@ -299,7 +305,14 @@ export const DEPTH_REQUIREMENTS: Record<number, DepthRequirement> = {
   // Morgoth fight: 20,000 HP boss doing 150+ damage/turn requires serious preparation
   // Need enough healing for ~100+ turn fight, plus buffs to boost damage output
   // Pure casters need mana pots to sustain DD kite loop during extended fight
-  50: { healingPotions: 12, escapeScrolls: 4, townPortals: 3, minHpPercent: 100, buffPotions: 3, manaPotions: 3 },
+  50: {
+    healingPotions: 12,
+    escapeScrolls: 4,
+    townPortals: 3,
+    minHpPercent: 100,
+    buffPotions: 3,
+    manaPotions: 3,
+  },
 }
 
 // ============================================================================
@@ -374,9 +387,8 @@ export function countBuffPotions(inventory: Item[]): number {
  * Includes any potion with restoresMana flag.
  */
 export function countManaPotions(inventory: Item[]): number {
-  return inventory.filter(
-    (item) => item.template.type === 'potion' && item.template.restoresMana
-  ).length
+  return inventory.filter((item) => item.template.type === 'potion' && item.template.restoresMana)
+    .length
 }
 
 // ============================================================================

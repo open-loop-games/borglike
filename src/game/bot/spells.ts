@@ -897,6 +897,84 @@ export function hasCastableDamageSpell(game: GameState): boolean {
 }
 
 // ============================================================================
+// SHADOW STEP (Rogue offensive teleport)
+// ============================================================================
+
+/**
+ * Check if Rogue should cast Shadow Step for burst damage
+ *
+ * Shadow Step teleports adjacent to a target and grants Sneak Attack (2.5x damage).
+ * Use strategically:
+ * - Only for Rogues
+ * - Target bosses/uniques (worth the cooldown)
+ * - Only when not already adjacent (would waste the teleport)
+ * - Only when HP > 40% (don't engage when hurt)
+ * - Only when we have Sneak Attack opportunity (no existing buff)
+ *
+ * @returns GameAction to cast shadow_step with target, or null
+ */
+export function getShadowStepAction(
+  game: GameState,
+  visibleMonsters: Monster[]
+): GameAction | null {
+  const character = game.character
+
+  // Only Rogues have Shadow Step
+  if (character.classId !== 'rogue') return null
+
+  // GOLEM RESTRICTION
+  if (!canCastSpells(character)) return null
+
+  // Don't use when already have Sneak Attack buff (waste of cooldown)
+  const hasSneakAttack = character.statusEffects.some((e) => e.type === 'sneak_attack')
+  if (hasSneakAttack) return null
+
+  // Don't engage when hurt (< 40% HP)
+  const hpRatio = character.hp / character.maxHp
+  if (hpRatio < 0.4) return null
+
+  // Get Shadow Step spell
+  const available = getAvailableSpells(character, game.turn)
+  const shadowStepSpell = available.find(
+    (entry) => entry.canCast && entry.spell.id === 'shadow_step'
+  )
+  if (!shadowStepSpell) return null
+
+  // Find worthy targets - bosses always, or high-threat monsters
+  const worthyTargets = visibleMonsters.filter((m) => {
+    if (!m.isAwake) return false
+
+    // Must not already be adjacent
+    const dx = Math.abs(m.position.x - character.position.x)
+    const dy = Math.abs(m.position.y - character.position.y)
+    if (dx <= 1 && dy <= 1) return false
+
+    // Bosses/uniques are always worth the cooldown
+    const isBoss = m.template.flags?.includes('UNIQUE') || m.template.flags?.includes('BOSS')
+    if (isBoss) return true
+
+    // High-threat monsters worth bursting (HP > 50% of ours OR high minDepth)
+    const isHighThreat = m.hp > character.maxHp * 0.5 || m.template.minDepth >= character.depth - 5
+
+    return isHighThreat
+  })
+
+  if (worthyTargets.length === 0) return null
+
+  // Target priority: bosses first, then highest threat (minDepth)
+  const sortedTargets = [...worthyTargets].sort((a, b) => {
+    const aIsBoss = a.template.flags?.includes('UNIQUE') || a.template.flags?.includes('BOSS')
+    const bIsBoss = b.template.flags?.includes('UNIQUE') || b.template.flags?.includes('BOSS')
+    if (aIsBoss && !bIsBoss) return -1
+    if (bIsBoss && !aIsBoss) return 1
+    return b.template.minDepth - a.template.minDepth
+  })
+  const target = sortedTargets[0]!
+
+  return { type: 'cast', spellId: 'shadow_step', targetId: target.id }
+}
+
+// ============================================================================
 // ROOT/STUN SPELLS (for kiting)
 // ============================================================================
 

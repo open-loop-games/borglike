@@ -55,14 +55,15 @@ const mageSpells: ClassSpellList = {
 }
 
 /**
- * Rogue - Limited arcane magic (3 spells)
- * Gets utility/escape spells
+ * Rogue - Limited magic (4 spells)
+ * Gets utility/escape spells + Shadow Step for burst damage
  */
 const rogueSpells: ClassSpellList = {
   classId: 'rogue',
   spells: [
     { spellId: 'magic_missile', learnLevel: 3 },
     { spellId: 'phase_door', learnLevel: 8 },
+    { spellId: 'shadow_step', learnLevel: 10 }, // Teleport to enemy + Sneak Attack buff
     { spellId: 'frost_bolt', learnLevel: 15 },
   ],
 }

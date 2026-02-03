@@ -51,6 +51,7 @@ import {
   classShouldSummon,
   getLightOrbSpellAction,
   getDimensionDoorKiteAction,
+  getShadowStepAction,
 } from './spells'
 import { isShapeshifterClass, getDruidTierAction } from './shapeshift'
 
@@ -252,12 +253,13 @@ function handleDangerTier(
         }
       }
 
-      // Mage/Archmage: Try Phase Door at DANGER tier (random tactical escape)
+      // Mage/Archmage/Rogue: Try Phase Door at DANGER tier (random tactical escape)
       // Fallback when DD not available
       // Only when actually threatened: HP < 50% OR surrounded (2+ adjacent)
       // Avoids disrupting exploration when bot could just fight
       // EXCEPTION: Skip phase door when close to stairs with DESCEND goal - push through
       // instead of repeatedly teleporting away and restarting the approach
+      // NOTE: Rogue uses this for Shadow Step combat cycle (step in → attack → phase out)
       const classId = game.character.classId
       const hpRatio = game.character.hp / game.character.maxHp
       const adjacentCount = countAdjacentMonsters(game, pos)
@@ -266,7 +268,7 @@ function handleDangerTier(
         goal?.type === 'DESCEND' &&
         goal.target &&
         Math.max(Math.abs(pos.x - goal.target.x), Math.abs(pos.y - goal.target.y)) <= 15
-      if (classId === 'mage' || classId === 'archmage') {
+      if (classId === 'mage' || classId === 'archmage' || classId === 'rogue') {
         if ((hpRatio < 0.5 || adjacentCount >= 2) && !closeToStairs) {
           const phaseDoorAction = getPhaseDoorSpellAction(game)
           if (phaseDoorAction) {
@@ -335,6 +337,26 @@ function handleDangerTier(
     }
   }
 
+  // 2b. Rogue escape after Sneak Attack cycle
+  // Shadow Step combat cycle: step in → sneak attack → phase door out → heal → repeat
+  // After consuming sneak attack buff (or when cornered), Rogue should escape
+  if (game.character.classId === 'rogue' && adjacentMonster) {
+    const hpRatio = game.character.hp / game.character.maxHp
+    // Escape if: hurt (<60% HP) OR surrounded (2+ adjacent) OR facing boss
+    const adjacentCount = countAdjacentMonsters(game, pos)
+    const facingBoss =
+      adjacentMonster.template.flags?.includes('UNIQUE') ||
+      adjacentMonster.template.flags?.includes('BOSS')
+    if (hpRatio < 0.6 || adjacentCount >= 2 || facingBoss) {
+      const phaseDoorAction = getPhaseDoorSpellAction(game)
+      if (phaseDoorAction) {
+        resetAfterTeleport(botState)
+        recordProgress(botState, game.turn)
+        return phaseDoorAction
+      }
+    }
+  }
+
   // 3. Healing spell
   const healSpell = getHealingSpellAction(game, config, localDanger, classProfile.healsPriority)
   if (healSpell) {
@@ -381,6 +403,15 @@ function handleDangerTier(
       recordProgress(botState, game.turn)
       return druidAction
     }
+  }
+
+  // 6b. Rogue with Sneak Attack buff: attack first to consume buff, then escape
+  // This is the Shadow Step combat cycle: Shadow Step in -> Sneak Attack -> Phase Door out
+  const hasSneakAttack = game.character.statusEffects.some((e) => e.type === 'sneak_attack')
+  if (hasSneakAttack && adjacentMonster && game.character.classId === 'rogue') {
+    setKillGoal(botState, adjacentMonster, game.turn, 'Sneak Attack (danger)')
+    recordProgress(botState, game.turn)
+    return { type: 'attack', targetId: adjacentMonster.id }
   }
 
   // 7. Melee attack if we must (or if melee class)
@@ -517,6 +548,15 @@ function handleCautionTier(
     if (druidAction) {
       recordProgress(botState, game.turn)
       return druidAction
+    }
+  }
+
+  // 3b. Rogue Shadow Step: gap-close to bosses/uniques for Sneak Attack
+  if (game.character.classId === 'rogue' && visibleMonsters.length > 0) {
+    const shadowStepAction = getShadowStepAction(game, visibleMonsters)
+    if (shadowStepAction) {
+      recordProgress(botState, game.turn)
+      return shadowStepAction
     }
   }
 
@@ -675,14 +715,7 @@ function handleSafeTier(
 
   // 4. Druid shapeshifting: Proactive form management
   if (isShapeshifterClass(game.character.classId)) {
-    const druidAction = getDruidTierAction(
-      game,
-      context,
-      botState,
-      dangerResult,
-      'SAFE',
-      null
-    )
+    const druidAction = getDruidTierAction(game, context, botState, dangerResult, 'SAFE', null)
     if (druidAction) {
       recordProgress(botState, game.turn)
       return druidAction

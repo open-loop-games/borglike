@@ -79,6 +79,15 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     game.stats.damageDealt += attackResult.totalDamage
     game.stats.damageBySource.melee += attackResult.totalDamage
 
+    // SNEAK ATTACK: Consume buff and show message
+    const sneakAttackIndex = game.character.statusEffects.findIndex(
+      (e) => e.type === 'sneak_attack'
+    )
+    if (sneakAttackIndex >= 0) {
+      game.character.statusEffects.splice(sneakAttackIndex, 1)
+      addMessage(game, 'Sneak Attack!', 'good')
+    }
+
     // COMBAT_REGEN: Lifesteal healing (Blackguard)
     const lifesteal = calculateLifesteal(game.character, attackResult.totalDamage)
     if (lifesteal > 0) {

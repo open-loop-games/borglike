@@ -532,6 +532,17 @@ const drain_life: SpellTemplate = {
   description: 'Steal life force from your enemy.',
 }
 
+const shadow_step: SpellTemplate = {
+  id: 'shadow_step',
+  name: 'Shadow Step',
+  school: 'shadow',
+  level: 10,
+  manaCost: 6,
+  cooldown: 5,
+  effectType: 'shadow_step',
+  description: 'Step through shadows to appear adjacent to a visible enemy.',
+}
+
 const shadow_sight: SpellTemplate = {
   id: 'shadow_sight',
   name: 'Shadow Sight',
@@ -810,6 +821,7 @@ export const SPELLS: Record<string, SpellTemplate> = {
   summon_pack,
   // Shadow (early/mid)
   drain_life,
+  shadow_step,
   shadow_sight,
   shadow_bolt,
   weaken,

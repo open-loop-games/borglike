@@ -208,6 +208,7 @@ export type StatusEffectType =
   | 'immunity_fear'
   | 'active_form'
   | 'enhanced_light' // +2 FOV radius from Light Orb spell
+  | 'sneak_attack' // Rogue's post-teleport 2.5x damage buff (consumed on attack)
   // Debuffs (from monster attacks)
   | 'blind'
   | 'confused'
@@ -795,6 +796,7 @@ export type SpellEffectType =
   | 'teleport'
   | 'teleport_other'
   | 'targeted_teleport'
+  | 'shadow_step' // Rogue: teleport adjacent to target monster
   | 'summon'
 
 /** Damage types for spells */

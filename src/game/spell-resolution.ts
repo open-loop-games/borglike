@@ -542,6 +542,9 @@ export function castSpell(game: GameState, spellId: string, targetId?: string): 
     case 'targeted_teleport':
       return castTargetedTeleportSpell(game, spell, targetId)
 
+    case 'shadow_step':
+      return castShadowStepSpell(game, spell, targetId)
+
     case 'summon':
       return castSummonSpell(game, spell)
 
@@ -1046,6 +1049,9 @@ function castTeleportSpell(game: GameState, spell: SpellTemplate): ActionResult 
 
   game.character.position = destination
 
+  // Apply Sneak Attack buff for Rogues (post-teleport burst damage)
+  applyPostTeleportBuff(game)
+
   const rangeStr = range === 0 ? '' : ' a short distance'
   return {
     success: true,
@@ -1140,9 +1146,132 @@ function castTargetedTeleportSpell(
   // Execute teleport
   game.character.position = destination
 
+  // Apply Sneak Attack buff for Rogues (post-teleport burst damage)
+  applyPostTeleportBuff(game)
+
   return {
     success: true,
     message: `You step through a dimensional door!`,
+  }
+}
+
+/**
+ * Apply Sneak Attack buff to Rogue after any teleport
+ * Grants 2.5x damage on next attack (consumed on use)
+ */
+function applyPostTeleportBuff(game: GameState): void {
+  // Only Rogues get Sneak Attack after teleporting
+  if (game.character.classId !== 'rogue') return
+
+  // Apply sneak_attack buff (1 turn duration, consumed on attack)
+  addStatusEffect(game.character, {
+    type: 'sneak_attack',
+    turnsRemaining: 2, // Lasts until next attack (or 2 turns if no attack)
+    value: 250, // 2.5x multiplier (stored as percentage)
+  })
+}
+
+/**
+ * Find a valid tile adjacent to a monster for Shadow Step destination
+ */
+function findShadowStepDestination(game: GameState, monster: Monster): Point | null {
+  const monsterPos = monster.position
+  const charPos = game.character.position
+
+  // Check all 8 adjacent tiles to the monster
+  const directions = [
+    { dx: 1, dy: 0 },
+    { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: 0, dy: -1 },
+    { dx: 1, dy: 1 },
+    { dx: 1, dy: -1 },
+    { dx: -1, dy: 1 },
+    { dx: -1, dy: -1 },
+  ]
+
+  // Score positions: prefer tiles opposite from where we are (behind the target)
+  const candidates: Array<{ pos: Point; score: number }> = []
+
+  for (const dir of directions) {
+    const x = monsterPos.x + dir.dx
+    const y = monsterPos.y + dir.dy
+
+    // Check if tile is valid and walkable
+    const tile = getTile(game.currentLevel, x, y)
+    if (!tile || !isWalkable(tile)) continue
+
+    // Check tile is visible (LOS requirement)
+    if (!tile.visible) continue
+
+    // Check no monster at destination
+    const hasMonster = game.monsters.some(
+      (m) => m.position.x === x && m.position.y === y && m.hp > 0
+    )
+    if (hasMonster) continue
+
+    // Check no minion at destination
+    const hasMinion = game.minions.some((m) => m.position.x === x && m.position.y === y)
+    if (hasMinion) continue
+
+    // Score: prefer tiles away from our current position (flanking bonus)
+    const distFromChar = Math.abs(x - charPos.x) + Math.abs(y - charPos.y)
+    const score = distFromChar // Higher = further from original position = better flanking
+
+    candidates.push({ pos: { x, y }, score })
+  }
+
+  if (candidates.length === 0) return null
+
+  // Sort by score descending (prefer flanking positions)
+  candidates.sort((a, b) => b.score - a.score)
+  return candidates[0]!.pos
+}
+
+/**
+ * Cast Shadow Step spell - teleport adjacent to target monster
+ * Grants Sneak Attack buff (Rogue only)
+ */
+function castShadowStepSpell(
+  game: GameState,
+  spell: SpellTemplate,
+  targetId?: string
+): ActionResult {
+  // Find target monster
+  let target: Monster | null = null
+  if (targetId) {
+    target = findTarget(game, targetId)
+  } else {
+    target = getNearestVisibleMonster(game)
+  }
+
+  if (!target) {
+    return { success: true, message: `You cast ${spell.name}, but there are no targets.` }
+  }
+
+  // Check if already adjacent to target
+  const dx = Math.abs(target.position.x - game.character.position.x)
+  const dy = Math.abs(target.position.y - game.character.position.y)
+  if (dx <= 1 && dy <= 1) {
+    return { success: false, message: 'You are already adjacent to that target.' }
+  }
+
+  // Find valid destination adjacent to target
+  const destination = findShadowStepDestination(game, target)
+  if (!destination) {
+    return { success: false, message: 'No valid position adjacent to target.' }
+  }
+
+  // Execute teleport
+  game.character.position = destination
+
+  // Apply Sneak Attack buff (Rogue only)
+  applyPostTeleportBuff(game)
+
+  return {
+    success: true,
+    message: `You step through shadows, appearing behind ${target.template.name}!`,
+    targets: [target.id],
   }
 }
 
