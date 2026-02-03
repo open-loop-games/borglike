@@ -246,7 +246,18 @@ function handleDangerTier(
       // DD is preferred over Phase Door because it maintains combat engagement
       if (!hasRangedWeapon(game)) {
         const ddAction = getDimensionDoorKiteAction(game, visibleMonsters)
-        if (ddAction) {
+        if (ddAction && ddAction.type === 'cast' && ddAction.targetId) {
+          // Update KITE goal target to DD destination - this IS the new kite position
+          // Prevents bot from walking back to stale target after teleport
+          if (botState.currentGoal?.type === 'KITE') {
+            const parts = ddAction.targetId.split(',')
+            const x = Number(parts[0])
+            const y = Number(parts[1])
+            if (!isNaN(x) && !isNaN(y)) {
+              botState.currentGoal.target = { x, y }
+              botState.goalTarget = { x, y }
+            }
+          }
           resetAfterTeleport(botState)
           recordProgress(botState, game.turn)
           return ddAction
