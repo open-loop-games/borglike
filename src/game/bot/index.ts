@@ -144,3 +144,21 @@ export type { FrontierTile, ExplorationCluster, ExplorationStats } from './explo
 // ============================================================================
 
 export { getDepthReadiness } from './preparation'
+
+// ============================================================================
+// SHAPESHIFT (druid forms)
+// ============================================================================
+
+export {
+  isShapeshifterClass,
+  isInBearForm,
+  isInRavenForm,
+  isInAnyForm,
+  canEnterBearForm,
+  canEnterRavenForm,
+  shouldEnterBearForm,
+  shouldEnterRavenForm,
+  shouldExitCurrentForm,
+  getShapeshiftAction,
+  getDruidTierAction,
+} from './shapeshift'

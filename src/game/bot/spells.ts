@@ -1012,7 +1012,8 @@ export function hasActiveMinions(game: GameState): boolean {
  * Check if bot should use summons based on class
  */
 export function classShouldSummon(classId: string): boolean {
-  return classId === 'ranger' || classId === 'necromancer' || classId === 'druid'
+  // Druid doesn't have summon spells - they use shapeshifting instead
+  return classId === 'ranger' || classId === 'necromancer'
 }
 
 // ============================================================================

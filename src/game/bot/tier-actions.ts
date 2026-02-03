@@ -52,6 +52,7 @@ import {
   getLightOrbSpellAction,
   getDimensionDoorKiteAction,
 } from './spells'
+import { isShapeshifterClass, getDruidTierAction } from './shapeshift'
 
 // ============================================================================
 // PUBLIC API
@@ -182,14 +183,30 @@ function handleCriticalTier(
     }
   }
 
-  // 5. Desperate melee attack if cornered (no escape, no heal, can't kite)
+  // 5. Druid shapeshifting: Raven escape takes priority over desperate melee
+  if (isShapeshifterClass(game.character.classId)) {
+    const druidAction = getDruidTierAction(
+      game,
+      context,
+      botState,
+      dangerResult,
+      'CRITICAL',
+      adjacentMonster
+    )
+    if (druidAction) {
+      recordProgress(botState, game.turn)
+      return druidAction
+    }
+  }
+
+  // 6. Desperate melee attack if cornered (no escape, no heal, can't kite)
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Desperate attack')
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
   }
 
-  // 6. Try to move away from danger
+  // 7. Try to move away from danger
   return null // Let fallback handle movement
 }
 
@@ -350,14 +367,30 @@ function handleDangerTier(
     }
   }
 
-  // 6. Melee attack if we must (or if melee class)
+  // 6. Druid shapeshifting: Bear Form combat or Raven escape
+  if (isShapeshifterClass(game.character.classId)) {
+    const druidAction = getDruidTierAction(
+      game,
+      context,
+      botState,
+      dangerResult,
+      'DANGER',
+      adjacentMonster
+    )
+    if (druidAction) {
+      recordProgress(botState, game.turn)
+      return druidAction
+    }
+  }
+
+  // 7. Melee attack if we must (or if melee class)
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Melee attack (danger)')
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
   }
 
-  // 7. Escape spell as fallback
+  // 8. Escape spell as fallback
   const escapeSpellFallback = getEscapeSpellAction(game, config, dangerResult.dangers)
   if (escapeSpellFallback) {
     resetAfterTeleport(botState)
@@ -471,14 +504,30 @@ function handleCautionTier(
     }
   }
 
-  // 3. Melee combat (fallback for ranged classes, primary for melee)
+  // 3. Druid shapeshifting: Gap-closing spells then Bear Form engage
+  if (isShapeshifterClass(game.character.classId)) {
+    const druidAction = getDruidTierAction(
+      game,
+      context,
+      botState,
+      dangerResult,
+      'CAUTION',
+      adjacentMonster
+    )
+    if (druidAction) {
+      recordProgress(botState, game.turn)
+      return druidAction
+    }
+  }
+
+  // 4. Melee combat (fallback for ranged classes, primary for melee)
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Melee combat')
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
   }
 
-  // 4. Proactive healing when not in melee (if significantly hurt)
+  // 5. Proactive healing when not in melee (if significantly hurt)
   if (hpRatio < 0.7) {
     const healSpell = getHealingSpellAction(game, config, localDanger, classProfile.healsPriority)
     if (healSpell) {
@@ -624,7 +673,23 @@ function handleSafeTier(
     }
   }
 
-  // 4. Pre-combat buffs only for bosses/uniques
+  // 4. Druid shapeshifting: Proactive form management
+  if (isShapeshifterClass(game.character.classId)) {
+    const druidAction = getDruidTierAction(
+      game,
+      context,
+      botState,
+      dangerResult,
+      'SAFE',
+      null
+    )
+    if (druidAction) {
+      recordProgress(botState, game.turn)
+      return druidAction
+    }
+  }
+
+  // 5. Pre-combat buffs only for bosses/uniques
   if (visibleMonsters.length > 0) {
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 
