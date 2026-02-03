@@ -260,6 +260,16 @@ export interface DepthRequirement {
   minHpPercent: number
   /** Buff potions (speed, heroism, berserk) - required for boss fights */
   buffPotions?: number
+  /** Mana potions - required for pure casters (mage, archmage, necromancer) */
+  manaPotions?: number
+}
+
+/** Pure caster classes that depend on mana for survival (DD kite loop) */
+export const PURE_CASTER_CLASSES = ['mage', 'archmage', 'necromancer'] as const
+
+/** Check if a class is a pure caster (requires mana pots for survival) */
+export function isPureCaster(classId: string | undefined): boolean {
+  return classId !== undefined && PURE_CASTER_CLASSES.includes(classId as (typeof PURE_CASTER_CLASSES)[number])
 }
 
 /**
@@ -272,12 +282,13 @@ export const DEPTH_REQUIREMENTS: Record<number, DepthRequirement> = {
   5: { healingPotions: 1, escapeScrolls: 1, townPortals: 1, minHpPercent: 50 },
   10: { healingPotions: 2, escapeScrolls: 2, townPortals: 1, minHpPercent: 60 },
   15: { healingPotions: 3, escapeScrolls: 2, townPortals: 1, minHpPercent: 65 },
-  20: { healingPotions: 3, escapeScrolls: 3, townPortals: 2, minHpPercent: 70 },
-  30: { healingPotions: 4, escapeScrolls: 3, townPortals: 2, minHpPercent: 75 },
-  40: { healingPotions: 5, escapeScrolls: 4, townPortals: 2, minHpPercent: 80 },
+  20: { healingPotions: 3, escapeScrolls: 3, townPortals: 2, minHpPercent: 70, manaPotions: 1 },
+  30: { healingPotions: 4, escapeScrolls: 3, townPortals: 2, minHpPercent: 75, manaPotions: 2 },
+  40: { healingPotions: 5, escapeScrolls: 4, townPortals: 2, minHpPercent: 80, manaPotions: 3 },
   // Morgoth fight: 20,000 HP boss doing 150+ damage/turn requires serious preparation
   // Need enough healing for ~100+ turn fight, plus buffs to boost damage output
-  50: { healingPotions: 12, escapeScrolls: 4, townPortals: 3, minHpPercent: 100, buffPotions: 3 },
+  // Pure casters need mana pots to sustain DD kite loop during extended fight
+  50: { healingPotions: 12, escapeScrolls: 4, townPortals: 3, minHpPercent: 100, buffPotions: 3, manaPotions: 3 },
 }
 
 // ============================================================================
@@ -347,6 +358,16 @@ export function countBuffPotions(inventory: Item[]): number {
   }).length
 }
 
+/**
+ * Count mana potions in inventory.
+ * Includes any potion with restoresMana flag.
+ */
+export function countManaPotions(inventory: Item[]): number {
+  return inventory.filter(
+    (item) => item.template.type === 'potion' && item.template.restoresMana
+  ).length
+}
+
 // ============================================================================
 // HEALING TIER REQUIREMENTS
 // ============================================================================
@@ -400,7 +421,7 @@ export function getPrepMultiplier(caution: number): number {
 
 /**
  * Scale a depth requirement by personality caution.
- * Note: buffPotions and minHpPercent are NOT scaled for depth 50 (Morgoth fight is non-negotiable)
+ * Note: buffPotions, manaPotions, and minHpPercent are NOT scaled for depth 50 (Morgoth fight is non-negotiable)
  */
 export function scaleRequirement(req: DepthRequirement, caution: number): DepthRequirement {
   const mult = getPrepMultiplier(caution)
@@ -409,8 +430,9 @@ export function scaleRequirement(req: DepthRequirement, caution: number): DepthR
     escapeScrolls: Math.floor(req.escapeScrolls * mult),
     townPortals: Math.floor(req.townPortals * mult),
     minHpPercent: Math.floor(req.minHpPercent * mult),
-    // Buff potions don't scale - boss fight requirements are absolute
+    // Buff/mana potions don't scale - boss fight requirements are absolute
     buffPotions: req.buffPotions,
+    manaPotions: req.manaPotions,
   }
 }
 
@@ -501,6 +523,14 @@ export function getDepthReadiness(
     const buffs = countBuffPotions(inventory)
     if (buffs < req.buffPotions) {
       return `Need ${req.buffPotions} buff potions for boss fight (have ${buffs})`
+    }
+  }
+
+  // Mana potion requirement (for pure casters only - mage, archmage, necromancer)
+  if (req.manaPotions && req.manaPotions > 0 && isPureCaster(classId)) {
+    const mana = countManaPotions(inventory)
+    if (mana < req.manaPotions) {
+      return `Need ${req.manaPotions} mana potions (have ${mana})`
     }
   }
 

@@ -4,7 +4,25 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `e2e8144` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Full Baseline @ `e48b77c` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 49.6 | 50 | 2% | 22093 | 650 | 8 | ✅ Endgame |
+| **Berserker** | 49.4 | 50 | 0% | 14710 | 530 | 20 | ✅ Endgame |
+| **Warrior** | 49.4 | 50 | 0% | 16774 | 548 | 8 | ✅ Endgame |
+| **Paladin** | 49.0 | 50 | 0% | 21880 | 665 | 3 | ✅ Endgame |
+| **Blackguard** | 48.9 | 50 | 0% | 15372 | 558 | 2 | ✅ Endgame |
+| **Rogue** | 48.0 | 50 | 0% | 22278 | 626 | 0 | ✅ Endgame |
+| **Necromancer** | 47.2 | 50 | 0% | 22541 | 637 | 0 | ✅ Endgame |
+| **Druid** | 47.0 | 50 | 0% | 21315 | 616 | 0 | ✅ Endgame |
+| **Priest** | 46.5 | 50 | 0% | 24104 | 726 | 0 | ✅ Endgame |
+| **Mage** | 46.4 | 50 | 0% | 25317 | 601 | 0 | ✅ Endgame |
+| **Archmage** | 45.8 | 50 | 1% | 25451 | 588 | 0 | ✅ Endgame |
+
+**Summary:** All classes healthy. Added goal-based MP pot usage (KITE/FLEE only) and debuff duration check (MIN_SLOW_DURATION=4). **41 Morgoth kills** (20 berserker, 8 warrior, 8 ranger, 3 paladin, 2 blackguard). All CB rates ≤2%. Pure casters still at 0 Morgoth kills.
+
+### Previous Baseline @ `e2e8144` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|

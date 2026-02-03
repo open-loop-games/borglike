@@ -7,7 +7,7 @@
 import type { GameState, Point } from '../types'
 import type { BotGoal, BotContext, BotState } from './types'
 import { findAdjacentMerchant, sellToMerchant, buyFromMerchant } from '../features'
-import { countHealingPotions, findOutdatedHealingPotions } from './preparation'
+import { countHealingPotions, countManaPotions, findOutdatedHealingPotions, isPureCaster } from './preparation'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
 
 // ============================================================================
@@ -162,8 +162,12 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
   // Analyze current inventory
   const inventory = game.character.inventory
   const char = game.character
+  const classId = (char as { classId?: string }).classId
+  const isCaster = isPureCaster(classId)
+
   let tpScrollCount = 0
   let healingPotionCount = 0
+  let manaPotionCount = 0
   let escapeScrollCount = 0
 
   for (const item of inventory) {
@@ -178,6 +182,8 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
       (template.healBase !== undefined || template.healPerLevel !== undefined)
     ) {
       healingPotionCount++
+    } else if (template.type === 'potion' && template.restoresMana) {
+      manaPotionCount++
     } else if (
       template.type === 'scroll' &&
       (effect.includes('Teleport') || name.includes('Phase Door'))
@@ -189,17 +195,19 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
   // Dynamic consumable targets - scale with gold but cap to avoid inventory bloat
   const baseTP = 2
   const baseHealing = 3
+  const baseMana = 2 // Pure casters need mana pots for DD kite loop
   const baseEscape = 2
   const goldBonus = Math.min(2, Math.floor(char.gold / 3000))
 
   const wantedTP = Math.max(0, baseTP + goldBonus - tpScrollCount) // max 4
   const wantedHealing = Math.max(0, baseHealing + goldBonus - healingPotionCount) // max 5
+  const wantedMana = isCaster ? Math.max(0, baseMana + goldBonus - manaPotionCount) : 0 // max 4, casters only
   const wantedEscape = Math.max(0, baseEscape + Math.floor(goldBonus / 2) - escapeScrollCount) // max 3
 
   // Build priority buy list
   interface BuyCandidate {
     index: number
-    category: 'tp' | 'healing' | 'escape' | 'gear'
+    category: 'tp' | 'healing' | 'mana' | 'escape' | 'gear'
     priority: number
     price: number
     name: string
@@ -234,7 +242,13 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
         candidates.push({ index: i, category: 'healing', priority: 2 - tierBonus, price, name })
       }
     }
-    // Phase Door / Escape scrolls - third priority
+    // Mana potions - third priority (casters only, critical for DD kite loop)
+    else if (template.type === 'potion' && template.restoresMana) {
+      if (wantedMana > 0) {
+        candidates.push({ index: i, category: 'mana', priority: 2.5, price, name })
+      }
+    }
+    // Phase Door / Escape scrolls - fourth priority
     else if (
       template.type === 'scroll' &&
       (effect.includes('Teleport') || name.includes('Phase Door'))
@@ -299,15 +313,17 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
   let boughtCount = 0
   let boughtTP = 0
   let boughtHealing = 0
+  let boughtMana = 0
   let boughtEscape = 0
 
   for (const candidate of candidates) {
-    // Consumables use type-specific caps (wantedTP, wantedHealing, wantedEscape)
+    // Consumables use type-specific caps (wantedTP, wantedHealing, wantedMana, wantedEscape)
     // No total inventory check needed - caps are enforced below
     if (game.character.gold < candidate.price) continue
 
     if (candidate.category === 'tp' && boughtTP >= wantedTP) continue
     if (candidate.category === 'healing' && boughtHealing >= wantedHealing) continue
+    if (candidate.category === 'mana' && boughtMana >= wantedMana) continue
     if (candidate.category === 'escape' && boughtEscape >= wantedEscape) continue
 
     // Find current index (may have shifted)
@@ -326,6 +342,9 @@ export function botBuySupplies(game: GameState, targetMerchantId?: string | null
           break
         case 'healing':
           boughtHealing++
+          break
+        case 'mana':
+          boughtMana++
           break
         case 'escape':
           boughtEscape++
