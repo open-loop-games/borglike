@@ -4,7 +4,25 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `41de49e` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Full Baseline @ `b4c83bc` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 49.6 | 50 | 0% | 21799 | 651 | 7 | ✅ Endgame |
+| **Blackguard** | 48.9 | 50 | 0% | 15532 | 558 | 1 | ✅ Endgame |
+| **Mage** | 48.7 | 50 | 1% | 26725 | 665 | 1 | ✅ Endgame |
+| **Paladin** | 48.7 | 50 | 0% | 21988 | 668 | 2 | ✅ Endgame |
+| **Archmage** | 48.3 | 50 | 1% | 26771 | 647 | 3 | ✅ Endgame |
+| **Berserker** | 48.2 | 50 | 0% | 14668 | 508 | 6 | ✅ Endgame |
+| **Warrior** | 48.1 | 50 | 0% | 16176 | 522 | 3 | ✅ Endgame |
+| **Necromancer** | 47.7 | 50 | 0% | 23470 | 662 | 0 | ✅ Endgame |
+| **Rogue** | 47.5 | 50 | 0% | 22856 | 621 | 3 | ✅ Endgame |
+| **Priest** | 46.7 | 50 | 0% | 24396 | 719 | 4 | ✅ Endgame |
+| **Druid** | 46.5 | 50 | 0% | 22610 | 595 | 0 | ✅ Endgame |
+
+**Summary:** Melee class balance pass. Reduced max attacks: Berserker 7→5, Warrior 6→4, Paladin 5→4. Reduced Berserker STR +4→+3. **30 Morgoth kills** (7 ranger, 6 berserker, 4 priest, 3 warrior, 3 rogue, 3 archmage, 2 paladin, 1 mage, 1 blackguard). Win rate spread now 0-7% (was 0-23%). All CB rates ≤1%.
+
+### Previous Baseline @ `41de49e` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
