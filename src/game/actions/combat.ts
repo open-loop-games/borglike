@@ -11,7 +11,6 @@ import {
   formatMultiAttackMessage,
   multiRangedAttack,
   canRangedAttack,
-  formatMultiRangedAttackMessage,
   calculateLifesteal,
 } from '../combat'
 import { gainXP } from '../character'
@@ -176,7 +175,7 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
     attackResult.totalDamage = Math.floor(attackResult.totalDamage * (1 + adrenalinePercent / 100))
   }
 
-  const message = formatMultiRangedAttackMessage(`the ${monster.template.name}`, attackResult)
+  const message = formatMultiAttackMessage(`the ${monster.template.name}`, attackResult, 'arrow')
   addMessage(game, message, 'combat')
 
   // Track ranged combat accuracy

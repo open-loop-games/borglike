@@ -230,16 +230,30 @@ export function formatBatchResult(result: BatchResult): string {
     }
   }
 
-  // Problem seeds
-  if (result.problemRuns.length > 0) {
-    lines.push(section('Problem Seeds'))
-    for (const run of result.problemRuns.slice(0, 10)) {
+  // End reason breakdown
+  const endReasonCounts = new Map<string, number>()
+  for (const run of result.problemRuns) {
+    endReasonCounts.set(run.endReason, (endReasonCounts.get(run.endReason) ?? 0) + 1)
+  }
+  if (endReasonCounts.size > 0) {
+    lines.push(section('End Reasons'))
+    for (const [reason, count] of [...endReasonCounts.entries()].sort((a, b) => b[1] - a[1])) {
+      const pct = (count / result.totalRuns * 100).toFixed(0)
+      lines.push(`  ${reason}: ${count} (${pct}%)`)
+    }
+  }
+
+  // Circuit breaker seeds (actual problems, not deaths)
+  const cbRuns = result.problemRuns.filter(r => r.endReason === 'circuit_breaker')
+  if (cbRuns.length > 0) {
+    lines.push(section('Circuit Breaker Seeds'))
+    for (const run of cbRuns.slice(0, 10)) {
       const errorCount = run.allIssues.filter((i) => i.severity === 'error').length
       const warnCount = run.allIssues.filter((i) => i.severity === 'warning').length
-      lines.push(`  seed=${run.seed}: ${errorCount} errors, ${warnCount} warnings, ended=${run.endReason}`)
+      lines.push(`  seed=${run.seed}: ${errorCount} errors, ${warnCount} warnings, depth=${run.finalState.depth}`)
     }
-    if (result.problemRuns.length > 10) {
-      lines.push(`  ... (${result.problemRuns.length - 10} more)`)
+    if (cbRuns.length > 10) {
+      lines.push(`  ... (${cbRuns.length - 10} more)`)
     }
   }
 

@@ -261,7 +261,7 @@ const berserker: GameClass = {
   starting: false,
   unlockCondition: 'Win a run with Warrior class',
   prestige: true,
-  checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['Warrior'] ?? 0) >= 1,
+  checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['warrior'] ?? 0) >= 1,
   description: 'Unstoppable fury incarnate - no healing, only damage.',
   botBehavior: 'All-in: never retreats, maximum aggression, wins fast or dies trying',
 }
@@ -289,7 +289,7 @@ const archmage: GameClass = {
   starting: false,
   unlockCondition: 'Win a run with Mage defeating the final boss',
   prestige: true,
-  checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['Mage'] ?? 0) >= 1,
+  checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['mage'] ?? 0) >= 1,
   description: 'Supreme magical power at the cost of extreme fragility.',
   botBehavior:
     'Glass cannon: devastating AOE spells, teleports constantly, one-shots or gets one-shot',

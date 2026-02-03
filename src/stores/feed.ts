@@ -42,6 +42,7 @@ const FILTER_PATTERNS = [
   /^You cast .* hitting \d+ enemies/, // AOE spells
   /^Your .* beams through/, // Beam spells
   /^You drain \d+ HP/, // Lifesteal is noisy
+  /^You cast .+\. You feel/, // Self-buff spells (Light Orb, etc)
 ]
 
 /** Message patterns that should always show (even if type is 'info') */

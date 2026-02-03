@@ -33,6 +33,22 @@ import { incrementStat } from './stats-helpers'
 // SpellCastResult has been unified into ActionResult in types.ts
 
 // ============================================================================
+// SHARED CONSTANTS
+// ============================================================================
+
+/** 8 adjacent tile directions (cardinal + diagonal) */
+const ADJACENT_DIRECTIONS = [
+  { dx: 1, dy: 0 },
+  { dx: -1, dy: 0 },
+  { dx: 0, dy: 1 },
+  { dx: 0, dy: -1 },
+  { dx: 1, dy: 1 },
+  { dx: 1, dy: -1 },
+  { dx: -1, dy: 1 },
+  { dx: -1, dy: -1 },
+]
+
+// ============================================================================
 // ELEMENTAL DAMAGE HELPERS
 // ============================================================================
 
@@ -80,6 +96,40 @@ function applyMonsterResistance(
   }
 
   return { damage, isImmune: false, isResistant: false }
+}
+
+// ============================================================================
+// SHARED SPELL HELPERS
+// ============================================================================
+
+/**
+ * Resolve a spell target - finds target by ID or nearest visible monster
+ * Returns null if no valid target found
+ */
+function resolveSpellTarget(game: GameState, targetId?: string): Monster | null {
+  if (targetId) {
+    return findTarget(game, targetId)
+  }
+  return getNearestVisibleMonster(game)
+}
+
+/**
+ * Calculate spell damage with upgrade bonuses applied
+ */
+function calculateSpellDamage(game: GameState, spell: SpellTemplate): number {
+  let damage = calculateSpellPower(game.character, spell, false)
+  const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
+  return Math.floor(damage * (1 + bonuses.damagePercent / 100))
+}
+
+/**
+ * Track spell damage in game stats
+ */
+function trackSpellDamage(game: GameState, spellName: string, damage: number): void {
+  game.stats.damageDealt += damage
+  incrementStat(game.stats.damageBySource.spell, spellName, damage)
+  const usage = game.stats.spellUsage[spellName]
+  if (usage) usage.damage += damage
 }
 
 // ============================================================================
@@ -561,22 +611,13 @@ export function castSpell(game: GameState, spellId: string, targetId?: string): 
  * Cast a single-target damage spell (may become beam at higher levels)
  */
 function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: string): ActionResult {
-  // Find primary target
-  let target: Monster | null = null
-  if (targetId) {
-    target = findTarget(game, targetId)
-  } else {
-    target = getNearestVisibleMonster(game)
-  }
-
+  const target = resolveSpellTarget(game, targetId)
   if (!target) {
     return { success: true, message: `You cast ${spell.name}, but there are no targets.` }
   }
 
   // Check if spell becomes a beam
-  let isBeam = false
   let beamTargets: Monster[] = []
-
   if (spell.canBeam) {
     const beamChance = calculateBeamChance(
       game.character.level,
@@ -584,20 +625,13 @@ function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: strin
       game.character.classId
     )
     if (random() * 100 < beamChance) {
-      isBeam = true
       beamTargets = findMonstersInBeam(game, game.character.position, target.position)
     }
   }
 
-  // Calculate base damage
-  let baseDamage = calculateSpellPower(game.character, spell, false)
+  const baseDamage = calculateSpellDamage(game, spell)
 
-  // Apply Might upgrade bonus to spell damage
-  const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
-  baseDamage = Math.floor(baseDamage * (1 + bonuses.damagePercent / 100))
-
-  if (isBeam && beamTargets.length > 1) {
-    // Beam hits multiple targets
+  if (beamTargets.length > 1) {
     return castBeamSpell(game, spell, baseDamage, beamTargets)
   }
 
@@ -623,18 +657,10 @@ function castDamageSpell(game: GameState, spell: SpellTemplate, targetId?: strin
     applyMonsterDebuff(target, spell.debuff.type, spell.debuff.value, spell.debuff.duration)
   }
 
-  // Apply damage
+  // Apply damage and track stats
   const killed = applyDamage(target, damage)
-
-  // Update stats
-  game.stats.damageDealt += damage
-  incrementStat(game.stats.damageBySource.spell, spell.name, damage)
-  const spellUsage = game.stats.spellUsage[spell.name]
-  if (spellUsage) spellUsage.damage += damage
-
-  if (killed) {
-    handleMonsterKill(game, target)
-  }
+  trackSpellDamage(game, spell.name, damage)
+  if (killed) handleMonsterKill(game, target)
 
   // Build result message
   let resultStr = ''
@@ -711,10 +737,7 @@ function castBeamSpell(
     }
   }
 
-  game.stats.damageDealt += totalDamage
-  incrementStat(game.stats.damageBySource.spell, spell.name, totalDamage)
-  const beamSpellUsage = game.stats.spellUsage[spell.name]
-  if (beamSpellUsage) beamSpellUsage.damage += totalDamage
+  trackSpellDamage(game, spell.name, totalDamage)
 
   const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
   return {
@@ -756,11 +779,7 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
   const events: ActionResult['events'] = []
 
   // Calculate base damage (same for all targets)
-  let baseDamage = calculateSpellPower(game.character, spell, false)
-
-  // Apply Might upgrade bonus to spell damage
-  const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
-  baseDamage = Math.floor(baseDamage * (1 + bonuses.damagePercent / 100))
+  const baseDamage = calculateSpellDamage(game, spell)
 
   let immuneCount = 0
   let resistCount = 0
@@ -810,10 +829,7 @@ function castAOEDamageSpell(game: GameState, spell: SpellTemplate): ActionResult
     }
   }
 
-  game.stats.damageDealt += totalDamage
-  incrementStat(game.stats.damageBySource.spell, spell.name, totalDamage)
-  const aoeSpellUsage = game.stats.spellUsage[spell.name]
-  if (aoeSpellUsage) aoeSpellUsage.damage += totalDamage
+  trackSpellDamage(game, spell.name, totalDamage)
 
   // If spell has drain, heal
   if (spell.drainPercent) {
@@ -954,14 +970,7 @@ function castDebuffSpell(game: GameState, spell: SpellTemplate, targetId?: strin
     return { success: true, message: `You cast ${spell.name}.` }
   }
 
-  // Find target
-  let target: Monster | null = null
-  if (targetId) {
-    target = findTarget(game, targetId)
-  } else {
-    target = getNearestVisibleMonster(game)
-  }
-
+  const target = resolveSpellTarget(game, targetId)
   if (!target) {
     return { success: true, message: `You cast ${spell.name}, but there are no targets.` }
   }
@@ -983,31 +992,15 @@ function castLifedrainSpell(
   spell: SpellTemplate,
   targetId?: string
 ): ActionResult {
-  // Find target
-  let target: Monster | null = null
-  if (targetId) {
-    target = findTarget(game, targetId)
-  } else {
-    target = getNearestVisibleMonster(game)
-  }
-
+  const target = resolveSpellTarget(game, targetId)
   if (!target) {
     return { success: true, message: `You cast ${spell.name}, but there are no targets.` }
   }
 
-  // Calculate damage
-  let damage = calculateSpellPower(game.character, spell, false)
-
-  // Apply Might upgrade bonus to spell damage
-  const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
-  damage = Math.floor(damage * (1 + bonuses.damagePercent / 100))
-
-  // Apply damage
+  // Calculate and apply damage
+  const damage = calculateSpellDamage(game, spell)
   const killed = applyDamage(target, damage)
-  game.stats.damageDealt += damage
-  incrementStat(game.stats.damageBySource.spell, spell.name, damage)
-  const drainSpellUsage = game.stats.spellUsage[spell.name]
-  if (drainSpellUsage) drainSpellUsage.damage += damage
+  trackSpellDamage(game, spell.name, damage)
 
   // Heal based on drain percent
   const drainPercent = spell.drainPercent ?? 50
@@ -1178,22 +1171,10 @@ function findShadowStepDestination(game: GameState, monster: Monster): Point | n
   const monsterPos = monster.position
   const charPos = game.character.position
 
-  // Check all 8 adjacent tiles to the monster
-  const directions = [
-    { dx: 1, dy: 0 },
-    { dx: -1, dy: 0 },
-    { dx: 0, dy: 1 },
-    { dx: 0, dy: -1 },
-    { dx: 1, dy: 1 },
-    { dx: 1, dy: -1 },
-    { dx: -1, dy: 1 },
-    { dx: -1, dy: -1 },
-  ]
-
   // Score positions: prefer tiles opposite from where we are (behind the target)
   const candidates: Array<{ pos: Point; score: number }> = []
 
-  for (const dir of directions) {
+  for (const dir of ADJACENT_DIRECTIONS) {
     const x = monsterPos.x + dir.dx
     const y = monsterPos.y + dir.dy
 
@@ -1237,14 +1218,7 @@ function castShadowStepSpell(
   spell: SpellTemplate,
   targetId?: string
 ): ActionResult {
-  // Find target monster
-  let target: Monster | null = null
-  if (targetId) {
-    target = findTarget(game, targetId)
-  } else {
-    target = getNearestVisibleMonster(game)
-  }
-
+  const target = resolveSpellTarget(game, targetId)
   if (!target) {
     return { success: true, message: `You cast ${spell.name}, but there are no targets.` }
   }
@@ -1411,18 +1385,8 @@ function summonMinion(game: GameState, minionType: MinionType): ActionResult {
  */
 function findMinionSpawnPosition(game: GameState): Point | null {
   const charPos = game.character.position
-  const directions = [
-    { dx: 1, dy: 0 },
-    { dx: -1, dy: 0 },
-    { dx: 0, dy: 1 },
-    { dx: 0, dy: -1 },
-    { dx: 1, dy: 1 },
-    { dx: 1, dy: -1 },
-    { dx: -1, dy: 1 },
-    { dx: -1, dy: -1 },
-  ]
 
-  for (const dir of directions) {
+  for (const dir of ADJACENT_DIRECTIONS) {
     const x = charPos.x + dir.dx
     const y = charPos.y + dir.dy
 

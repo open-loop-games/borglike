@@ -294,184 +294,38 @@ export function getTotalResistance(character: Character, type: ResistanceType): 
 }
 
 // ============================================================================
-// DEADLINESS TABLE
+// DEADLINESS CALCULATION
 // ============================================================================
 
 /**
- * Deadliness lookup table
+ * Compute deadliness damage percentage multiplier
  *
- * Maps deadliness value to damage percentage multiplier.
  * Based on Angband's non-linear scaling where higher deadliness
- * gives increasingly better returns.
+ * gives increasingly better returns. Each "decade" (0-9, 10-19, etc.)
+ * has a consistent increment that grows by 1 per decade.
  *
- * Index = deadliness value (0-150)
- * Value = damage percentage (100 = 1x, 200 = 2x, etc.)
+ * @param deadliness - Deadliness value (0-150)
+ * @returns Damage percentage (100 = 1x, 200 = 2x, 1000 = 10x, etc.)
  */
-const DEADLINESS_TABLE: number[] = [
-  // 0-9: Minimal bonus
-  100,
-  102,
-  104,
-  106,
-  108,
-  110,
-  112,
-  114,
-  116,
-  118,
-  // 10-19: Small bonus
-  120,
-  123,
-  126,
-  129,
-  132,
-  135,
-  138,
-  141,
-  144,
-  147,
-  // 20-29: Moderate bonus
-  150,
-  154,
-  158,
-  162,
-  166,
-  170,
-  174,
-  178,
-  182,
-  186,
-  // 30-39: Good bonus
-  190,
-  195,
-  200,
-  205,
-  210,
-  215,
-  220,
-  225,
-  230,
-  235,
-  // 40-49: Strong bonus
-  240,
-  246,
-  252,
-  258,
-  264,
-  270,
-  276,
-  282,
-  288,
-  294,
-  // 50-59: Excellent bonus
-  300,
-  307,
-  314,
-  321,
-  328,
-  335,
-  342,
-  349,
-  356,
-  363,
-  // 60-69: Superior bonus
-  370,
-  378,
-  386,
-  394,
-  402,
-  410,
-  418,
-  426,
-  434,
-  442,
-  // 70-79: Exceptional bonus
-  450,
-  459,
-  468,
-  477,
-  486,
-  495,
-  504,
-  513,
-  522,
-  531,
-  // 80-89: Outstanding bonus
-  540,
-  550,
-  560,
-  570,
-  580,
-  590,
-  600,
-  610,
-  620,
-  630,
-  // 90-99: Legendary bonus
-  640,
-  651,
-  662,
-  673,
-  684,
-  695,
-  706,
-  717,
-  728,
-  739,
-  // 100+: Maximum
-  750,
-  762,
-  774,
-  786,
-  798,
-  810,
-  822,
-  834,
-  846,
-  858,
-  870,
-  883,
-  896,
-  909,
-  922,
-  935,
-  948,
-  961,
-  974,
-  987,
-  1000, // 120 = 10x damage
-  // 121-150: Diminishing returns past 10x
-  1010,
-  1020,
-  1030,
-  1040,
-  1050,
-  1060,
-  1070,
-  1080,
-  1090,
-  1100,
-  1108,
-  1116,
-  1124,
-  1132,
-  1140,
-  1148,
-  1156,
-  1164,
-  1172,
-  1180,
-  1187,
-  1194,
-  1201,
-  1208,
-  1215,
-  1222,
-  1229,
-  1236,
-  1243,
-  1250, // 150 = 12.5x damage (theoretical max)
-]
+function computeDeadlinessMultiplier(deadliness: number): number {
+  if (deadliness <= 0) return 100
+  if (deadliness >= 150) return 1250 // 12.5x theoretical max
+
+  // Main scaling curve (0-120): each decade's increment grows by 1
+  // Decade 0: +2 per point, Decade 1: +3 per point, etc.
+  if (deadliness <= 120) {
+    const decade = Math.floor(deadliness / 10)
+    const position = deadliness % 10
+    const increment = decade + 2
+    const base = 100 + 5 * decade * (3 + decade)
+    return base + position * increment
+  }
+
+  // Diminishing returns past 10x damage (121-150)
+  if (deadliness <= 130) return 1000 + (deadliness - 120) * 10
+  if (deadliness <= 140) return 1100 + (deadliness - 130) * 8
+  return 1180 + (deadliness - 140) * 7
+}
 
 /**
  * Calculate character's melee deadliness value
@@ -578,8 +432,7 @@ export function calculateSpellDeadliness(character: Character): number {
  * @returns Modified damage with deadliness applied
  */
 export function applyDeadliness(baseDamage: number, deadliness: number): number {
-  const clampedDeadliness = Math.max(0, Math.min(150, deadliness))
-  const multiplier = DEADLINESS_TABLE[clampedDeadliness] ?? 100
+  const multiplier = computeDeadlinessMultiplier(deadliness)
   return Math.floor((baseDamage * multiplier) / 100)
 }
 
@@ -650,6 +503,56 @@ export function calculateScaledCritical(
 }
 
 // ============================================================================
+// SHARED COMBAT HELPERS
+// ============================================================================
+
+/**
+ * Calculate hit chance from accuracy vs evasion
+ * Base 50%, clamped to 5-95% range
+ */
+function calculateHitChance(accuracy: number, evasion: number): number {
+  return Math.max(5, Math.min(95, 50 + accuracy - evasion))
+}
+
+/**
+ * Apply armor reduction to damage
+ * Percentage-based: each point of armor = 0.5% reduction, max 50%
+ */
+function applyArmorReduction(damage: number, armor: number, penetration: number): number {
+  const effectiveArmor = Math.max(0, armor - penetration)
+  const reduction = Math.min(effectiveArmor / 2, 50)
+  return Math.floor((damage * (100 - reduction)) / 100)
+}
+
+/** Gnome "Lucky" racial: +5% crit chance */
+function getGnomeCritBonus(character: Character): number {
+  return character.raceId === 'gnome' ? 5 : 0
+}
+
+/**
+ * Get character's passive damage multiplier from race/class/status effects
+ * Excludes random per-attack effects (shield bash) and weapon-based effects (brands/slays)
+ */
+function getPassiveDamageMultiplier(character: Character): number {
+  let mult = 1.0
+
+  // Half-Orc "Berserker Rage": +20% when below 30% HP
+  if (character.raceId === 'half_orc' && character.hp < character.maxHp * 0.3) {
+    mult *= 1.2
+  }
+
+  // Rogue "Sneak Attack": 2.5x after Shadow Step teleport
+  if (character.statusEffects.some((e) => e.type === 'sneak_attack')) {
+    mult *= 2.5
+  }
+
+  return mult
+}
+
+/** Miss result constant to avoid repeated object creation */
+const MISS_RESULT: AttackResult = { hit: false, damage: 0, critical: false, killed: false }
+
+// ============================================================================
 // COMBAT RESOLUTION
 // ============================================================================
 
@@ -692,22 +595,13 @@ export function attack(
     defenderACBonus = getStatusACBonus(defender)
   }
 
-  // Calculate hit chance (clamped between 5% and 95%)
-  const baseHitChance =
-    50 + attackerStats.accuracy + accuracyBonus - defenderStats.evasion - defenderACBonus
-  const hitChance = Math.max(5, Math.min(95, baseHitChance))
+  // Calculate hit chance and roll
+  const totalAccuracy = attackerStats.accuracy + accuracyBonus
+  const totalEvasion = defenderStats.evasion + defenderACBonus
+  const hitChance = calculateHitChance(totalAccuracy, totalEvasion)
 
-  // Roll for hit
-  const hitRoll = random() * 100
-  const hit = hitRoll < hitChance
-
-  if (!hit) {
-    return {
-      hit: false,
-      damage: 0,
-      critical: false,
-      killed: false,
-    }
+  if (random() * 100 >= hitChance) {
+    return MISS_RESULT
   }
 
   // Calculate base damage
@@ -755,21 +649,11 @@ export function attack(
     if (isMonster(defender)) {
       const brandMult = calculateBrandMultiplier(attacker.equipment.weapon, defender)
       const slayMult = calculateSlayMultiplier(attacker.equipment.weapon, defender)
-      // Use higher of brand or slay (they don't stack)
-      const bestMult = Math.max(brandMult, slayMult)
-      baseDamage = Math.floor(baseDamage * bestMult)
+      baseDamage = Math.floor(baseDamage * Math.max(brandMult, slayMult))
     }
 
-    // RACIAL: Half-Orc "Berserker Rage" - +20% damage when below 30% HP
-    if (attacker.raceId === 'half_orc' && attacker.hp < attacker.maxHp * 0.3) {
-      baseDamage = Math.floor(baseDamage * 1.2)
-    }
-
-    // SNEAK ATTACK: Rogue's post-teleport 2.5x damage
-    const sneakAttack = attacker.statusEffects.find((e) => e.type === 'sneak_attack')
-    if (sneakAttack) {
-      baseDamage = Math.floor(baseDamage * 2.5)
-    }
+    // Apply passive racial/status damage multipliers
+    baseDamage = Math.floor(baseDamage * getPassiveDamageMultiplier(attacker))
   } else {
     // Monster attacks use pre-calculated average (actual dice rolled in monster-combat.ts)
     baseDamage = attackerStats.damage + damageBonus
@@ -778,32 +662,31 @@ export function attack(
     baseDamage = Math.floor(baseDamage * variance)
   }
 
-  // Apply armor reduction (percentage-based, max 50% reduction)
-  // This matches monster-combat.ts armor calculation
-  const effectiveArmor = Math.max(0, defenderStats.armor + defenderACBonus - armorPenetration)
-  const armorReduction = Math.min(effectiveArmor / 2, 50) // Max 50% reduction
-  let damage = Math.floor((baseDamage * (100 - armorReduction)) / 100)
+  // Apply armor reduction
+  let damage = applyArmorReduction(
+    baseDamage,
+    defenderStats.armor + defenderACBonus,
+    armorPenetration
+  )
 
   // Check for critical hit
   // Characters use scaled criticals based on weapon weight and level
   // Monsters use flat 5% chance with 2x damage
   let critical = false
   if (isCharacter(attacker)) {
-    const weaponWeight = attacker.equipment.weapon?.template.weight ?? 50 // Default to 5 lbs if unarmed
-    // RACIAL: Gnome "Lucky" - +5% crit chance
-    const luckyBonus = attacker.raceId === 'gnome' ? 5 : 0
-    const critResult = calculateScaledCritical(weaponWeight, attacker.level, luckyBonus)
+    const weaponWeight = attacker.equipment.weapon?.template.weight ?? 50
+    const critResult = calculateScaledCritical(
+      weaponWeight,
+      attacker.level,
+      getGnomeCritBonus(attacker)
+    )
     critical = critResult.isCritical
     if (critical) {
       damage *= critResult.multiplier
     }
-  } else {
-    // Monster attacks: flat 5% chance, 2x damage
-    const critRoll = random() * 100
-    critical = critRoll < 5
-    if (critical) {
-      damage *= 2
-    }
+  } else if (random() < 0.05) {
+    critical = true
+    damage *= 2
   }
 
   // Apply knowledge bonuses from bestiary
@@ -849,16 +732,42 @@ export function attack(
 }
 
 /**
+ * Generic multi-attack loop - executes multiple attacks and accumulates results
+ *
+ * @param defender - Target monster
+ * @param attackCount - Number of attacks to perform
+ * @param performSingleAttack - Callback that performs one attack given remaining HP
+ */
+function executeMultiAttack(
+  defender: Monster,
+  attackCount: number,
+  performSingleAttack: (tempDefender: Monster) => AttackResult
+): MultiAttackResult {
+  const attacks: AttackResult[] = []
+  let hits = 0
+  let totalDamage = 0
+  let criticals = 0
+  let killed = false
+  let remainingHp = defender.hp
+
+  for (let i = 0; i < attackCount && remainingHp > 0; i++) {
+    const result = performSingleAttack({ ...defender, hp: remainingHp })
+    attacks.push(result)
+
+    if (result.hit) {
+      hits++
+      totalDamage += result.damage
+      remainingHp -= result.damage
+      if (result.critical) criticals++
+      if (remainingHp <= 0) killed = true
+    }
+  }
+
+  return { attackCount, hits, totalDamage, criticals, killed, attacks }
+}
+
+/**
  * Perform a full melee attack action with multiple attacks
- *
- * Number of attacks scales with level, STR, and class cap.
- * Each attack is resolved independently, damage accumulates.
- *
- * @param attacker - The attacking character
- * @param defender - The defending monster
- * @param knowledgeBonuses - Optional bestiary bonuses
- * @param armorPenetration - Flat armor penetration
- * @returns MultiAttackResult with aggregated stats
  */
 export function meleeAttack(
   attacker: Character,
@@ -866,87 +775,49 @@ export function meleeAttack(
   knowledgeBonuses?: KnowledgeBonuses,
   armorPenetration = 0
 ): MultiAttackResult {
-  const attackCount = calculateAttackCount(attacker)
-  const attacks: AttackResult[] = []
-  let hits = 0
-  let totalDamage = 0
-  let criticals = 0
-  let killed = false
-
-  // Track remaining HP for accurate kill detection
-  let remainingHp = defender.hp
-
-  for (let i = 0; i < attackCount; i++) {
-    // Skip if target already dead
-    if (remainingHp <= 0) break
-
-    // Create a temporary defender with remaining HP for kill detection
-    const tempDefender = { ...defender, hp: remainingHp }
-
-    const result = attack(attacker, tempDefender, undefined, knowledgeBonuses, armorPenetration)
-    attacks.push(result)
-
-    if (result.hit) {
-      hits++
-      totalDamage += result.damage
-      remainingHp -= result.damage
-
-      if (result.critical) {
-        criticals++
-      }
-
-      if (result.killed || remainingHp <= 0) {
-        killed = true
-      }
-    }
-  }
-
-  return {
-    attackCount,
-    hits,
-    totalDamage,
-    criticals,
-    killed,
-    attacks,
-  }
+  return executeMultiAttack(defender, calculateAttackCount(attacker), (tempDefender) =>
+    attack(attacker, tempDefender, undefined, knowledgeBonuses, armorPenetration)
+  )
 }
 
 /**
  * Format a multi-attack result into a single message
+ * @param projectile - Optional projectile name ("arrow" for ranged), omit for melee
  */
-export function formatMultiAttackMessage(defenderName: string, result: MultiAttackResult): string {
+export function formatMultiAttackMessage(
+  defenderName: string,
+  result: MultiAttackResult,
+  projectile?: string
+): string {
+  const single = projectile ? `Your ${projectile}` : 'You'
+  const plural = projectile ? `Your ${projectile}s` : 'You'
+  const killVerb = projectile && result.attackCount === 1 ? 'kills' : 'kill'
+
   if (result.hits === 0) {
-    if (result.attackCount === 1) {
-      return `You miss ${defenderName}.`
-    }
-    return `You miss ${defenderName} ${result.attackCount} times.`
+    return result.attackCount === 1
+      ? `${single} miss${projectile ? 'es' : ''} ${defenderName}.`
+      : `${plural} miss ${defenderName} ${result.attackCount} times.`
   }
 
-  // Build message showing attack count and total damage
-  let message: string
+  const isSingle = result.attackCount === 1
+  const subject = isSingle ? single : plural
+  const critText = !isSingle && result.criticals > 0 ? ` (${result.criticals} crit)` : ''
 
   if (result.killed) {
-    if (result.attackCount === 1) {
-      message =
-        result.criticals > 0
-          ? `You critically hit ${defenderName} for ${result.totalDamage} damage and kill it!`
-          : `You hit ${defenderName} for ${result.totalDamage} damage and kill it!`
-    } else {
-      message = `You hit ${defenderName} ${result.hits}x for ${result.totalDamage} total damage and kill it!`
+    if (isSingle) {
+      return result.criticals > 0
+        ? `${subject} critically hit${projectile ? 's' : ''} ${defenderName} for ${result.totalDamage} damage and ${killVerb} it!`
+        : `${subject} hit${projectile ? 's' : ''} ${defenderName} for ${result.totalDamage} damage and ${killVerb} it!`
     }
-  } else {
-    if (result.attackCount === 1) {
-      message =
-        result.criticals > 0
-          ? `You critically hit ${defenderName} for ${result.totalDamage} damage!`
-          : `You hit ${defenderName} for ${result.totalDamage} damage.`
-    } else {
-      const critText = result.criticals > 0 ? ` (${result.criticals} crit)` : ''
-      message = `You hit ${defenderName} ${result.hits}/${result.attackCount}x for ${result.totalDamage} damage${critText}.`
-    }
+    return `${subject} hit ${defenderName} ${result.hits}x for ${result.totalDamage} total damage and ${killVerb} it!`
   }
 
-  return message
+  if (isSingle) {
+    return result.criticals > 0
+      ? `${subject} critically hit${projectile ? 's' : ''} ${defenderName} for ${result.totalDamage} damage!`
+      : `${subject} hit${projectile ? 's' : ''} ${defenderName} for ${result.totalDamage} damage.`
+  }
+  return `${subject} hit ${defenderName} ${result.hits}/${result.attackCount}x for ${result.totalDamage} damage${critText}.`
 }
 
 // ============================================================================
@@ -1123,24 +994,12 @@ export function rangedAttack(
   const distancePenalty = Math.max(0, distance - 2) * 5
   accuracy -= distancePenalty
 
-  // Get defender stats
+  // Get defender stats and calculate hit chance
   const defenderStats = getDefenderStats(defender)
+  const hitChance = calculateHitChance(accuracy, defenderStats.evasion)
 
-  // Calculate hit chance (clamped between 5% and 95%)
-  const baseHitChance = 50 + accuracy - defenderStats.evasion
-  const hitChance = Math.max(5, Math.min(95, baseHitChance))
-
-  // Roll for hit
-  const hitRoll = random() * 100
-  const hit = hitRoll < hitChance
-
-  if (!hit) {
-    return {
-      hit: false,
-      damage: 0,
-      critical: false,
-      killed: false,
-    }
+  if (random() * 100 >= hitChance) {
+    return MISS_RESULT
   }
 
   // Roll actual bow dice for damage
@@ -1174,16 +1033,12 @@ export function rangedAttack(
   const deadliness = calculateRangedDeadliness(attacker)
   baseDamage = applyDeadliness(baseDamage, deadliness)
 
-  // Apply armor reduction (percentage-based, max 50% reduction)
-  const effectiveArmor = Math.max(0, defenderStats.armor - armorPenetration)
-  const armorReduction = Math.min(effectiveArmor / 2, 50) // Max 50% reduction
-  let finalDamage = Math.floor((baseDamage * (100 - armorReduction)) / 100)
+  // Apply armor reduction
+  let finalDamage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration)
 
   // Check for critical hit using scaled system (bow weight + level)
-  const bowWeight = attacker.equipment.bow?.template.weight ?? 30 // Default to 3 lbs
-  // RACIAL: Gnome "Lucky" - +5% crit chance
-  const luckyBonus = attacker.raceId === 'gnome' ? 5 : 0
-  const critResult = calculateScaledCritical(bowWeight, attacker.level, luckyBonus)
+  const bowWeight = attacker.equipment.bow?.template.weight ?? 30
+  const critResult = calculateScaledCritical(bowWeight, attacker.level, getGnomeCritBonus(attacker))
   const critical = critResult.isCritical
   if (critical) {
     finalDamage *= critResult.multiplier
@@ -1229,16 +1084,6 @@ export function formatRangedAttackMessage(defenderName: string, result: AttackRe
 
 /**
  * Perform a full ranged attack action with multiple shots
- *
- * FAST_SHOT: Rangers get +1 shot per 3 levels
- * Other classes: 1 shot
- *
- * @param attacker - The attacking character
- * @param defender - The defending monster
- * @param distance - Distance to target
- * @param knowledgeBonuses - Optional bestiary bonuses
- * @param armorPenetration - Flat armor penetration
- * @returns MultiAttackResult with aggregated stats
  */
 export function multiRangedAttack(
   attacker: Character,
@@ -1247,95 +1092,9 @@ export function multiRangedAttack(
   knowledgeBonuses?: KnowledgeBonuses,
   armorPenetration = 0
 ): MultiAttackResult {
-  const shotCount = calculateRangedAttackCount(attacker)
-  const attacks: AttackResult[] = []
-  let hits = 0
-  let totalDamage = 0
-  let criticals = 0
-  let killed = false
-
-  // Track remaining HP for accurate kill detection
-  let remainingHp = defender.hp
-
-  for (let i = 0; i < shotCount; i++) {
-    // Skip if target already dead
-    if (remainingHp <= 0) break
-
-    // Create a temporary defender with remaining HP for kill detection
-    const tempDefender = { ...defender, hp: remainingHp }
-
-    const result = rangedAttack(
-      attacker,
-      tempDefender,
-      distance,
-      knowledgeBonuses,
-      armorPenetration
-    )
-    attacks.push(result)
-
-    if (result.hit) {
-      hits++
-      totalDamage += result.damage
-      remainingHp -= result.damage
-
-      if (result.critical) {
-        criticals++
-      }
-
-      if (result.killed || remainingHp <= 0) {
-        killed = true
-      }
-    }
-  }
-
-  return {
-    attackCount: shotCount,
-    hits,
-    totalDamage,
-    criticals,
-    killed,
-    attacks,
-  }
-}
-
-/**
- * Format a multi-shot ranged attack result into a single message
- */
-export function formatMultiRangedAttackMessage(
-  defenderName: string,
-  result: MultiAttackResult
-): string {
-  if (result.hits === 0) {
-    if (result.attackCount === 1) {
-      return `Your arrow misses ${defenderName}.`
-    }
-    return `Your arrows miss ${defenderName} ${result.attackCount} times.`
-  }
-
-  let message: string
-
-  if (result.killed) {
-    if (result.attackCount === 1) {
-      message =
-        result.criticals > 0
-          ? `Your arrow critically hits ${defenderName} for ${result.totalDamage} damage and kills it!`
-          : `Your arrow hits ${defenderName} for ${result.totalDamage} damage and kills it!`
-    } else {
-      message = `Your arrows hit ${defenderName} ${result.hits}x for ${result.totalDamage} total damage and kill it!`
-    }
-  } else {
-    if (result.attackCount === 1) {
-      message =
-        result.criticals > 0
-          ? `Your arrow critically hits ${defenderName} for ${result.totalDamage} damage!`
-          : `Your arrow hits ${defenderName} for ${result.totalDamage} damage.`
-    } else {
-      const critText = result.criticals > 0 ? ` (${result.criticals} crit)` : ''
-      message = `Your arrows hit ${defenderName} ${result.hits}/${result.attackCount}x for ${result.totalDamage} damage${critText}.`
-    }
-  }
-
-  return message
+  return executeMultiAttack(defender, calculateRangedAttackCount(attacker), (tempDefender) =>
+    rangedAttack(attacker, tempDefender, distance, knowledgeBonuses, armorPenetration)
+  )
 }
 
 // ============================================================================
