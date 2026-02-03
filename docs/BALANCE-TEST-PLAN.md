@@ -1,10 +1,28 @@
 # Balance Test Plan
 
-## Current State (2026-02-02)
+## Current State (2026-02-03)
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `95ece86` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Full Baseline @ `41de49e` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 49.6 | 50 | 0% | 21799 | 651 | 7 | ✅ Endgame |
+| **Berserker** | 49.4 | 50 | 0% | 14701 | 530 | 23 | ✅ Endgame |
+| **Warrior** | 49.4 | 50 | 0% | 16214 | 548 | 13 | ✅ Endgame |
+| **Paladin** | 48.9 | 50 | 0% | 21985 | 675 | 12 | ✅ Endgame |
+| **Blackguard** | 48.9 | 50 | 0% | 15532 | 558 | 1 | ✅ Endgame |
+| **Mage** | 48.7 | 50 | 1% | 26725 | 665 | 1 | ✅ Endgame |
+| **Archmage** | 48.3 | 50 | 1% | 26771 | 647 | 3 | ✅ Endgame |
+| **Necromancer** | 47.7 | 50 | 0% | 23470 | 662 | 0 | ✅ Endgame |
+| **Rogue** | 47.5 | 50 | 0% | 22856 | 621 | 3 | ✅ Endgame |
+| **Priest** | 46.7 | 50 | 0% | 24396 | 719 | 4 | ✅ Endgame |
+| **Druid** | 46.5 | 50 | 0% | 22610 | 595 | 0 | ✅ Endgame |
+
+**Summary:** All classes healthy. Fixed Morgoth hunt sweep and D50 circuit breaker exemption. **67 Morgoth kills** (23 berserker, 13 warrior, 12 paladin, 7 ranger, 4 priest, 3 rogue, 3 archmage, 1 mage, 1 blackguard). Berserker 20→23, Warrior 8→13, Paladin 10→12. Ranger CB 2%→0%, Mage CB 3%→1%. All CB rates ≤1%.
+
+### Previous Baseline @ `95ece86` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
@@ -23,22 +41,6 @@
 **Summary:** All classes healthy. Added Rogue Shadow Step + Sneak Attack (2.5x damage after teleport). **63 Morgoth kills** (20 berserker, 10 paladin, 8 warrior, 8 ranger, 4 rogue, 4 priest, 3 mage, 2 blackguard, 2 archmage, 1 necromancer, 1 druid). Rogue 0→4 kills, Paladin 3→10, Priest 0→4, Druid 0→1. Total +34% from 47→63. All CB rates ≤3%.
 
 ### Previous Baseline @ `bdd0fe4` (100 runs, 50k turns, seed=1000, max-upgrades)
-
-| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
-|-------|-----------|-----------|---------|-----------|-------|---------|--------|
-| **Ranger** | 49.6 | 50 | 2% | 22093 | 650 | 8 | ✅ Endgame |
-| **Berserker** | 49.4 | 50 | 0% | 14710 | 530 | 20 | ✅ Endgame |
-| **Warrior** | 49.4 | 50 | 0% | 16774 | 548 | 8 | ✅ Endgame |
-| **Paladin** | 49.0 | 50 | 0% | 21880 | 665 | 3 | ✅ Endgame |
-| **Blackguard** | 48.9 | 50 | 0% | 15372 | 558 | 2 | ✅ Endgame |
-| **Mage** | 48.1 | 50 | 3% | 27231 | 655 | 3 | ✅ Endgame |
-| **Rogue** | 48.0 | 50 | 0% | 22278 | 626 | 0 | ✅ Endgame |
-| **Archmage** | 48.0 | 50 | 0% | 26244 | 642 | 2 | ✅ Endgame |
-| **Necromancer** | 47.6 | 50 | 0% | 23453 | 660 | 1 | ✅ Endgame |
-| **Druid** | 47.0 | 50 | 0% | 21315 | 616 | 0 | ✅ Endgame |
-| **Priest** | 46.5 | 50 | 0% | 24104 | 726 | 0 | ✅ Endgame |
-
-**Summary:** All classes healthy. Added mana pot requirements and restocking for pure casters (mage, archmage, necromancer). **47 Morgoth kills** (20 berserker, 8 warrior, 8 ranger, 3 paladin, 3 mage, 2 blackguard, 2 archmage, 1 necromancer). Pure casters now get Morgoth kills! Mage 46.4→48.1, Archmage 45.8→48.0. All CB rates ≤3%.
 
 ### Previous Baseline @ `e48b77c` (100 runs, 50k turns, seed=1000, max-upgrades)
 
