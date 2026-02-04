@@ -8,7 +8,7 @@
 import type { GameState, ActionResult } from '../types'
 import { getFormById, getAvailableForms, canShapeshift } from '../data/forms'
 import { recalculateCombatStats } from '../character'
-import { addMessage, BASE_ENERGY_COST } from './helpers'
+import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 
 // ============================================================================
 // SHAPESHIFT ACTION
@@ -69,7 +69,10 @@ export function handleShapeshift(game: GameState, formId: string): ActionResult 
     character.activeFormId = null
     recalculateCombatStats(character)
     game.stats.abilitiesUsed++
-    addMessage(game, `You revert to your normal form.`, 'info')
+    addTaggedMessage(game, `You revert to your normal form.`, 'info', {
+      tags: ['buff'],
+      importance: 3,
+    })
     return {
       success: true,
       message: 'Reverted to normal form.',
@@ -95,7 +98,10 @@ export function handleShapeshift(game: GameState, formId: string): ActionResult 
   character.activeFormId = formId
   recalculateCombatStats(character)
   game.stats.abilitiesUsed++
-  addMessage(game, `You transform into ${form.name}!`, 'good')
+  addTaggedMessage(game, `You transform into ${form.name}!`, 'good', {
+    tags: ['buff'],
+    importance: 3,
+  })
 
   return {
     success: true,

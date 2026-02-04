@@ -7,7 +7,7 @@
 import type { GameState, ActionResult, EquipSlot, GroundItem } from '../types'
 import { equipItem } from '../character'
 import { pickupGold } from '../features'
-import { addMessage, BASE_ENERGY_COST } from './helpers'
+import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 
 // ============================================================================
 // PICKUP
@@ -63,7 +63,10 @@ export function handlePickup(game: GameState, itemId: string): ActionResult {
     }
   }
 
-  addMessage(game, `You pick up ${item.template.name}.`, 'item')
+  addTaggedMessage(game, `You pick up ${item.template.name}.`, 'item', {
+    tags: ['loot.item'],
+    importance: 2,
+  })
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }
@@ -95,9 +98,15 @@ export function handleEquip(game: GameState, itemId: string): ActionResult {
   const result = equipItem(game.character, item)
 
   if (result.success) {
-    addMessage(game, `You equip ${item.template.name}.`, 'item')
+    addTaggedMessage(game, `You equip ${item.template.name}.`, 'item', {
+      tags: ['loot.item'],
+      importance: 2,
+    })
     if (result.unequipped) {
-      addMessage(game, `You unequip ${result.unequipped.template.name}.`, 'item')
+      addTaggedMessage(game, `You unequip ${result.unequipped.template.name}.`, 'item', {
+        tags: ['loot.item'],
+        importance: 2,
+      })
     }
     return { success: true, energyCost: BASE_ENERGY_COST }
   }
@@ -137,7 +146,10 @@ export function handleDrop(game: GameState, itemId: string): ActionResult {
   // Add to ground items
   game.items.push(droppedItem)
 
-  addMessage(game, `You drop ${item.template.name}.`, 'item')
+  addTaggedMessage(game, `You drop ${item.template.name}.`, 'item', {
+    tags: ['loot.item'],
+    importance: 2,
+  })
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }
@@ -160,7 +172,10 @@ export function handleUnequip(game: GameState, slot: EquipSlot): ActionResult {
   delete game.character.equipment[slot]
   game.character.inventory.push(item)
 
-  addMessage(game, `You unequip ${item.template.name}.`, 'item')
+  addTaggedMessage(game, `You unequip ${item.template.name}.`, 'item', {
+    tags: ['loot.item'],
+    importance: 2,
+  })
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }

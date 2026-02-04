@@ -1,7 +1,26 @@
 <script setup lang="ts">
-import { useFeedStore, type FeedEventType } from '@/stores/feed'
+import { ref } from 'vue'
+import { useFeedStore, type FeedEventType, type FeedEvent } from '@/stores/feed'
+import { useSettingsStore } from '@/stores/settings'
+import FeedModal from './FeedModal.vue'
 
 const feedStore = useFeedStore()
+const settingsStore = useSettingsStore()
+
+// Modal state
+const showModal = ref(false)
+const frozenEvents = ref<FeedEvent[]>([])
+
+function openModal() {
+  // Freeze current events snapshot
+  frozenEvents.value = [...feedStore.events]
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+  frozenEvents.value = []
+}
 
 function getSlotColor(slot: number): string {
   // -1 is system message
@@ -17,6 +36,11 @@ function getSlotLabel(slot: number): string {
 function getTypeClass(type: FeedEventType): string {
   return `event-${type}`
 }
+
+function formatTimestamp(timestamp: number): string {
+  const date = new Date(timestamp)
+  return date.toLocaleTimeString('en-US', { hour12: false })
+}
 </script>
 
 <template>
@@ -30,6 +54,9 @@ function getTypeClass(type: FeedEventType): string {
           class="feed-event"
           :class="getTypeClass(event.type)"
         >
+          <span v-if="settingsStore.settings.feedShowTimestamps" class="event-timestamp">
+            {{ formatTimestamp(event.timestamp) }}
+          </span>
           <span class="event-slot" :style="{ color: getSlotColor(event.slot) }">
             [{{ getSlotLabel(event.slot) }}]
           </span>
@@ -38,6 +65,13 @@ function getTypeClass(type: FeedEventType): string {
       </TransitionGroup>
       <div v-if="!feedStore.hasEvents" class="feed-empty">Waiting for events...</div>
     </div>
+    <button class="feed-expand-btn" title="View Event Log" @click="openModal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+
+    <FeedModal v-if="showModal" :events="frozenEvents" @close="closeModal" />
   </footer>
 </template>
 
@@ -80,6 +114,11 @@ function getTypeClass(type: FeedEventType): string {
   font-size: 12px;
 }
 
+.event-timestamp {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
 .event-slot {
   font-weight: bold;
 }
@@ -119,6 +158,33 @@ function getTypeClass(type: FeedEventType): string {
   font-size: 12px;
   color: var(--text-dim);
   font-style: italic;
+}
+
+.feed-expand-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.feed-expand-btn:hover {
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  border-color: var(--text-dim);
+}
+
+.feed-expand-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Transition animations */

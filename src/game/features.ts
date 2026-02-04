@@ -17,6 +17,8 @@ import type {
   TrapState,
   Item,
   GameMessage,
+  MessageTag,
+  MessageImportance,
 } from './types'
 import { random, randomInt } from './rng'
 import { getTile, findOpenPosition } from './dungeon'
@@ -33,9 +35,19 @@ import { incrementStat, checkCloseCall } from './stats-helpers'
 // MESSAGE HELPERS
 // ============================================================================
 
-function addMessage(game: GameState, text: string, type: GameMessage['type'] = 'info'): void {
-  game.messages.push({ turn: game.turn, text, type })
-  // Keep only last 100 messages
+function addTaggedMessage(
+  game: GameState,
+  text: string,
+  type: GameMessage['type'],
+  options?: { tags?: MessageTag[]; importance?: MessageImportance }
+): void {
+  game.messages.push({
+    turn: game.turn,
+    text,
+    type,
+    tags: options?.tags,
+    importance: options?.importance,
+  })
   if (game.messages.length > 100) {
     game.messages.shift()
   }
@@ -54,12 +66,18 @@ export function useFountain(game: GameState): boolean {
   const fountain = game.fountains.get(key)
 
   if (!fountain) {
-    addMessage(game, 'There is no fountain here.', 'info')
+    addTaggedMessage(game, 'There is no fountain here.', 'info', {
+      tags: ['interaction'],
+      importance: 1,
+    })
     return false
   }
 
   if (fountain.usesRemaining === 0) {
-    addMessage(game, 'The fountain is dry.', 'info')
+    addTaggedMessage(game, 'The fountain is dry.', 'info', {
+      tags: ['interaction'],
+      importance: 1,
+    })
     return false
   }
 
@@ -71,13 +89,19 @@ export function useFountain(game: GameState): boolean {
       const healAmount = Math.floor((char.maxHp * template.power) / 100)
       const healed = Math.min(healAmount, char.maxHp - char.hp)
       char.hp += healed
-      addMessage(game, `The ${template.name} heals you for ${healed} HP!`, 'good')
+      addTaggedMessage(game, `The ${template.name} heals you for ${healed} HP!`, 'good', {
+        tags: ['healing'],
+        importance: 3,
+      })
       break
     }
     case 'mana': {
       const restored = Math.floor((char.maxMp * template.power) / 100)
       char.mp = Math.min(char.maxMp, char.mp + restored)
-      addMessage(game, `The ${template.name} restores your mana!`, 'good')
+      addTaggedMessage(game, `The ${template.name} restores your mana!`, 'good', {
+        tags: ['mana'],
+        importance: 2,
+      })
       break
     }
     case 'buff': {
@@ -89,16 +113,27 @@ export function useFountain(game: GameState): boolean {
         turnsRemaining: duration,
         value: Math.floor(template.power / 4),
       })
-      addMessage(game, `You feel blessed by the ${template.name}!`, 'good')
+      addTaggedMessage(game, `You feel blessed by the ${template.name}!`, 'good', {
+        tags: ['buff'],
+        importance: 3,
+      })
       break
     }
     case 'cure': {
       // Clear poison status
       if (isPoisoned(char)) {
         clearPoison(char)
-        addMessage(game, `The ${template.name} purifies you! The poison is cleansed!`, 'good')
+        addTaggedMessage(
+          game,
+          `The ${template.name} purifies you! The poison is cleansed!`,
+          'good',
+          { tags: ['healing'], importance: 3 }
+        )
       } else {
-        addMessage(game, `The ${template.name} purifies you!`, 'good')
+        addTaggedMessage(game, `The ${template.name} purifies you!`, 'good', {
+          tags: ['healing'],
+          importance: 3,
+        })
       }
       break
     }
@@ -107,14 +142,20 @@ export function useFountain(game: GameState): boolean {
       break
     }
     default:
-      addMessage(game, `You drink from the ${template.name}.`, 'info')
+      addTaggedMessage(game, `You drink from the ${template.name}.`, 'info', {
+        tags: ['interaction'],
+        importance: 1,
+      })
   }
 
   // Decrement uses
   if (fountain.usesRemaining > 0) {
     fountain.usesRemaining--
     if (fountain.usesRemaining === 0) {
-      addMessage(game, 'The fountain runs dry.', 'info')
+      addTaggedMessage(game, 'The fountain runs dry.', 'info', {
+        tags: ['interaction'],
+        importance: 1,
+      })
       // Mark tile as empty
       const tile = getTile(game.currentLevel, pos.x, pos.y)
       if (tile) tile.type = 'fountain_empty'
@@ -131,30 +172,48 @@ function applyRandomFountainEffect(game: GameState): void {
   if (roll < 0.25) {
     // Full heal
     char.hp = char.maxHp
-    addMessage(game, 'You feel completely restored!', 'good')
+    addTaggedMessage(game, 'You feel completely restored!', 'good', {
+      tags: ['healing'],
+      importance: 3,
+    })
   } else if (roll < 0.4) {
     // Damage
     const damage = Math.floor(char.maxHp * 0.2)
     char.hp = Math.max(1, char.hp - damage)
-    addMessage(game, 'The water burns! You lose ' + damage + ' HP!', 'danger')
+    addTaggedMessage(game, 'The water burns! You lose ' + damage + ' HP!', 'danger', {
+      tags: ['damage.taken'],
+      importance: 3,
+    })
   } else if (roll < 0.55) {
     // Gold
     const gold = randomInt(50, 199)
     char.gold += gold
     game.stats.goldCollected += gold
-    addMessage(game, `You find ${gold} gold coins in the water!`, 'good')
+    addTaggedMessage(game, `You find ${gold} gold coins in the water!`, 'good', {
+      tags: ['loot.gold'],
+      importance: 2,
+    })
   } else if (roll < 0.7) {
     // Mana restore
     char.mp = char.maxMp
-    addMessage(game, 'Your mana is fully restored!', 'good')
+    addTaggedMessage(game, 'Your mana is fully restored!', 'good', {
+      tags: ['mana'],
+      importance: 2,
+    })
   } else if (roll < 0.85) {
     // Small heal
     const heal = Math.floor(char.maxHp * 0.3)
     char.hp = Math.min(char.maxHp, char.hp + heal)
-    addMessage(game, `You feel refreshed. Healed ${heal} HP.`, 'good')
+    addTaggedMessage(game, `You feel refreshed. Healed ${heal} HP.`, 'good', {
+      tags: ['healing'],
+      importance: 3,
+    })
   } else {
     // Nothing
-    addMessage(game, 'The water tastes stale. Nothing happens.', 'info')
+    addTaggedMessage(game, 'The water tastes stale. Nothing happens.', 'info', {
+      tags: ['interaction'],
+      importance: 1,
+    })
   }
 }
 
@@ -204,7 +263,10 @@ export function useAltar(game: GameState): boolean {
   const altar = findAdjacentAltar(game)
 
   if (!altar) {
-    addMessage(game, 'There is no altar nearby.', 'info')
+    addTaggedMessage(game, 'There is no altar nearby.', 'info', {
+      tags: ['interaction'],
+      importance: 1,
+    })
     return false
   }
 
@@ -213,7 +275,10 @@ export function useAltar(game: GameState): boolean {
 
   // Check if player can afford the cost
   if (template.cost > 0 && char.gold < template.cost) {
-    addMessage(game, `The ${template.name} requires ${template.cost} gold.`, 'info')
+    addTaggedMessage(game, `The ${template.name} requires ${template.cost} gold.`, 'info', {
+      tags: ['interaction'],
+      importance: 1,
+    })
     return false
   }
 
@@ -227,7 +292,10 @@ export function useAltar(game: GameState): boolean {
       // Heal and buff
       char.hp = char.maxHp
       char.mp = char.maxMp
-      addMessage(game, `The ${template.name} blesses you! You are fully restored.`, 'good')
+      addTaggedMessage(game, `The ${template.name} blesses you! You are fully restored.`, 'good', {
+        tags: ['healing'],
+        importance: 3,
+      })
       break
     }
     case 'enchant': {
@@ -235,20 +303,27 @@ export function useAltar(game: GameState): boolean {
       const weapon = char.equipment.weapon
       if (weapon) {
         weapon.enchantment += 1
-        addMessage(
+        addTaggedMessage(
           game,
           `Your ${weapon.template.name} glows! It is now +${weapon.enchantment}!`,
-          'good'
+          'good',
+          { tags: ['buff'], importance: 3 }
         )
       } else {
-        addMessage(game, 'You have no weapon to enchant.', 'info')
+        addTaggedMessage(game, 'You have no weapon to enchant.', 'info', {
+          tags: ['interaction'],
+          importance: 1,
+        })
         // Refund
         char.gold += template.cost
       }
       break
     }
     default:
-      addMessage(game, `You pray at the ${template.name}.`, 'info')
+      addTaggedMessage(game, `You pray at the ${template.name}.`, 'info', {
+        tags: ['interaction'],
+        importance: 1,
+      })
   }
 
   return true
@@ -302,13 +377,13 @@ export function buyFromMerchant(
 ): boolean {
   const merchant = game.merchants[merchantIndex]
   if (!merchant) {
-    addMessage(game, 'No merchant found.', 'info')
+    addTaggedMessage(game, 'No merchant found.', 'info', { tags: ['interaction'], importance: 1 })
     return false
   }
 
   const item = merchant.inventory[itemIndex]
   if (!item) {
-    addMessage(game, 'Item not available.', 'info')
+    addTaggedMessage(game, 'Item not available.', 'info', { tags: ['interaction'], importance: 1 })
     return false
   }
 
@@ -316,7 +391,10 @@ export function buyFromMerchant(
   const bonuses = game.upgradeBonuses ?? DEFAULT_BONUSES
   const price = Math.floor(basePrice * (1 - bonuses.merchantDiscount / 100))
   if (game.character.gold < price) {
-    addMessage(game, getDialogue(merchant.template, 'tooExpensive'), 'info')
+    addTaggedMessage(game, getDialogue(merchant.template, 'tooExpensive'), 'info', {
+      tags: ['interaction'],
+      importance: 1,
+    })
     return false
   }
 
@@ -328,7 +406,10 @@ export function buyFromMerchant(
       (i) => i.template.type !== 'potion' && i.template.type !== 'scroll'
     ).length
     if (equipmentCount >= 20) {
-      addMessage(game, 'Your inventory is full!', 'info')
+      addTaggedMessage(game, 'Your inventory is full!', 'info', {
+        tags: ['interaction'],
+        importance: 1,
+      })
       return false
     }
   }
@@ -347,8 +428,14 @@ export function buyFromMerchant(
   delete purchasedItem.shopPrice
   game.character.inventory.push(purchasedItem)
 
-  addMessage(game, `Bought ${item.template.name} for ${price} gold.`, 'item')
-  addMessage(game, getDialogue(merchant.template, 'purchase'), 'info')
+  addTaggedMessage(game, `Bought ${item.template.name} for ${price} gold.`, 'item', {
+    tags: ['loot.item'],
+    importance: 2,
+  })
+  addTaggedMessage(game, getDialogue(merchant.template, 'purchase'), 'info', {
+    tags: ['interaction'],
+    importance: 1,
+  })
 
   return true
 }
@@ -363,13 +450,13 @@ export function sellToMerchant(
 ): boolean {
   const merchant = game.merchants[merchantIndex]
   if (!merchant) {
-    addMessage(game, 'No merchant found.', 'info')
+    addTaggedMessage(game, 'No merchant found.', 'info', { tags: ['interaction'], importance: 1 })
     return false
   }
 
   const item = game.character.inventory[inventoryIndex]
   if (!item) {
-    addMessage(game, 'Invalid item.', 'info')
+    addTaggedMessage(game, 'Invalid item.', 'info', { tags: ['interaction'], importance: 1 })
     return false
   }
 
@@ -380,12 +467,18 @@ export function sellToMerchant(
   const sellPrice = Math.floor(baseSellPrice * (1 + bonuses.merchantDiscount / 100))
 
   if (sellPrice <= 0) {
-    addMessage(game, 'The merchant is not interested in that.', 'info')
+    addTaggedMessage(game, 'The merchant is not interested in that.', 'info', {
+      tags: ['interaction'],
+      importance: 1,
+    })
     return false
   }
 
   if (merchant.gold < sellPrice) {
-    addMessage(game, getDialogue(merchant.template, 'cantAfford'), 'info')
+    addTaggedMessage(game, getDialogue(merchant.template, 'cantAfford'), 'info', {
+      tags: ['interaction'],
+      importance: 1,
+    })
     return false
   }
 
@@ -397,8 +490,14 @@ export function sellToMerchant(
   // Track stats
   game.stats.itemsSold++
 
-  addMessage(game, `Sold ${item.template.name} for ${sellPrice} gold.`, 'item')
-  addMessage(game, getDialogue(merchant.template, 'sell'), 'info')
+  addTaggedMessage(game, `Sold ${item.template.name} for ${sellPrice} gold.`, 'item', {
+    tags: ['loot.item'],
+    importance: 2,
+  })
+  addTaggedMessage(game, getDialogue(merchant.template, 'sell'), 'info', {
+    tags: ['interaction'],
+    importance: 1,
+  })
 
   return true
 }
@@ -443,7 +542,10 @@ export function awardMonsterGold(game: GameState, monster: MonsterTemplate): num
   if (gold > 0) {
     game.character.gold += gold
     game.stats.goldCollected += gold
-    addMessage(game, `Found ${gold} gold on the ${monster.name}.`, 'item')
+    addTaggedMessage(game, `Found ${gold} gold on the ${monster.name}.`, 'item', {
+      tags: ['loot.gold'],
+      importance: 2,
+    })
   }
 
   return gold
@@ -488,7 +590,7 @@ export function pickupGold(game: GameState, item: Item): boolean {
 
   game.character.gold += gold
   game.stats.goldCollected += gold
-  addMessage(game, `Picked up ${gold} gold!`, 'item')
+  addTaggedMessage(game, `Picked up ${gold} gold!`, 'item', { tags: ['loot.gold'], importance: 2 })
 
   return true
 }
@@ -591,7 +693,10 @@ export function checkTrapDetection(game: GameState, trapVisionBonus: number = 0)
       if (roll < baseChance) {
         trap.revealed = true
         anyRevealed = true
-        addMessage(game, `You spot a ${trap.template.name}!`, 'danger')
+        addTaggedMessage(game, `You spot a ${trap.template.name}!`, 'danger', {
+          tags: ['damage.trap'],
+          importance: 3,
+        })
       }
     }
   }
@@ -631,7 +736,15 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       game.stats.damageTaken += damage
       game.stats.damageByMethod.trap += damage
       incrementStat(game.stats.damageByElement, 'physical', damage)
-      addMessage(game, `You trigger a ${template.name}! You take ${damage} damage!`, 'danger')
+      addTaggedMessage(
+        game,
+        `You trigger a ${template.name}! You take ${damage} damage!`,
+        'danger',
+        {
+          tags: ['damage.trap'],
+          importance: 4,
+        }
+      )
 
       // Check for close call
       checkCloseCall(game.stats, char.hp, char.maxHp)
@@ -656,10 +769,11 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       const turnsRemaining = 3 + Math.floor(game.character.depth / 10)
       applyPoison(char, damagePerTurn, turnsRemaining)
 
-      addMessage(
+      addTaggedMessage(
         game,
         `A ${template.name} hits you! You take ${damage} damage and are poisoned!`,
-        'danger'
+        'danger',
+        { tags: ['damage.trap'], importance: 4 }
       )
 
       // Check for close call
@@ -674,7 +788,10 @@ export function triggerTrap(game: GameState, position: Point): boolean {
     case 'teleport': {
       const newPos = findOpenPosition(game.currentLevel)
       char.position = newPos
-      addMessage(game, `You trigger a ${template.name}! You are teleported!`, 'danger')
+      addTaggedMessage(game, `You trigger a ${template.name}! You are teleported!`, 'danger', {
+        tags: ['damage.trap'],
+        importance: 4,
+      })
       break
     }
     case 'alarm': {
@@ -682,10 +799,11 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       for (const monster of game.monsters) {
         monster.isAwake = true
       }
-      addMessage(
+      addTaggedMessage(
         game,
         `You trigger an ${template.name}! You hear shouts in the distance!`,
-        'danger'
+        'danger',
+        { tags: ['damage.trap'], importance: 4 }
       )
       break
     }
@@ -705,10 +823,11 @@ export function triggerTrap(game: GameState, position: Point): boolean {
         value: 0,
       })
 
-      addMessage(
+      addTaggedMessage(
         game,
         `You fall into a ${template.name}! You take ${damage} damage and are stunned!`,
-        'danger'
+        'danger',
+        { tags: ['damage.trap'], importance: 4 }
       )
 
       // Check for close call
@@ -721,7 +840,10 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       break
     }
     default:
-      addMessage(game, `You trigger a trap!`, 'danger')
+      addTaggedMessage(game, `You trigger a trap!`, 'danger', {
+        tags: ['damage.trap'],
+        importance: 4,
+      })
   }
 
   return true

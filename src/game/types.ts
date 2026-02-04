@@ -771,11 +771,32 @@ export interface GameState {
   balance: BalanceOverrides
 }
 
+/** Message tags for semantic filtering */
+export type MessageTag =
+  | 'combat.hit' // Player/minion deals damage
+  | 'combat.kill' // Monster killed
+  | 'combat.miss' // Misses (either direction)
+  | 'damage.taken' // Player takes damage
+  | 'damage.poison' // Poison tick damage
+  | 'damage.trap' // Trap damage
+  | 'healing' // HP restored (any source)
+  | 'mana' // MP restored
+  | 'buff' // Positive status effects
+  | 'loot.item' // Item pickup/equip/drop
+  | 'loot.gold' // Gold acquisition
+  | 'progress' // Level up, depth change, victory, death
+  | 'interaction' // Doors, fountains, merchants, altars
+
+/** Message importance for feed filtering (1=noise, 5=critical) */
+export type MessageImportance = 1 | 2 | 3 | 4 | 5
+
 /** A message in the game log */
 export interface GameMessage {
   turn: number
   text: string
   type: 'info' | 'combat' | 'item' | 'danger' | 'good'
+  tags?: MessageTag[]
+  importance?: MessageImportance
 }
 
 // ============================================================================

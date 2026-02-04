@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
+/** Feed verbosity levels for filtering messages */
+export type FeedVerbosity = 'minimal' | 'normal' | 'verbose' | 'all'
+
 export interface GameSettings {
   // Display
   showGrid: boolean
@@ -12,6 +15,10 @@ export interface GameSettings {
   defaultPersonality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
   autoRestart: boolean
   turboByDefault: boolean
+
+  // Feed
+  feedVerbosity: FeedVerbosity
+  feedShowTimestamps: boolean
 
   // Audio
   soundEnabled: boolean
@@ -54,6 +61,8 @@ const DEFAULT_SETTINGS: GameSettings = {
   defaultPersonality: 'cautious',
   autoRestart: false,
   turboByDefault: true,
+  feedVerbosity: 'normal',
+  feedShowTimestamps: false,
   soundEnabled: true,
   musicEnabled: false,
   volume: 0.7,

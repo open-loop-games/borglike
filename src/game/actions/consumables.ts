@@ -16,7 +16,7 @@ import {
   removeAllDebuffs,
 } from '../status-effects'
 import { createTownPortal, enterTown, isInTown } from '../town'
-import { addMessage, BASE_ENERGY_COST, getHealAmount } from './helpers'
+import { addTaggedMessage, BASE_ENERGY_COST, getHealAmount } from './helpers'
 import { handleAscend } from './movement'
 import { incrementStat } from '../stats-helpers'
 
@@ -172,6 +172,7 @@ const SCROLL_EFFECTS: Array<{
       // Create portal and enter town
       game.townPortal = createTownPortal(game)
       enterTown(game)
+      // Note: Message handled by applyScrollEffect wrapper with tagged message
       return { success: true, message: 'You open a portal to town!' }
     },
   },
@@ -408,14 +409,36 @@ export function handleUse(game: GameState, itemId: string): ActionResult {
 
   if (!result.success && result.preventConsume) {
     if (result.message) {
-      addMessage(game, result.message, 'info')
+      addTaggedMessage(game, result.message, 'info', { tags: ['interaction'], importance: 1 })
     }
     return { success: false, message: result.message, energyCost: 0 }
   }
 
-  // Show message
+  // Show message - determine tags based on item type and result
   if (result.message) {
-    addMessage(game, result.message, result.success ? 'good' : 'info')
+    // Determine appropriate tags based on consumable type
+    const isPotion = template.type === 'potion'
+    const isHealingPotion =
+      isPotion && (template.healBase !== undefined || template.healPerLevel !== undefined)
+    const isBuffItem =
+      isPotion && template.buff !== undefined && template.healBase === undefined && !isHealingPotion
+
+    if (isHealingPotion) {
+      addTaggedMessage(game, result.message, 'good', { tags: ['healing'], importance: 3 })
+    } else if (isBuffItem || template.grantsResistance) {
+      addTaggedMessage(game, result.message, 'good', { tags: ['buff'], importance: 3 })
+    } else if (template.type === 'scroll' && effect.includes('Opens portal')) {
+      addTaggedMessage(game, result.message, 'good', { tags: ['progress'], importance: 3 })
+    } else if (template.type === 'scroll' && effect.includes('Teleport')) {
+      addTaggedMessage(game, result.message, 'good', { tags: ['buff'], importance: 3 })
+    } else if (template.type === 'scroll' && effect.includes('+1')) {
+      addTaggedMessage(game, result.message, 'good', { tags: ['buff'], importance: 3 })
+    } else {
+      addTaggedMessage(game, result.message, result.success ? 'good' : 'info', {
+        tags: ['buff'],
+        importance: 3,
+      })
+    }
   }
 
   // Remove item from inventory if consumed

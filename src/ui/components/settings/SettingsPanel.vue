@@ -180,6 +180,56 @@ function cancelReset() {
         </PanelFrame>
 
         <PanelFrame class="setting-group">
+          <h3>Feed</h3>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Verbosity</span>
+              <span class="setting-desc">How much to show in the event feed</span>
+            </div>
+            <select
+              :value="settingsStore.settings.feedVerbosity"
+              class="setting-select"
+              @change="
+                settingsStore.updateSetting(
+                  'feedVerbosity',
+                  ($event.target as HTMLSelectElement).value as
+                    | 'minimal'
+                    | 'normal'
+                    | 'verbose'
+                    | 'all'
+                )
+              "
+            >
+              <option value="minimal">Minimal</option>
+              <option value="normal">Normal</option>
+              <option value="verbose">Verbose</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Show Timestamps</span>
+              <span class="setting-desc">Display time (hh:mm:ss) on events</span>
+            </div>
+            <label class="toggle">
+              <input
+                type="checkbox"
+                :checked="settingsStore.settings.feedShowTimestamps"
+                @change="
+                  settingsStore.updateSetting(
+                    'feedShowTimestamps',
+                    ($event.target as HTMLInputElement).checked
+                  )
+                "
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </PanelFrame>
+
+        <PanelFrame class="setting-group">
           <h3>Advanced</h3>
 
           <div class="setting-row">

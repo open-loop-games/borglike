@@ -16,6 +16,8 @@ import type {
   Direction,
   GameMessage,
   UniqueState,
+  MessageTag,
+  MessageImportance,
 } from './types'
 import { MAX_DEPTH, getDirectionFromDelta, DIRECTION_VECTORS } from './types'
 import { randomInt, random } from './rng'
@@ -679,19 +681,22 @@ const BASE_ENERGY_COST = 100
 const ENERGY_PER_TICK = 100
 
 /**
- * Add a message to the game log
+ * Add a tagged message to the game log
  */
-function addMessage(game: GameState, text: string, type: GameMessage['type']): void {
+function addTaggedMessage(
+  game: GameState,
+  text: string,
+  type: GameMessage['type'],
+  options?: { tags?: MessageTag[]; importance?: MessageImportance }
+): void {
   game.messages.push({
     turn: game.turn,
     text,
     type,
+    tags: options?.tags,
+    importance: options?.importance,
   })
-
-  // Keep only last 100 messages
-  if (game.messages.length > 100) {
-    game.messages.shift()
-  }
+  if (game.messages.length > 100) game.messages.shift()
 }
 
 /**
@@ -797,14 +802,18 @@ function executeMonsterAction(
         }
 
         const killed = damageMinionById(game, minion.id, damage)
-        addMessage(
+        addTaggedMessage(
           game,
           `The ${monster.template.name} attacks your ${minion.name} for ${damage} damage!`,
-          'combat'
+          'combat',
+          { tags: ['combat.hit'], importance: 2 }
         )
 
         if (killed) {
-          addMessage(game, `Your ${minion.name} is slain!`, 'danger')
+          addTaggedMessage(game, `Your ${minion.name} is slain!`, 'danger', {
+            tags: ['damage.taken'],
+            importance: 3,
+          })
         }
 
         events.push({
@@ -823,7 +832,10 @@ function executeMonsterAction(
       const spellResult = executeMonsterSpell(game, monster)
       if (spellResult.success) {
         if (spellResult.message) {
-          addMessage(game, spellResult.message, 'combat')
+          addTaggedMessage(game, spellResult.message, 'combat', {
+            tags: ['combat.hit'],
+            importance: 2,
+          })
         }
         if (spellResult.damage > 0) {
           // Apply monster damage balance modifier
@@ -840,11 +852,14 @@ function executeMonsterAction(
           checkCloseCall(game.stats, game.character.hp, game.character.maxHp)
 
           // Check for Second Wind
-          checkSecondWind(game, addMessage)
+          checkSecondWind(game, addTaggedMessage)
 
           // Add death message if player was killed
           if (game.character.isDead) {
-            addMessage(game, `The ${monster.template.name} kills you!`, 'danger')
+            addTaggedMessage(game, `The ${monster.template.name} kills you!`, 'danger', {
+              tags: ['damage.taken'],
+              importance: 5,
+            })
           }
 
           events.push({
@@ -884,7 +899,7 @@ function executeMonsterAction(
 
     // Format and display message
     const message = formatMonsterAttackMessage(monster.template.name, attackResult)
-    addMessage(game, message, 'combat')
+    addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
     // Track attacks dodged (misses from monster attacks)
     const hitCount = attackResult.hits.filter((h) => h.hit).length
@@ -909,11 +924,14 @@ function executeMonsterAction(
       checkCloseCall(game.stats, game.character.hp, game.character.maxHp)
 
       // Check for Second Wind booster (auto-heal when critical)
-      checkSecondWind(game, addMessage)
+      checkSecondWind(game, addTaggedMessage)
 
       // Add death message if player was killed
       if (game.character.isDead) {
-        addMessage(game, `The ${monster.template.name} kills you!`, 'danger')
+        addTaggedMessage(game, `The ${monster.template.name} kills you!`, 'danger', {
+          tags: ['damage.taken'],
+          importance: 5,
+        })
       }
 
       events.push({

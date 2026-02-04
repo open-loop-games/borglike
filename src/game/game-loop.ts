@@ -41,6 +41,7 @@ import {
 } from './status-effects'
 import {
   addMessage,
+  addTaggedMessage,
   BASE_ENERGY_COST,
   handleMove,
   handleAttack,
@@ -242,7 +243,10 @@ export function createGame(config: RunConfig): GameState {
   computeFOV(firstLevel, character.position, lightRadius)
 
   // Add welcome message
-  addMessage(gameState, 'Welcome to the dungeon! Find your way to depth 50.', 'info')
+  addTaggedMessage(gameState, 'Welcome to the dungeon! Find your way to depth 50.', 'info', {
+    tags: ['progress'],
+    importance: 4,
+  })
 
   return gameState
 }
@@ -269,10 +273,11 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
   const isStunned = game.character.statusEffects.some((e) => e.type === 'stun')
   const isParalyzed = game.character.statusEffects.some((e) => e.type === 'paralyzed')
   if (isStunned || isParalyzed) {
-    addMessage(
+    addTaggedMessage(
       game,
       isParalyzed ? 'You are paralyzed and cannot move!' : 'You are stunned and cannot act!',
-      'danger'
+      'danger',
+      { tags: ['damage.taken'], importance: 2 }
     )
 
     // Update turn counter
@@ -282,9 +287,9 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
 
     // Tick status effects (including stun) and process monsters
     // Poison damage is dealt first, then duration ticks down
-    processPoison(game, addMessage)
+    processPoison(game, addTaggedMessage)
     const expired = tickStatusEffects(game.character)
-    checkPoisonExpired(expired, game, addMessage)
+    checkPoisonExpired(expired, game, addTaggedMessage)
     tickTempResistances(game.character)
 
     // Process monster turns
@@ -295,7 +300,7 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     if (game.character.isDead) {
       game.isRunning = false
       game.stats.endTime = Date.now()
-      addMessage(game, 'You have died!', 'danger')
+      addTaggedMessage(game, 'You have died!', 'danger', { tags: ['progress'], importance: 5 })
       events.push({ type: 'death', character: game.character })
     }
 
@@ -305,7 +310,10 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
   // Check if terrified - cannot attack
   const isTerrified = game.character.statusEffects.some((e) => e.type === 'terrified')
   if (isTerrified && action.type === 'attack') {
-    addMessage(game, 'You are too terrified to attack!', 'danger')
+    addTaggedMessage(game, 'You are too terrified to attack!', 'danger', {
+      tags: ['damage.taken'],
+      importance: 2,
+    })
     // Convert attack to wait
     action = { type: 'wait' }
   }
@@ -317,7 +325,10 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
       // Random movement instead of intended action
       const directions = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const
       const randomDir = directions[randomInt(0, 7)]!
-      addMessage(game, 'You stumble in confusion!', 'danger')
+      addTaggedMessage(game, 'You stumble in confusion!', 'danger', {
+        tags: ['damage.taken'],
+        importance: 2,
+      })
       action = { type: 'move', direction: randomDir }
     }
   }
@@ -327,7 +338,7 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
 
   if (!actionResult.success) {
     if (actionResult.message) {
-      addMessage(game, actionResult.message, 'info')
+      addTaggedMessage(game, actionResult.message, 'info', { importance: 1 })
     }
     // Still advance turn to prevent infinite loops (bot tried invalid action)
     // This is important for bot safety - a failed action should still "use" the turn
@@ -349,9 +360,9 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
 
   // Tick status effects, resistances, and poison
   // Poison damage is dealt first, then duration ticks down
-  processPoison(game, addMessage)
+  processPoison(game, addTaggedMessage)
   const expired2 = tickStatusEffects(game.character)
-  checkPoisonExpired(expired2, game, addMessage)
+  checkPoisonExpired(expired2, game, addTaggedMessage)
   tickTempResistances(game.character)
 
   // Tick town portal timer (decrements and destroys if expired)
@@ -414,7 +425,7 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
   if (game.character.isDead) {
     game.isRunning = false
     game.stats.endTime = Date.now()
-    addMessage(game, 'You have died!', 'danger')
+    addTaggedMessage(game, 'You have died!', 'danger', { tags: ['progress'], importance: 5 })
     events.push({ type: 'death', character: game.character })
     return events
   }
@@ -423,7 +434,10 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
   if (game.isVictory) {
     game.isRunning = false
     game.stats.endTime = Date.now()
-    addMessage(game, 'Congratulations! You have defeated Morgoth and won!', 'good')
+    addTaggedMessage(game, 'Congratulations! You have defeated Morgoth and won!', 'good', {
+      tags: ['progress'],
+      importance: 5,
+    })
     events.push({ type: 'victory' })
     return events
   }

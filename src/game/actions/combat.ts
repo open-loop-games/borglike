@@ -16,7 +16,7 @@ import {
 import { gainXP } from '../character'
 import { DEFAULT_BONUSES, applyXPBonus } from '../upgrade-effects'
 import { awardMonsterGold } from '../features'
-import { addMessage, BASE_ENERGY_COST } from './helpers'
+import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 import { getKnowledgeBonuses } from '../knowledge-effects'
 
 // ============================================================================
@@ -65,7 +65,7 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
   }
 
   const message = formatMultiAttackMessage(`the ${monster.template.name}`, attackResult)
-  addMessage(game, message, 'combat')
+  addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
   // Track melee combat accuracy
   game.stats.meleeHits += attackResult.hits
@@ -84,7 +84,7 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     )
     if (sneakAttackIndex >= 0) {
       game.character.statusEffects.splice(sneakAttackIndex, 1)
-      addMessage(game, 'Sneak Attack!', 'good')
+      addTaggedMessage(game, 'Sneak Attack!', 'good', { tags: ['combat.hit'], importance: 2 })
     }
 
     // COMBAT_REGEN: Lifesteal healing (Blackguard)
@@ -92,7 +92,10 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     if (lifesteal > 0) {
       game.character.hp = Math.min(game.character.hp + lifesteal, game.character.maxHp)
       game.stats.healingBySource.lifesteal += lifesteal
-      addMessage(game, `You drain ${lifesteal} HP!`, 'good')
+      addTaggedMessage(game, `You drain ${lifesteal} HP!`, 'good', {
+        tags: ['combat.hit'],
+        importance: 2,
+      })
     }
 
     if (attackResult.killed) {
@@ -176,7 +179,7 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
   }
 
   const message = formatMultiAttackMessage(`the ${monster.template.name}`, attackResult, 'arrow')
-  addMessage(game, message, 'combat')
+  addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
   // Track ranged combat accuracy
   game.stats.rangedHits += attackResult.hits
@@ -241,7 +244,10 @@ export function handleMonsterKill(game: GameState, monster: Monster): void {
   awardMonsterGold(game, monster.template)
 
   if (leveledUp && newLevel) {
-    addMessage(game, `You have reached level ${newLevel}!`, 'good')
+    addTaggedMessage(game, `You have reached level ${newLevel}!`, 'good', {
+      tags: ['progress'],
+      importance: 5,
+    })
   }
 
   // Check for victory (killed Morgoth)

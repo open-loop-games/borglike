@@ -5,7 +5,15 @@
  * Used by game-loop, spell-resolution, and other modules.
  */
 
-import type { Character, StatusEffect, TempResistance, GameState, GameMessage } from './types'
+import type {
+  Character,
+  StatusEffect,
+  TempResistance,
+  GameState,
+  GameMessage,
+  MessageTag,
+  MessageImportance,
+} from './types'
 
 // ============================================================================
 // STATUS PROTECTIONS (from equipment abilities)
@@ -270,14 +278,22 @@ export function getPoisonTurnsRemaining(character: Character): number {
  */
 export function processPoison(
   game: GameState,
-  addMessage: (game: GameState, text: string, type: GameMessage['type']) => void
+  addMessage: (
+    game: GameState,
+    text: string,
+    type: GameMessage['type'],
+    options?: { tags?: MessageTag[]; importance?: MessageImportance }
+  ) => void
 ): void {
   const poison = getStatusEffect(game.character, 'poisoned')
   if (!poison) return
 
   const damage = poison.value
   game.character.hp -= damage
-  addMessage(game, `You suffer ${damage} poison damage!`, 'danger')
+  addMessage(game, `You suffer ${damage} poison damage!`, 'danger', {
+    tags: ['damage.poison'],
+    importance: 1,
+  })
 
   // Check for death from poison
   if (game.character.hp <= 0) {
@@ -292,10 +308,15 @@ export function processPoison(
 export function checkPoisonExpired(
   expired: StatusEffect['type'][],
   game: GameState,
-  addMessage: (game: GameState, text: string, type: GameMessage['type']) => void
+  addMessage: (
+    game: GameState,
+    text: string,
+    type: GameMessage['type'],
+    options?: { tags?: MessageTag[]; importance?: MessageImportance }
+  ) => void
 ): void {
   if (expired.includes('poisoned')) {
-    addMessage(game, 'The poison wears off.', 'info')
+    addMessage(game, 'The poison wears off.', 'info', { tags: ['buff'], importance: 2 })
   }
 }
 
@@ -425,7 +446,12 @@ export function getBlindFovRadius(): number {
  */
 export function checkSecondWind(
   game: GameState,
-  addMessage: (game: GameState, text: string, type: GameMessage['type']) => void
+  addMessage: (
+    game: GameState,
+    text: string,
+    type: GameMessage['type'],
+    options?: { tags?: MessageTag[]; importance?: MessageImportance }
+  ) => void
 ): boolean {
   const bonuses = game.boosterBonuses
   if (!bonuses?.hasSecondWind) return false
@@ -439,7 +465,10 @@ export function checkSecondWind(
     const healAmount = Math.floor(game.character.maxHp * (bonuses.secondWindPercent / 100))
     game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
     game.usedSecondWind = true
-    addMessage(game, `Second Wind! You recover ${healAmount} HP!`, 'good')
+    addMessage(game, `Second Wind! You recover ${healAmount} HP!`, 'good', {
+      tags: ['healing'],
+      importance: 4,
+    })
     return true
   }
 

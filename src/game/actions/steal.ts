@@ -7,7 +7,7 @@
 import type { GameState, ActionResult, Monster } from '../types'
 import { isAdjacent } from '../types'
 import { random, randomInt } from '../rng'
-import { addMessage, BASE_ENERGY_COST } from './helpers'
+import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 
 // ============================================================================
 // STEAL ACTION
@@ -76,7 +76,15 @@ export function handleSteal(game: GameState, targetId: string): ActionResult {
     game.stats.goldCollected += goldAmount
     game.stats.abilitiesUsed++
 
-    addMessage(game, `You steal ${goldAmount} gold from the ${monster.template.name}!`, 'good')
+    addTaggedMessage(
+      game,
+      `You steal ${goldAmount} gold from the ${monster.template.name}!`,
+      'good',
+      {
+        tags: ['loot.gold'],
+        importance: 3,
+      }
+    )
 
     return {
       success: true,
@@ -87,7 +95,10 @@ export function handleSteal(game: GameState, targetId: string): ActionResult {
     // Failure - monster wakes up and becomes hostile
     monster.isAwake = true
 
-    addMessage(game, `The ${monster.template.name} catches you stealing!`, 'danger')
+    addTaggedMessage(game, `The ${monster.template.name} catches you stealing!`, 'danger', {
+      tags: ['damage.taken'],
+      importance: 3,
+    })
 
     return {
       success: true, // Action was taken, just failed

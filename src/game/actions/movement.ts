@@ -30,7 +30,7 @@ import { spawnItemsForLevel, generateMerchantInventory } from '../items'
 import { triggerTrap, checkTrapDetection, initializeFeaturesFromVault } from '../features'
 import { touchLevelCache, evictOldLevels, LEVEL_CACHE_MAX_SIZE } from '../level-cache'
 import { isInTown, initializeTown } from '../town'
-import { addMessage } from './helpers'
+import { addTaggedMessage } from './helpers'
 import { handleAttack } from './combat'
 
 // ============================================================================
@@ -129,7 +129,7 @@ export function handleMove(game: GameState, direction: Direction): ActionResult 
   // Handle closed doors - open them instead of moving
   if (targetTile.type === 'door_closed') {
     targetTile.type = 'door_open'
-    addMessage(game, 'You open the door.', 'info')
+    addTaggedMessage(game, 'You open the door.', 'info', { tags: ['interaction'], importance: 1 })
     return { success: true, energyCost: BASE_ENERGY_COST }
   }
 
@@ -275,7 +275,7 @@ export function handleDescend(game: GameState): ActionResult {
     currentTile?.type === 'dungeon_entrance'
       ? 'You enter the dungeon.'
       : `You descend to depth ${newDepth}.`
-  addMessage(game, message, 'info')
+  addTaggedMessage(game, message, 'info', { tags: ['progress'], importance: 4 })
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }
@@ -354,7 +354,7 @@ export function handleAscend(game: GameState): ActionResult {
     // Teleport minions to follow player
     teleportMinionsToPlayer(game)
 
-    addMessage(game, 'You return to town.', 'info')
+    addTaggedMessage(game, 'You return to town.', 'info', { tags: ['progress'], importance: 4 })
   } else {
     // ENTITY REGENERATION: Always spawn fresh entities on level entry
     // Layout is cached, but monsters/items regenerate (Angband-style)
@@ -397,7 +397,10 @@ export function handleAscend(game: GameState): ActionResult {
     const lightRadius = calculateLightRadius(game.character, newDepth)
     computeFOV(previousLevel, game.character.position, lightRadius)
 
-    addMessage(game, `You ascend to depth ${newDepth}.`, 'info')
+    addTaggedMessage(game, `You ascend to depth ${newDepth}.`, 'info', {
+      tags: ['progress'],
+      importance: 4,
+    })
   }
 
   return { success: true, energyCost: BASE_ENERGY_COST }

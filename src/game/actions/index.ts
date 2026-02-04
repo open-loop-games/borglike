@@ -8,7 +8,7 @@
 // HELPERS
 // ============================================================================
 
-export { addMessage, BASE_ENERGY_COST, getHealAmount } from './helpers'
+export { addMessage, addTaggedMessage, BASE_ENERGY_COST, getHealAmount } from './helpers'
 
 // ============================================================================
 // MOVEMENT

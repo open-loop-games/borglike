@@ -9,7 +9,7 @@ import { MINION_TEMPLATES } from './types'
 import { getTile, isWalkable } from './dungeon'
 import { applyDamage } from './combat'
 import { handleMonsterKill } from './actions/combat'
-import { addMessage } from './actions'
+import { addTaggedMessage } from './actions'
 
 // ============================================================================
 // MINION TURN PROCESSING
@@ -31,7 +31,10 @@ export function processMinionTurns(game: GameState): GameEvent[] {
         // Remove expired minion
         const idx = game.minions.indexOf(minion)
         if (idx >= 0) game.minions.splice(idx, 1)
-        addMessage(game, `Your ${minion.name} fades away.`, 'info')
+        addTaggedMessage(game, `Your ${minion.name} fades away.`, 'info', {
+          tags: ['buff'],
+          importance: 2,
+        })
         continue
       }
     }
@@ -87,7 +90,15 @@ function processSingleMinionTurn(game: GameState, minion: Minion): GameEvent[] {
     })
 
     if (killed) {
-      addMessage(game, `Your ${minion.name} kills the ${adjacentEnemy.template.name}!`, 'good')
+      addTaggedMessage(
+        game,
+        `Your ${minion.name} kills the ${adjacentEnemy.template.name}!`,
+        'good',
+        {
+          tags: ['combat.kill'],
+          importance: 4,
+        }
+      )
       handleMonsterKill(game, adjacentEnemy)
     }
     return events
@@ -249,7 +260,10 @@ export function damageMinionById(game: GameState, minionId: string, damage: numb
   if (minion.hp <= 0) {
     const idx = game.minions.indexOf(minion)
     if (idx >= 0) game.minions.splice(idx, 1)
-    addMessage(game, `Your ${minion.name} has been slain!`, 'danger')
+    addTaggedMessage(game, `Your ${minion.name} has been slain!`, 'danger', {
+      tags: ['damage.taken'],
+      importance: 3,
+    })
     return true // Minion died
   }
   return false

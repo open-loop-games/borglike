@@ -17,7 +17,7 @@ import { applyDamage } from '../combat'
 import { handleMonsterKill } from './combat'
 import { addStatusEffect } from '../status-effects'
 import { getTile } from '../dungeon'
-import { addMessage, BASE_ENERGY_COST } from './helpers'
+import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 import { incrementStat, trackAbilityUsage } from '../stats-helpers'
 
 // ============================================================================
@@ -290,7 +290,10 @@ function executeActivation(
       return executeTeleport(game, activation)
 
     default:
-      addMessage(game, `You activate ${activation.name}.`, 'info')
+      addTaggedMessage(game, `You activate ${activation.name}.`, 'info', {
+        tags: ['buff'],
+        importance: 2,
+      })
       return {
         success: true,
         message: `Activated ${activation.name}.`,
@@ -319,7 +322,10 @@ function executeDraconianBreath(game: GameState, activation: ActivationTemplate)
   })
 
   if (targets.length === 0) {
-    addMessage(game, `You breathe ${element}, but there are no targets.`, 'info')
+    addTaggedMessage(game, `You breathe ${element}, but there are no targets.`, 'info', {
+      tags: ['combat.hit'],
+      importance: 2,
+    })
     return {
       success: true,
       message: `Breathed ${element}, but no targets.`,
@@ -366,7 +372,7 @@ function executeDraconianBreath(game: GameState, activation: ActivationTemplate)
   const elementName = element === 'nature' ? 'acid' : element
   const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
   const message = `You breathe ${elementName} at ${hitTargets.length} enemies for ${totalDamage} damage!${killedStr}`
-  addMessage(game, message, 'combat')
+  addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
   return {
     success: true,
@@ -401,7 +407,10 @@ function executeAOEDamage(
   })
 
   if (targets.length === 0) {
-    addMessage(game, `You activate ${activation.name}, but there are no targets.`, 'info')
+    addTaggedMessage(game, `You activate ${activation.name}, but there are no targets.`, 'info', {
+      tags: ['combat.hit'],
+      importance: 2,
+    })
     return {
       success: true,
       message: `${activation.name} - no targets.`,
@@ -449,7 +458,7 @@ function executeAOEDamage(
 
   const killedStr = killedCount > 0 ? ` ${killedCount} killed!` : ''
   const message = `${activation.name} hits ${hitTargets.length} enemies for ${totalDamage} damage!${killedStr}`
-  addMessage(game, message, 'combat')
+  addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
   return {
     success: true,
@@ -494,7 +503,10 @@ function executeSingleDamage(
   }
 
   if (!target) {
-    addMessage(game, `You activate ${activation.name}, but there are no targets.`, 'info')
+    addTaggedMessage(game, `You activate ${activation.name}, but there are no targets.`, 'info', {
+      tags: ['combat.hit'],
+      importance: 2,
+    })
     return {
       success: true,
       message: `${activation.name} - no targets.`,
@@ -514,7 +526,7 @@ function executeSingleDamage(
 
   const killedStr = killed ? ' It dies!' : ''
   const message = `${activation.name} hits ${target.template.name} for ${damage} damage!${killedStr}`
-  addMessage(game, message, 'combat')
+  addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
   return {
     success: true,
@@ -554,7 +566,7 @@ function executeHaste(game: GameState, activation: ActivationTemplate): ActionRe
   })
 
   const message = `You activate ${activation.name}! You feel incredibly fast!`
-  addMessage(game, message, 'good')
+  addTaggedMessage(game, message, 'good', { tags: ['buff'], importance: 2 })
 
   return {
     success: true,
@@ -592,7 +604,7 @@ function executeIlluminate(game: GameState, activation: ActivationTemplate): Act
   }
 
   const message = `The ${activation.name} shines brightly, illuminating ${illuminatedCount} tiles!`
-  addMessage(game, message, 'good')
+  addTaggedMessage(game, message, 'good', { tags: ['buff'], importance: 2 })
 
   return {
     success: true,
@@ -631,7 +643,7 @@ function executeDetect(game: GameState, activation: ActivationTemplate): ActionR
 
   const typeStr = detectType === 'objects' ? 'objects' : 'everything'
   const message = `You sense ${typeStr} nearby! (${foundCount} revealed)`
-  addMessage(game, message, 'good')
+  addTaggedMessage(game, message, 'good', { tags: ['buff'], importance: 2 })
 
   return {
     success: true,
@@ -658,7 +670,10 @@ function executeBlindMonsters(game: GameState, activation: ActivationTemplate): 
   })
 
   if (targets.length === 0) {
-    addMessage(game, `You activate ${activation.name}, but there are no targets.`, 'info')
+    addTaggedMessage(game, `You activate ${activation.name}, but there are no targets.`, 'info', {
+      tags: ['combat.hit'],
+      importance: 2,
+    })
     return {
       success: true,
       message: `${activation.name} - no targets.`,
@@ -684,7 +699,7 @@ function executeBlindMonsters(game: GameState, activation: ActivationTemplate): 
   }
 
   const message = `${activation.name} blinds ${hitTargets.length} monsters!`
-  addMessage(game, message, 'good')
+  addTaggedMessage(game, message, 'good', { tags: ['combat.hit'], importance: 2 })
 
   return {
     success: true,
@@ -706,7 +721,10 @@ function executeProbe(game: GameState, _activation: ActivationTemplate): ActionR
   })
 
   if (visibleMonsters.length === 0) {
-    addMessage(game, 'You sense no creatures nearby.', 'info')
+    addTaggedMessage(game, 'You sense no creatures nearby.', 'info', {
+      tags: ['buff'],
+      importance: 2,
+    })
     return {
       success: true,
       message: 'No creatures detected.',
@@ -719,15 +737,16 @@ function executeProbe(game: GameState, _activation: ActivationTemplate): ActionR
     monster.seen = true
     const hpPercent = Math.floor((monster.hp / monster.maxHp) * 100)
     const status = hpPercent > 75 ? 'healthy' : hpPercent > 25 ? 'wounded' : 'near death'
-    addMessage(
+    addTaggedMessage(
       game,
       `${monster.template.name} - HP: ${monster.hp}/${monster.maxHp} (${status})`,
-      'info'
+      'info',
+      { tags: ['buff'], importance: 2 }
     )
   }
 
   const message = `You probe ${visibleMonsters.length} creatures.`
-  addMessage(game, message, 'good')
+  addTaggedMessage(game, message, 'good', { tags: ['buff'], importance: 2 })
 
   return {
     success: true,
@@ -747,7 +766,7 @@ function executeHeal(game: GameState, activation: ActivationTemplate): ActionRes
   const actualHeal = game.character.hp - oldHp
 
   const message = `${activation.name} heals you for ${actualHeal} HP!`
-  addMessage(game, message, 'good')
+  addTaggedMessage(game, message, 'good', { tags: ['healing'], importance: 4 })
 
   return {
     success: true,
@@ -777,7 +796,7 @@ function executeBuff(game: GameState, activation: ActivationTemplate): ActionRes
   })
 
   const message = `You activate ${activation.name}!`
-  addMessage(game, message, 'good')
+  addTaggedMessage(game, message, 'good', { tags: ['buff'], importance: 2 })
 
   return {
     success: true,
@@ -791,7 +810,10 @@ function executeBuff(game: GameState, activation: ActivationTemplate): ActionRes
  */
 function executeTeleport(game: GameState, activation: ActivationTemplate): ActionResult {
   // Simple teleport to random position - can be expanded later
-  addMessage(game, `You activate ${activation.name} and teleport!`, 'info')
+  addTaggedMessage(game, `You activate ${activation.name} and teleport!`, 'info', {
+    tags: ['buff'],
+    importance: 2,
+  })
 
   return {
     success: true,

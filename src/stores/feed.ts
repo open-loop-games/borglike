@@ -2,11 +2,14 @@
  * Feed Store
  *
  * Manages the event feed that displays game messages across all active runs.
- * Messages are filtered to show only interesting events.
+ * Uses semantic tags and importance levels for filtering, with regex fallback
+ * for untagged messages during migration.
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useSettingsStore, type FeedVerbosity } from './settings'
+import type { MessageTag, MessageImportance } from '@game/types'
 
 /** Feed event type (maps from GameMessage types) */
 export type FeedEventType = 'info' | 'combat' | 'item' | 'level' | 'death' | 'good' | 'danger'
@@ -20,8 +23,17 @@ export interface FeedEvent {
   timestamp: number
 }
 
-/** Message types to always show */
-const ALWAYS_SHOW_TYPES = new Set(['combat', 'danger', 'good', 'item'])
+/** Minimum importance threshold for each verbosity level */
+const VERBOSITY_THRESHOLDS: Record<FeedVerbosity, MessageImportance> = {
+  minimal: 4, // Deaths, kills, major events
+  normal: 3, // + combat, healing
+  verbose: 2, // + item management, gold
+  all: 1, // Everything
+}
+
+// ============================================================================
+// LEGACY REGEX PATTERNS (fallback for untagged messages)
+// ============================================================================
 
 /** Message patterns to filter out (even if type matches) */
 const FILTER_PATTERNS = [
@@ -56,24 +68,53 @@ const IMPORTANT_INFO_PATTERNS = [
   /^Second Wind/,
 ]
 
+/** Message types to always show in legacy mode */
+const ALWAYS_SHOW_TYPES = new Set(['combat', 'danger', 'good', 'item'])
+
 let eventIdCounter = 0
 
 export const useFeedStore = defineStore('feed', () => {
   // State
   const events = ref<FeedEvent[]>([])
-  const MAX_EVENTS = 50
+  const MAX_EVENTS = 1000
 
-  // Track last processed message index per run (to avoid duplicates)
-  const lastMessageIndex = ref<Map<string, number>>(new Map())
+  // Track last processed message turn per run (fixes the index tracking bug)
+  const lastMessageTurn = ref<Map<string, number>>(new Map())
 
   // Computed
   const recentEvents = computed(() => events.value.slice(0, 10))
   const hasEvents = computed(() => events.value.length > 0)
 
   /**
-   * Check if a message should be displayed in the feed
+   * Check if a tagged message passes the importance threshold
    */
-  function shouldShowMessage(text: string, type: string): boolean {
+  function passesImportanceFilter(
+    importance: MessageImportance | undefined,
+    _tags: MessageTag[] | undefined,
+    verbosity: FeedVerbosity
+  ): boolean {
+    const threshold = VERBOSITY_THRESHOLDS[verbosity]
+
+    // If message has importance, use it directly
+    if (importance !== undefined) {
+      return importance >= threshold
+    }
+
+    // Untagged messages: default importance based on presence of tags
+    // (during migration, assume untagged = legacy = use regex fallback)
+    return false // Will fall through to legacy filter
+  }
+
+  /**
+   * Legacy filter for untagged messages (regex-based)
+   * Returns true if message should be shown
+   */
+  function legacyFilter(text: string, type: string, verbosity: FeedVerbosity): boolean {
+    // In 'all' mode, show everything
+    if (verbosity === 'all') {
+      return true
+    }
+
     // Check if explicitly filtered out
     for (const pattern of FILTER_PATTERNS) {
       if (pattern.test(text)) {
@@ -93,8 +134,34 @@ export const useFeedStore = defineStore('feed', () => {
       }
     }
 
+    // In verbose mode, show more
+    if (verbosity === 'verbose') {
+      return type !== 'info' // Show all non-info messages
+    }
+
     // Filter out generic info messages
     return false
+  }
+
+  /**
+   * Check if a message should be displayed in the feed
+   */
+  function shouldShowMessage(
+    text: string,
+    type: string,
+    importance?: MessageImportance,
+    tags?: MessageTag[]
+  ): boolean {
+    const settings = useSettingsStore()
+    const verbosity = settings.settings.feedVerbosity
+
+    // Try importance-based filtering first (for tagged messages)
+    if (importance !== undefined) {
+      return passesImportanceFilter(importance, tags, verbosity)
+    }
+
+    // Fall back to legacy regex filtering for untagged messages
+    return legacyFilter(text, type, verbosity)
   }
 
   /**
@@ -147,24 +214,29 @@ export const useFeedStore = defineStore('feed', () => {
   function processMessages(
     runId: string,
     slot: number,
-    messages: Array<{ text: string; type: string; turn: number }>
+    messages: Array<{
+      text: string
+      type: string
+      turn: number
+      importance?: MessageImportance
+      tags?: MessageTag[]
+    }>
   ) {
-    const lastIndex = lastMessageIndex.value.get(runId) ?? -1
-    let newLastIndex = lastIndex
+    const lastTurn = lastMessageTurn.value.get(runId) ?? -1
+    let newLastTurn = lastTurn
 
     // Process messages in order (oldest to newest for this batch)
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i]
+    for (const msg of messages) {
       if (!msg) continue
 
-      // Use turn as a proxy for index (messages have turn numbers)
-      // We want to show messages we haven't seen yet
-      if (i <= lastIndex) continue
+      // Skip messages we've already processed (by turn number, not index)
+      // This fixes the bug where messages stop showing after array shifts
+      if (msg.turn <= lastTurn) continue
 
-      newLastIndex = i
+      newLastTurn = Math.max(newLastTurn, msg.turn)
 
       // Filter messages
-      if (!shouldShowMessage(msg.text, msg.type)) {
+      if (!shouldShowMessage(msg.text, msg.type, msg.importance, msg.tags)) {
         continue
       }
 
@@ -173,9 +245,9 @@ export const useFeedStore = defineStore('feed', () => {
       addEvent(slot, msg.text, feedType)
     }
 
-    // Update last index
-    if (newLastIndex > lastIndex) {
-      lastMessageIndex.value.set(runId, newLastIndex)
+    // Update last turn
+    if (newLastTurn > lastTurn) {
+      lastMessageTurn.value.set(runId, newLastTurn)
     }
   }
 
@@ -183,7 +255,7 @@ export const useFeedStore = defineStore('feed', () => {
    * Clear tracking for a run (call when run ends/restarts)
    */
   function clearRunTracking(runId: string) {
-    lastMessageIndex.value.delete(runId)
+    lastMessageTurn.value.delete(runId)
   }
 
   /**
@@ -191,7 +263,7 @@ export const useFeedStore = defineStore('feed', () => {
    */
   function clearEvents() {
     events.value = []
-    lastMessageIndex.value.clear()
+    lastMessageTurn.value.clear()
   }
 
   /**

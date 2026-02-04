@@ -4,7 +4,7 @@
  * Shared utilities used by action handlers.
  */
 
-import type { GameState, GameMessage } from '../types'
+import type { GameState, GameMessage, MessageTag, MessageImportance } from '../types'
 import type { ItemTemplate } from '../data/items'
 
 // ============================================================================
@@ -18,14 +18,38 @@ export const BASE_ENERGY_COST = 100
 // MESSAGE HELPERS
 // ============================================================================
 
+/** Options for tagged messages */
+export interface MessageOptions {
+  tags?: MessageTag[]
+  importance?: MessageImportance
+}
+
 /**
- * Add a message to the game log
+ * Add a message to the game log (legacy signature for gradual migration)
  */
 export function addMessage(game: GameState, text: string, type: GameMessage['type']): void {
+  addTaggedMessage(game, text, type)
+}
+
+/**
+ * Add a tagged message to the game log
+ * @param game - Game state
+ * @param text - Message text
+ * @param type - Legacy message type (for backwards compat / styling)
+ * @param options - Tags and importance for filtering
+ */
+export function addTaggedMessage(
+  game: GameState,
+  text: string,
+  type: GameMessage['type'],
+  options?: MessageOptions
+): void {
   game.messages.push({
     turn: game.turn,
     text,
     type,
+    tags: options?.tags,
+    importance: options?.importance,
   })
 
   // Keep only last 100 messages

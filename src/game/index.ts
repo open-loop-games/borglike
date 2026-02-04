@@ -156,7 +156,6 @@ export {
   createBotState,
   getPersonalityConfig,
   getDepthReadiness,
-  BASE_CONFIGS,
 } from './bot'
 
 // Bot AI Types
