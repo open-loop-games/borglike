@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useProgressionStore } from '@/stores/progression'
 import { clearData } from '@/ui/composables/use-persistence'
+import { cleanupPersistence } from '@/stores/persistence'
 import PanelFrame from '../common/PanelFrame.vue'
 
 const emit = defineEmits<{
@@ -70,6 +71,9 @@ function handleResetProgress() {
 }
 
 async function confirmReset() {
+  // Stop auto-save and remove beforeunload handler FIRST,
+  // otherwise unload re-saves current state to localStorage
+  cleanupPersistence()
   // Clear IndexedDB (primary storage) and localStorage (backup)
   await clearData()
   localStorage.clear()
