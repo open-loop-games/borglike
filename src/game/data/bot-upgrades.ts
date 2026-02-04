@@ -9,7 +9,9 @@ import type { BotCapabilities } from '../../types/progression'
 
 export type BotUpgradeId =
   | 'farming'
-  | 'tactics'
+  | 'tactics_1'
+  | 'tactics_2'
+  | 'tactics_3'
   | 'town_1'
   | 'town_2'
   | 'town_3'
@@ -56,12 +58,40 @@ const farmingUpgrade: BotUpgradeDefinition = {
   category: 'toggle',
 }
 
-const tacticsUpgrade: BotUpgradeDefinition = {
-  id: 'tactics',
-  name: 'Combat Tactics',
-  description: 'Use buffs and pre-combat preparation',
-  cost: 250,
-  category: 'toggle',
+// =============================================================================
+// TACTICS UPGRADES (combat spell usage)
+// =============================================================================
+
+const tactics1: BotUpgradeDefinition = {
+  id: 'tactics_1',
+  name: 'Tactics I',
+  description: 'Use debuff spells (slow, weaken)',
+  cost: 200,
+  category: 'graded',
+  targetField: 'tactics',
+  targetLevel: 1,
+}
+
+const tactics2: BotUpgradeDefinition = {
+  id: 'tactics_2',
+  name: 'Tactics II',
+  description: 'Use pre-combat buffs and buff spells',
+  cost: 360,
+  requires: 'tactics_1',
+  category: 'graded',
+  targetField: 'tactics',
+  targetLevel: 2,
+}
+
+const tactics3: BotUpgradeDefinition = {
+  id: 'tactics_3',
+  name: 'Tactics III',
+  description: 'Smart debuff targeting (threat analysis)',
+  cost: 648,
+  requires: 'tactics_2',
+  category: 'graded',
+  targetField: 'tactics',
+  targetLevel: 3,
 }
 
 // =============================================================================
@@ -323,7 +353,10 @@ const retreat3: BotUpgradeDefinition = {
 export const BOT_UPGRADES: BotUpgradeDefinition[] = [
   // Toggle upgrades
   farmingUpgrade,
-  tacticsUpgrade,
+  // Tactics upgrades (graded: debuffs → buffs → smart targeting)
+  tactics1,
+  tactics2,
+  tactics3,
   // Town upgrades (graded: portal → healer → commerce)
   town1,
   town2,
@@ -355,7 +388,7 @@ export const BOT_UPGRADES: BotUpgradeDefinition[] = [
 ]
 
 /** Toggle upgrade IDs for type narrowing */
-export const TOGGLE_UPGRADE_IDS = ['farming', 'tactics'] as const
+export const TOGGLE_UPGRADE_IDS = ['farming'] as const
 export type ToggleUpgradeId = (typeof TOGGLE_UPGRADE_IDS)[number]
 
 export function getBotUpgradeById(id: BotUpgradeId): BotUpgradeDefinition | undefined {
@@ -367,8 +400,6 @@ export function getToggleCapabilityField(id: ToggleUpgradeId): keyof BotCapabili
   switch (id) {
     case 'farming':
       return 'farming'
-    case 'tactics':
-      return 'tactics'
   }
 }
 
@@ -441,6 +472,7 @@ export function canPurchaseBotUpgrade(
 
 /** Graded capability field names */
 export type GradedCapabilityField =
+  | 'tactics'
   | 'town'
   | 'preparedness'
   | 'sweep'

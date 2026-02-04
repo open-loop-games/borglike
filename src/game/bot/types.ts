@@ -324,7 +324,7 @@ export interface BotContext {
 /** Effective capability state (unlocked AND toggled on for ON/OFF, level for graded) */
 export interface EffectiveCapabilities {
   farming: boolean
-  tactics: boolean
+  tactics: number // 0=none, 1=debuffs, 2=+buffs, 3=+smart debuffs
   town: number // 0=none, 1=portal, 2=+healer, 3=+commerce
   preparedness: number
   sweep: number
@@ -336,10 +336,10 @@ export interface EffectiveCapabilities {
 
 /** Get effective capabilities (capability unlocked AND toggled on) */
 export function getEffectiveCapabilities(context: BotContext): EffectiveCapabilities {
-  const { capabilities, toggles } = context
+  const { capabilities } = context
   return {
-    farming: capabilities.farming && toggles.farming,
-    tactics: capabilities.tactics && toggles.tactics,
+    farming: capabilities.farming && context.toggles.farming,
+    tactics: capabilities.tactics, // Graded capability, no toggle
     town: capabilities.town,
     preparedness: capabilities.preparedness,
     sweep: capabilities.sweep,

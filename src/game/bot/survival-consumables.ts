@@ -354,7 +354,7 @@ export function getSurvivalConsumableAction(
  * engaging in melee, not during active combat (wasting a turn mid-fight).
  *
  * Triggers when:
- * - Tactics capability is enabled
+ * - Tactics L2+ capability is enabled
  * - Visible dangerous monster approaching (threat > 100)
  * - Not yet in melee (adjacentCount == 0)
  * - Don't already have the buff active
@@ -365,10 +365,10 @@ export function getPreCombatBuffAction(
   game: GameState,
   _config: PersonalityConfig,
   visibleMonsters: Monster[],
-  tacticsEnabled: boolean = true
+  tacticsLevel: number = 3
 ): GameAction | null {
-  // Gate behind tactics capability
-  if (!tacticsEnabled) return null
+  // Gate behind tactics L2 (buffs)
+  if (tacticsLevel < 2) return null
 
   const character = game.character
   const adjacentCount = countAdjacentMonsters(game, character.position)
@@ -488,10 +488,10 @@ export function getCombatBuffAction(
   game: GameState,
   _config: PersonalityConfig,
   dangers: DangerMap,
-  tacticsEnabled: boolean = true
+  tacticsLevel: number = 3
 ): GameAction | null {
-  // Gate behind tactics capability
-  if (!tacticsEnabled) return null
+  // Gate behind tactics L2 (buffs)
+  if (tacticsLevel < 2) return null
 
   const character = game.character
   const inCombat = isInCombat(game)

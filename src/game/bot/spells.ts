@@ -312,7 +312,7 @@ export function getDamageSpellAction(
  * Check if we should cast a buff spell
  *
  * Casts buffs when:
- * - Tactics capability is enabled
+ * - Tactics L2+ capability is enabled
  * - Entering combat (enemies visible but not adjacent)
  * - Before descending to new level
  * - Buff has worn off
@@ -323,10 +323,10 @@ export function getBuffSpellAction(
   game: GameState,
   _config: PersonalityConfig,
   visibleMonsters: Monster[],
-  tacticsEnabled: boolean = true
+  tacticsLevel: number = 3
 ): GameAction | null {
-  // Gate behind tactics capability
-  if (!tacticsEnabled) return null
+  // Gate behind tactics L2 (buffs)
+  if (tacticsLevel < 2) return null
 
   const character = game.character
 
@@ -560,8 +560,12 @@ export function getPhaseDoorSpellAction(game: GameState): GameAction | null {
 export function getDebuffSpellAction(
   game: GameState,
   _config: PersonalityConfig,
-  visibleMonsters: Monster[]
+  visibleMonsters: Monster[],
+  tacticsLevel: number = 3
 ): GameAction | null {
+  // Gate behind tactics L1 (debuffs)
+  if (tacticsLevel < 1) return null
+
   const character = game.character
 
   // GOLEM RESTRICTION
@@ -645,8 +649,12 @@ export function getDebuffSpellAction(
  */
 export function getSmartDebuffAction(
   game: GameState,
-  visibleMonsters: Monster[]
+  visibleMonsters: Monster[],
+  tacticsLevel: number = 3
 ): GameAction | null {
+  // Gate behind tactics L3 (smart debuffs)
+  if (tacticsLevel < 3) return null
+
   const character = game.character
 
   // GOLEM RESTRICTION

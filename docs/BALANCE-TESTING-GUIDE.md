@@ -113,10 +113,22 @@ pnpm diagnose batch --runs=50 --seed=1000 --class=warrior \
 | Preset | Capabilities | Expected Depth |
 |--------|--------------|----------------|
 | `none` | (all disabled) | 5-10 (face-rush) |
-| `early` | town, farming, preparedness | 15-20 |
-| `mid` | town, farming, preparedness, sweep_1, surf_1 | 25-35 |
-| `late` | town, farming, preparedness, sweep_2, surf_2, kiting_1 | 40-45 |
+| `early` | town_1, farming, tactics_1, preparedness_1, targeting_1, retreat_1 | 15-20 |
+| `mid` | town_2, farming, tactics_2, preparedness_2, sweep_1, surf_1, targeting_2, retreat_2 | 25-35 |
+| `late` | town_3, farming, tactics_3, preparedness_3, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 40-45 |
 | `full` | (all maxed) | 45+ (endgame) |
+
+**Tactics Levels:**
+- L0: No debuffs/buffs (face-rush)
+- L1: Basic debuffs (slow, weaken)
+- L2: + Pre-combat buffs and buff spells
+- L3: + Smart debuff targeting (threat analysis)
+
+**Town Levels:**
+- L0: No town access (descend immediately)
+- L1: Basic town (heal, sell items)
+- L2: + Equipment shopping
+- L3: + Full services (enchanting, identify)
 
 ### Success Criteria
 - Clear progression: each tier > previous by 5+ avg depth

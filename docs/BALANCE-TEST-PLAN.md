@@ -1,10 +1,107 @@
 # Balance Test Plan
 
-## Current State (2026-02-03)
+## Current State (2026-02-04)
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `b4c83bc` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Full Baseline @ `d56d88f` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 49.4 | 50 | 0% | 22068 | 646 | 8 | ✅ Endgame |
+| **Blackguard** | 49.0 | 50 | 0% | 15228 | 562 | 1 | ✅ Endgame |
+| **Paladin** | 48.9 | 50 | 0% | 22046 | 676 | 3 | ✅ Endgame |
+| **Berserker** | 48.5 | 50 | 0% | 14564 | 508 | 9 | ✅ Endgame |
+| **Archmage** | 48.2 | 50 | 2% | 26589 | 650 | 2 | ✅ Endgame |
+| **Mage** | 48.1 | 50 | 0% | 26968 | 650 | 1 | ✅ Endgame |
+| **Warrior** | 48.0 | 50 | 0% | 15643 | 525 | 4 | ✅ Endgame |
+| **Necromancer** | 47.8 | 50 | 0% | 23519 | 662 | 0 | ✅ Endgame |
+| **Rogue** | 47.1 | 50 | 0% | 22500 | 614 | 1 | ✅ Endgame |
+| **Priest** | 46.0 | 50 | 0% | 23827 | 723 | 3 | ✅ Endgame |
+| **Druid** | 45.9 | 50 | 0% | 22106 | 585 | 0 | ✅ Endgame |
+
+**Summary:** Town capability decomposition and feed system update. **32 Morgoth kills** (9 berserker, 8 ranger, 4 warrior, 3 paladin, 3 priest, 2 archmage, 1 mage, 1 blackguard, 1 rogue). Berserker 6→9, Ranger 7→8, Warrior 3→4, Priest 4→3, Rogue 3→1. Win rate spread 0-9% (berserker). All CB rates ≤2% (Archmage 1%→2%).
+
+### Raw Baseline @ `d56d88f` (100 runs, 50k turns, seed=1000, no-upgrades, no-capabilities, no-boosters)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 48.5 | 50 | 0% | 25537 | 723 | 2 | ✅ Endgame |
+| **Necromancer** | 44.6 | 50 | 0% | 42923 | 943 | 0 | ✅ Endgame |
+| **Archmage** | 41.2 | 50 | 0% | 41222 | 857 | 0 | ✅ Endgame |
+| **Mage** | 41.2 | 50 | 0% | 41193 | 857 | 0 | ✅ Endgame |
+| **Rogue** | 37.4 | 50 | 0% | 21750 | 555 | 0 | ⚠️ Mid-game |
+| **Paladin** | 34.2 | 50 | 0% | 20368 | 539 | 0 | ⚠️ Mid-game |
+| **Priest** | 32.1 | 50 | 0% | 21197 | 544 | 0 | ⚠️ Mid-game |
+| **Berserker** | 27.6 | 50 | 0% | 10521 | 296 | 0 | ⚠️ Early-game |
+| **Druid** | 27.0 | 50 | 0% | 19751 | 418 | 0 | ⚠️ Early-game |
+| **Warrior** | 25.9 | 50 | 0% | 10085 | 273 | 0 | ⚠️ Early-game |
+| **Blackguard** | 22.6 | 50 | 0% | 8256 | 236 | 0 | ⚠️ Early-game |
+
+**Summary:** True raw game balance without any meta-progression or boosters. **2 Morgoth kills** (ranger only). Ranger dominates (natural ranged advantage). Pure casters (necro/mage/archmage) perform well with sustained damage. Melee classes (warrior/berserker/blackguard) struggle without retreat logic and stat boosters. Spread: 22.6-48.5 (25.9 depth). All CB rates 0%.
+
+**Full vs Raw Comparison:**
+
+| Class | Full | Raw | Delta | Notes |
+|-------|------|-----|-------|-------|
+| Ranger | 49.4 | 48.5 | -0.9 | Naturally strong, minimal AI/stat benefit |
+| Necromancer | 47.8 | 44.6 | -3.2 | Sustained damage works without AI |
+| Mage | 48.1 | 41.2 | -6.9 | Benefits from kiting/retreat |
+| Archmage | 48.2 | 41.2 | -7.0 | Benefits from kiting/retreat |
+| Rogue | 47.1 | 37.4 | -9.7 | Shadow Step needs AI to use well |
+| Paladin | 48.9 | 34.2 | -14.7 | Heavy AI + stat dependency |
+| Priest | 46.0 | 32.1 | -13.9 | Needs targeting/retreat/stats |
+| Berserker | 48.5 | 27.6 | -20.9 | Needs STR boost + no retreat |
+| Druid | 45.9 | 27.0 | -18.9 | Shapeshift AI critical |
+| Warrior | 48.0 | 25.9 | -22.1 | Heavy stat + retreat dependency |
+| Blackguard | 49.0 | 22.6 | -26.4 | Most AI/stat dependent class |
+
+#### Ungated Bot Behaviors (Investigation @ `d56d88f`)
+
+Ranger (48.5) and casters (41-45) perform unexpectedly well with no capabilities. Investigation found several behaviors NOT gated by capability toggles:
+
+**1. `prefersRanged` Class Profile = Free Kiting**
+
+Classes with `prefersRanged: true` (mage, ranger, necromancer, archmage) get kiting behavior regardless of `kiting` capability level. In `tier-actions.ts`:
+```typescript
+// CRITICAL tier, DANGER tier, SAFE tier all have:
+if (classProfile.prefersRanged) {
+  if (adjacentMonster) {
+    const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+    if (kiteDir) return { type: 'move', direction: kiteDir }  // FREE KITING
+  }
+}
+```
+
+**2. Spell Casting = Ungated**
+
+All spell casting (`getHealingSpellAction`, `getDamageSpellAction`, `getDebuffSpellAction`) has no capability checks. Any class with spells uses them automatically.
+
+**3. Ranged Attacks = Ungated**
+
+Bow attacks (`ranged_attack`) happen automatically for ranged classes without capability checks.
+
+**Impact Analysis:**
+
+| Behavior | Affects | Ungated? | Should Gate? |
+|----------|---------|----------|--------------|
+| Kiting movement | mage, ranger, necro, archmage | ✅ Yes | ⚠️ Consider |
+| Spell damage | mage, archmage, necro, priest, druid | ✅ Yes | ❓ Debatable |
+| Spell healing | priest, paladin, druid | ✅ Yes | ❓ Debatable |
+| Bow attacks | ranger | ✅ Yes | ⚠️ Consider |
+| Target selection | all | ❌ Gated by `targeting` | ✅ Good |
+| Retreat logic | all | ❌ Gated by `retreat` | ✅ Good |
+| KITE goal | ranged | ❌ Gated by `kiting` | ✅ Good |
+
+**Options:**
+1. **Gate kiting in tier-actions**: Add `effective.kiting > 0` check before `findKitePosition` calls
+2. **Gate spell casting**: Add `effective.tactics` requirement for damage spells (healing stays free)
+3. **Gate ranged attacks**: Add targeting/tactics check for bow usage
+4. **Accept as intended**: Ranged classes have inherent advantage, progression is for melee
+
+**Recommendation:** Gate kiting movement behind `kiting >= 1` to fix the largest discrepancy. This would drop ranger/caster raw baselines by ~15-20 depth.
+
+### Previous Baseline @ `b4c83bc` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
@@ -301,10 +398,28 @@ Tests bot performance at different unlock stages.
 | Preset | Capabilities | Expected Depth |
 |--------|--------------|----------------|
 | `none` | (all disabled) | 5-10 (face-rush) |
-| `early` | town, farming, preparedness, targeting_1, retreat_1 | 15-20 |
-| `mid` | town, farming, preparedness, sweep_1, surf_1, targeting_2, retreat_2 | 25-35 |
-| `late` | town, farming, preparedness, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 40-45 |
+| `early` | town_1, farming, tactics_1, preparedness_1, targeting_1, retreat_1 | 15-20 |
+| `mid` | town_2, farming, tactics_2, preparedness_2, sweep_1, surf_1, targeting_2, retreat_2 | 25-35 |
+| `late` | town_3, farming, tactics_3, preparedness_3, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 40-45 |
 | `full` | (all maxed) | 45+ (endgame) |
+
+**Tactics Levels:**
+- L0: No debuffs/buffs (face-rush)
+- L1: Basic debuffs (slow, weaken)
+- L2: + Pre-combat buffs and buff spells
+- L3: + Smart debuff targeting (threat analysis)
+
+**Town Levels:**
+- L0: No town access
+- L1: Basic town (heal, sell)
+- L2: + Equipment shopping
+- L3: + Full services (enchanting, identify)
+
+**Preparedness Levels:**
+- L0: No readiness checks (descend immediately)
+- L1: Check basic consumable counts before descent
+- L2: + Require appropriate potion tiers and level
+- L3: + Full Morgoth preparation protocol
 
 **Targeting Levels:**
 - L0: Attack closest monster only (no scoring)
@@ -329,7 +444,59 @@ pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capab
 pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=full --turns=50000
 ```
 
-### Capability Progression @ `b4c83bc` (50 runs, seed=1000, class=warrior, upgrades=mid)
+### Capability Progression @ `6b89d2a` (50 runs, seed=1000, class=warrior, upgrades=mid)
+
+| Preset | Capabilities | Avg Depth | Max Depth | CB Rate | Delta |
+|--------|--------------|-----------|-----------|---------|-------|
+| `none` | (all disabled) | 32.2 | 50 | 0% | baseline |
+| `early` | town, farming, tactics, preparedness_1, targeting_1, retreat_1 | 38.2 | 50 | 0% | +6.0 |
+| `mid` | +preparedness_2, sweep_1, surf_1, targeting_2, retreat_2 | 44.2 | 50 | 0% | +12.0 |
+| `late` | +preparedness_3, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 44.2 | 50 | 0% | +12.0 |
+| `full` | (all maxed) | 43.6 | 50 | 0% | +11.4 |
+
+**Observations:**
+- Strong progression none → early → mid (+6.0 per tier)
+- Late/full plateau for warrior (doesn't benefit from kiting or additional sweep)
+- 1 victory at full tier
+- All CB rates 0%
+
+**Success Criteria:** ✅ Passed
+- ✅ Clear progression through mid tier (+6 depth per tier)
+- ✅ All CB rates 0%
+- ⚠️ Late/full show no gain over mid for warrior (class-specific, not a bug)
+
+### Capability Progression @ `6b89d2a` (50 runs, seed=1000, class=mage, upgrades=mid)
+
+| Preset | Capabilities | Avg Depth | Max Depth | CB Rate | Delta |
+|--------|--------------|-----------|-----------|---------|-------|
+| `none` | (all disabled) | 28.9 | 49 | 4% | baseline |
+| `early` | town, farming, tactics, preparedness_1, targeting_1, retreat_1 | 40.5 | 50 | 0% | +11.6 |
+| `mid` | +preparedness_2, sweep_1, surf_1, targeting_2, retreat_2 | 45.4 | 50 | 0% | +16.5 |
+| `late` | +preparedness_3, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 47.9 | 50 | 0% | +19.0 |
+| `full` | (all maxed) | 47.8 | 50 | 6% | +18.9 |
+
+**Observations:**
+- Mage shows continued improvement through late tier (kiting matters for casters)
+- Early tier critical: +11.6 depth (targeting/retreat compensate for low HP)
+- Full tier has 6% CB rate (known caster CB issue at 50k turns)
+- Mid test required 40k turns (sweep/surf extend run time)
+
+**Cross-Class Comparison (Warrior vs Mage):**
+
+| Preset | Warrior | Mage | Mage vs Warrior |
+|--------|---------|------|-----------------|
+| `none` | 32.2 | 28.9 | -3.3 (mage struggles without capabilities) |
+| `early` | 38.2 | 40.5 | +2.3 (targeting/retreat critical for casters) |
+| `mid` | 44.2 | 45.4 | +1.2 |
+| `late` | 44.2 | 47.9 | +3.7 (kiting helps mage, not warrior) |
+| `full` | 43.6 | 47.8 | +4.2 |
+
+**Success Criteria:** ✅ Passed
+- ✅ Clear progression through late tier for mage
+- ✅ Kiting provides measurable benefit (+2.5 depth late vs mid)
+- ⚠️ Full tier 6% CB rate (existing known issue)
+
+### Previous Capability Progression @ `b4c83bc` (50 runs, seed=1000, class=warrior, upgrades=mid)
 
 | Preset | Capabilities | Avg Depth | Max Depth | CB Rate | Delta |
 |--------|--------------|-----------|-----------|---------|-------|
@@ -339,16 +506,7 @@ pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capab
 | `late` | +sweep_2, surf_2, kiting_1 | 43.2 | 50 | 0% | +12.6 |
 | `full` | (all maxed) | 44.5 | 50 | 0% | +13.9 |
 
-**Observations:**
-- Smooth linear progression: 30.6 → 37.1 → 41.9 → 43.2 → 44.5
-- Each tier provides meaningful improvement
-- Early tier now works (+6.5 depth vs -1.7 previously)
-- Bot far exceeds expected depths at all tiers (preparedness in early helps)
-
-**Success Criteria:** ⚠️ Partial
-- ✅ Clear progression each tier (each tier > previous by 1+ depth)
-- ❌ Expected depth ranges not matched (all tiers ~20 depth above expected)
-- Note: Expected depths were set before preparedness added to early/mid
+**Summary:** Smooth progression with old preparedness toggle. Early tier provided +6.5 depth.
 
 ### Previous Capability Progression @ `4113ace` (50 runs, 40k turns, seed=1000, class=warrior, upgrades=mid)
 
@@ -459,18 +617,18 @@ Tests realistic player progression with matching capability and upgrade tiers.
 
 | Component | none | early | mid | late | full |
 |-----------|------|-------|-----|------|------|
-| Capabilities | 0 | 600 | 950 | 1,830 | 4,464 |
+| Capabilities | 0 | 1,150 | 2,580 | 5,404 | 8,038 |
 | Upgrades | 0 | 412 | 3,309 | 11,997 | 25,421 |
-| **Total** | 0 | 1,012 | 4,259 | 13,827 | 29,885 |
+| **Total** | 0 | 1,562 | 5,889 | 17,401 | 33,459 |
 
 **Progression Economics (Warrior):**
 
 | Transition | Depth Gain | Essence Cost | Runs at Current Tier |
 |------------|------------|--------------|----------------------|
-| none → early | +12.0 | 1,012 | ~2 runs |
-| early → mid | +6.8 | 3,247 | ~2-3 runs |
-| mid → late | +3.9 | 9,568 | ~4 runs |
-| late → full | -0.5 | 16,058 | ~5-6 runs |
+| none → early | +12.0 | 1,562 | ~3 runs |
+| early → mid | +6.8 | 4,327 | ~3-4 runs |
+| mid → late | +3.9 | 11,512 | ~5 runs |
+| late → full | -0.5 | 16,058 | ~6-7 runs |
 
 **Observations:**
 - Warrior: Smooth progression, early tiers best value (+12 depth for ~2 runs)

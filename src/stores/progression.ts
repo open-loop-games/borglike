@@ -495,7 +495,14 @@ export const useProgressionStore = defineStore('progression', () => {
     if (saved) {
       // Validate saved config - fallback if race/class no longer unlocked
       // Migration: old saves without capabilities get FULL capabilities (reward existing players)
-      const capabilities = saved.capabilities ?? { ...FULL_BOT_CAPABILITIES }
+      // Spread defaults first to ensure all fields exist, then override with saved values
+      const capabilities = { ...FULL_BOT_CAPABILITIES, ...(saved.capabilities ?? {}) }
+
+      // Migration: tactics boolean → number (true=3 full, false=0 none)
+      if (typeof capabilities.tactics === 'boolean') {
+        capabilities.tactics = capabilities.tactics ? 3 : 0
+      }
+
       const toggles = saved.toggles ?? { ...DEFAULT_BOT_TOGGLES }
       // Migration: old saves without sweepLevelRange get class-based defaults
       const effectiveClass = unlocks.value.classes.has(saved.class)
@@ -627,7 +634,7 @@ export const useProgressionStore = defineStore('progression', () => {
     return {
       town: config.capabilities.town,
       farming: config.capabilities.farming && config.toggles.farming,
-      tactics: config.capabilities.tactics && config.toggles.tactics,
+      tactics: config.capabilities.tactics, // Graded capability, no toggle
       preparedness: config.capabilities.preparedness,
       sweepEnabled: config.toggles.sweepEnabled,
       sweep: activeSweep,

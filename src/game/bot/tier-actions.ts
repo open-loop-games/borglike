@@ -156,7 +156,8 @@ function handleCriticalTier(
   // 4. For ranged classes: try to kite away or attack from distance
   if (classProfile.prefersRanged) {
     // Try to kite away if adjacent (physical movement works for all ranged classes)
-    if (adjacentMonster) {
+    // Requires kiting L1+ capability
+    if (adjacentMonster && effective.kiting >= 1) {
       const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
       if (kiteDir) {
         recordProgress(botState, game.turn)
@@ -294,7 +295,7 @@ function handleDangerTier(
       // Casters: Smart debuff (slow fast+dangerous monsters) - defense before damage
       // Only slow if: fast (speed > 110) AND high damage (4 hits to kill) AND not easily killed
       if (!hasRangedWeapon(game)) {
-        const smartDebuff = getSmartDebuffAction(game, visibleMonsters)
+        const smartDebuff = getSmartDebuffAction(game, visibleMonsters, capabilities.tactics)
         if (smartDebuff) {
           recordProgress(botState, game.turn)
           return smartDebuff
@@ -302,10 +303,13 @@ function handleDangerTier(
       }
 
       // 2. Kite away if adjacent (physical movement works for all ranged classes)
-      const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
-      if (kiteDir) {
-        recordProgress(botState, game.turn)
-        return { type: 'move', direction: kiteDir }
+      // Requires kiting L1+ capability
+      if (capabilities.kiting >= 1) {
+        const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+        if (kiteDir) {
+          recordProgress(botState, game.turn)
+          return { type: 'move', direction: kiteDir }
+        }
       }
 
       // 2b. Can't kite - casters should cast damage spell point-blank, not melee
@@ -457,8 +461,8 @@ function handleCautionTier(
   dangerResult: DangerResult,
   _personality: BotPersonality
 ): GameAction | null {
-  const { config, classProfile, visibleMonsters, capabilities, toggles } = context
-  const tacticsEnabled = capabilities.tactics && toggles.tactics
+  const { config, classProfile, visibleMonsters, capabilities } = context
+  const tacticsLevel = capabilities.tactics
   const pos = game.character.position
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const adjacentMonster = findAdjacentMonster(game)
@@ -475,11 +479,13 @@ function handleCautionTier(
           return rootAction
         }
 
-        // Bow users: kite away
-        const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
-        if (kiteDir) {
-          recordProgress(botState, game.turn)
-          return { type: 'move', direction: kiteDir }
+        // Bow users: kite away (requires kiting L1+)
+        if (capabilities.kiting >= 1) {
+          const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+          if (kiteDir) {
+            recordProgress(botState, game.turn)
+            return { type: 'move', direction: kiteDir }
+          }
         }
       } else {
         // Casters: finish the kill with damage spell instead of futile kiting
@@ -528,19 +534,19 @@ function handleCautionTier(
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 
     if (hasBossTarget) {
-      const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers, tacticsEnabled)
+      const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers, tacticsLevel)
       if (combatBuff) {
         recordProgress(botState, game.turn)
         return combatBuff
       }
 
-      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsEnabled)
+      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsLevel)
       if (preCombatBuff) {
         recordProgress(botState, game.turn)
         return preCombatBuff
       }
 
-      const buffSpell = getBuffSpellAction(game, config, visibleMonsters, tacticsEnabled)
+      const buffSpell = getBuffSpellAction(game, config, visibleMonsters, tacticsLevel)
       if (buffSpell) {
         recordProgress(botState, game.turn)
         return buffSpell
@@ -622,7 +628,7 @@ function handleCautionTier(
     // Melee classes prefer damage over CC
     const isCaster = ['mage', 'archmage', 'necromancer'].includes(game.character.classId)
     if (isCaster) {
-      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters)
+      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters, tacticsLevel)
       if (debuffSpell) {
         recordProgress(botState, game.turn)
         return debuffSpell
@@ -637,7 +643,7 @@ function handleCautionTier(
 
     // Non-casters still get debuffs as fallback
     if (!isCaster) {
-      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters)
+      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters, tacticsLevel)
       if (debuffSpell) {
         recordProgress(botState, game.turn)
         return debuffSpell
@@ -660,8 +666,8 @@ function handleSafeTier(
   dangerResult: DangerResult,
   personality: BotPersonality
 ): GameAction | null {
-  const { config, effectiveConfig, visibleMonsters, classProfile, capabilities, toggles } = context
-  const tacticsEnabled = capabilities.tactics && toggles.tactics
+  const { config, effectiveConfig, visibleMonsters, classProfile, capabilities } = context
+  const tacticsLevel = capabilities.tactics
   const pos = game.character.position
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const dangerThreshold = getDangerThreshold(effectiveConfig.aggression, effectiveConfig.caution)
@@ -741,13 +747,13 @@ function handleSafeTier(
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 
     if (hasBossTarget) {
-      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsEnabled)
+      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsLevel)
       if (preCombatBuff) {
         recordProgress(botState, game.turn)
         return preCombatBuff
       }
 
-      const buffSpell = getBuffSpellAction(game, config, visibleMonsters, tacticsEnabled)
+      const buffSpell = getBuffSpellAction(game, config, visibleMonsters, tacticsLevel)
       if (buffSpell) {
         recordProgress(botState, game.turn)
         return buffSpell
@@ -758,7 +764,7 @@ function handleSafeTier(
     const isCaster = ['mage', 'archmage', 'necromancer'].includes(game.character.classId)
     if (isCaster) {
       // Debuff (slow) first for kite control - function checks duration to avoid over-applying
-      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters)
+      const debuffSpell = getDebuffSpellAction(game, config, visibleMonsters, tacticsLevel)
       if (debuffSpell) {
         recordProgress(botState, game.turn)
         return debuffSpell

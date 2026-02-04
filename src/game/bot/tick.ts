@@ -562,8 +562,8 @@ function getKillApproachAction(
     return null
   }
 
-  const { classProfile, config, visibleMonsters, botState, capabilities, toggles } = context
-  const tacticsEnabled = capabilities.tactics && toggles.tactics
+  const { classProfile, config, visibleMonsters, botState, capabilities } = context
+  const tacticsLevel = capabilities.tactics
   const pos = game.character.position
   const targetMonster = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
 
@@ -584,8 +584,8 @@ function getKillApproachAction(
       }
     }
 
-    // Adjacent - try to kite away
-    if (shouldAvoidMelee(classProfile, distance)) {
+    // Adjacent - try to kite away (requires kiting L1+)
+    if (shouldAvoidMelee(classProfile, distance) && capabilities.kiting >= 1) {
       const kiteDir = findKitePosition(game, targetMonster, classProfile)
       if (kiteDir) {
         recordProgress(botState, game.turn)
@@ -601,13 +601,13 @@ function getKillApproachAction(
   const shouldBuffTarget = threat >= BUFF_THREAT_THRESHOLD || isUnique
 
   if (shouldBuffTarget) {
-    const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers, tacticsEnabled)
+    const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers, tacticsLevel)
     if (combatBuff) {
       recordProgress(botState, game.turn)
       return combatBuff
     }
 
-    const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsEnabled)
+    const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsLevel)
     if (preCombatBuff) {
       recordProgress(botState, game.turn)
       return preCombatBuff

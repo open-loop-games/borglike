@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import {
-  BOT_UPGRADES,
+  getBotUpgradeById,
   canPurchaseBotUpgrade,
   getToggleCapabilityField,
   type BotUpgradeId,
@@ -31,7 +31,7 @@ const toggles = computed<BotToggles>(() => {
 
 // Graded upgrades (levels 1-3) with segment labels
 interface GradedUpgrade {
-  key: 'town' | 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
+  key: 'tactics' | 'town' | 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
   name: string
   desc: string
   segments: string[] // Labels for L1, L2, L3
@@ -59,6 +59,13 @@ const townUpgrades: GradedUpgrade[] = [
 // === COMBAT GROUP ===
 const combatGraded: GradedUpgrade[] = [
   {
+    key: 'tactics',
+    name: 'Tactics',
+    desc: 'Combat spell usage',
+    segments: ['Debuff', 'Buff', 'Smart'],
+    selectable: false,
+  },
+  {
     key: 'targeting',
     name: 'Targeting',
     desc: 'Target selection intelligence',
@@ -81,9 +88,7 @@ const combatGraded: GradedUpgrade[] = [
   },
 ]
 
-const combatToggles: ToggleUpgrade[] = [
-  { id: 'tactics', name: 'Tactics', desc: 'Use buffs and pre-combat preparation' },
-]
+const combatToggles: ToggleUpgrade[] = []
 
 // === PROGRESSION GROUP ===
 const progressionGraded: GradedUpgrade[] = [
@@ -115,7 +120,7 @@ const progressionToggles: ToggleUpgrade[] = [
 ]
 
 function getUpgradeInfo(id: BotUpgradeId) {
-  return BOT_UPGRADES[id]
+  return getBotUpgradeById(id)
 }
 
 function canPurchase(id: BotUpgradeId): boolean {
@@ -142,7 +147,15 @@ function isEnabled(id: ToggleUpgradeId): boolean {
   return (capabilities.value as any)[field] && (toggles.value as any)[field]
 }
 
-type GradedKey = 'town' | 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
+type GradedKey =
+  | 'tactics'
+  | 'town'
+  | 'targeting'
+  | 'retreat'
+  | 'preparedness'
+  | 'sweep'
+  | 'surf'
+  | 'kiting'
 
 function getGradedLevel(key: GradedKey): number {
   return capabilities.value[key]
@@ -287,11 +300,7 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
         </div>
         <div class="upgrade-actions">
           <template v-if="isUnlocked(up.id)">
-            <button
-              class="toggle-btn"
-              :class="{ active: isEnabled(up.id) }"
-              @click="toggle(up.id)"
-            >
+            <button class="toggle-btn" :class="{ active: isEnabled(up.id) }" @click="toggle(up.id)">
               {{ isEnabled(up.id) ? 'ON' : 'OFF' }}
             </button>
           </template>
@@ -314,11 +323,7 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
         </div>
         <div class="upgrade-actions">
           <template v-if="isUnlocked(up.id)">
-            <button
-              class="toggle-btn"
-              :class="{ active: isEnabled(up.id) }"
-              @click="toggle(up.id)"
-            >
+            <button class="toggle-btn" :class="{ active: isEnabled(up.id) }" @click="toggle(up.id)">
               {{ isEnabled(up.id) ? 'ON' : 'OFF' }}
             </button>
           </template>
