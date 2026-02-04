@@ -354,7 +354,7 @@ const hasExtendedStats = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: var(--space-4) var(--space-5);
   background: var(--elevated);
   border-bottom: 1px solid var(--border);
 }
@@ -362,12 +362,12 @@ const hasExtendedStats = computed(() => {
 .header-content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .summary-header h2 {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--text-primary);
   margin: 0;
@@ -375,11 +375,11 @@ const hasExtendedStats = computed(() => {
 
 .new-best-badge {
   font-family: var(--font-mono);
-  font-size: 10px;
-  padding: 4px 10px;
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-3);
   background: rgba(139, 92, 246, 0.2);
   border: 1px solid var(--purple);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   color: var(--purple);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -404,9 +404,9 @@ const hasExtendedStats = computed(() => {
   justify-content: center;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-lg);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -420,19 +420,19 @@ const hasExtendedStats = computed(() => {
 .summary-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .character-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
 }
 
 .char-race {
@@ -451,20 +451,20 @@ const hasExtendedStats = computed(() => {
 
 .char-damage-type {
   color: var(--amber);
-  font-size: 12px;
-  padding: 2px 6px;
+  font-size: var(--text-base);
+  padding: 2px var(--space-2);
   background: rgba(245, 158, 11, 0.15);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
 }
 
 .grade-section {
   text-align: center;
-  margin: 10px 0;
+  margin: var(--space-3) 0;
 }
 
 .grade-display {
   font-family: var(--font-mono);
-  font-size: 72px;
+  font-size: var(--text-display);
   font-weight: bold;
   line-height: 1;
   text-shadow: 0 0 30px currentColor;
@@ -472,38 +472,38 @@ const hasExtendedStats = computed(() => {
 
 .grade-label {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 2px;
-  margin-top: 8px;
+  margin-top: var(--space-2);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
   width: 100%;
   max-width: 400px;
 }
 
 .stat-card {
-  padding: 16px !important;
+  padding: var(--space-4) !important;
   text-align: center;
 }
 
 .stat-label {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .stat-value {
   font-family: var(--font-mono);
-  font-size: 24px;
+  font-size: var(--text-4xl);
   font-weight: bold;
   color: var(--text-primary);
 }
@@ -528,8 +528,8 @@ const hasExtendedStats = computed(() => {
 
 .stat-diff {
   font-family: var(--font-mono);
-  font-size: 12px;
-  margin-top: 6px;
+  font-size: var(--text-base);
+  margin-top: var(--space-2);
 }
 
 .stat-diff.positive {
@@ -547,29 +547,29 @@ const hasExtendedStats = computed(() => {
 .death-cause {
   width: 100%;
   max-width: 400px;
-  padding: 16px !important;
+  padding: var(--space-4) !important;
   text-align: center;
 }
 
 .death-label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 6px;
+  margin-bottom: var(--space-2);
 }
 
 .death-text {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--red);
 }
 
 .essence-section {
   width: 100%;
   max-width: 400px;
-  padding: 20px !important;
+  padding: var(--space-5) !important;
   text-align: center;
 }
 
@@ -577,13 +577,13 @@ const hasExtendedStats = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .essence-label {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -591,25 +591,25 @@ const hasExtendedStats = computed(() => {
 
 .essence-icon {
   color: var(--purple);
-  font-size: 14px;
+  font-size: var(--text-lg);
 }
 
 .essence-value {
   font-family: var(--font-mono);
-  font-size: 32px;
+  font-size: var(--text-5xl);
   font-weight: bold;
   color: var(--purple);
   text-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .essence-bar {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .essence-diff {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .essence-diff.positive {
@@ -627,8 +627,8 @@ const hasExtendedStats = computed(() => {
 .summary-footer {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  padding: 20px;
+  gap: var(--space-4);
+  padding: var(--space-5);
   background: var(--elevated);
   border-top: 1px solid var(--border);
 }
@@ -636,11 +636,11 @@ const hasExtendedStats = computed(() => {
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 4px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -664,36 +664,36 @@ const hasExtendedStats = computed(() => {
 }
 
 .action-btn.primary:hover {
-  background: #4f46e5;
+  background: var(--indigo-hover);
   box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
 }
 
 .btn-icon {
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 /* Extended Stats Sections */
 .extended-section {
   width: 100%;
   max-width: 400px;
-  padding: 16px !important;
+  padding: var(--space-4) !important;
 }
 
 .section-title {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 12px;
-  padding-bottom: 6px;
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border);
 }
 
 .combat-stats {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .combat-row {
@@ -704,13 +704,13 @@ const hasExtendedStats = computed(() => {
 
 .combat-label {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 
 .combat-value {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: bold;
   color: var(--text-primary);
 }
@@ -738,7 +738,7 @@ const hasExtendedStats = computed(() => {
 .source-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .source-row {
@@ -749,7 +749,7 @@ const hasExtendedStats = computed(() => {
 
 .source-name {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
@@ -767,7 +767,7 @@ const hasExtendedStats = computed(() => {
 
 .source-damage {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
 }

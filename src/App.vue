@@ -287,8 +287,8 @@ function handleCloseHelp() {
   width: 100%;
   max-width: 600px;
   max-height: 80vh;
-  margin: 20px;
-  border-radius: 8px;
+  margin: var(--space-5);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }

@@ -84,11 +84,11 @@ function handlePurchase() {
 .upgrade-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
   background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   transition: all 0.2s;
 }
 
@@ -116,9 +116,9 @@ function handlePurchase() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: var(--text-2xl);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 
@@ -146,21 +146,21 @@ function handlePurchase() {
 
 .upgrade-name {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
 }
 
 .upgrade-level {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 
 .upgrade-desc {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .upgrade-progress {
@@ -171,13 +171,13 @@ function handlePurchase() {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: var(--space-1);
   flex-shrink: 0;
 }
 
 .effect-value {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--cyan);
 }
 
@@ -189,13 +189,13 @@ function handlePurchase() {
 .purchase-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -214,7 +214,7 @@ function handlePurchase() {
 
 .cost-icon {
   color: var(--purple);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .purchase-btn:not(:disabled):hover .cost-icon {

@@ -200,23 +200,23 @@ const nextUnlock = computed(() => {
 .monster-detail {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
 }
 
 .detail-header {
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
   background: var(--void);
 }
 
 .back-btn {
-  padding: 6px 12px;
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -228,12 +228,12 @@ const nextUnlock = computed(() => {
 }
 
 .detail-content {
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 .monster-identity {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .monster-symbol {
@@ -242,27 +242,27 @@ const nextUnlock = computed(() => {
   font-weight: bold;
   line-height: 1;
   text-shadow: 0 0 16px currentColor;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .monster-name {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--text-3xl);
   color: var(--text-primary);
 }
 
 .stats-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .stat-box {
   text-align: center;
-  padding: 12px;
+  padding: var(--space-3);
   background: var(--highlight);
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
 }
 
 .stat-box .count {
@@ -280,33 +280,33 @@ const nextUnlock = computed(() => {
 }
 
 .stat-box .label {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
 .knowledge-section {
-  padding: 16px;
+  padding: var(--space-4);
   background: var(--highlight);
-  border-radius: 6px;
-  margin-bottom: 16px;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
 }
 
 .knowledge-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .knowledge-label {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .knowledge-value {
-  font-size: 18px;
+  font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--green);
 }
@@ -314,9 +314,9 @@ const nextUnlock = computed(() => {
 .knowledge-bar {
   height: 8px;
   background: var(--void);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .knowledge-fill {
@@ -328,9 +328,9 @@ const nextUnlock = computed(() => {
 .knowledge-tiers {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .knowledge-tiers span.active {
@@ -339,29 +339,29 @@ const nextUnlock = computed(() => {
 }
 
 .knowledge-desc {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   text-align: center;
 }
 
 .first-kill {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .stats-section,
 .abilities-section,
 .full-info-section {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .stats-section h3,
 .abilities-section h3,
 .full-info-section h3 {
-  margin: 0 0 12px 0;
-  font-size: 12px;
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -370,25 +370,25 @@ const nextUnlock = computed(() => {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .stat-item {
   text-align: center;
-  padding: 12px;
+  padding: var(--space-3);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 
 .stat-value {
   display: block;
-  font-size: 20px;
+  font-size: var(--text-3xl);
   font-weight: bold;
   color: var(--text-primary);
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -397,89 +397,89 @@ const nextUnlock = computed(() => {
 .flag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .ability-tag {
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-3);
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   color: var(--red);
 }
 
 .flag-tag {
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-3);
   background: rgba(139, 92, 246, 0.15);
   border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   color: var(--purple);
 }
 
 .no-abilities,
 .no-flags {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .info-item {
   text-align: center;
-  padding: 8px;
+  padding: var(--space-2);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 
 .info-label {
   display: block;
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .info-value {
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: bold;
   color: var(--text-primary);
 }
 
 .unlock-hint {
-  padding: 16px;
+  padding: var(--space-4);
   background: var(--void);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   text-align: center;
 }
 
 .hint-header {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .hint-desc {
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--purple);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .progress-bar {
   height: 6px;
   background: var(--highlight);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: var(--space-2);
 }
 
 .progress-fill {
@@ -489,7 +489,7 @@ const nextUnlock = computed(() => {
 }
 
 .progress-text {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 </style>

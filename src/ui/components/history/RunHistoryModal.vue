@@ -148,7 +148,7 @@ function formatTimeAgo(timestamp: number): string {
 .run-history-modal {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-xl);
   display: flex;
   flex-direction: column;
   max-height: 80vh;
@@ -158,13 +158,13 @@ function formatTimeAgo(timestamp: number): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--border);
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--text-2xl);
   color: var(--text-primary);
 }
 
@@ -176,9 +176,9 @@ function formatTimeAgo(timestamp: number): string {
   justify-content: center;
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 20px;
+  font-size: var(--text-3xl);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -190,19 +190,19 @@ function formatTimeAgo(timestamp: number): string {
 
 .modal-tabs {
   display: flex;
-  gap: 4px;
-  padding: 12px 20px;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--border);
   background: var(--void);
 }
 
 .modal-tabs button {
-  padding: 8px 16px;
+  padding: var(--space-2) var(--space-4);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -222,12 +222,12 @@ function formatTimeAgo(timestamp: number): string {
 .modal-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--space-4);
 }
 
 .empty-state {
   text-align: center;
-  padding: 40px 20px;
+  padding: 40px var(--space-5);
   color: var(--text-dim);
   font-style: italic;
 }
@@ -235,11 +235,11 @@ function formatTimeAgo(timestamp: number): string {
 .run-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .top-section {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .top-section:last-child {
@@ -247,8 +247,8 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 .top-section h3 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--text-lg);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;

@@ -200,8 +200,8 @@ function handleKillExpanded() {
 .run-area {
   display: grid;
   height: 100%;
-  padding: 8px;
-  gap: 8px;
+  padding: var(--space-2);
+  gap: var(--space-2);
 }
 
 .grid-focused {

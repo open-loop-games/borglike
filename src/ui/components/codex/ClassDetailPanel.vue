@@ -235,15 +235,15 @@ const specialAbilities = computed(() => {
 .panel-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
   background: var(--void);
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--text-secondary);
 }
 
@@ -255,9 +255,9 @@ const specialAbilities = computed(() => {
   justify-content: center;
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: var(--text-xl);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -270,45 +270,45 @@ const specialAbilities = computed(() => {
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--space-4);
 }
 
 .class-hero {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .class-name {
-  margin: 0 0 4px;
-  font-size: 20px;
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-3xl);
 }
 
 .class-category {
-  font-size: 12px;
+  font-size: var(--text-base);
   opacity: 0.8;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .class-tags {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .tag {
-  font-size: 9px;
-  padding: 2px 6px;
-  border-radius: 3px;
+  font-size: var(--text-xs);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-md);
   font-weight: 500;
 }
 
 .tag.magic {
-  color: #a78bfa;
+  color: var(--violet);
   background: rgba(167, 139, 250, 0.15);
 }
 
 .tag.melee {
-  color: #ef4444;
+  color: var(--red);
   background: rgba(239, 68, 68, 0.15);
 }
 
@@ -319,37 +319,37 @@ const specialAbilities = computed(() => {
 
 .locked-section {
   text-align: center;
-  margin-bottom: 16px;
-  padding: 12px;
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
   background: var(--highlight);
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   border: 1px dashed var(--border);
 }
 
 .lock-badge {
   display: inline-block;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: bold;
-  padding: 4px 12px;
-  border-radius: 4px;
-  color: #ef4444;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--red);
   background: rgba(239, 68, 68, 0.15);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .unlock-condition {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
 .description-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .description-text {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   font-style: italic;
   line-height: 1.5;
@@ -362,12 +362,12 @@ const specialAbilities = computed(() => {
 .titles-section,
 .behavior-section,
 .history-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 h4 {
-  margin: 0 0 8px;
-  font-size: 12px;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -376,18 +376,18 @@ h4 {
 .stat-bars {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .stat-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .stat-label {
   width: 32px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-family: var(--font-mono);
   color: var(--text-secondary);
 }
@@ -402,7 +402,7 @@ h4 {
   width: 100%;
   height: 100%;
   background: var(--void);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
@@ -420,13 +420,13 @@ h4 {
   left: 0;
   top: 0;
   bottom: 0;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   transition: width 0.3s ease;
 }
 
 .stat-value {
   width: 24px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-family: var(--font-mono);
   text-align: right;
 }
@@ -434,17 +434,17 @@ h4 {
 .property-grid {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .property-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
 }
 
 .property-label {
@@ -457,54 +457,54 @@ h4 {
 }
 
 .property-value.negative {
-  color: #ef4444;
+  color: var(--red);
 }
 
 .ability-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .ability-item {
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   border-left: 3px solid var(--purple);
 }
 
 .ability-name {
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 2px;
 }
 
 .ability-description {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 
 .title-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .title-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
 }
 
 .title-level {
   color: var(--text-dim);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   min-width: 40px;
 }
 
@@ -514,29 +514,29 @@ h4 {
 
 .behavior-text {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   line-height: 1.5;
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
-  border-radius: 4px;
-  border-left: 3px solid #3b82f6;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--blue);
 }
 
 .history-grid {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .history-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
 }
 
 .history-label {

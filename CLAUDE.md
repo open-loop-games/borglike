@@ -91,7 +91,7 @@ src/
 - ❌ 50-150 lines - Too small, ok for index
 - ✅ 300-900 lines - Sweet spot for domain module
 - ⚠️ 900-1200 lines - Getting large, but OK if well-organized
-- ❌ 1200+ lines - Time to split by subdomain
+- ❌ 1500+ lines - Time to split by subdomain
 - Organization matters more than size
 - For AI codebases, fewer, larger files makes it easier to grasp the codebase and style quickly
 

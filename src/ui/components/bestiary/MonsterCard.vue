@@ -104,8 +104,8 @@ const monsterColor = computed(() => {
 .monster-card {
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
@@ -131,19 +131,19 @@ const monsterColor = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .monster-symbol {
   font-family: var(--font-mono);
-  font-size: 32px;
+  font-size: var(--text-5xl);
   font-weight: bold;
   line-height: 1;
   text-shadow: 0 0 8px currentColor;
 }
 
 .monster-name {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-primary);
   text-align: center;
   overflow: hidden;
@@ -159,31 +159,31 @@ const monsterColor = computed(() => {
 
 .monster-stats {
   display: flex;
-  gap: 8px;
-  font-size: 10px;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 
 .stat {
-  padding: 1px 4px;
+  padding: 1px var(--space-1);
   background: var(--void);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .kill-count {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .knowledge-badge {
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-weight: bold;
   color: var(--green);
   background: rgba(34, 197, 94, 0.15);
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-top: 4px;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-1);
 }
 
 .progress-bar {
@@ -204,15 +204,15 @@ const monsterColor = computed(() => {
 .progress-text {
   position: absolute;
   bottom: 6px;
-  right: 8px;
-  font-size: 9px;
+  right: var(--space-2);
+  font-size: var(--text-xs);
   color: var(--text-dim);
 }
 
 .unlocked-badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: var(--space-1);
+  right: var(--space-1);
   width: 18px;
   height: 18px;
   background: var(--purple);
@@ -220,7 +220,7 @@ const monsterColor = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: white;
 }
 </style>

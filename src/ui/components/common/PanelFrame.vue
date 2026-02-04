@@ -23,8 +23,8 @@ defineProps<{
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.03),
     0 4px 12px rgba(0, 0, 0, 0.4);
-  border-radius: 4px;
-  padding: 12px;
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
 }
 
 .panel-frame--no-padding {

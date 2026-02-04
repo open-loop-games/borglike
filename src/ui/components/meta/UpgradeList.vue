@@ -63,8 +63,8 @@ function handlePurchase(upgradeId: string) {
 
 .category-tabs {
   display: flex;
-  gap: 4px;
-  padding: 8px;
+  gap: var(--space-1);
+  padding: var(--space-2);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
@@ -75,10 +75,10 @@ function handlePurchase(upgradeId: string) {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 4px;
+  padding: var(--space-2) var(--space-1);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -93,7 +93,7 @@ function handlePurchase(upgradeId: string) {
 }
 
 .tab-icon {
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--text-dim);
 }
 
@@ -104,7 +104,7 @@ function handlePurchase(upgradeId: string) {
 
 .tab-label {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -116,17 +116,17 @@ function handlePurchase(upgradeId: string) {
 .upgrades-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .no-upgrades {
   text-align: center;
-  padding: 24px;
+  padding: var(--space-6);
   color: var(--text-dim);
   font-style: italic;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 </style>

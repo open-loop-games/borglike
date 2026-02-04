@@ -375,14 +375,14 @@ function handleCancel() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: var(--space-4) var(--space-5);
   background: var(--elevated);
   border-bottom: 1px solid var(--border);
 }
 
 .editor-header h2 {
   font-family: var(--font-mono);
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-weight: bold;
   color: var(--text-primary);
   margin: 0;
@@ -390,11 +390,11 @@ function handleCancel() {
 
 .slot-badge {
   font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 4px 10px;
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
   text-transform: uppercase;
 }
@@ -403,16 +403,16 @@ function handleCancel() {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--space-4);
   display: flex;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .config-column {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
   min-width: 0;
 }
 
@@ -420,35 +420,35 @@ function handleCancel() {
   flex: 0 0 320px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .selection-section {
-  padding: 16px !important;
+  padding: var(--space-4) !important;
 }
 
 .selection-section h3 {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-3);
 }
 
 .option-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .option-btn {
-  padding: 8px 16px;
+  padding: var(--space-2) var(--space-4);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -468,18 +468,18 @@ function handleCancel() {
 
 /* Selection Details */
 .selection-details {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--border);
 }
 
 .details-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
-  margin-bottom: 8px;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .stat-positive {
@@ -504,31 +504,31 @@ function handleCancel() {
 
 .stat-magic {
   color: var(--purple);
-  padding: 1px 4px;
+  padding: 1px var(--space-1);
   background: rgba(139, 92, 246, 0.15);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .details-desc {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: 1.4;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .details-abilities {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .ability-tag {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-xs);
   padding: 3px 6px;
   background: rgba(6, 182, 212, 0.1);
   border: 1px solid rgba(6, 182, 212, 0.3);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   color: var(--cyan);
   cursor: help;
 }
@@ -539,7 +539,7 @@ function handleCancel() {
 }
 
 .details-behavior {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -552,7 +552,7 @@ function handleCancel() {
 .personality-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .personality-btn {
@@ -560,10 +560,10 @@ function handleCancel() {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
@@ -580,7 +580,7 @@ function handleCancel() {
 
 .personality-name {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
 }
@@ -591,34 +591,34 @@ function handleCancel() {
 }
 
 .personality-desc {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 
 .bonuses-section {
-  padding: 16px !important;
+  padding: var(--space-4) !important;
 }
 
 .bonuses-section h3 {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-3);
 }
 
 .bonus-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .bonus-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  padding: var(--space-2) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -628,13 +628,13 @@ function handleCancel() {
 
 .bonus-name {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
 .bonus-value {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--green);
   text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
@@ -642,34 +642,34 @@ function handleCancel() {
 
 .no-bonuses {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   font-style: italic;
 }
 
 /* Config Performance Stats */
 .config-performance {
-  margin-top: 12px;
+  margin-top: var(--space-3);
 }
 
 .perf-divider {
   height: 1px;
   background: var(--border);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .config-performance h4 {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 10px;
+  margin: 0 0 var(--space-3);
 }
 
 .perf-grid {
   display: flex;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .perf-stat {
@@ -681,7 +681,7 @@ function handleCancel() {
 
 .perf-value {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: bold;
   color: var(--cyan);
 }
@@ -692,7 +692,7 @@ function handleCancel() {
 
 .perf-label {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -700,19 +700,19 @@ function handleCancel() {
 .editor-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
   background: var(--elevated);
   border-top: 1px solid var(--border);
 }
 
 .cancel-btn {
-  padding: 10px 20px;
+  padding: var(--space-3) var(--space-5);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -726,13 +726,13 @@ function handleCancel() {
 .start-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
   background: var(--indigo);
   border: 1px solid var(--indigo);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: bold;
   color: white;
   cursor: pointer;
@@ -740,53 +740,53 @@ function handleCancel() {
 }
 
 .start-btn:hover {
-  background: #4f46e5;
+  background: var(--indigo-hover);
   box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
 }
 
 .start-icon {
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 /* Booster Section */
 .booster-section h3 {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .booster-hint {
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-weight: normal;
   color: var(--text-dim);
 }
 
 .booster-slots {
   display: flex;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .booster-slot {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .slot-label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
 }
 
 .booster-select {
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
@@ -812,7 +812,7 @@ function handleCancel() {
 }
 
 .booster-desc {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--purple);
   font-style: italic;
 }

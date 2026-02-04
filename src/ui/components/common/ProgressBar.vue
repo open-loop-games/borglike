@@ -40,7 +40,7 @@ const variantClass = computed(() => {
   position: relative;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
@@ -100,7 +100,7 @@ const variantClass = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-family: var(--font-mono);
   color: var(--text-primary);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);

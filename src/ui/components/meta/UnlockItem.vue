@@ -208,11 +208,11 @@ function handleUnlock() {
 .unlock-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   transition: all 0.2s;
 }
 
@@ -253,7 +253,7 @@ function handleUnlock() {
 }
 
 .badge-icon {
-  font-size: 14px;
+  font-size: var(--text-lg);
 }
 
 .badge-icon.unlocked {
@@ -278,13 +278,13 @@ function handleUnlock() {
 .unlock-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   margin-bottom: 2px;
 }
 
 .unlock-name {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
 }
@@ -294,17 +294,17 @@ function handleUnlock() {
 }
 
 .prestige-tag {
-  font-size: 8px;
-  padding: 1px 4px;
+  font-size: var(--text-2xs);
+  padding: 1px var(--space-1);
   background: rgba(245, 158, 11, 0.2);
   border: 1px solid var(--amber);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   color: var(--amber);
   text-transform: uppercase;
 }
 
 .unlock-desc {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -314,7 +314,7 @@ function handleUnlock() {
 }
 
 .unlock-condition {
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--amber);
   margin-top: 2px;
   font-style: italic;
@@ -338,20 +338,20 @@ function handleUnlock() {
 
 .status-unlocked {
   color: var(--green);
-  font-size: 16px;
+  font-size: var(--text-xl);
   text-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
 }
 
 .unlock-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -375,7 +375,7 @@ function handleUnlock() {
 
 .cost-icon {
   color: var(--purple);
-  font-size: 9px;
+  font-size: var(--text-xs);
 }
 
 .unlock-btn:not(:disabled):hover .cost-icon {
@@ -388,10 +388,10 @@ function handleUnlock() {
   z-index: 9999;
   min-width: 220px;
   max-width: 280px;
-  padding: 12px;
+  padding: var(--space-3);
   background: linear-gradient(135deg, rgba(26, 26, 46, 0.98) 0%, rgba(15, 15, 26, 0.99) 100%);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
@@ -399,25 +399,25 @@ function handleUnlock() {
 .tooltip-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border);
 }
 
 .tooltip-name {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: bold;
   color: var(--text-primary);
 }
 
 .tooltip-prestige {
-  font-size: 9px;
-  padding: 2px 5px;
+  font-size: var(--text-xs);
+  padding: 2px var(--space-1);
   background: rgba(245, 158, 11, 0.2);
   border: 1px solid var(--amber);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   color: var(--amber);
   text-transform: uppercase;
 }
@@ -425,13 +425,13 @@ function handleUnlock() {
 .tooltip-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
-  margin-bottom: 10px;
-  padding: 8px;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .stat-positive {
@@ -451,7 +451,7 @@ function handleUnlock() {
   justify-content: space-between;
   align-items: center;
   padding: 3px 0;
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .tooltip-label {
@@ -473,24 +473,24 @@ function handleUnlock() {
 }
 
 .tooltip-abilities {
-  margin-top: 10px;
-  padding-top: 8px;
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
   border-top: 1px solid var(--border);
 }
 
 .abilities-header {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--purple);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 6px;
+  margin-bottom: var(--space-2);
 }
 
 .ability-item {
   display: flex;
   flex-direction: column;
-  margin-bottom: 6px;
+  margin-bottom: var(--space-2);
 }
 
 .ability-item:last-child {
@@ -499,45 +499,45 @@ function handleUnlock() {
 
 .ability-name {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-weight: bold;
   color: var(--cyan);
 }
 
 .ability-desc {
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--text-secondary);
   margin-top: 1px;
 }
 
 .tooltip-behavior {
-  margin-top: 10px;
-  padding-top: 8px;
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
   border-top: 1px solid var(--border);
 }
 
 .behavior-header {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--purple);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .behavior-text {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .tooltip-unlock {
-  margin-top: 10px;
-  padding: 6px 8px;
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-2);
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: 3px;
-  font-size: 9px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
   color: var(--amber);
   font-style: italic;
 }

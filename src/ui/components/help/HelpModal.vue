@@ -93,7 +93,7 @@ const emit = defineEmits<{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: var(--space-4) var(--space-5);
   background: var(--elevated);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -101,7 +101,7 @@ const emit = defineEmits<{
 
 .help-header h2 {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--purple);
   margin: 0;
@@ -115,9 +115,9 @@ const emit = defineEmits<{
   justify-content: center;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-lg);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -131,30 +131,30 @@ const emit = defineEmits<{
 .help-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .help-section {
-  padding: 16px !important;
+  padding: var(--space-4) !important;
 }
 
 .help-section h3 {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--cyan);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-3);
 }
 
 .help-section p {
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--text-secondary);
   line-height: 1.5;
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
 }
 
 .help-section p:last-child {
@@ -163,9 +163,9 @@ const emit = defineEmits<{
 
 .help-section ol {
   margin: 0;
-  padding-left: 20px;
+  padding-left: var(--space-5);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-md);
   line-height: 1.8;
 }
 
@@ -196,27 +196,27 @@ const emit = defineEmits<{
 .controls-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .control-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 
 .control-key {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--amber);
   min-width: 100px;
 }
 
 .control-desc {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 </style>

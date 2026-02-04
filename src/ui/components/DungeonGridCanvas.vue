@@ -168,7 +168,7 @@ watch(() => props.cursorY, scheduleRender)
   width: 100%;
   height: 100%;
   min-height: 0; /* Important for flex children to shrink */
-  background: #0a0a12;
+  background: var(--bg-dark);
   display: flex;
   justify-content: center;
   align-items: center;

@@ -163,7 +163,7 @@ pnpm diagnose deep 1768965560201 --map
 --exclude-upgrade=X,Y  Exclude specific upgrades when --max-upgrades (isolation testing)
 --capabilities=X  Bot capabilities (default: full)
                   Values: none, early, mid, late, full, or comma-separated IDs
-                  IDs: town,farming,preparedness,sweep_1-3,surf_1-3,kiting_1-3
+                  IDs: town,farming,tactics,preparedness_1-3,sweep_1-3,surf_1-3,kiting_1-3,targeting_1-3,retreat_1-3
 --randomize       Randomize race/class/personality per run
 --races           Compare races instead of personalities (compare mode)
 --races=a,b,c     Compare specific races (e.g., --races=human,dwarf,elf)

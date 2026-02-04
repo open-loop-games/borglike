@@ -258,8 +258,8 @@ function getPrereqNames(boosterId: string): string[] {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px;
+  gap: var(--space-2);
+  padding: var(--space-3);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -277,7 +277,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .tab-label {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
@@ -287,8 +287,8 @@ function getPrereqNames(boosterId: string): string[] {
 
 .tab-count {
   font-family: var(--font-mono);
-  font-size: 10px;
-  padding: 2px 6px;
+  font-size: var(--text-sm);
+  padding: 2px var(--space-2);
   background: var(--highlight);
   border-radius: 10px;
   color: var(--text-dim);
@@ -303,13 +303,13 @@ function getPrereqNames(boosterId: string): string[] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border);
 }
 
 .header-text {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -317,57 +317,57 @@ function getPrereqNames(boosterId: string): string[] {
 .codex-hint {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 9px;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
   color: var(--text-dim);
 }
 
 .codex-icon {
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .unlocks-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .no-unlocks {
   text-align: center;
-  padding: 24px;
+  padding: var(--space-6);
   color: var(--green);
   font-style: italic;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 /* Booster Styles */
 .booster-category {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .category-header {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--purple);
   text-transform: uppercase;
   letter-spacing: 1px;
-  padding: 8px 0;
-  margin-bottom: 4px;
+  padding: var(--space-2) 0;
+  margin-bottom: var(--space-1);
   border-bottom: 1px solid var(--border);
 }
 
 .booster-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  margin-bottom: 4px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-1);
   background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   transition: all 0.2s;
 }
 
@@ -395,7 +395,7 @@ function getPrereqNames(boosterId: string): string[] {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: var(--text-xl);
   color: var(--purple);
   flex-shrink: 0;
 }
@@ -407,7 +407,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .booster-name {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
   margin-bottom: 2px;
@@ -418,12 +418,12 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .booster-desc {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 
 .booster-prereq {
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--amber);
   font-style: italic;
   margin-top: 2px;
@@ -435,20 +435,20 @@ function getPrereqNames(boosterId: string): string[] {
 
 .booster-status .status-unlocked {
   color: var(--green);
-  font-size: 16px;
+  font-size: var(--text-xl);
   text-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
 }
 
 .booster-status .unlock-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -467,7 +467,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .booster-status .cost-icon {
   color: var(--purple);
-  font-size: 9px;
+  font-size: var(--text-xs);
 }
 
 .booster-status .unlock-btn:not(:disabled):hover .cost-icon {

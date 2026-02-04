@@ -115,7 +115,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
@@ -123,12 +123,12 @@ const emit = defineEmits<{
 .header-left {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .logo {
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: var(--text-3xl);
   font-weight: bold;
   margin: 0;
   color: var(--purple);
@@ -136,24 +136,24 @@ const emit = defineEmits<{
 }
 
 .tagline {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 
 .header-center {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .essence-display {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
   border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   transition: all 0.3s ease;
 }
 
@@ -164,7 +164,7 @@ const emit = defineEmits<{
 }
 
 .essence-icon {
-  font-size: 16px;
+  font-size: var(--text-xl);
   color: var(--purple);
   text-shadow: 0 0 8px rgba(139, 92, 246, 0.7);
 }
@@ -175,7 +175,7 @@ const emit = defineEmits<{
 
 .essence-value {
   font-family: var(--font-mono);
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-weight: bold;
   color: var(--purple);
   text-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
@@ -187,7 +187,7 @@ const emit = defineEmits<{
 }
 
 .essence-label {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   text-transform: uppercase;
 }
@@ -195,19 +195,19 @@ const emit = defineEmits<{
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .auto-run-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -234,7 +234,7 @@ const emit = defineEmits<{
 }
 
 .toggle-icon {
-  font-size: 14px;
+  font-size: var(--text-lg);
 }
 
 @keyframes spin {
@@ -254,9 +254,9 @@ const emit = defineEmits<{
   justify-content: center;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: var(--text-xl);
   cursor: pointer;
   transition: all 0.2s;
 }

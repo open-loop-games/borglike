@@ -92,13 +92,13 @@ function handleOpenLoadout() {
 
 .slot-header {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: var(--space-3);
+  left: var(--space-3);
 }
 
 .slot-number {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -112,7 +112,7 @@ function handleOpenLoadout() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .config-summary {
@@ -121,7 +121,7 @@ function handleOpenLoadout() {
   align-items: center;
   gap: 2px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .summary-main {
@@ -134,21 +134,21 @@ function handleOpenLoadout() {
 
 .summary-boosters {
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .start-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   background: var(--highlight);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  padding: 12px 24px;
-  font-size: 14px;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-lg);
   font-family: var(--font-mono);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   transition: all 0.2s;
 }
 
@@ -161,7 +161,7 @@ function handleOpenLoadout() {
 }
 
 .btn-icon {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--green);
 }
 
@@ -174,11 +174,11 @@ function handleOpenLoadout() {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text-dim);
-  padding: 6px 12px;
-  font-size: 11px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
   font-family: var(--font-mono);
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   transition: all 0.2s;
 }
 

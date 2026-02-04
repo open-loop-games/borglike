@@ -79,8 +79,8 @@ function formatTimestamp(timestamp: number): string {
 .app-feed {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 16px;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
   background: var(--panel);
   border-top: 1px solid var(--border);
   overflow: hidden;
@@ -88,7 +88,7 @@ function formatTimestamp(timestamp: number): string {
 
 .feed-label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -102,21 +102,21 @@ function formatTimestamp(timestamp: number): string {
 
 .feed-events {
   display: flex;
-  gap: 24px;
+  gap: var(--space-6);
   white-space: nowrap;
 }
 
 .feed-event {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .event-timestamp {
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .event-slot {
@@ -155,7 +155,7 @@ function formatTimestamp(timestamp: number): string {
 
 .feed-empty {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
 }
@@ -164,10 +164,10 @@ function formatTimestamp(timestamp: number): string {
   flex-shrink: 0;
   width: 28px;
   height: 28px;
-  padding: 4px;
+  padding: var(--space-1);
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-dim);
   cursor: pointer;
   display: flex;

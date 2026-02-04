@@ -162,14 +162,14 @@ function formatTimestamp(timestamp: number): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 12px;
+  padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-xl);
   color: var(--text-primary);
 }
 
@@ -177,9 +177,9 @@ function formatTimestamp(timestamp: number): string {
   background: none;
   border: none;
   color: var(--text-dim);
-  font-size: 18px;
+  font-size: var(--text-2xl);
   cursor: pointer;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
 }
 
 .close-btn:hover {
@@ -188,22 +188,22 @@ function formatTimestamp(timestamp: number): string {
 
 .filters {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
   flex-wrap: wrap;
 }
 
 .search-input {
   flex: 1;
   min-width: 150px;
-  padding: 6px 10px;
+  padding: var(--space-2) var(--space-3);
   background: var(--bg-dark);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .search-input:focus {
@@ -212,19 +212,19 @@ function formatTimestamp(timestamp: number): string {
 }
 
 .filter-select {
-  padding: 6px 10px;
+  padding: var(--space-2) var(--space-3);
   background: var(--bg-dark);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   cursor: pointer;
 }
 
 .event-count {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   margin-left: auto;
 }
@@ -239,10 +239,10 @@ function formatTimestamp(timestamp: number): string {
 .event-row {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  padding: 4px 0;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   border-bottom: 1px solid var(--border-dim, rgba(255, 255, 255, 0.05));
 }
 
@@ -252,7 +252,7 @@ function formatTimestamp(timestamp: number): string {
 
 .event-timestamp {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--text-sm);
   flex-shrink: 0;
 }
 
@@ -292,7 +292,7 @@ function formatTimestamp(timestamp: number): string {
 }
 
 .no-events {
-  padding: 24px;
+  padding: var(--space-6);
   text-align: center;
   color: var(--text-dim);
   font-style: italic;

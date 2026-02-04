@@ -247,21 +247,21 @@ const bonuses = computed(() => {
 }
 
 .detail-panel.artifact {
-  border-left-color: #fbbf24;
+  border-left-color: var(--gold);
 }
 
 .panel-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
   background: var(--void);
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--text-secondary);
 }
 
@@ -273,9 +273,9 @@ const bonuses = computed(() => {
   justify-content: center;
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: var(--text-xl);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -288,12 +288,12 @@ const bonuses = computed(() => {
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--space-4);
 }
 
 .item-hero {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .item-symbol {
@@ -302,16 +302,16 @@ const bonuses = computed(() => {
   font-weight: bold;
   line-height: 1;
   text-shadow: 0 0 12px currentColor;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .item-name {
-  margin: 0 0 4px;
-  font-size: 18px;
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-2xl);
 }
 
 .item-subtitle {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
@@ -320,21 +320,21 @@ const bonuses = computed(() => {
 }
 
 .item-slot {
-  margin-left: 4px;
+  margin-left: var(--space-1);
 }
 
 .tier-section,
 .artifact-section {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .tier-badge {
   display: inline-block;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: bold;
-  padding: 4px 12px;
-  border-radius: 4px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
 }
 
 .tier-badge.tier-1 {
@@ -343,27 +343,27 @@ const bonuses = computed(() => {
 }
 
 .tier-badge.tier-2 {
-  color: #22c55e;
+  color: var(--green);
   background: rgba(34, 197, 94, 0.15);
 }
 
 .tier-badge.tier-3 {
-  color: #3b82f6;
+  color: var(--blue);
   background: rgba(59, 130, 246, 0.15);
 }
 
 .tier-badge.tier-4 {
-  color: #a855f7;
+  color: var(--purple);
   background: rgba(168, 85, 247, 0.15);
 }
 
 .artifact-badge {
   display: inline-block;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: bold;
-  padding: 4px 12px;
-  border-radius: 4px;
-  color: #fbbf24;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--gold);
   background: rgba(251, 191, 36, 0.15);
 }
 
@@ -374,12 +374,12 @@ const bonuses = computed(() => {
 .description-section,
 .discovery-section,
 .undiscovered-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 h4 {
-  margin: 0 0 8px;
-  font-size: 12px;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -388,17 +388,17 @@ h4 {
 .stat-grid {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .stat-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
 }
 
 .stat-label {
@@ -411,27 +411,27 @@ h4 {
 }
 
 .stat-value.damage {
-  color: #ef4444;
+  color: var(--red);
 }
 
 .stat-value.protection {
-  color: #3b82f6;
+  color: var(--blue);
 }
 
 .bonus-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .bonus-tag {
   display: flex;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   background: rgba(251, 191, 36, 0.1);
   border: 1px solid rgba(251, 191, 36, 0.3);
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
 }
 
 .bonus-stat {
@@ -439,25 +439,25 @@ h4 {
 }
 
 .bonus-value {
-  color: #fbbf24;
+  color: var(--gold);
   font-family: var(--font-mono);
 }
 
 .abilities-list {
   margin: 0;
-  padding: 0 0 0 16px;
-  font-size: 12px;
+  padding: 0 0 0 var(--space-4);
+  font-size: var(--text-base);
   color: var(--text-primary);
 }
 
 .abilities-list li {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .effect-text,
 .description-text {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   line-height: 1.5;
   font-style: italic;
@@ -466,17 +466,17 @@ h4 {
 .discovery-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .discovery-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
 }
 
 .discovery-label {
@@ -490,12 +490,12 @@ h4 {
 
 .undiscovered-text {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
   text-align: center;
-  padding: 16px;
+  padding: var(--space-4);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 </style>

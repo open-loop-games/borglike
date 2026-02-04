@@ -256,12 +256,12 @@ const slotTrainingSummaries = computed(() => {
 
 .sidebar-tab {
   flex: 1;
-  padding: 10px 8px;
+  padding: var(--space-3) var(--space-2);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -293,18 +293,18 @@ const slotTrainingSummaries = computed(() => {
 }
 
 .tab-content:not(.full-height) {
-  padding: 16px;
+  padding: var(--space-4);
 }
 
 .section {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .section h2 {
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   color: var(--text-secondary);
-  margin: 0 0 10px;
+  margin: 0 0 var(--space-3);
   letter-spacing: 1px;
   font-family: var(--font-mono);
 }
@@ -312,25 +312,25 @@ const slotTrainingSummaries = computed(() => {
 .stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .stat {
-  padding: 10px !important;
+  padding: var(--space-3) !important;
   text-align: center;
 }
 
 .stat-label {
   display: block;
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .stat-value {
   display: block;
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-family: var(--font-mono);
   color: var(--text-primary);
 }
@@ -361,15 +361,15 @@ const slotTrainingSummaries = computed(() => {
 }
 
 .unlock-summary {
-  padding: 12px !important;
+  padding: var(--space-3) !important;
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .summary-row:not(:last-child) {
@@ -385,15 +385,15 @@ const slotTrainingSummaries = computed(() => {
 }
 
 .training-summary {
-  padding: 12px !important;
+  padding: var(--space-3) !important;
 }
 
 .training-slot {
   display: flex;
-  gap: 12px;
-  padding: 6px 0;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .training-slot:not(:last-child) {

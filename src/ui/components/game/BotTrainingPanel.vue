@@ -380,10 +380,10 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 
 <style scoped>
 .bot-training-panel {
-  padding: 16px !important;
+  padding: var(--space-4) !important;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .panel-header {
@@ -394,7 +394,7 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 
 .panel-header h3 {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -403,7 +403,7 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 
 .essence-display {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--purple);
   text-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
@@ -412,23 +412,23 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 .upgrade-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .group-spacer {
   height: 1px;
   background: var(--border);
-  margin: 4px 0;
+  margin: var(--space-1) 0;
 }
 
 .upgrade-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 
 .upgrade-info {
@@ -441,13 +441,13 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 
 .upgrade-name {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
 }
 
 .upgrade-desc {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -457,7 +457,7 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 .upgrade-level {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .level-bar {
@@ -468,12 +468,12 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 .level-segment {
   min-width: 32px;
   height: 20px;
-  padding: 2px 4px;
+  padding: 2px var(--space-1);
   background: var(--border);
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-xs);
   font-weight: bold;
   color: var(--text-dim);
   display: flex;
@@ -521,12 +521,12 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 }
 
 .toggle-btn {
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
   background: var(--border);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-weight: bold;
   color: var(--text-dim);
   cursor: pointer;
@@ -544,12 +544,12 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 }
 
 .buy-btn {
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-3);
   background: rgba(139, 92, 246, 0.15);
   border: 1px solid var(--purple);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-weight: bold;
   color: var(--purple);
   cursor: pointer;
@@ -568,7 +568,7 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
 
 .max-label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-weight: bold;
   color: var(--green);
   text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);

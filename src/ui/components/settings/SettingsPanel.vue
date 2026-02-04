@@ -324,14 +324,14 @@ function cancelReset() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: var(--space-4) var(--space-5);
   background: var(--elevated);
   border-bottom: 1px solid var(--border);
 }
 
 .settings-header h2 {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--text-primary);
   margin: 0;
@@ -345,9 +345,9 @@ function cancelReset() {
   justify-content: center;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-lg);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -369,13 +369,13 @@ function cancelReset() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -392,39 +392,39 @@ function cancelReset() {
 }
 
 .tab-icon {
-  font-size: 14px;
+  font-size: var(--text-lg);
 }
 
 .settings-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--space-4);
 }
 
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .setting-group {
-  padding: 16px !important;
+  padding: var(--space-4) !important;
 }
 
 .setting-group h3 {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 16px;
+  margin: 0 0 var(--space-4);
 }
 
 .setting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -440,12 +440,12 @@ function cancelReset() {
 
 .setting-label {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--text-primary);
 }
 
 .setting-desc {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 
@@ -458,12 +458,12 @@ function cancelReset() {
 }
 
 .setting-select {
-  padding: 6px 12px;
+  padding: var(--space-2) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-primary);
   cursor: pointer;
 }
@@ -496,7 +496,7 @@ function cancelReset() {
   bottom: 0;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: var(--radius-pill);
   transition: 0.3s;
 }
 
@@ -526,28 +526,28 @@ function cancelReset() {
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
+  gap: var(--space-1);
+  padding: var(--space-3);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 
 .stat-item .stat-label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
 }
 
 .stat-item .stat-value {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--text-primary);
 }
@@ -559,7 +559,7 @@ function cancelReset() {
 /* Data Actions */
 .data-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .data-btn {
@@ -567,13 +567,13 @@ function cancelReset() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -585,17 +585,17 @@ function cancelReset() {
 }
 
 .btn-icon {
-  font-size: 14px;
+  font-size: var(--text-lg);
 }
 
 .export-success {
-  margin-top: 12px;
-  padding: 10px;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
   background: rgba(34, 197, 94, 0.1);
   border: 1px solid var(--green);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--green);
   text-align: center;
 }
@@ -610,20 +610,20 @@ function cancelReset() {
 }
 
 .danger-warning {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-3);
   line-height: 1.4;
 }
 
 .reset-btn {
   width: 100%;
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid var(--red);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--red);
   cursor: pointer;
   transition: all 0.2s;
@@ -648,34 +648,34 @@ function cancelReset() {
 .confirm-modal {
   width: 100%;
   max-width: 400px;
-  padding: 24px !important;
+  padding: var(--space-6) !important;
 }
 
 .confirm-modal h3 {
   font-family: var(--font-mono);
-  font-size: 16px;
+  font-size: var(--text-xl);
   color: var(--red);
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-3);
 }
 
 .confirm-modal p {
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--text-secondary);
-  margin: 0 0 20px;
+  margin: 0 0 var(--space-5);
   line-height: 1.5;
 }
 
 .modal-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .modal-btn {
   flex: 1;
-  padding: 10px 16px;
-  border-radius: 4px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -698,6 +698,6 @@ function cancelReset() {
 }
 
 .modal-btn.danger:hover {
-  background: #dc2626;
+  background: var(--red-hover);
 }
 </style>

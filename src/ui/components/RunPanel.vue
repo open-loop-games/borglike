@@ -299,16 +299,16 @@ function handleDismiss() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   background: var(--elevated);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .run-info {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .run-class {
@@ -322,24 +322,24 @@ function handleDismiss() {
 }
 
 .run-personality {
-  font-size: 10px;
-  padding: 1px 4px;
+  font-size: var(--text-sm);
+  padding: 1px var(--space-1);
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   text-shadow: 0 0 6px currentColor;
 }
 
 .run-boosters {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .booster-badge {
-  font-size: 12px;
-  padding: 2px 4px;
+  font-size: var(--text-base);
+  padding: 2px var(--space-1);
   background: rgba(139, 92, 246, 0.15);
   border: 1px solid var(--purple);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   color: var(--purple);
   cursor: default;
 }
@@ -362,7 +362,7 @@ function handleDismiss() {
 
 .run-controls {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .control-btn {
@@ -374,10 +374,10 @@ function handleDismiss() {
   background: var(--highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-family: var(--font-mono);
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   transition: all 0.2s;
 }
 
@@ -436,17 +436,17 @@ function handleDismiss() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 12px;
+  padding: var(--space-2) var(--space-3);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .stat-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .bars-group {
@@ -455,19 +455,19 @@ function handleDismiss() {
   align-items: stretch;
   flex: 1;
   max-width: 220px;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .bar-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   width: 100%;
 }
 
 .stat-label {
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: var(--text-sm);
   width: 20px;
   flex-shrink: 0;
 }
@@ -479,11 +479,11 @@ function handleDismiss() {
 .stat {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .stat-icon {
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .stat.kills {
@@ -505,19 +505,19 @@ function handleDismiss() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   background: rgba(10, 10, 18, 0.9);
 }
 
 .new-best-badge {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   font-weight: bold;
   color: var(--amber);
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid var(--amber);
-  padding: 2px 8px;
-  border-radius: 3px;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-md);
   letter-spacing: 1px;
   text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
   animation: pulse-best 1.5s ease-in-out infinite;
@@ -537,7 +537,7 @@ function handleDismiss() {
 
 .death-text {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--red);
   text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
@@ -546,9 +546,9 @@ function handleDismiss() {
 
 .death-character {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .char-race {
@@ -560,22 +560,22 @@ function handleDismiss() {
 }
 
 .char-personality {
-  font-size: 9px;
-  padding: 1px 4px;
+  font-size: var(--text-xs);
+  padding: 1px var(--space-1);
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .death-cause {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .death-metrics {
   display: flex;
-  gap: 16px;
+  gap: var(--space-4);
   font-family: var(--font-mono);
 }
 
@@ -587,7 +587,7 @@ function handleDismiss() {
 }
 
 .metric-value {
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: bold;
 }
 
@@ -616,7 +616,7 @@ function handleDismiss() {
 }
 
 .metric-label {
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -625,12 +625,12 @@ function handleDismiss() {
 .essence-earned {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-family: var(--font-mono);
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-3);
   background: rgba(139, 92, 246, 0.1);
   border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   margin-top: 2px;
 }
 
@@ -640,33 +640,33 @@ function handleDismiss() {
 }
 
 .essence-value {
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: bold;
   color: var(--purple);
   text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
 }
 
 .essence-label {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 
 .death-actions {
   display: flex;
-  gap: 6px;
-  margin-top: 6px;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .death-btn {
-  padding: 6px 12px;
+  padding: var(--space-2) var(--space-3);
   font-family: var(--font-mono);
-  font-size: 11px;
-  border-radius: 3px;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .death-btn.expand {
@@ -698,7 +698,7 @@ function handleDismiss() {
 }
 
 .death-btn.restart:hover {
-  background: #4f46e5;
+  background: var(--indigo-hover);
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
 }
 

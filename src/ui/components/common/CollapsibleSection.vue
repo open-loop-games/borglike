@@ -36,7 +36,7 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.03),
     0 2px 6px rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -47,14 +47,14 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 .section-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   width: 100%;
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-2);
   background: transparent;
   border: none;
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -67,7 +67,7 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 }
 
 .chevron {
-  font-size: 8px;
+  font-size: var(--text-2xs);
   width: 10px;
   color: var(--text-dim);
   transition: color 0.15s;
@@ -83,16 +83,16 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 }
 
 .badge {
-  font-size: 9px;
+  font-size: var(--text-xs);
   padding: 1px 5px;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
 }
 
 .section-content {
-  padding: 6px 8px 8px;
+  padding: var(--space-2) var(--space-2) var(--space-2);
   border-top: 1px solid var(--border);
 }
 </style>

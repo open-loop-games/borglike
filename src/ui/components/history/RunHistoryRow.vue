@@ -304,7 +304,7 @@ const processedInventory = computed(() => {
 .run-row {
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -321,10 +321,10 @@ const processedInventory = computed(() => {
 .row-collapsed {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .rank {
@@ -348,7 +348,7 @@ const processedInventory = computed(() => {
   width: 32px;
   color: var(--cyan);
   font-weight: bold;
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .depth {
@@ -372,11 +372,11 @@ const processedInventory = computed(() => {
   color: var(--purple);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .essence-icon {
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .death-cause {
@@ -396,16 +396,16 @@ const processedInventory = computed(() => {
 .expand-icon {
   width: 16px;
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .row-expanded {
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border);
 }
 
 .expanded-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .expanded-section:last-child {
@@ -413,8 +413,8 @@ const processedInventory = computed(() => {
 }
 
 .expanded-section h4 {
-  margin: 0 0 8px 0;
-  font-size: 12px;
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   text-transform: uppercase;
 }
@@ -422,13 +422,13 @@ const processedInventory = computed(() => {
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .detail {
   display: flex;
-  gap: 8px;
-  font-size: 12px;
+  gap: var(--space-2);
+  font-size: var(--text-base);
 }
 
 .detail .label {
@@ -475,7 +475,7 @@ const processedInventory = computed(() => {
 }
 
 .detail .value.gold-spent {
-  color: var(--orange, #f97316);
+  color: var(--orange);
 }
 
 .personality-full {
@@ -484,8 +484,8 @@ const processedInventory = computed(() => {
 }
 
 .killer-info {
-  font-size: 13px;
-  margin-bottom: 4px;
+  font-size: var(--text-md);
+  margin-bottom: var(--space-1);
 }
 
 .killer-name {
@@ -495,11 +495,11 @@ const processedInventory = computed(() => {
 
 .killer-stats {
   color: var(--text-dim);
-  margin-left: 8px;
+  margin-left: var(--space-2);
 }
 
 .death-depth {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   font-style: italic;
 }
@@ -507,31 +507,31 @@ const processedInventory = computed(() => {
 .booster-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .booster-item {
-  font-size: 12px;
-  padding: 4px 10px;
+  font-size: var(--text-base);
+  padding: var(--space-1) var(--space-3);
   background: rgba(99, 102, 241, 0.15);
   border: 1px solid rgba(99, 102, 241, 0.3);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--indigo);
 }
 
 .equipment-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .equipment-item {
   display: flex;
-  gap: 8px;
-  font-size: 12px;
-  padding: 4px 8px;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
 }
 
 .equipment-item.artifact {
@@ -554,20 +554,20 @@ const processedInventory = computed(() => {
 
 .enchant {
   color: var(--green);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .inventory-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .inventory-item {
-  font-size: 11px;
-  padding: 2px 8px;
+  font-size: var(--text-sm);
+  padding: 2px var(--space-2);
   background: var(--highlight);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
 }
 </style>

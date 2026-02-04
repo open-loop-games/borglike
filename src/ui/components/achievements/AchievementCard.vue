@@ -106,8 +106,8 @@ const categoryColor = computed(() => {
 .achievement-card {
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
@@ -152,12 +152,12 @@ const categoryColor = computed(() => {
 .card-content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .achievement-icon {
   font-family: var(--font-mono);
-  font-size: 24px;
+  font-size: var(--text-4xl);
   font-weight: bold;
   width: 40px;
   height: 40px;
@@ -165,7 +165,7 @@ const categoryColor = computed(() => {
   align-items: center;
   justify-content: center;
   background: var(--void);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-dim);
 }
 
@@ -181,7 +181,7 @@ const categoryColor = computed(() => {
 }
 
 .achievement-name {
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -195,7 +195,7 @@ const categoryColor = computed(() => {
 }
 
 .achievement-desc {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   margin-top: 2px;
   white-space: nowrap;
@@ -206,20 +206,20 @@ const categoryColor = computed(() => {
 .achievement-reward {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   background: rgba(139, 92, 246, 0.15);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
 }
 
 .reward-icon {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--purple);
 }
 
 .reward-value {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--purple);
 }
@@ -242,18 +242,18 @@ const categoryColor = computed(() => {
 .progress-text {
   position: absolute;
   bottom: 6px;
-  right: 8px;
-  font-size: 9px;
+  right: var(--space-2);
+  font-size: var(--text-xs);
   color: var(--text-dim);
 }
 
 .category-badge {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 8px;
+  top: var(--space-1);
+  left: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-2xs);
   font-weight: 600;
   text-transform: uppercase;
   color: white;
@@ -269,20 +269,20 @@ const categoryColor = computed(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 12px;
+  padding-right: var(--space-3);
   background: linear-gradient(90deg, transparent 40%, rgba(139, 92, 246, 0.15) 100%);
 }
 
 .claim-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   background: var(--purple);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: bold;
   color: white;
   cursor: pointer;
@@ -291,11 +291,11 @@ const categoryColor = computed(() => {
 }
 
 .claim-btn:hover {
-  background: #a78bfa;
+  background: var(--violet);
   transform: scale(1.05);
 }
 
 .claim-icon {
-  font-size: 14px;
+  font-size: var(--text-lg);
 }
 </style>

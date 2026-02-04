@@ -110,8 +110,8 @@ const statPreview = computed(() => {
 .race-card {
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
@@ -141,7 +141,7 @@ const statPreview = computed(() => {
   top: 0;
   left: 0;
   right: 0;
-  font-size: 8px;
+  font-size: var(--text-2xs);
   font-weight: bold;
   letter-spacing: 0.5px;
   padding: 2px 0;
@@ -151,17 +151,17 @@ const statPreview = computed(() => {
 }
 
 .category-badge.starter {
-  color: #22c55e;
+  color: var(--green);
   background: rgba(34, 197, 94, 0.1);
 }
 
 .category-badge.unlockable {
-  color: #3b82f6;
+  color: var(--blue);
   background: rgba(59, 130, 246, 0.1);
 }
 
 .category-badge.prestige {
-  color: #f59e0b;
+  color: var(--amber);
   background: rgba(245, 158, 11, 0.1);
 }
 
@@ -169,20 +169,20 @@ const statPreview = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  margin-top: 12px;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
 }
 
 .race-symbol {
   font-family: var(--font-mono);
-  font-size: 32px;
+  font-size: var(--text-5xl);
   font-weight: bold;
   line-height: 1;
   text-shadow: 0 0 8px currentColor;
 }
 
 .race-name {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-primary);
   text-align: center;
   overflow: hidden;
@@ -196,14 +196,14 @@ const statPreview = computed(() => {
 }
 
 .stat-preview {
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--text-secondary);
   font-family: var(--font-mono);
   margin-top: 2px;
 }
 
 .unlock-hint {
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   font-style: italic;
   margin-top: 2px;
@@ -215,18 +215,18 @@ const statPreview = computed(() => {
 }
 
 .win-count {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--green);
-  margin-top: 4px;
-  padding: 2px 6px;
+  margin-top: var(--space-1);
+  padding: 2px var(--space-2);
   background: rgba(34, 197, 94, 0.1);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
 }
 
 .unlocked-badge {
   position: absolute;
   top: 14px;
-  right: 4px;
+  right: var(--space-1);
   width: 16px;
   height: 16px;
   background: var(--green);
@@ -234,19 +234,19 @@ const statPreview = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: var(--text-xs);
   color: white;
 }
 
 .race-card.prestige .unlocked-badge {
-  background: #f59e0b;
+  background: var(--amber);
 }
 
 .lock-icon {
   position: absolute;
   top: 14px;
-  right: 4px;
-  font-size: 12px;
+  right: var(--space-1);
+  font-size: var(--text-base);
   opacity: 0.5;
 }
 </style>

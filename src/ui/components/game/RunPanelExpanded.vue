@@ -570,7 +570,7 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
@@ -578,7 +578,7 @@ function formatGoal(goal: string | undefined): string {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .collapse-btn {
@@ -589,9 +589,9 @@ function formatGoal(goal: string | undefined): string {
   justify-content: center;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-lg);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -604,9 +604,9 @@ function formatGoal(goal: string | undefined): string {
 
 .run-identity {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
 }
 
 .run-class {
@@ -622,42 +622,42 @@ function formatGoal(goal: string | undefined): string {
 .header-center {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .slot-badge {
   font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 4px 10px;
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
   text-transform: uppercase;
 }
 
 .run-time {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--text-dim);
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .turbo-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: var(--space-2);
+  padding: var(--space-2) 14px;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -676,19 +676,19 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .turbo-icon {
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .kill-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: var(--space-2);
+  padding: var(--space-2) 14px;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -735,29 +735,29 @@ function formatGoal(goal: string | undefined): string {
 /* Stats Panel */
 /* AI Status */
 .ai-status {
-  padding: 6px 8px;
+  padding: var(--space-2) var(--space-2);
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .ai-goal,
 .ai-blocker {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
   align-items: baseline;
 }
 
 .ai-blocker {
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .ai-label {
   color: var(--text-dim);
   text-transform: uppercase;
-  font-size: 9px;
+  font-size: var(--text-xs);
   flex-shrink: 0;
 }
 
@@ -774,31 +774,31 @@ function formatGoal(goal: string | undefined): string {
 
 .stats-panel {
   width: 220px;
-  padding: 8px;
+  padding: var(--space-2);
   background: var(--panel);
   border-right: 1px solid var(--border);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .stat-section {
-  padding: 8px !important;
+  padding: var(--space-2) !important;
 }
 
 .stat-section h3 {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
 }
 
 .stat-label {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 
@@ -806,8 +806,8 @@ function formatGoal(goal: string | undefined): string {
 .vitals .resource-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .vitals .resource-row :deep(.progress-bar) {
@@ -823,9 +823,9 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .stat-item .val {
@@ -852,28 +852,28 @@ function formatGoal(goal: string | undefined): string {
 .equip-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .equip-slot {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4px 2px;
+  padding: var(--space-1) 2px;
   background: var(--highlight);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-md);
 }
 
 .slot-char {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   line-height: 1;
 }
 
 .slot-label {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: var(--text-2xs);
   color: var(--text-dim);
   text-transform: lowercase;
 }
@@ -887,10 +887,10 @@ function formatGoal(goal: string | undefined): string {
 .inv-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 2px 0;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .item-char {
@@ -912,7 +912,7 @@ function formatGoal(goal: string | undefined): string {
 
 .inv-empty,
 .inv-more {
-  font-size: 10px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   font-style: italic;
 }
@@ -927,9 +927,9 @@ function formatGoal(goal: string | undefined): string {
 .consumable-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .consumable-count {
@@ -940,14 +940,14 @@ function formatGoal(goal: string | undefined): string {
 .status-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .status-badge {
   font-family: var(--font-mono);
-  font-size: 9px;
-  padding: 3px 8px;
-  border-radius: 3px;
+  font-size: var(--text-xs);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-md);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -980,10 +980,10 @@ function formatGoal(goal: string | undefined): string {
 .run-status-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
+  gap: var(--space-2);
+  padding: var(--space-2);
   background: var(--highlight);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
 
@@ -991,8 +991,8 @@ function formatGoal(goal: string | undefined): string {
 .resource-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .resource-row :deep(.progress-bar) {
@@ -1008,14 +1008,14 @@ function formatGoal(goal: string | undefined): string {
 .core-stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px 8px;
+  gap: var(--space-1) var(--space-2);
 }
 
 .core-stat {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .core-label {
@@ -1047,14 +1047,14 @@ function formatGoal(goal: string | undefined): string {
 .combat-stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px 8px;
+  gap: var(--space-1) var(--space-2);
 }
 
 .combat-stat {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .combat-label {
@@ -1092,14 +1092,14 @@ function formatGoal(goal: string | undefined): string {
 .resist-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px 8px;
+  gap: var(--space-1) var(--space-2);
 }
 
 .resist-item {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 .resist-label {
@@ -1123,19 +1123,19 @@ function formatGoal(goal: string | undefined): string {
 .status-effects {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .status-effect {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 2px 6px;
   background: var(--highlight);
   border: 1px solid;
-  border-radius: 3px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-sm);
 }
 
 .status-name {
@@ -1152,12 +1152,12 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: var(--space-4);
   overflow: hidden;
 }
 
 .expanded-grid {
-  font-size: 16px;
+  font-size: var(--text-xl);
 }
 
 /* Death Overlay */
@@ -1175,7 +1175,7 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   text-align: center;
 }
 
@@ -1186,7 +1186,7 @@ function formatGoal(goal: string | undefined): string {
 
 .death-text {
   font-family: var(--font-mono);
-  font-size: 32px;
+  font-size: var(--text-5xl);
   font-weight: bold;
   color: var(--red);
   text-shadow: 0 0 24px rgba(239, 68, 68, 0.6);
@@ -1195,26 +1195,26 @@ function formatGoal(goal: string | undefined): string {
 
 .death-stats {
   display: flex;
-  gap: 24px;
+  gap: var(--space-6);
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--text-secondary);
 }
 
 .death-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 20px;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
 }
 
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 12px 24px;
-  border-radius: 4px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-lg);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -1227,7 +1227,7 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .action-btn.primary:hover {
-  background: #4f46e5;
+  background: var(--indigo-hover);
   box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
 }
 
