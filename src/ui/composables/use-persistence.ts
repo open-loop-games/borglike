@@ -12,6 +12,10 @@ import {
   exportDataAsJSON,
   importDataFromJSON,
   clearAllData,
+  saveManualBackup,
+  listBackups,
+  restoreFromBackup,
+  type BackupSlot,
 } from '@/stores/persistence'
 
 let initialized = false
@@ -76,6 +80,27 @@ export async function clearData(): Promise<void> {
 }
 
 /**
+ * Create a manual backup (for prestige/victory events)
+ */
+export async function createManualBackup(): Promise<void> {
+  await saveManualBackup()
+}
+
+/**
+ * Get list of available backups
+ */
+export async function getBackups(): Promise<BackupSlot[]> {
+  return listBackups()
+}
+
+/**
+ * Restore from a backup slot
+ */
+export async function restoreBackup(slot: 'recent' | 'hourly' | 'manual'): Promise<boolean> {
+  return restoreFromBackup(slot)
+}
+
+/**
  * Composable for components that need persistence utilities
  *
  * Note: Initialization is now handled by App.vue awaiting initPersistence().
@@ -88,6 +113,12 @@ export function usePersistence() {
     exportData,
     importData,
     clearData,
+    createManualBackup,
+    getBackups,
+    restoreBackup,
     initialized: () => initialized,
   }
 }
+
+// Re-export types for consumers
+export type { BackupSlot }

@@ -8,6 +8,7 @@
 import { openDB, type IDBPDatabase, type DBSchema } from 'idb'
 import { useProgressionStore, type UpgradeState } from './progression'
 import { watch } from 'vue'
+import LZString from 'lz-string'
 import type {
   Currency,
   UnlockState,
@@ -19,6 +20,209 @@ import type {
 } from '@/types/progression'
 import { startingRaces } from '@game/data/races'
 import { startingClasses } from '@game/data/classes'
+
+// ============================================================================
+// VERSIONING & MIGRATIONS
+// ============================================================================
+
+/** Current save data version - bump when adding migrations */
+const CURRENT_SAVE_VERSION = 2
+
+/** Migration function type */
+type MigrationFn = (data: ProgressionData) => ProgressionData
+
+/**
+ * Migration registry - keyed by TARGET version
+ * Each migration transforms data from (version - 1) to version
+ */
+const migrations: Record<number, MigrationFn> = {
+  // Version 2: Adds compression support marker (no structural changes)
+  2: (data) => data,
+}
+
+/**
+ * Run all pending version migrations sequentially
+ */
+function runVersionMigrations(data: ProgressionData): ProgressionData {
+  let current = data
+  let version = data.version ?? 1
+
+  while (version < CURRENT_SAVE_VERSION) {
+    const nextVersion = version + 1
+    const migration = migrations[nextVersion]
+
+    if (migration) {
+      console.info(`[Persistence] Running migration v${version} -> v${nextVersion}`)
+      current = migration(current)
+      current.version = nextVersion
+    } else {
+      // No migration defined, just bump version
+      current.version = nextVersion
+    }
+
+    version = nextVersion
+  }
+
+  return current
+}
+
+// ============================================================================
+// VALIDATION
+// ============================================================================
+
+/** Validation error with path and severity */
+interface ValidationError {
+  path: string
+  message: string
+  severity: 'error' | 'warning'
+}
+
+/** Result of save data validation */
+interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
+  repaired: boolean
+}
+
+/**
+ * Recursively check for NaN values in an object
+ */
+function checkForNaN(obj: unknown, path: string, errors: ValidationError[]): void {
+  if (obj === null || obj === undefined) return
+
+  if (typeof obj === 'number' && Number.isNaN(obj)) {
+    errors.push({ path: path || 'root', message: 'NaN value detected', severity: 'error' })
+    return
+  }
+
+  if (Array.isArray(obj)) {
+    obj.forEach((item, i) => checkForNaN(item, `${path}[${i}]`, errors))
+    return
+  }
+
+  if (typeof obj === 'object') {
+    for (const [key, value] of Object.entries(obj)) {
+      checkForNaN(value, path ? `${path}.${key}` : key, errors)
+    }
+  }
+}
+
+/**
+ * Validate progression data structure and values
+ * Auto-repairs obvious issues where safe (negative values, etc.)
+ */
+function validateProgressionData(data: ProgressionData): ValidationResult {
+  const errors: ValidationError[] = []
+  let repaired = false
+
+  // Check for NaN values recursively
+  checkForNaN(data, '', errors)
+
+  // Validate required fields
+  if (data.version === undefined) {
+    errors.push({ path: 'version', message: 'Missing version', severity: 'warning' })
+    data.version = 1
+    repaired = true
+  }
+
+  if (!data.currency) {
+    errors.push({ path: 'currency', message: 'Missing currency object', severity: 'error' })
+  } else {
+    // Auto-repair negative values
+    if (typeof data.currency.essence === 'number' && data.currency.essence < 0) {
+      errors.push({
+        path: 'currency.essence',
+        message: 'Negative essence repaired',
+        severity: 'warning',
+      })
+      data.currency.essence = 0
+      repaired = true
+    }
+    if (typeof data.currency.artifacts === 'number' && data.currency.artifacts < 0) {
+      errors.push({
+        path: 'currency.artifacts',
+        message: 'Negative artifacts repaired',
+        severity: 'warning',
+      })
+      data.currency.artifacts = 0
+      repaired = true
+    }
+  }
+
+  // Validate unlocks structure
+  if (!data.unlocks) {
+    errors.push({ path: 'unlocks', message: 'Missing unlocks object', severity: 'error' })
+  } else {
+    if (!Array.isArray(data.unlocks.races)) {
+      errors.push({ path: 'unlocks.races', message: 'Invalid races unlock', severity: 'error' })
+    }
+    if (!Array.isArray(data.unlocks.classes)) {
+      errors.push({ path: 'unlocks.classes', message: 'Invalid classes unlock', severity: 'error' })
+    }
+  }
+
+  // Auto-repair negative prestige level
+  if (typeof data.prestigeLevel === 'number' && data.prestigeLevel < 0) {
+    errors.push({
+      path: 'prestigeLevel',
+      message: 'Negative prestige level repaired',
+      severity: 'warning',
+    })
+    data.prestigeLevel = 0
+    repaired = true
+  }
+
+  // Auto-repair negative lifetime essence
+  if (typeof data.lifetimeEssence === 'number' && data.lifetimeEssence < 0) {
+    errors.push({
+      path: 'lifetimeEssence',
+      message: 'Negative lifetime essence repaired',
+      severity: 'warning',
+    })
+    data.lifetimeEssence = 0
+    repaired = true
+  }
+
+  return {
+    valid: errors.filter((e) => e.severity === 'error').length === 0,
+    errors,
+    repaired,
+  }
+}
+
+// ============================================================================
+// COMPRESSION
+// ============================================================================
+
+/** Marker prefix for compressed data in localStorage */
+const COMPRESSION_MARKER = 'LZ:'
+
+/** Export format magic header */
+const EXPORT_MAGIC_V2 = 'BORGLIKE_V2_'
+
+/**
+ * Compress progression data for localStorage storage
+ */
+function compressForStorage(data: ProgressionData): string {
+  const json = JSON.stringify(data)
+  return COMPRESSION_MARKER + LZString.compressToUTF16(json)
+}
+
+/**
+ * Decompress data from localStorage, handling both compressed and uncompressed formats
+ */
+function decompressFromStorage(stored: string): ProgressionData {
+  // Handle compressed format
+  if (stored.startsWith(COMPRESSION_MARKER)) {
+    const compressed = stored.slice(COMPRESSION_MARKER.length)
+    const json = LZString.decompressFromUTF16(compressed)
+    if (!json) throw new Error('Failed to decompress localStorage backup')
+    return JSON.parse(json) as ProgressionData
+  }
+
+  // Handle raw JSON format (v1 backward compatibility)
+  return JSON.parse(stored) as ProgressionData
+}
 
 // ============================================================================
 // DATABASE SCHEMA
@@ -70,6 +274,22 @@ interface ProgressionData {
   winHistory?: RunStats[]
 }
 
+/** Backup slot identifiers */
+type BackupSlotId = 'recent' | 'hourly' | 'manual'
+
+/** Stored backup data */
+interface BackupData {
+  data: ProgressionData
+  timestamp: number
+}
+
+/** Public backup info for UI */
+export interface BackupSlot {
+  id: BackupSlotId
+  data: ProgressionData
+  timestamp: number
+}
+
 /** Database schema for type safety */
 interface BorglikeDB extends DBSchema {
   progression: {
@@ -81,10 +301,14 @@ interface BorglikeDB extends DBSchema {
     value: RunStats
     indexes: { 'by-time': number }
   }
+  backups: {
+    key: BackupSlotId
+    value: BackupData
+  }
 }
 
 const DB_NAME = 'borglike-progress'
-const DB_VERSION = 1
+const DB_VERSION = 2 // Bumped for backups store
 
 // ============================================================================
 // DATABASE INITIALIZATION
@@ -99,7 +323,7 @@ export async function initDB(): Promise<IDBPDatabase<BorglikeDB>> {
   if (db) return db
 
   db = await openDB<BorglikeDB>(DB_NAME, DB_VERSION, {
-    upgrade(database, _oldVersion, _newVersion) {
+    upgrade(database, oldVersion, _newVersion) {
       // Create progression store
       if (!database.objectStoreNames.contains('progression')) {
         database.createObjectStore('progression')
@@ -112,6 +336,12 @@ export async function initDB(): Promise<IDBPDatabase<BorglikeDB>> {
           autoIncrement: true,
         })
         runStore.createIndex('by-time', 'startTime')
+      }
+
+      // Version 2: Add backups store
+      if (oldVersion < 2 && !database.objectStoreNames.contains('backups')) {
+        database.createObjectStore('backups')
+        console.info('[Persistence] Created backups store (DB v2)')
       }
     },
   })
@@ -229,6 +459,11 @@ function serializeProgression(): ProgressionData {
     class: config.class,
     personality: config.personality,
     boosters: [config.boosters[0], config.boosters[1]] as [string | null, string | null],
+    capabilities: { ...config.capabilities },
+    toggles: { ...config.toggles },
+    sweepLevelRange: { ...config.sweepLevelRange },
+    activeSweepLevel: config.activeSweepLevel,
+    activeSurfLevel: config.activeSurfLevel,
   }))
 
   // Deep clone bestiary to strip reactivity
@@ -253,7 +488,7 @@ function serializeProgression(): ProgressionData {
   }
 
   return {
-    version: 1,
+    version: CURRENT_SAVE_VERSION,
     currency: { essence: progression.currency.essence, artifacts: progression.currency.artifacts },
     unlocks: serializeUnlocks(progression.unlocks),
     globalStats: { ...progression.globalStats },
@@ -370,7 +605,10 @@ function restoreProgressionFromData(data: ProgressionData): void {
  */
 export async function saveProgression(): Promise<void> {
   const database = await initDB()
-  await database.put('progression', serializeProgression(), 'main')
+  const data = serializeProgression()
+  // Deep clone to strip Vue reactivity proxies (IndexedDB uses structured clone which can't handle Proxies)
+  const plainData = JSON.parse(JSON.stringify(data)) as ProgressionData
+  await database.put('progression', plainData, 'main')
 }
 
 /**
@@ -406,10 +644,34 @@ export async function saveAllRuns(runs: RunStats[]): Promise<void> {
  */
 export async function loadProgression(): Promise<boolean> {
   const database = await initDB()
-  const data = await database.get('progression', 'main')
+  let data = await database.get('progression', 'main')
 
   if (!data) {
     return false
+  }
+
+  // Validate save data
+  const validation = validateProgressionData(data)
+  if (!validation.valid) {
+    console.error('[Persistence] Save validation failed:', validation.errors)
+    // Continue anyway - we'll try to load what we can
+  }
+  if (validation.repaired) {
+    console.warn(
+      '[Persistence] Save data was repaired:',
+      validation.errors.filter((e) => e.severity === 'warning')
+    )
+  }
+
+  // Run version migrations if needed
+  const originalVersion = data.version ?? 1
+  data = runVersionMigrations(data)
+
+  // Save migrated/repaired data back if changed
+  if (data.version !== originalVersion || validation.repaired) {
+    const plainData = JSON.parse(JSON.stringify(data)) as ProgressionData
+    await database.put('progression', plainData, 'main')
+    console.info(`[Persistence] Saved migrated data (v${originalVersion} -> v${data.version})`)
   }
 
   restoreProgressionFromData(data)
@@ -487,6 +749,8 @@ function scheduleSave(): void {
     const success = await saveWithRetry()
     if (success) {
       console.debug('[Persistence] Auto-saved progression')
+      // Check and save timed backups after successful save
+      await checkAndSaveTimedBackups()
     }
   }, SAVE_DEBOUNCE_MS)
 }
@@ -506,7 +770,7 @@ export async function saveImmediately(): Promise<void> {
  * Set up beforeunload handler to save on page close
  *
  * Uses localStorage as a synchronous backup since IndexedDB is async
- * and may not complete before the page closes.
+ * and may not complete before the page closes. Data is compressed to save space.
  *
  * @returns Cleanup function to remove the event listener
  */
@@ -518,13 +782,21 @@ export function setupUnloadHandler(): () => void {
       saveTimeout = null
     }
 
-    // Synchronous backup to localStorage (IndexedDB may not complete in time)
+    // Synchronous backup to localStorage with compression
     try {
       const data = getProgressionSnapshot()
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(data))
-      console.debug('[Persistence] Backup saved to localStorage on unload')
-    } catch (err) {
-      console.error('[Persistence] Failed to save backup on unload:', err)
+      const compressed = compressForStorage(data)
+      localStorage.setItem(BACKUP_KEY, compressed)
+      console.debug('[Persistence] Compressed backup saved to localStorage on unload')
+    } catch {
+      // Fall back to uncompressed if compression fails
+      try {
+        const data = getProgressionSnapshot()
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(data))
+        console.warn('[Persistence] Compression failed, saved uncompressed backup')
+      } catch (fallbackErr) {
+        console.error('[Persistence] Failed to save backup on unload:', fallbackErr)
+      }
     }
   }
 
@@ -545,13 +817,15 @@ export function setupUnloadHandler(): () => void {
  *
  * Called during initialization to recover data that may have been lost
  * due to the browser closing before IndexedDB could complete a save.
+ * Handles both compressed and uncompressed backup formats.
  */
 async function checkAndRestoreBackup(): Promise<void> {
   try {
-    const backupJson = localStorage.getItem(BACKUP_KEY)
-    if (!backupJson) return
+    const stored = localStorage.getItem(BACKUP_KEY)
+    if (!stored) return
 
-    const backup = JSON.parse(backupJson) as ProgressionData
+    // Decompress/parse the backup (handles both formats)
+    const backup = decompressFromStorage(stored)
     const progression = useProgressionStore()
 
     // Compare lifetime essence - backup is newer if it has more lifetime essence
@@ -560,6 +834,9 @@ async function checkAndRestoreBackup(): Promise<void> {
     const backupLifetime = backup.lifetimeEssence ?? 0
 
     if (backupLifetime > currentLifetime) {
+      console.info(
+        `[Persistence] Restoring localStorage backup (${backupLifetime} > ${currentLifetime} lifetime essence)`
+      )
       restoreProgressionFromData(backup)
       await saveProgression()
     }
@@ -568,6 +845,8 @@ async function checkAndRestoreBackup(): Promise<void> {
     localStorage.removeItem(BACKUP_KEY)
   } catch (err) {
     console.error('[Persistence] Failed to check/restore backup:', err)
+    // Clear corrupted backup
+    localStorage.removeItem(BACKUP_KEY)
   }
 }
 
@@ -632,8 +911,9 @@ export function setupAutoSave(): () => void {
 // ============================================================================
 
 /**
- * Export all game data as JSON string
+ * Export all game data as a compressed string with magic header
  *
+ * Format: BORGLIKE_V2_<base64-compressed-json>
  * Useful for manual backup or transferring progress.
  */
 export async function exportDataAsJSON(): Promise<string> {
@@ -641,7 +921,7 @@ export async function exportDataAsJSON(): Promise<string> {
   const runs = await loadRunHistory()
 
   const exportData = {
-    version: 1,
+    version: 2,
     exportedAt: Date.now(),
     progression: {
       currency: { ...progression.currency },
@@ -664,28 +944,74 @@ export async function exportDataAsJSON(): Promise<string> {
     runHistory: runs,
   }
 
-  return JSON.stringify(exportData, null, 2)
+  // Compress and add magic header
+  const json = JSON.stringify(exportData)
+  const compressed = LZString.compressToBase64(json)
+  return EXPORT_MAGIC_V2 + compressed
 }
 
 /**
- * Import game data from JSON string
+ * Import game data from string (supports both v1 raw JSON and v2 compressed formats)
  *
- * @param jsonString - The exported JSON data
+ * @param input - The exported data string
  * @returns true if import was successful
  */
-export async function importDataFromJSON(jsonString: string): Promise<boolean> {
+export async function importDataFromJSON(input: string): Promise<boolean> {
   try {
-    const data = JSON.parse(jsonString)
+    let data: {
+      version: number
+      exportedAt?: number
+      progression: {
+        currency: Currency
+        unlocks: SerializedUnlockState
+        globalStats: GlobalStats
+        upgradeLevels: UpgradeState
+        prestigeLevel: number
+        lifetimeEssence: number
+        totalVictories: number
+        activeLoadout?: SerializedRunLoadout
+        bestiary?: Record<string, BestiaryEntry>
+        itemArmory?: Record<string, ArmoryEntry>
+        slotConfigs?: SlotConfig[]
+        achievements?: SerializedAchievementState
+        topRunsByDepth?: RunStats[]
+        topRunsByEssence?: RunStats[]
+        topRunsByKills?: RunStats[]
+        winHistory?: RunStats[]
+      }
+      runHistory?: RunStats[]
+    }
 
-    if (data.version !== 1) {
+    // Detect format and decode
+    if (input.startsWith(EXPORT_MAGIC_V2)) {
+      // V2 compressed format
+      const compressed = input.slice(EXPORT_MAGIC_V2.length)
+      const json = LZString.decompressFromBase64(compressed)
+      if (!json) {
+        console.error('[Persistence] Failed to decompress import data')
+        return false
+      }
+      data = JSON.parse(json)
+      console.info('[Persistence] Importing v2 compressed format')
+    } else if (input.startsWith('{')) {
+      // V1 raw JSON format (backward compatible)
+      data = JSON.parse(input)
+      console.info('[Persistence] Importing v1 raw JSON format')
+    } else {
+      console.error('[Persistence] Unrecognized export format')
+      return false
+    }
+
+    // Validate export version (support both v1 and v2)
+    if (data.version !== 1 && data.version !== 2) {
       console.error('[Persistence] Unsupported export version:', data.version)
       return false
     }
 
     // Convert export format to ProgressionData format
     const prog = data.progression
-    const progressionData: ProgressionData = {
-      version: 1,
+    let progressionData: ProgressionData = {
+      version: 1, // Will be migrated up
       currency: prog.currency,
       unlocks: prog.unlocks,
       globalStats: prog.globalStats,
@@ -704,6 +1030,16 @@ export async function importDataFromJSON(jsonString: string): Promise<boolean> {
       winHistory: prog.winHistory,
     }
 
+    // Validate imported data
+    const validation = validateProgressionData(progressionData)
+    if (!validation.valid) {
+      console.error('[Persistence] Import validation failed:', validation.errors)
+      return false
+    }
+
+    // Run migrations to bring up to current version
+    progressionData = runVersionMigrations(progressionData)
+
     restoreProgressionFromData(progressionData)
     await saveProgression()
 
@@ -715,6 +1051,7 @@ export async function importDataFromJSON(jsonString: string): Promise<boolean> {
       await loadRunHistoryIntoStore()
     }
 
+    console.info('[Persistence] Import successful')
     return true
   } catch (error) {
     console.error('[Persistence] Import failed:', error)
@@ -733,7 +1070,117 @@ export async function clearAllData(): Promise<void> {
   const database = await initDB()
   await database.delete('progression', 'main')
   await database.clear('runHistory')
+  // Also clear localStorage backup so it doesn't restore on next load
+  localStorage.removeItem(BACKUP_KEY)
   console.warn('[Persistence] All saved data cleared')
+}
+
+// ============================================================================
+// BACKUP ROTATION
+// ============================================================================
+
+/** Backup interval timers */
+let lastRecentBackup = 0
+let lastHourlyBackup = 0
+
+/** Backup intervals in milliseconds */
+const RECENT_BACKUP_INTERVAL = 5 * 60 * 1000 // 5 minutes
+const HOURLY_BACKUP_INTERVAL = 60 * 60 * 1000 // 1 hour
+
+/**
+ * Save a backup to a specific slot
+ */
+async function saveBackupToSlot(slot: BackupSlotId): Promise<void> {
+  const database = await initDB()
+  const data = serializeProgression()
+  const plainData = JSON.parse(JSON.stringify(data)) as ProgressionData
+
+  await database.put(
+    'backups',
+    {
+      data: plainData,
+      timestamp: Date.now(),
+    },
+    slot
+  )
+
+  console.debug(`[Persistence] Backup saved to '${slot}' slot`)
+}
+
+/**
+ * Check and save timed backups (called during auto-save)
+ */
+async function checkAndSaveTimedBackups(): Promise<void> {
+  const now = Date.now()
+
+  // Recent backup (every 5 minutes)
+  if (now - lastRecentBackup >= RECENT_BACKUP_INTERVAL) {
+    await saveBackupToSlot('recent')
+    lastRecentBackup = now
+  }
+
+  // Hourly backup
+  if (now - lastHourlyBackup >= HOURLY_BACKUP_INTERVAL) {
+    await saveBackupToSlot('hourly')
+    lastHourlyBackup = now
+  }
+}
+
+/**
+ * Save a manual backup (call on prestige/victory events)
+ */
+export async function saveManualBackup(): Promise<void> {
+  await saveBackupToSlot('manual')
+  console.info('[Persistence] Manual backup saved')
+}
+
+/**
+ * List all available backups
+ */
+export async function listBackups(): Promise<BackupSlot[]> {
+  const database = await initDB()
+  const backups: BackupSlot[] = []
+
+  for (const id of ['recent', 'hourly', 'manual'] as const) {
+    const backup = await database.get('backups', id)
+    if (backup) {
+      backups.push({ id, ...backup })
+    }
+  }
+
+  // Sort by timestamp descending (most recent first)
+  return backups.sort((a, b) => b.timestamp - a.timestamp)
+}
+
+/**
+ * Restore game state from a backup slot
+ */
+export async function restoreFromBackup(slot: BackupSlotId): Promise<boolean> {
+  const database = await initDB()
+  const backup = await database.get('backups', slot)
+
+  if (!backup) {
+    console.error(`[Persistence] No backup found in '${slot}' slot`)
+    return false
+  }
+
+  // Validate backup data
+  const validation = validateProgressionData(backup.data)
+  if (!validation.valid) {
+    console.error('[Persistence] Backup validation failed:', validation.errors)
+    return false
+  }
+
+  // Run migrations if needed
+  const migratedData = runVersionMigrations(backup.data)
+
+  restoreProgressionFromData(migratedData)
+  await saveProgression()
+
+  console.info(
+    `[Persistence] Restored from '${slot}' backup (${new Date(backup.timestamp).toLocaleString()})`
+  )
+  return true
 }
 
 // ============================================================================

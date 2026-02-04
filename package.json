@@ -19,6 +19,7 @@
   "dependencies": {
     "@vueuse/core": "^14.1.0",
     "idb": "^8.0.3",
+    "lz-string": "^1.5.0",
     "pinia": "^3.0.4",
     "rot-js": "^2.2.1",
     "tinypool": "^2.1.0",

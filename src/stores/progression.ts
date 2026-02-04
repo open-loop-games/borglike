@@ -51,7 +51,7 @@ import {
   prestigeCurrency,
   essenceForNextPrestige,
 } from '@core/formulas'
-import { saveImmediately } from './persistence'
+import { saveImmediately, saveManualBackup } from './persistence'
 
 export interface UpgradeState {
   [upgradeId: string]: number // Current level of each upgrade
@@ -711,6 +711,10 @@ export const useProgressionStore = defineStore('progression', () => {
         (globalStats.value.victoriesPerRace[stats.race] ?? 0) + 1
       globalStats.value.victoriesPerClass[stats.class] =
         (globalStats.value.victoriesPerClass[stats.class] ?? 0) + 1
+      // Create a manual backup on victory - this is a major milestone
+      saveManualBackup().catch((err) =>
+        console.error('[Progression] Failed to create backup after victory:', err)
+      )
     } else {
       globalStats.value.totalDeaths++
     }
@@ -955,6 +959,10 @@ export const useProgressionStore = defineStore('progression', () => {
     // Save immediately - prestige is a critical action
     saveImmediately().catch((err) =>
       console.error('[Progression] Failed to save after prestige:', err)
+    )
+    // Create a manual backup at this critical milestone
+    saveManualBackup().catch((err) =>
+      console.error('[Progression] Failed to create backup after prestige:', err)
     )
     return true
   }
