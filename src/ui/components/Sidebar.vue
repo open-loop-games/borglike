@@ -7,7 +7,6 @@ import { boosters } from '@game/data/boosters'
 import PanelFrame from './common/PanelFrame.vue'
 import UpgradeList from './meta/UpgradeList.vue'
 import UnlockList from './meta/UnlockList.vue'
-
 const progression = useProgressionStore()
 
 type Tab = 'stats' | 'upgrades' | 'unlocks'
@@ -21,87 +20,17 @@ const totalBoosters = boosters.length
 // Show victories instead of max depth after first win
 const hasVictories = computed(() => progression.totalVictories > 0)
 
-// Count total bot upgrades across all slots
-// Each slot can have: 1 toggle + 3 tactics + 3 town + 3 preparedness + 3 sweep + 3 surf + 3 kiting + 3 targeting + 3 retreat = 25 max
+// Count total bot upgrades from global capabilities
 const totalBotUpgrades = computed(() => {
+  const caps = progression.botCapabilities
   let count = 0
-  for (let i = 0; i < 4; i++) {
-    const config = progression.getSlotConfig(i)
-    const caps = config?.capabilities
-    if (!caps) continue
-    // Toggle capabilities (1 total)
-    if (caps.farming) count++
-    // Graded capabilities (levels 1-3 each)
-    count += (caps.tactics || 0) + (caps.town || 0) + (caps.preparedness || 0)
-    count += (caps.sweep || 0) + (caps.surf || 0)
-    count += (caps.kiting || 0) + (caps.targeting || 0) + (caps.retreat || 0)
-  }
+  if (caps.farming) count++
+  count += caps.tactics + caps.town + caps.preparedness
+  count += caps.sweep + caps.surf
+  count += caps.kiting + caps.targeting + caps.retreat
   return count
 })
-const maxBotUpgrades = 4 * 25 // 4 slots × 25 upgrades each
-
-// Format bot training as 2 lines (by group) with 4-letter codes
-// Line 1: Town + Combat (Town, Targ, Retr, Kite, Tact)
-// Line 2: Progression (Farm, Prep, SwpF, SrfF)
-function formatTrainingLines(slotIndex: number): { line1: string; line2: string } {
-  const config = progression.getSlotConfig(slotIndex)
-  const caps = config.capabilities
-
-  // Line 1: Town + Combat
-  const line1Parts: string[] = []
-  if (caps.town > 0) line1Parts.push(`Town${caps.town}`)
-  if (caps.targeting > 0) line1Parts.push(`Targ${caps.targeting}`)
-  if (caps.retreat > 0) line1Parts.push(`Retr${caps.retreat}`)
-  if (caps.kiting > 0) line1Parts.push(`Kite${caps.kiting}`)
-  if (caps.tactics > 0) line1Parts.push(`Tact${caps.tactics}`)
-
-  // Line 2: Progression
-  const line2Parts: string[] = []
-  if (caps.farming) line2Parts.push('Farm')
-  if (caps.preparedness > 0) line2Parts.push(`Prep${caps.preparedness}`)
-  if (caps.sweep > 0) line2Parts.push(`SwpF${caps.sweep}`)
-  if (caps.surf > 0) line2Parts.push(`SrfF${caps.surf}`)
-
-  return {
-    line1: line1Parts.length > 0 ? line1Parts.join(' ') : '—',
-    line2: line2Parts.length > 0 ? line2Parts.join(' ') : '—',
-  }
-}
-
-// Get slot training summaries for display (2 lines per slot)
-const slotTrainingSummaries = computed(() => {
-  const unlocked = progression.unlocks.runSlots
-  const summaries: {
-    slot: number
-    label: string
-    line1: string
-    line2: string
-    locked: boolean
-  }[] = []
-
-  for (let i = 0; i < 4; i++) {
-    if (i < unlocked) {
-      const lines = formatTrainingLines(i)
-      summaries.push({
-        slot: i,
-        label: `Slot ${i + 1}`,
-        line1: lines.line1,
-        line2: lines.line2,
-        locked: false,
-      })
-    } else {
-      summaries.push({
-        slot: i,
-        label: `Slot ${i + 1}`,
-        line1: 'Locked',
-        line2: '',
-        locked: true,
-      })
-    }
-  }
-
-  return summaries
-})
+const maxBotUpgrades = 25 // 1 toggle + 8 graded × 3 levels each
 </script>
 
 <template>
@@ -208,23 +137,6 @@ const slotTrainingSummaries = computed(() => {
           </PanelFrame>
         </section>
 
-        <section class="section">
-          <h2>Bot Training</h2>
-          <PanelFrame class="training-summary">
-            <div
-              v-for="slot in slotTrainingSummaries"
-              :key="slot.slot"
-              class="training-slot"
-              :class="{ locked: slot.locked }"
-            >
-              <span class="training-label">{{ slot.label }}</span>
-              <div class="training-lines">
-                <span class="training-line">{{ slot.line1 }}</span>
-                <span v-if="slot.line2" class="training-line">{{ slot.line2 }}</span>
-              </div>
-            </div>
-          </PanelFrame>
-        </section>
       </div>
 
       <!-- Upgrades Tab -->
@@ -236,6 +148,7 @@ const slotTrainingSummaries = computed(() => {
       <div v-else-if="activeTab === 'unlocks'" class="tab-content full-height">
         <UnlockList />
       </div>
+
     </div>
   </div>
 </template>
@@ -384,45 +297,4 @@ const slotTrainingSummaries = computed(() => {
   color: var(--cyan);
 }
 
-.training-summary {
-  padding: var(--space-3) !important;
-}
-
-.training-slot {
-  display: flex;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-}
-
-.training-slot:not(:last-child) {
-  border-bottom: 1px solid var(--border);
-}
-
-.training-slot.locked {
-  opacity: 0.5;
-}
-
-.training-label {
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  width: 40px;
-}
-
-.training-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.training-line {
-  color: var(--cyan);
-  letter-spacing: 0.5px;
-}
-
-.training-slot.locked .training-line {
-  color: var(--text-dim);
-}
 </style>

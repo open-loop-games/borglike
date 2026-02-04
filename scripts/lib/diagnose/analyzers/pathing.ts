@@ -193,9 +193,6 @@ export class PathingAnalyzer implements Analyzer {
   summarize(): AnalyzerResult {
     const totalGoals = this.completedGoals.length + this.abandonedGoals.length
     const completionRate = totalGoals > 0 ? (this.completedGoals.length / totalGoals) * 100 : 100
-    const avgEfficiency =
-      this.totalOptimalDistance > 0 ? (this.totalOptimalDistance / this.totalSteps) * 100 : 100
-
     // Calculate per-goal efficiencies
     const efficiencies = this.completedGoals
       .filter((g) => g.steps > 0)

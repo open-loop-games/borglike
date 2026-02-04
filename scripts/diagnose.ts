@@ -51,12 +51,10 @@ import {
   formatMapSnapshot,
   compareVariants,
   formatVariantComparison,
-  DEFAULT_RACES,
   MapVisualizer,
   runBaseline,
   runBaselineRaces,
   runSensitivityTest,
-  CAPABILITY_PRESETS,
 } from './lib/diagnose'
 import type { CompareVariant } from './lib/diagnose'
 import type { AnalyzerName } from './lib/diagnose'

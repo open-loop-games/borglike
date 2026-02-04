@@ -86,14 +86,13 @@ export interface SlotConfig {
   class: string
   personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
   boosters: [string | null, string | null]
-  // Per-slot bot training
-  capabilities: BotCapabilities
+  // Per-slot bot toggles (on/off overrides for globally unlocked capabilities)
   toggles: BotToggles
   // Sweep exploration level range (class-specific defaults)
   sweepLevelRange: SweepLevelRange
   // Active levels for graded capabilities (can be lower than unlocked level)
-  activeSweepLevel?: number // 0-3, capped by capabilities.sweep
-  activeSurfLevel?: number // 0-3, capped by capabilities.surf
+  activeSweepLevel?: number // 0-3, capped by global botCapabilities.sweep
+  activeSurfLevel?: number // 0-3, capped by global botCapabilities.surf
 }
 
 export interface Upgrade {

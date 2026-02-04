@@ -81,7 +81,7 @@ export function handleCast(game: GameState, spellId: string, targetId?: string):
     const messageType = result.success ? (result.damage ? 'combat' : 'good') : 'info'
     // Spell messages are tagged based on spell effect - combat spells are damage, healing spells are healing
     const tags: MessageTag[] = result.damage
-      ? ['damage.dealt']
+      ? ['combat.hit']
       : result.healed
         ? ['healing']
         : ['buff']

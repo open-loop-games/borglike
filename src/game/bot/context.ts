@@ -73,6 +73,7 @@ function createMinimalBotState(): BotState {
     sweepMode: false,
     sweepDirection: null,
     sweepStartTurn: 0,
+    sweepExhausted: false,
     // Sweep flip state (yo-yo into blocked depth)
     sweepFlipActive: false,
     sweepFlipTargetDepth: null,

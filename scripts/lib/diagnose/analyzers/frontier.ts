@@ -251,12 +251,12 @@ export class FrontierAnalyzer implements Analyzer {
       let validCandidates = 0
       const flowCosts = frontierPositions.length > 0
         ? computeExplorationFlow(game.currentLevel, frontierPositions)
-        : new Map()
+        : null
 
       for (const adj of adjacent) {
         const tile = getTile(game.currentLevel, adj.x, adj.y)
         const adjKey = `${adj.x},${adj.y}`
-        const flowCost = getFlowCost(flowCosts, adj)
+        const flowCost = flowCosts ? getFlowCost(flowCosts, adj) : MAX_FLOW_COST
 
         if (!tile) {
           adjAnalysis.push(`(${adj.x},${adj.y}):OOB`)

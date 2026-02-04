@@ -17,7 +17,9 @@ import type {
   BestiaryEntry,
   ArmoryEntry,
   SlotConfig,
+  BotCapabilities,
 } from '@/types/progression'
+import { FULL_BOT_CAPABILITIES } from '@/types/progression'
 import { startingRaces } from '@game/data/races'
 import { startingClasses } from '@game/data/classes'
 
@@ -26,7 +28,7 @@ import { startingClasses } from '@game/data/classes'
 // ============================================================================
 
 /** Current save data version - bump when adding migrations */
-const CURRENT_SAVE_VERSION = 2
+const CURRENT_SAVE_VERSION = 3
 
 /** Migration function type */
 type MigrationFn = (data: ProgressionData) => ProgressionData
@@ -38,6 +40,57 @@ type MigrationFn = (data: ProgressionData) => ProgressionData
 const migrations: Record<number, MigrationFn> = {
   // Version 2: Adds compression support marker (no structural changes)
   2: (data) => data,
+
+  // Version 3: Move bot capabilities from per-slot to global
+  // Take max across all slot configs for each field, OR for booleans
+  3: (data) => {
+    const merged: BotCapabilities = { ...FULL_BOT_CAPABILITIES }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const slots = (data.slotConfigs ?? []) as any[]
+
+    // Check if any slot actually has capabilities data
+    const hasAnyCapabilities = slots.some((s) => s && s.capabilities)
+
+    if (hasAnyCapabilities) {
+      // Start from zeros and take max across slots
+      merged.farming = false
+      merged.tactics = 0
+      merged.town = 0
+      merged.preparedness = 0
+      merged.sweep = 0
+      merged.surf = 0
+      merged.kiting = 0
+      merged.targeting = 0
+      merged.retreat = 0
+
+      for (const slot of slots) {
+        if (!slot?.capabilities) continue
+        const caps = slot.capabilities as Record<string, unknown>
+        // Boolean: OR
+        if (caps.farming) merged.farming = true
+        // Numeric: max (handle legacy boolean tactics)
+        const tactics = typeof caps.tactics === 'boolean' ? (caps.tactics ? 3 : 0) : Number(caps.tactics ?? 0)
+        merged.tactics = Math.max(merged.tactics, tactics)
+        merged.town = Math.max(merged.town, Number(caps.town ?? 0))
+        merged.preparedness = Math.max(merged.preparedness, Number(caps.preparedness ?? 0))
+        merged.sweep = Math.max(merged.sweep, Number(caps.sweep ?? 0))
+        merged.surf = Math.max(merged.surf, Number(caps.surf ?? 0))
+        merged.kiting = Math.max(merged.kiting, Number(caps.kiting ?? 0))
+        merged.targeting = Math.max(merged.targeting, Number(caps.targeting ?? 0))
+        merged.retreat = Math.max(merged.retreat, Number(caps.retreat ?? 0))
+      }
+    }
+    // else: no capabilities on any slot → use FULL_BOT_CAPABILITIES (reward existing players)
+
+    data.botCapabilities = merged
+
+    // Strip capabilities from slot configs
+    for (const slot of slots) {
+      if (slot) delete slot.capabilities
+    }
+
+    return data
+  },
 }
 
 /**
@@ -265,6 +318,7 @@ interface ProgressionData {
   bestiary?: Record<string, BestiaryEntry>
   itemArmory?: Record<string, ArmoryEntry>
   slotConfigs?: SlotConfig[]
+  botCapabilities?: BotCapabilities
   achievements?: SerializedAchievementState
   // Independent top runs storage (persisted separately from recent history)
   topRunsByDepth?: RunStats[]
@@ -459,7 +513,6 @@ function serializeProgression(): ProgressionData {
     class: config.class,
     personality: config.personality,
     boosters: [config.boosters[0], config.boosters[1]] as [string | null, string | null],
-    capabilities: { ...config.capabilities },
     toggles: { ...config.toggles },
     sweepLevelRange: { ...config.sweepLevelRange },
     activeSweepLevel: config.activeSweepLevel,
@@ -502,6 +555,7 @@ function serializeProgression(): ProgressionData {
     bestiary: serializedBestiary,
     itemArmory: serializedItemCatalog,
     slotConfigs: serializedSlotConfigs,
+    botCapabilities: { ...progression.botCapabilities },
     achievements: serializeAchievements(progression.achievementState),
     // Independent top runs (persisted separately from recent history)
     topRunsByDepth: [...progression.topRunsByDepth],
@@ -561,6 +615,11 @@ function restoreProgressionFromData(data: ProgressionData): void {
   if (data.slotConfigs) {
     progression.slotConfigs.length = 0
     progression.slotConfigs.push(...data.slotConfigs)
+  }
+
+  // Restore global bot capabilities
+  if (data.botCapabilities) {
+    progression.botCapabilities = { ...data.botCapabilities }
   }
 
   // Restore achievements
@@ -878,6 +937,7 @@ export function setupAutoSave(): () => void {
       bestiary: JSON.stringify(progression.bestiary),
       itemArmory: JSON.stringify(progression.itemArmory),
       slotConfigs: JSON.stringify(progression.slotConfigs),
+      botCapabilities: JSON.stringify(progression.botCapabilities),
       // Track unlocks (races, classes, boosters, runSlots)
       races: Array.from(progression.unlocks.races).join(','),
       classes: Array.from(progression.unlocks.classes).join(','),
@@ -921,7 +981,7 @@ export async function exportDataAsJSON(): Promise<string> {
   const runs = await loadRunHistory()
 
   const exportData = {
-    version: 2,
+    version: 3,
     exportedAt: Date.now(),
     progression: {
       currency: { ...progression.currency },
@@ -935,6 +995,7 @@ export async function exportDataAsJSON(): Promise<string> {
       bestiary: { ...progression.bestiary },
       itemArmory: { ...progression.itemArmory },
       slotConfigs: progression.slotConfigs.map((config) => ({ ...config })),
+      botCapabilities: { ...progression.botCapabilities },
       achievements: serializeAchievements(progression.achievementState),
       topRunsByDepth: [...progression.topRunsByDepth],
       topRunsByEssence: [...progression.topRunsByEssence],
@@ -973,6 +1034,7 @@ export async function importDataFromJSON(input: string): Promise<boolean> {
         bestiary?: Record<string, BestiaryEntry>
         itemArmory?: Record<string, ArmoryEntry>
         slotConfigs?: SlotConfig[]
+        botCapabilities?: BotCapabilities
         achievements?: SerializedAchievementState
         topRunsByDepth?: RunStats[]
         topRunsByEssence?: RunStats[]
@@ -1002,8 +1064,8 @@ export async function importDataFromJSON(input: string): Promise<boolean> {
       return false
     }
 
-    // Validate export version (support both v1 and v2)
-    if (data.version !== 1 && data.version !== 2) {
+    // Validate export version (support v1, v2, v3)
+    if (data.version !== 1 && data.version !== 2 && data.version !== 3) {
       console.error('[Persistence] Unsupported export version:', data.version)
       return false
     }
@@ -1023,6 +1085,7 @@ export async function importDataFromJSON(input: string): Promise<boolean> {
       bestiary: prog.bestiary,
       itemArmory: prog.itemArmory,
       slotConfigs: prog.slotConfigs,
+      botCapabilities: prog.botCapabilities,
       achievements: prog.achievements,
       topRunsByDepth: prog.topRunsByDepth,
       topRunsByEssence: prog.topRunsByEssence,

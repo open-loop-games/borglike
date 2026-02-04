@@ -14,11 +14,7 @@ import type {
   BotCapabilities,
   BotToggles,
 } from '../types'
-import {
-  DEFAULT_BOT_CAPABILITIES,
-  DEFAULT_BOT_TOGGLES,
-  FULL_BOT_CAPABILITIES,
-} from '../types/progression'
+import { DEFAULT_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../types/progression'
 import { getDefaultSweepLevelRange } from '@game/bot/types'
 import {
   type BotUpgradeId,
@@ -84,6 +80,9 @@ export const useProgressionStore = defineStore('progression', () => {
   // Per-slot configurations (remembers last used settings)
   const slotConfigs = ref<SlotConfig[]>([])
 
+  // Global bot capabilities (shared across all slots)
+  const botCapabilities = ref<BotCapabilities>({ ...DEFAULT_BOT_CAPABILITIES })
+
   // Default slot config factory
   function createDefaultSlotConfig(): SlotConfig {
     const classId = (availableClasses.value[0] || 'Warrior').toLowerCase()
@@ -92,7 +91,6 @@ export const useProgressionStore = defineStore('progression', () => {
       class: availableClasses.value[0] || 'Warrior',
       personality: 'cautious',
       boosters: [null, null],
-      capabilities: { ...DEFAULT_BOT_CAPABILITIES },
       toggles: { ...DEFAULT_BOT_TOGGLES },
       sweepLevelRange: getDefaultSweepLevelRange(classId),
     }
@@ -244,9 +242,8 @@ export const useProgressionStore = defineStore('progression', () => {
   // Computed upgrade info - single pass computes both list and categories
   const upgradeData = computed(() => {
     const all: EnrichedUpgrade[] = []
-    const byCategory: Record<'stats' | 'borg' | 'meta' | 'qol', EnrichedUpgrade[]> = {
+    const byCategory: Record<'stats' | 'meta' | 'qol', EnrichedUpgrade[]> = {
       stats: [],
-      borg: [],
       meta: [],
       qol: [],
     }
@@ -494,15 +491,6 @@ export const useProgressionStore = defineStore('progression', () => {
     const saved = slotConfigs.value[slot]
     if (saved) {
       // Validate saved config - fallback if race/class no longer unlocked
-      // Migration: old saves without capabilities get FULL capabilities (reward existing players)
-      // Spread defaults first to ensure all fields exist, then override with saved values
-      const capabilities = { ...FULL_BOT_CAPABILITIES, ...(saved.capabilities ?? {}) }
-
-      // Migration: tactics boolean → number (true=3 full, false=0 none)
-      if (typeof capabilities.tactics === 'boolean') {
-        capabilities.tactics = capabilities.tactics ? 3 : 0
-      }
-
       const toggles = saved.toggles ?? { ...DEFAULT_BOT_TOGGLES }
       // Migration: old saves without sweepLevelRange get class-based defaults
       const effectiveClass = unlocks.value.classes.has(saved.class)
@@ -510,9 +498,9 @@ export const useProgressionStore = defineStore('progression', () => {
         : availableClasses.value[0] || 'Warrior'
       const sweepLevelRange =
         saved.sweepLevelRange ?? getDefaultSweepLevelRange(effectiveClass.toLowerCase())
-      // Migration: old saves without active levels default to max unlocked
-      const activeSweepLevel = saved.activeSweepLevel ?? capabilities.sweep
-      const activeSurfLevel = saved.activeSurfLevel ?? capabilities.surf
+      // Active levels default to max unlocked from global capabilities
+      const activeSweepLevel = saved.activeSweepLevel ?? botCapabilities.value.sweep
+      const activeSurfLevel = saved.activeSurfLevel ?? botCapabilities.value.surf
 
       return {
         race: unlocks.value.races.has(saved.race) ? saved.race : availableRaces.value[0] || 'Human',
@@ -526,7 +514,6 @@ export const useProgressionStore = defineStore('progression', () => {
             ? saved.boosters[1]
             : null,
         ],
-        capabilities,
         toggles,
         sweepLevelRange,
         activeSweepLevel,
@@ -543,16 +530,13 @@ export const useProgressionStore = defineStore('progression', () => {
     }
     slotConfigs.value[slot] = {
       ...config,
-      capabilities: { ...config.capabilities },
       toggles: { ...config.toggles },
     }
   }
 
-  // Bot capability upgrade actions
-  function purchaseBotUpgrade(slot: number, upgradeId: BotUpgradeId): boolean {
-    const config = getSlotConfig(slot)
-
-    if (!canPurchaseBotUpgrade(upgradeId, config.capabilities, currency.value.essence)) {
+  // Bot capability upgrade actions (global, not per-slot)
+  function purchaseBotUpgrade(upgradeId: BotUpgradeId): boolean {
+    if (!canPurchaseBotUpgrade(upgradeId, botCapabilities.value, currency.value.essence)) {
       return false
     }
 
@@ -562,14 +546,8 @@ export const useProgressionStore = defineStore('progression', () => {
     // Spend essence
     if (!spendEssence(upgrade.cost)) return false
 
-    // Apply upgrade to capabilities
-    const newCapabilities = applyBotUpgrade(upgradeId, config.capabilities)
-
-    // Save updated config
-    saveSlotConfig(slot, {
-      ...config,
-      capabilities: newCapabilities,
-    })
+    // Apply upgrade to global capabilities
+    botCapabilities.value = applyBotUpgrade(upgradeId, botCapabilities.value)
 
     // Save immediately - upgrade purchases are critical
     saveImmediately().catch((err) =>
@@ -584,9 +562,9 @@ export const useProgressionStore = defineStore('progression', () => {
     // Map upgrade ID to capability field name
     const field = getToggleCapabilityField(capability)
 
-    // Can only toggle if capability is unlocked
+    // Can only toggle if capability is unlocked globally
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!(config.capabilities as any)[field]) return
+    if (!(botCapabilities.value as any)[field]) return
 
     // Toggle the setting
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -606,7 +584,7 @@ export const useProgressionStore = defineStore('progression', () => {
   /** Set active level for a graded capability (sweep/surf) */
   function setActiveGradedLevel(slot: number, field: 'sweep' | 'surf', level: number): void {
     const config = getSlotConfig(slot)
-    const maxLevel = config.capabilities[field]
+    const maxLevel = botCapabilities.value[field]
 
     // Clamp to unlocked level
     const activeLevel = Math.min(Math.max(0, level), maxLevel)
@@ -622,26 +600,21 @@ export const useProgressionStore = defineStore('progression', () => {
   /** Get effective capabilities (unlocked AND toggled on, with active levels) */
   function getEffectiveCapabilities(slot: number): BotCapabilities & BotToggles {
     const config = getSlotConfig(slot)
+    const caps = botCapabilities.value
     // Use active levels if set, otherwise use max unlocked
-    const activeSweep = Math.min(
-      config.activeSweepLevel ?? config.capabilities.sweep,
-      config.capabilities.sweep
-    )
-    const activeSurf = Math.min(
-      config.activeSurfLevel ?? config.capabilities.surf,
-      config.capabilities.surf
-    )
+    const activeSweep = Math.min(config.activeSweepLevel ?? caps.sweep, caps.sweep)
+    const activeSurf = Math.min(config.activeSurfLevel ?? caps.surf, caps.surf)
     return {
-      town: config.capabilities.town,
-      farming: config.capabilities.farming && config.toggles.farming,
-      tactics: config.capabilities.tactics, // Graded capability, no toggle
-      preparedness: config.capabilities.preparedness,
+      town: caps.town,
+      farming: caps.farming && config.toggles.farming,
+      tactics: caps.tactics,
+      preparedness: caps.preparedness,
       sweepEnabled: config.toggles.sweepEnabled,
       sweep: activeSweep,
       surf: activeSurf,
-      kiting: config.capabilities.kiting,
-      targeting: config.capabilities.targeting,
-      retreat: config.capabilities.retreat,
+      kiting: caps.kiting,
+      targeting: caps.targeting,
+      retreat: caps.retreat,
     }
   }
 
@@ -1066,6 +1039,7 @@ export const useProgressionStore = defineStore('progression', () => {
 
     // Slot config
     slotConfigs,
+    botCapabilities,
     getSlotConfig,
     saveSlotConfig,
 

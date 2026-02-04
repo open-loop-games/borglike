@@ -205,20 +205,15 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
   // Get max depth ever for merchant scaling
   const maxDepthEver = progression.globalStats.maxDepthEver
 
-  // Get per-slot bot capabilities (training unlocks)
+  // Get per-slot config and global bot capabilities
   const slotConfig = progression.getSlotConfig(slot)
+  const globalCaps = progression.botCapabilities
 
   // Build effective capabilities with active levels (player can select lower levels)
-  const activeSweep = Math.min(
-    slotConfig.activeSweepLevel ?? slotConfig.capabilities.sweep,
-    slotConfig.capabilities.sweep
-  )
-  const activeSurf = Math.min(
-    slotConfig.activeSurfLevel ?? slotConfig.capabilities.surf,
-    slotConfig.capabilities.surf
-  )
+  const activeSweep = Math.min(slotConfig.activeSweepLevel ?? globalCaps.sweep, globalCaps.sweep)
+  const activeSurf = Math.min(slotConfig.activeSurfLevel ?? globalCaps.surf, globalCaps.surf)
   const effectiveCapabilities = {
-    ...slotConfig.capabilities,
+    ...globalCaps,
     sweep: activeSweep,
     surf: activeSurf,
   }

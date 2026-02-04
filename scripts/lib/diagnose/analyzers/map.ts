@@ -16,7 +16,7 @@ import type {
   TurnContext,
   EndReason,
 } from '../types'
-import type { GameState, Point, DungeonLevel } from '@game/types'
+import type { GameState } from '@game/types'
 import type { BotState } from '@bot/types'
 import { findFrontierTiles } from '@bot/exploration'
 
@@ -73,7 +73,6 @@ export class MapVisualizer implements Analyzer {
 
   // Captured maps
   private maps: MapSnapshot[] = []
-  private lastCapturedTurn = -1
 
   constructor(config: Partial<MapVisualizerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -82,7 +81,7 @@ export class MapVisualizer implements Analyzer {
   onStart(_game: GameState, _botState: BotState): void {
     this.issues = []
     this.maps = []
-    this.lastCapturedTurn = -1
+
   }
 
   onTurn(ctx: TurnContext): void {
@@ -144,7 +143,7 @@ export class MapVisualizer implements Analyzer {
       stats,
     })
 
-    this.lastCapturedTurn = turn
+    // Map captured at this turn
   }
 
   private renderMap(game: GameState, botState: BotState | null, fullMap?: boolean): string {

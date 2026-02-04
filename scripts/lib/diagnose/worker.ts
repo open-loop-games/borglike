@@ -41,7 +41,7 @@ const CLASSES = ['warrior', 'mage', 'rogue', 'priest', 'ranger', 'paladin', 'nec
 const PERSONALITIES: BotPersonality[] = ['cautious', 'aggressive', 'greedy', 'speedrunner']
 
 function pickRandom<T>(arr: T[], seed: number): T {
-  return arr[seed % arr.length]
+  return arr[seed % arr.length]!
 }
 
 const DEFAULT_CONFIG = {
@@ -301,7 +301,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
         return dx <= 1 && dy <= 1 && m.hp > 0
       })
       if (adjacentMonsters.length > 0) {
-        killedBy = adjacentMonsters[0].template.name
+        killedBy = adjacentMonsters[0]!.template.name
       }
       break
     }
@@ -331,7 +331,6 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
   const combatStats = calculateCombatStats(char)
   const weapon = char.equipment.weapon
   const armorItem = char.equipment.armor
-  const bow = char.equipment.bow
 
   // Check if Morgoth was killed
   const morgothKills = game.stats.monsterKills['Morgoth, Lord of Darkness'] ?? 0

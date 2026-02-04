@@ -63,7 +63,6 @@ export class CombatAnalyzer implements Analyzer {
   private deathCause: string | null = null
 
   // Per-turn tracking
-  private lastHP = 0
   private lastKills = 0
 
   constructor(config: Partial<CombatAnalyzerConfig> = {}) {
@@ -82,7 +81,7 @@ export class CombatAnalyzer implements Analyzer {
     this.totalTurns = 0
     this.combatTurns = 0
     this.deathCause = null
-    this.lastHP = game.character.hp
+
     this.lastKills = game.stats.kills
   }
 
@@ -181,7 +180,6 @@ export class CombatAnalyzer implements Analyzer {
     this.totalDamageDealt = ctx.game.stats.damageDealt
 
     // Update tracking
-    this.lastHP = ctx.game.character.hp
     this.lastKills = ctx.game.stats.kills
 
     if (this.currentEncounter) {

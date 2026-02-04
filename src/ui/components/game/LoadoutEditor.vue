@@ -5,7 +5,6 @@ import { getBoosterById } from '@game/data/boosters'
 import { races, type Race } from '@game/data/races'
 import { classes, type GameClass } from '@game/data/classes'
 import PanelFrame from '../common/PanelFrame.vue'
-import BotTrainingPanel from './BotTrainingPanel.vue'
 
 const props = defineProps<{
   slot: number
@@ -116,9 +115,39 @@ const activeBonuses = computed(() => {
   return bonuses
 })
 
+// Per-slot bot controls - toggles and active levels
+const globalCaps = computed(() => progression.botCapabilities)
+const slotConfig = computed(() => progression.getSlotConfig(props.slot))
+const farmingEnabled = computed(() => slotConfig.value.toggles.farming)
+const sweepEnabled = computed(() => slotConfig.value.toggles.sweepEnabled)
+const activeSweepLevel = computed(() => slotConfig.value.activeSweepLevel ?? globalCaps.value.sweep)
+const activeSurfLevel = computed(() => slotConfig.value.activeSurfLevel ?? globalCaps.value.surf)
+
+function toggleFarming() {
+  progression.toggleBotCapability(props.slot, 'farming')
+}
+
+function toggleSweep() {
+  const config = progression.getSlotConfig(props.slot)
+  progression.saveSlotConfig(props.slot, {
+    ...config,
+    toggles: { ...config.toggles, sweepEnabled: !config.toggles.sweepEnabled },
+  })
+}
+
+function setActiveSweep(level: number) {
+  progression.setActiveGradedLevel(props.slot, 'sweep', level)
+}
+
+function setActiveSurf(level: number) {
+  progression.setActiveGradedLevel(props.slot, 'surf', level)
+}
+
 function handleStart() {
   // Save the config for this slot before starting
+  const currentConfig = progression.getSlotConfig(props.slot)
   progression.saveSlotConfig(props.slot, {
+    ...currentConfig,
     race: selectedRace.value,
     class: selectedClass.value,
     personality: selectedPersonality.value,
@@ -347,7 +376,69 @@ function handleCancel() {
           </div>
         </PanelFrame>
 
-        <BotTrainingPanel :slot="slot" />
+        <!-- Per-slot Bot Controls -->
+        <PanelFrame class="selection-section">
+          <h3>Bot Controls</h3>
+          <div class="slot-controls">
+            <!-- Farming Toggle -->
+            <div v-if="globalCaps.farming" class="control-row">
+              <span class="control-label">Farming</span>
+              <button
+                class="toggle-btn"
+                :class="{ active: farmingEnabled }"
+                @click="toggleFarming"
+              >
+                {{ farmingEnabled ? 'ON' : 'OFF' }}
+              </button>
+            </div>
+            <!-- Sweep Toggle + Level -->
+            <div v-if="globalCaps.sweep > 0" class="control-row">
+              <span class="control-label">Sweep</span>
+              <div class="control-actions">
+                <button
+                  class="toggle-btn"
+                  :class="{ active: sweepEnabled }"
+                  @click="toggleSweep"
+                >
+                  {{ sweepEnabled ? 'ON' : 'OFF' }}
+                </button>
+                <div v-if="sweepEnabled" class="level-selector">
+                  <button
+                    v-for="n in globalCaps.sweep"
+                    :key="n"
+                    class="level-btn"
+                    :class="{ selected: activeSweepLevel === n }"
+                    @click="setActiveSweep(n)"
+                  >
+                    L{{ n }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- Surf Level -->
+            <div v-if="globalCaps.surf > 0" class="control-row">
+              <span class="control-label">Surf</span>
+              <div class="level-selector">
+                <button
+                  v-for="n in globalCaps.surf"
+                  :key="n"
+                  class="level-btn"
+                  :class="{ selected: activeSurfLevel === n }"
+                  @click="setActiveSurf(n)"
+                >
+                  L{{ n }}
+                </button>
+              </div>
+            </div>
+            <!-- No controls message -->
+            <div
+              v-if="!globalCaps.farming && globalCaps.sweep === 0 && globalCaps.surf === 0"
+              class="no-controls"
+            >
+              Purchase bot upgrades in Upgrades → Bot
+            </div>
+          </div>
+        </PanelFrame>
       </div>
     </div>
 
@@ -815,5 +906,97 @@ function handleCancel() {
   font-size: var(--text-sm);
   color: var(--purple);
   font-style: italic;
+}
+
+/* Per-slot Bot Controls */
+.slot-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.control-row:last-child {
+  border-bottom: none;
+}
+
+.control-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+}
+
+.control-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.toggle-btn {
+  padding: var(--space-1) var(--space-3);
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: bold;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.toggle-btn:hover {
+  border-color: var(--text-secondary);
+}
+
+.level-selector {
+  display: flex;
+  gap: 2px;
+}
+
+.level-btn {
+  min-width: 28px;
+  height: 22px;
+  padding: 2px var(--space-1);
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: bold;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.level-btn:hover {
+  border-color: var(--text-secondary);
+}
+
+.level-btn.selected {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.no-controls {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  font-style: italic;
+  padding: var(--space-2) 0;
 }
 </style>
