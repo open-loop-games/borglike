@@ -329,6 +329,8 @@ export interface EffectiveCapabilities {
   sweep: number
   surf: number
   kiting: number
+  targeting: number
+  retreat: number
 }
 
 /** Get effective capabilities (capability unlocked AND toggled on) */
@@ -341,6 +343,8 @@ export function getEffectiveCapabilities(context: BotContext): EffectiveCapabili
     sweep: capabilities.sweep,
     surf: capabilities.surf,
     kiting: capabilities.kiting,
+    targeting: capabilities.targeting,
+    retreat: capabilities.retreat,
   }
 }
 

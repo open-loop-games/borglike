@@ -161,11 +161,11 @@ export function evaluateCombat(
 /**
  * Select the best target from visible monsters
  *
- * Scoring factors:
- * - Low HP = easier kill (primary)
- * - High threat = remove danger faster
- * - Distance = prefer closer targets
- * - Awake status = awake monsters are more urgent
+ * Scoring factors are gated by targeting capability level:
+ * - L0: Attack closest monster only
+ * - L1: + Low HP bonus, + can-win bonus
+ * - L2: + Awake bonus, + threat penalty, + distance penalty
+ * - L3: Full scoring (use selectTargetForClass for ranged bonuses)
  */
 export function selectTarget(
   context: BotContext,
@@ -174,6 +174,10 @@ export function selectTarget(
   const { game, config } = context
   const character = game.character
   const pos = character.position
+
+  // Get targeting level from capabilities
+  const effective = getEffectiveCapabilities(context)
+  const targetingLevel = effective.targeting
 
   // Get candidate monsters
   let candidates = context.visibleMonsters.filter((m) => m.hp > 0)
@@ -186,6 +190,18 @@ export function selectTarget(
     return null
   }
 
+  // L0: Attack closest monster only (no scoring)
+  if (targetingLevel === 0) {
+    const closest = findClosestMonster(candidates, pos)
+    if (!closest) return null
+    return {
+      target: closest.monster,
+      score: 0,
+      reason: 'closest',
+    }
+  }
+
+  // L1+: Use scoring system with progressive factors
   let bestTarget: Monster | null = null
   let bestScore = -Infinity
   let bestReason = ''
@@ -197,30 +213,34 @@ export function selectTarget(
     // Base score from ease of kill (lower turns = higher score)
     let score = 100 - evaluation.turnsToKill * 10
 
-    // Bonus for being adjacent
-    if (distance === 1) {
-      score += 50
-    }
-
-    // Bonus for awake monsters (they're coming for us anyway)
-    if (monster.isAwake) {
-      score += 20
-    }
-
-    // Bonus for low HP (secure the kill)
+    // L1+: Bonus for low HP (secure the kill)
     const hpPercent = monster.hp / monster.maxHp
     score += (1 - hpPercent) * 30
 
-    // Penalty for high threat (unless aggressive)
-    const threatPenalty = evaluation.threatLevel * (1 - config.aggression / 100)
-    score -= threatPenalty
-
-    // Penalty for distance
-    score -= distance * 5
-
-    // Bonus if we can definitely win
+    // L1+: Bonus if we can definitely win
     if (evaluation.canWin) {
       score += 25
+    }
+
+    // L2+: Bonus for being adjacent
+    if (targetingLevel >= 2 && distance === 1) {
+      score += 50
+    }
+
+    // L2+: Bonus for awake monsters (they're coming for us anyway)
+    if (targetingLevel >= 2 && monster.isAwake) {
+      score += 20
+    }
+
+    // L2+: Penalty for high threat (unless aggressive)
+    if (targetingLevel >= 2) {
+      const threatPenalty = evaluation.threatLevel * (1 - config.aggression / 100)
+      score -= threatPenalty
+    }
+
+    // L2+: Penalty for distance
+    if (targetingLevel >= 2) {
+      score -= distance * 5
     }
 
     let reason = ''
@@ -255,8 +275,11 @@ export function selectTarget(
 /**
  * Select target with class-aware scoring
  *
- * For ranged classes: bonus for optimal range (3-4), penalty for adjacent (-30)
- * For melee classes: keep current adjacent bonus (+50)
+ * Requires targeting level 3 for full class-specific bonuses:
+ * - For ranged classes: bonus for optimal range (3-4), penalty for adjacent (-30)
+ * - For melee classes: keep current adjacent bonus (+50)
+ *
+ * At lower targeting levels, falls back to selectTarget behavior.
  */
 export function selectTargetForClass(
   context: BotContext,
@@ -267,6 +290,16 @@ export function selectTargetForClass(
   const character = game.character
   const pos = character.position
 
+  // Get targeting level from capabilities
+  const effective = getEffectiveCapabilities(context)
+  const targetingLevel = effective.targeting
+
+  // L0-L2: Fall back to non-class-aware selection
+  if (targetingLevel < 3) {
+    return selectTarget(context, adjacentOnly)
+  }
+
+  // L3: Full class-aware scoring
   // Get candidate monsters
   let candidates = context.visibleMonsters.filter((m) => m.hp > 0)
 
@@ -292,7 +325,7 @@ export function selectTargetForClass(
     // Base score from ease of kill (lower turns = higher score)
     let score = 100 - evaluation.turnsToKill * 10
 
-    // Class-aware distance scoring
+    // Class-aware distance scoring (L3 only)
     if (classProfile.prefersRanged && character.equipment.bow) {
       // Ranged class scoring
       if (distance >= optimalRange && distance <= bowRange) {

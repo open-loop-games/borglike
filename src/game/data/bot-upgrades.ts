@@ -20,6 +20,12 @@ export type BotUpgradeId =
   | 'kiting_1'
   | 'kiting_2'
   | 'kiting_3'
+  | 'targeting_1'
+  | 'targeting_2'
+  | 'targeting_3'
+  | 'retreat_1'
+  | 'retreat_2'
+  | 'retreat_3'
 
 export interface BotUpgradeDefinition {
   id: BotUpgradeId
@@ -29,7 +35,7 @@ export interface BotUpgradeDefinition {
   requires?: BotUpgradeId // Prerequisite upgrade
   category: 'toggle' | 'graded'
   // For graded upgrades - which field and what level it grants
-  targetField?: 'sweep' | 'surf' | 'kiting'
+  targetField?: 'sweep' | 'surf' | 'kiting' | 'targeting' | 'retreat'
   targetLevel?: number
 }
 
@@ -171,6 +177,78 @@ const kiting3: BotUpgradeDefinition = {
 }
 
 // =============================================================================
+// TARGETING UPGRADES (target selection intelligence)
+// =============================================================================
+
+const targeting1: BotUpgradeDefinition = {
+  id: 'targeting_1',
+  name: 'Targeting I',
+  description: 'Prioritize wounded targets over closest',
+  cost: 200,
+  category: 'graded',
+  targetField: 'targeting',
+  targetLevel: 1,
+}
+
+const targeting2: BotUpgradeDefinition = {
+  id: 'targeting_2',
+  name: 'Targeting II',
+  description: 'Evaluate threat levels when selecting targets',
+  cost: 360,
+  requires: 'targeting_1',
+  category: 'graded',
+  targetField: 'targeting',
+  targetLevel: 2,
+}
+
+const targeting3: BotUpgradeDefinition = {
+  id: 'targeting_3',
+  name: 'Targeting III',
+  description: 'Class-aware optimal range and positioning',
+  cost: 648,
+  requires: 'targeting_2',
+  category: 'graded',
+  targetField: 'targeting',
+  targetLevel: 3,
+}
+
+// =============================================================================
+// RETREAT UPGRADES (retreat decision intelligence)
+// =============================================================================
+
+const retreat1: BotUpgradeDefinition = {
+  id: 'retreat_1',
+  name: 'Retreat I',
+  description: 'Flee based on personality caution threshold',
+  cost: 250,
+  category: 'graded',
+  targetField: 'retreat',
+  targetLevel: 1,
+}
+
+const retreat2: BotUpgradeDefinition = {
+  id: 'retreat_2',
+  name: 'Retreat II',
+  description: 'Recognize deadly status effect combinations',
+  cost: 450,
+  requires: 'retreat_1',
+  category: 'graded',
+  targetField: 'retreat',
+  targetLevel: 2,
+}
+
+const retreat3: BotUpgradeDefinition = {
+  id: 'retreat_3',
+  name: 'Retreat III',
+  description: 'Full combat evaluation and class-specific tactics',
+  cost: 810,
+  requires: 'retreat_2',
+  category: 'graded',
+  targetField: 'retreat',
+  targetLevel: 3,
+}
+
+// =============================================================================
 // EXPORTS
 // =============================================================================
 
@@ -191,6 +269,14 @@ export const BOT_UPGRADES: BotUpgradeDefinition[] = [
   kiting1,
   kiting2,
   kiting3,
+  // Targeting upgrades
+  targeting1,
+  targeting2,
+  targeting3,
+  // Retreat upgrades
+  retreat1,
+  retreat2,
+  retreat3,
 ]
 
 /** Toggle upgrade IDs for type narrowing */
@@ -208,7 +294,7 @@ function isToggleUnlocked(id: ToggleUpgradeId, capabilities: BotCapabilities): b
 
 /** Check if a graded upgrade level is unlocked */
 function isGradedUnlocked(
-  field: 'sweep' | 'surf' | 'kiting',
+  field: GradedCapabilityField,
   level: number,
   capabilities: BotCapabilities
 ): boolean {
@@ -267,9 +353,12 @@ export function canPurchaseBotUpgrade(
   return true
 }
 
+/** Graded capability field names */
+export type GradedCapabilityField = 'sweep' | 'surf' | 'kiting' | 'targeting' | 'retreat'
+
 /** Get the next purchasable upgrade for a graded field, or null if maxed */
 export function getNextGradedUpgrade(
-  field: 'sweep' | 'surf' | 'kiting',
+  field: GradedCapabilityField,
   capabilities: BotCapabilities
 ): BotUpgradeDefinition | null {
   const currentLevel = capabilities[field]

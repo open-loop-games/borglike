@@ -113,8 +113,8 @@ pnpm diagnose batch --runs=50 --seed=1000 --class=warrior \
 | Preset | Capabilities | Expected Depth |
 |--------|--------------|----------------|
 | `none` | (all disabled) | 5-10 (face-rush) |
-| `early` | town | 15-20 |
-| `mid` | town, farming, sweep_1, surf_1 | 25-35 |
+| `early` | town, farming, preparedness | 15-20 |
+| `mid` | town, farming, preparedness, sweep_1, surf_1 | 25-35 |
 | `late` | town, farming, preparedness, sweep_2, surf_2, kiting_1 | 40-45 |
 | `full` | (all maxed) | 45+ (endgame) |
 

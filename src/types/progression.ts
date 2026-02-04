@@ -31,6 +31,8 @@ export interface BotCapabilities {
   sweep: number // 0=disabled, 1-3=exploration thoroughness
   surf: number // 0=disabled, 1-3=HP thresholds for stair surfing
   kiting: number // 0=disabled, 1-3=engage distance for ranged classes
+  targeting: number // 0=closest, 1-3=target selection intelligence
+  retreat: number // 0=panic at 25%, 1-3=retreat decision intelligence
 }
 
 /** User toggles for ON/OFF capabilities (can disable even when unlocked) */
@@ -49,6 +51,8 @@ export const DEFAULT_BOT_CAPABILITIES: BotCapabilities = {
   sweep: 0,
   surf: 0,
   kiting: 0,
+  targeting: 0,
+  retreat: 0,
 }
 
 /** Full capabilities - for migration of existing saves */
@@ -59,6 +63,8 @@ export const FULL_BOT_CAPABILITIES: BotCapabilities = {
   sweep: 3,
   surf: 3,
   kiting: 3,
+  targeting: 3,
+  retreat: 3,
 }
 
 /** Default toggles - all ON when unlocked */

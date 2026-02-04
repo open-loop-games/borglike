@@ -15,6 +15,7 @@ import type {
   BotGoal,
   BotContext,
 } from './types'
+import { getEffectiveCapabilities } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
 import { isPoisoned, getPoisonDamage } from '../status-effects'
@@ -157,33 +158,47 @@ export function getStatusRetreatUrgency(
 /**
  * Evaluate whether we should retreat from current position
  *
- * Triggers:
- * - Status effects that make current position deadly
- * - HP below personality caution threshold
- * - Outnumbered (2+ adjacent monsters)
- * - Losing the fight (combat advantage negative)
- * - High local danger
+ * Retreat intelligence is gated by capability level:
+ * - L0: Panic at 25% HP only (hardcoded)
+ * - L1: + Personality caution threshold
+ * - L2: + Status effect detection (paralyzed, poison, confused, blind, slow)
+ * - L3: + Outnumbered, combat advantage, local danger evaluation
+ *
+ * @param retreatLevel - Retreat capability level (0-3), defaults to 3 for full evaluation
  */
 export function shouldRetreat(
   game: GameState,
   config: PersonalityConfig,
   dangers: DangerMap,
-  hpRate: number = 0
+  hpRate: number = 0,
+  retreatLevel: number = 3
 ): RetreatEvaluation {
   const character = game.character
+  const hpRatio = character.hp / character.maxHp
   const adjacentCount = countAdjacentMonsters(game, character.position)
 
-  // Check status effects FIRST (highest priority)
-  const statusRetreat = getStatusRetreatUrgency(game, adjacentCount, hpRate)
-  if (statusRetreat.shouldRetreat) {
-    return statusRetreat
+  // L0: Hardcoded 25% HP panic only
+  if (retreatLevel === 0) {
+    if (hpRatio < 0.25) {
+      return {
+        shouldRetreat: true,
+        urgency: 80,
+        reason: `HP critical (${Math.floor(hpRatio * 100)}%)`,
+      }
+    }
+    return { shouldRetreat: false, urgency: 0, reason: '' }
   }
 
-  const hpRatio = character.hp / character.maxHp
-  // Flee threshold is personality-based (caution 0-100 → 0%-100% HP)
-  const cautionThreshold = config.caution / 100
+  // L2+: Check status effects (highest priority)
+  if (retreatLevel >= 2) {
+    const statusRetreat = getStatusRetreatUrgency(game, adjacentCount, hpRate)
+    if (statusRetreat.shouldRetreat) {
+      return statusRetreat
+    }
+  }
 
-  // Check HP threshold
+  // L1+: Personality-based HP threshold
+  const cautionThreshold = config.caution / 100
   if (hpRatio < cautionThreshold) {
     const urgency = Math.floor((cautionThreshold - hpRatio) * 200)
     return {
@@ -193,8 +208,8 @@ export function shouldRetreat(
     }
   }
 
-  // Check if outnumbered
-  if (adjacentCount >= 2) {
+  // L3+: Outnumbered check
+  if (retreatLevel >= 3 && adjacentCount >= 2) {
     // Only retreat if not super aggressive
     if (config.aggression < 80) {
       return {
@@ -205,8 +220,8 @@ export function shouldRetreat(
     }
   }
 
-  // Check combat advantage
-  if (isInCombat(game)) {
+  // L3+: Combat advantage check
+  if (retreatLevel >= 3 && isInCombat(game)) {
     const advantage = getCombatAdvantage(game)
     if (advantage < -20) {
       // Losing badly
@@ -218,16 +233,18 @@ export function shouldRetreat(
     }
   }
 
-  // Check local danger (even if not in combat)
-  const localDanger = getLocalDanger(dangers, character.position)
-  const dangerThreshold = 100 + config.aggression // Higher aggression = tolerate more danger
-  // HP threshold scales with personality: cautious (50%) → 70%, aggressive (20%) → 40%
-  const dangerHpThreshold = cautionThreshold + 0.2
-  if (localDanger > dangerThreshold && hpRatio < dangerHpThreshold) {
-    return {
-      shouldRetreat: true,
-      urgency: Math.floor((localDanger / dangerThreshold) * 50),
-      reason: 'High danger area',
+  // L3+: Local danger check (even if not in combat)
+  if (retreatLevel >= 3) {
+    const localDanger = getLocalDanger(dangers, character.position)
+    const dangerThreshold = 100 + config.aggression // Higher aggression = tolerate more danger
+    // HP threshold scales with personality: cautious (50%) → 70%, aggressive (20%) → 40%
+    const dangerHpThreshold = cautionThreshold + 0.2
+    if (localDanger > dangerThreshold && hpRatio < dangerHpThreshold) {
+      return {
+        shouldRetreat: true,
+        urgency: Math.floor((localDanger / dangerThreshold) * 50),
+        reason: 'High danger area',
+      }
     }
   }
 
@@ -766,9 +783,13 @@ export function getFleeGoal(
     return null
   }
 
-  // Check if retreat warranted (PASS HP RATE)
+  // Get retreat level from capabilities
+  const effective = getEffectiveCapabilities(context)
+  const retreatLevel = effective.retreat
+
+  // Check if retreat warranted (PASS HP RATE and RETREAT LEVEL)
   // Use effectiveConfig to include class modifiers (aggression/caution)
-  const retreatEval = shouldRetreat(game, effectiveConfig, dangers, hpRate)
+  const retreatEval = shouldRetreat(game, effectiveConfig, dangers, hpRate, retreatLevel)
   if (!retreatEval.shouldRetreat) return null
 
   // If fleeing due to high danger area while pursuing TAKE goal, blacklist that item

@@ -66,9 +66,9 @@ const DEFAULT_CONFIG = {
  * (Duplicated from runner.ts since workers can't import from other modules easily)
  */
 const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town,farming,preparedness',
-  mid: 'town,farming,preparedness,sweep_1,surf_1',
-  late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1',
+  early: 'town,farming,preparedness,targeting_1,retreat_1',
+  mid: 'town,farming,preparedness,sweep_1,surf_1,targeting_2,retreat_2',
+  late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1,targeting_3,retreat_3',
 }
 
 /**
@@ -109,6 +109,14 @@ function parseCapabilities(spec: string): BotCapabilities {
     else if (id.startsWith('kiting_')) {
       const level = parseInt(id.slice(7), 10)
       if (level >= 1 && level <= 3) caps.kiting = Math.max(caps.kiting, level)
+    }
+    else if (id.startsWith('targeting_')) {
+      const level = parseInt(id.slice(10), 10)
+      if (level >= 1 && level <= 3) caps.targeting = Math.max(caps.targeting, level)
+    }
+    else if (id.startsWith('retreat_')) {
+      const level = parseInt(id.slice(8), 10)
+      if (level >= 1 && level <= 3) caps.retreat = Math.max(caps.retreat, level)
     }
   }
 

@@ -134,6 +134,8 @@ export function runBotTick(
       sweep: 3,
       surf: 3,
       kiting: 3,
+      targeting: 3,
+      retreat: 3,
     }
     const inDungeon = game.character.depth !== 0
     const charLevel = game.character.level

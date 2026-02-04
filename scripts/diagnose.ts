@@ -327,7 +327,7 @@ OPTIONS:
                   Or comma-separated IDs: str_superior,con_superior
   --capabilities=X Bot capabilities (default: full)
                   Presets: none, early, mid, late, full
-                  Or comma-separated IDs: town,farming,sweep_1,surf_2,etc.
+                  Or comma-separated IDs: town,farming,sweep_1,targeting_2,retreat_3,etc.
   --randomize     Randomize race/class/personality per run (batch mode)
   --races         Compare races instead of personalities (compare mode)
   --races=a,b,c   Compare specific races (e.g., --races=human,dwarf,elf)

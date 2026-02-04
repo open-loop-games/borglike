@@ -43,9 +43,9 @@ const __dirname = dirname(__filename)
  * Maps preset name to comma-separated capability IDs.
  */
 export const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town,farming,preparedness',
-  mid: 'town,farming,preparedness,sweep_1,surf_1',
-  late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1',
+  early: 'town,farming,preparedness,targeting_1,retreat_1',
+  mid: 'town,farming,preparedness,sweep_1,surf_1,targeting_2,retreat_2',
+  late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1,targeting_3,retreat_3',
 }
 
 /**
@@ -82,7 +82,7 @@ export function parseCapabilities(spec: string): BotCapabilities {
     if (id === 'town') caps.town = true
     else if (id === 'farming') caps.farming = true
     else if (id === 'preparedness') caps.preparedness = true
-    // Graded capabilities (sweep_1, sweep_2, sweep_3)
+    // Graded capabilities (sweep_1, sweep_2, sweep_3, etc.)
     else if (id.startsWith('sweep_')) {
       const level = parseInt(id.slice(6), 10)
       if (level >= 1 && level <= 3) caps.sweep = Math.max(caps.sweep, level)
@@ -94,6 +94,14 @@ export function parseCapabilities(spec: string): BotCapabilities {
     else if (id.startsWith('kiting_')) {
       const level = parseInt(id.slice(7), 10)
       if (level >= 1 && level <= 3) caps.kiting = Math.max(caps.kiting, level)
+    }
+    else if (id.startsWith('targeting_')) {
+      const level = parseInt(id.slice(10), 10)
+      if (level >= 1 && level <= 3) caps.targeting = Math.max(caps.targeting, level)
+    }
+    else if (id.startsWith('retreat_')) {
+      const level = parseInt(id.slice(8), 10)
+      if (level >= 1 && level <= 3) caps.retreat = Math.max(caps.retreat, level)
     }
   }
 
