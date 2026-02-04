@@ -121,6 +121,14 @@ function handleDismiss(slot: number) {
   }
 }
 
+function handleConfigure(slot: number) {
+  const run = runs.getRunBySlot(slot)
+  if (run) {
+    runs.removeRun(run.id)
+  }
+  loadoutSlot.value = slot
+}
+
 function handleDismissExpanded() {
   if (runs.focusedSlot !== null) {
     handleDismiss(runs.focusedSlot)
@@ -172,6 +180,7 @@ function handleKillExpanded() {
             @restart="handleRestart(slot.index)"
             @dismiss="handleDismiss(slot.index)"
             @kill="handleKill(slot.index)"
+            @configure="handleConfigure(slot.index)"
           />
 
           <!-- Empty Slot (unlocked, no run) -->

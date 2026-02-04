@@ -40,7 +40,40 @@ const emit = defineEmits<{
   restart: []
   dismiss: []
   kill: []
+  configure: []
 }>()
+
+// Death screen computed values
+const deathCause = computed(() => {
+  return props.run.finalStats?.deathCause || 'Unknown causes'
+})
+
+const duration = computed(() => {
+  const endTime = props.run.finalStats?.endTime || Date.now()
+  const ms = endTime - props.run.startTime
+  const seconds = Math.floor(ms / 1000)
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (minutes < 60) return `${minutes}:${secs.toString().padStart(2, '0')}`
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+})
+
+const essenceEarned = computed(() => {
+  return props.run.finalStats?.essenceEarned || 0
+})
+
+const isNewBest = computed(() => {
+  const best = progression.bestRunByDepth
+  if (!best) return true // First run is always a best
+  return props.run.depth > best.maxDepth
+})
+
+const killerMonster = computed(() => {
+  return props.run.finalStats?.killerMonster?.name
+})
 
 // Kill button hold state using requestAnimationFrame for smoother animation
 const KILL_HOLD_DURATION = 1000 // 1 second hold required
@@ -197,12 +230,50 @@ function handleDismiss() {
     <DungeonGrid :grid="run.grid" :cursor-x="run.cursorX" :cursor-y="run.cursorY" />
 
     <div v-if="run.state === 'dead'" class="death-overlay">
+      <span v-if="isNewBest" class="new-best-badge">NEW BEST!</span>
       <span class="death-text">DEFEATED</span>
-      <div class="death-stats">
-        <span>D:{{ run.depth }}</span>
-        <span>{{ run.kills }} kills</span>
+      <div class="death-character">
+        <span class="char-race">{{ run.config.race }}</span>
+        <span class="char-class">{{ run.config.class }}</span>
+        <span class="char-personality" :style="{ color: personalityDisplay.color }">{{
+          personalityDisplay.label
+        }}</span>
+      </div>
+      <span class="death-cause">{{ killerMonster ? `Slain by ${killerMonster}` : deathCause }}</span>
+      <div class="death-metrics">
+        <div class="metric">
+          <span class="metric-value depth">{{ run.depth }}</span>
+          <span class="metric-label">Depth</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value level">{{ run.level }}</span>
+          <span class="metric-label">Level</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value kills">{{ run.kills }}</span>
+          <span class="metric-label">Kills</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value gold">{{ run.gold }}</span>
+          <span class="metric-label">Gold</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value time">{{ duration }}</span>
+          <span class="metric-label">Time</span>
+        </div>
+      </div>
+      <div v-if="essenceEarned > 0" class="essence-earned">
+        <span class="essence-icon">✦</span>
+        <span class="essence-value">+{{ essenceEarned }}</span>
+        <span class="essence-label">essence</span>
       </div>
       <div class="death-actions">
+        <button class="death-btn expand" title="View full stats" @click="emit('expand')">
+          <span>⛶</span> Details
+        </button>
+        <button class="death-btn configure" title="Change loadout" @click="emit('configure')">
+          <span>✎</span> Config
+        </button>
         <button class="death-btn restart" @click="handleRestart"><span>↻</span> Restart</button>
         <button class="death-btn dismiss" @click="handleDismiss">Dismiss</button>
       </div>
@@ -432,35 +503,160 @@ function handleDismiss() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  background: rgba(10, 10, 18, 0.85);
+  gap: 8px;
+  background: rgba(10, 10, 18, 0.9);
+}
+
+.new-best-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--amber);
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid var(--amber);
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  animation: pulse-best 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-best {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+  }
 }
 
 .death-text {
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
   color: var(--red);
   text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
   letter-spacing: 2px;
 }
 
-.death-stats {
+.death-character {
+  display: flex;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.char-race {
+  color: var(--cyan);
+}
+
+.char-class {
+  color: var(--green);
+}
+
+.char-personality {
+  font-size: 9px;
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+}
+
+.death-cause {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.death-metrics {
   display: flex;
   gap: 16px;
   font-family: var(--font-mono);
-  font-size: 12px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.metric-value {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.metric-value.depth {
+  color: var(--purple);
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+.metric-value.level {
+  color: var(--cyan);
+  text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+}
+
+.metric-value.kills {
+  color: var(--red);
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.metric-value.gold {
+  color: var(--amber);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.metric-value.time {
   color: var(--text-secondary);
+}
+
+.metric-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.essence-earned {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  padding: 4px 10px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+.essence-icon {
+  color: var(--purple);
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+}
+
+.essence-value {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--purple);
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+.essence-label {
+  font-size: 10px;
+  color: var(--text-dim);
 }
 
 .death-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .death-btn {
-  padding: 6px 14px;
+  padding: 6px 12px;
   font-family: var(--font-mono);
   font-size: 11px;
   border-radius: 3px;
@@ -469,6 +665,28 @@ function handleDismiss() {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.death-btn.expand {
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.death-btn.expand:hover {
+  border-color: var(--purple);
+  color: var(--purple);
+}
+
+.death-btn.configure {
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.death-btn.configure:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
 }
 
 .death-btn.restart {
