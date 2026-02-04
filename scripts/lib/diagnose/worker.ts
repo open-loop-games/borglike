@@ -66,9 +66,9 @@ const DEFAULT_CONFIG = {
  * (Duplicated from runner.ts since workers can't import from other modules easily)
  */
 const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town,farming,preparedness,targeting_1,retreat_1',
-  mid: 'town,farming,preparedness,sweep_1,surf_1,targeting_2,retreat_2',
-  late: 'town,farming,preparedness,sweep_2,surf_2,kiting_1,targeting_3,retreat_3',
+  early: 'town,farming,tactics,preparedness_1,targeting_1,retreat_1',
+  mid: 'town,farming,tactics,preparedness_2,sweep_1,surf_1,targeting_2,retreat_2',
+  late: 'town,farming,tactics,preparedness_3,sweep_2,surf_2,kiting_1,targeting_3,retreat_3',
 }
 
 /**
@@ -95,9 +95,15 @@ function parseCapabilities(spec: string): BotCapabilities {
   const ids = normalized.split(',').map((s) => s.trim()).filter(Boolean)
 
   for (const id of ids) {
+    // Toggle capabilities
     if (id === 'town') caps.town = true
     else if (id === 'farming') caps.farming = true
-    else if (id === 'preparedness') caps.preparedness = true
+    else if (id === 'tactics') caps.tactics = true
+    // Graded capabilities (preparedness_1, sweep_1, etc.)
+    else if (id.startsWith('preparedness_')) {
+      const level = parseInt(id.slice(13), 10)
+      if (level >= 1 && level <= 3) caps.preparedness = Math.max(caps.preparedness, level)
+    }
     else if (id.startsWith('sweep_')) {
       const level = parseInt(id.slice(6), 10)
       if (level >= 1 && level <= 3) caps.sweep = Math.max(caps.sweep, level)

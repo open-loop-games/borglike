@@ -224,7 +224,7 @@ function handleDangerTier(
   dangerResult: DangerResult,
   personality: BotPersonality
 ): GameAction | null {
-  const { config, classProfile, visibleMonsters } = context
+  const { config, classProfile, visibleMonsters, capabilities } = context
   const pos = game.character.position
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const adjacentMonster = findAdjacentMonster(game)
@@ -244,8 +244,9 @@ function handleDangerTier(
 
       // Casters: Try Dimension Door for tactical kiting (targeted escape + continue casting)
       // DD is preferred over Phase Door because it maintains combat engagement
+      // Requires kiting L3 (advanced caster technique)
       if (!hasRangedWeapon(game)) {
-        const ddAction = getDimensionDoorKiteAction(game, visibleMonsters)
+        const ddAction = getDimensionDoorKiteAction(game, visibleMonsters, capabilities.kiting)
         if (ddAction && ddAction.type === 'cast' && ddAction.targetId) {
           // Update KITE goal target to DD destination - this IS the new kite position
           // Prevents bot from walking back to stale target after teleport
@@ -456,7 +457,8 @@ function handleCautionTier(
   dangerResult: DangerResult,
   _personality: BotPersonality
 ): GameAction | null {
-  const { config, classProfile, visibleMonsters } = context
+  const { config, classProfile, visibleMonsters, capabilities, toggles } = context
+  const tacticsEnabled = capabilities.tactics && toggles.tactics
   const pos = game.character.position
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const adjacentMonster = findAdjacentMonster(game)
@@ -526,19 +528,19 @@ function handleCautionTier(
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 
     if (hasBossTarget) {
-      const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers)
+      const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers, tacticsEnabled)
       if (combatBuff) {
         recordProgress(botState, game.turn)
         return combatBuff
       }
 
-      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters)
+      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsEnabled)
       if (preCombatBuff) {
         recordProgress(botState, game.turn)
         return preCombatBuff
       }
 
-      const buffSpell = getBuffSpellAction(game, config, visibleMonsters)
+      const buffSpell = getBuffSpellAction(game, config, visibleMonsters, tacticsEnabled)
       if (buffSpell) {
         recordProgress(botState, game.turn)
         return buffSpell
@@ -658,7 +660,8 @@ function handleSafeTier(
   dangerResult: DangerResult,
   personality: BotPersonality
 ): GameAction | null {
-  const { config, effectiveConfig, visibleMonsters, classProfile } = context
+  const { config, effectiveConfig, visibleMonsters, classProfile, capabilities, toggles } = context
+  const tacticsEnabled = capabilities.tactics && toggles.tactics
   const pos = game.character.position
   const localDanger = getLocalDanger(dangerResult.dangers, pos)
   const dangerThreshold = getDangerThreshold(effectiveConfig.aggression, effectiveConfig.caution)
@@ -738,13 +741,13 @@ function handleSafeTier(
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 
     if (hasBossTarget) {
-      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters)
+      const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsEnabled)
       if (preCombatBuff) {
         recordProgress(botState, game.turn)
         return preCombatBuff
       }
 
-      const buffSpell = getBuffSpellAction(game, config, visibleMonsters)
+      const buffSpell = getBuffSpellAction(game, config, visibleMonsters, tacticsEnabled)
       if (buffSpell) {
         recordProgress(botState, game.turn)
         return buffSpell

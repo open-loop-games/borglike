@@ -605,7 +605,7 @@ function shouldUseSweep(context: BotContext): boolean {
  * Otherwise: scan forward from current depth until readiness fails
  */
 function findBlockedDepth(context: BotContext): number {
-  const { game, botState, effectiveConfig } = context
+  const { game, botState, effectiveConfig, capabilities } = context
   const character = game.character
 
   // In farming mode: use the depth we're blocked at (don't recalculate)
@@ -620,7 +620,8 @@ function findBlockedDepth(context: BotContext): number {
       character,
       character.inventory,
       blockedDepth,
-      effectiveConfig.caution
+      effectiveConfig.caution,
+      capabilities.preparedness
     )
     if (readinessIssue) break
     blockedDepth++
@@ -1039,7 +1040,7 @@ function getTownWalkGoal(context: BotContext): BotGoal | null {
  * Priority: TOWN_TRIP > ASCEND_TO_FARM > FARM > tether sweep
  */
 export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
-  const { game, botState, effectiveConfig } = context
+  const { game, botState, effectiveConfig, capabilities } = context
   const character = game.character
   const goldTarget =
     botState.farmGoldTarget || getGoldTarget(botState.farmBlockedDepth, effectiveConfig.caution)
@@ -1051,7 +1052,8 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
       character,
       character.inventory,
       botState.farmBlockedDepth,
-      effectiveConfig.caution
+      effectiveConfig.caution,
+      capabilities.preparedness
     )
   )
 

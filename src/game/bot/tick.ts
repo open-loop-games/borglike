@@ -562,7 +562,8 @@ function getKillApproachAction(
     return null
   }
 
-  const { classProfile, config, visibleMonsters, botState } = context
+  const { classProfile, config, visibleMonsters, botState, capabilities, toggles } = context
+  const tacticsEnabled = capabilities.tactics && toggles.tactics
   const pos = game.character.position
   const targetMonster = game.monsters.find((m) => m.id === goal.targetId && m.hp > 0)
 
@@ -593,20 +594,20 @@ function getKillApproachAction(
     }
   }
 
-  // Pre-combat buffs for dangerous targets
+  // Pre-combat buffs for dangerous targets (requires tactics capability)
   const threat = getMonsterThreat(targetMonster, game.character)
   const BUFF_THREAT_THRESHOLD = 100
   const isUnique = targetMonster.template.flags.includes('UNIQUE')
   const shouldBuffTarget = threat >= BUFF_THREAT_THRESHOLD || isUnique
 
   if (shouldBuffTarget) {
-    const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers)
+    const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers, tacticsEnabled)
     if (combatBuff) {
       recordProgress(botState, game.turn)
       return combatBuff
     }
 
-    const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters)
+    const preCombatBuff = getPreCombatBuffAction(game, config, visibleMonsters, tacticsEnabled)
     if (preCombatBuff) {
       recordProgress(botState, game.turn)
       return preCombatBuff

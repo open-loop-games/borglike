@@ -10,7 +10,10 @@ import type { BotCapabilities } from '../../types/progression'
 export type BotUpgradeId =
   | 'town'
   | 'farming'
-  | 'preparedness'
+  | 'tactics'
+  | 'preparedness_1'
+  | 'preparedness_2'
+  | 'preparedness_3'
   | 'sweep_1'
   | 'sweep_2'
   | 'sweep_3'
@@ -35,7 +38,7 @@ export interface BotUpgradeDefinition {
   requires?: BotUpgradeId // Prerequisite upgrade
   category: 'toggle' | 'graded'
   // For graded upgrades - which field and what level it grants
-  targetField?: 'sweep' | 'surf' | 'kiting' | 'targeting' | 'retreat'
+  targetField?: GradedCapabilityField
   targetLevel?: number
 }
 
@@ -59,12 +62,48 @@ const farmingUpgrade: BotUpgradeDefinition = {
   category: 'toggle',
 }
 
-const preparednessUpgrade: BotUpgradeDefinition = {
-  id: 'preparedness',
-  name: 'Depth Readiness',
-  description: 'Bot checks consumable requirements before descending',
-  cost: 300,
+const tacticsUpgrade: BotUpgradeDefinition = {
+  id: 'tactics',
+  name: 'Combat Tactics',
+  description: 'Use buffs and pre-combat preparation',
+  cost: 250,
   category: 'toggle',
+}
+
+// =============================================================================
+// PREPAREDNESS UPGRADES (depth readiness checks)
+// =============================================================================
+
+const preparedness1: BotUpgradeDefinition = {
+  id: 'preparedness_1',
+  name: 'Preparedness I',
+  description: 'Check basic consumable counts before descent',
+  cost: 150,
+  category: 'graded',
+  targetField: 'preparedness',
+  targetLevel: 1,
+}
+
+const preparedness2: BotUpgradeDefinition = {
+  id: 'preparedness_2',
+  name: 'Preparedness II',
+  description: 'Require appropriate potion tiers and level',
+  cost: 270,
+  requires: 'preparedness_1',
+  category: 'graded',
+  targetField: 'preparedness',
+  targetLevel: 2,
+}
+
+const preparedness3: BotUpgradeDefinition = {
+  id: 'preparedness_3',
+  name: 'Preparedness III',
+  description: 'Full Morgoth preparation protocol',
+  cost: 486,
+  requires: 'preparedness_2',
+  category: 'graded',
+  targetField: 'preparedness',
+  targetLevel: 3,
 }
 
 // =============================================================================
@@ -148,7 +187,6 @@ const kiting1: BotUpgradeDefinition = {
   name: 'Kiting I',
   description: 'Basic ranged positioning (2 tile distance)',
   cost: 250,
-  requires: 'sweep_1', // Prerequisite: must have sweep first
   category: 'graded',
   targetField: 'kiting',
   targetLevel: 1,
@@ -256,7 +294,11 @@ export const BOT_UPGRADES: BotUpgradeDefinition[] = [
   // Toggle upgrades
   townUpgrade,
   farmingUpgrade,
-  preparednessUpgrade,
+  tacticsUpgrade,
+  // Preparedness upgrades
+  preparedness1,
+  preparedness2,
+  preparedness3,
   // Sweep upgrades
   sweep1,
   sweep2,
@@ -280,7 +322,7 @@ export const BOT_UPGRADES: BotUpgradeDefinition[] = [
 ]
 
 /** Toggle upgrade IDs for type narrowing */
-export const TOGGLE_UPGRADE_IDS = ['town', 'farming', 'preparedness'] as const
+export const TOGGLE_UPGRADE_IDS = ['town', 'farming', 'tactics'] as const
 export type ToggleUpgradeId = (typeof TOGGLE_UPGRADE_IDS)[number]
 
 export function getBotUpgradeById(id: BotUpgradeId): BotUpgradeDefinition | undefined {
@@ -354,7 +396,13 @@ export function canPurchaseBotUpgrade(
 }
 
 /** Graded capability field names */
-export type GradedCapabilityField = 'sweep' | 'surf' | 'kiting' | 'targeting' | 'retreat'
+export type GradedCapabilityField =
+  | 'preparedness'
+  | 'sweep'
+  | 'surf'
+  | 'kiting'
+  | 'targeting'
+  | 'retreat'
 
 /** Get the next purchasable upgrade for a graded field, or null if maxed */
 export function getNextGradedUpgrade(

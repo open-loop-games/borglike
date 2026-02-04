@@ -239,7 +239,9 @@ function handleDismiss() {
           personalityDisplay.label
         }}</span>
       </div>
-      <span class="death-cause">{{ killerMonster ? `Slain by ${killerMonster}` : deathCause }}</span>
+      <span class="death-cause">{{
+        killerMonster ? `Slain by ${killerMonster}` : deathCause
+      }}</span>
       <div class="death-metrics">
         <div class="metric">
           <span class="metric-value depth">{{ run.depth }}</span>

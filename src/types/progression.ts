@@ -25,21 +25,22 @@ export interface BotCapabilities {
   // ON/OFF flags (unlocked or not)
   town: boolean // Can use town portal, visit healer/shops
   farming: boolean // Can initiate farming loops when under-prepared
-  preparedness: boolean // Checks depth readiness before descent
+  tactics: boolean // Uses pre-combat buffs and buff spells
 
   // Graded levels (0-3)
+  preparedness: number // 0=none, 1=counts, 2=tiers, 3=full Morgoth prep
   sweep: number // 0=disabled, 1-3=exploration thoroughness
   surf: number // 0=disabled, 1-3=HP thresholds for stair surfing
   kiting: number // 0=disabled, 1-3=engage distance for ranged classes
   targeting: number // 0=closest, 1-3=target selection intelligence
-  retreat: number // 0=panic at 25%, 1-3=retreat decision intelligence
+  retreat: number // 0=panic at 25%, 1-3=retreat/consumable intelligence
 }
 
 /** User toggles for ON/OFF capabilities (can disable even when unlocked) */
 export interface BotToggles {
   town: boolean
   farming: boolean
-  preparedness: boolean
+  tactics: boolean
   sweepEnabled: boolean // Can disable sweep exploration even when in-range
 }
 
@@ -47,7 +48,8 @@ export interface BotToggles {
 export const DEFAULT_BOT_CAPABILITIES: BotCapabilities = {
   town: false,
   farming: false,
-  preparedness: false,
+  tactics: false,
+  preparedness: 0,
   sweep: 0,
   surf: 0,
   kiting: 0,
@@ -59,7 +61,8 @@ export const DEFAULT_BOT_CAPABILITIES: BotCapabilities = {
 export const FULL_BOT_CAPABILITIES: BotCapabilities = {
   town: true,
   farming: true,
-  preparedness: true,
+  tactics: true,
+  preparedness: 3,
   sweep: 3,
   surf: 3,
   kiting: 3,
@@ -71,7 +74,7 @@ export const FULL_BOT_CAPABILITIES: BotCapabilities = {
 export const DEFAULT_BOT_TOGGLES: BotToggles = {
   town: true,
   farming: true,
-  preparedness: true,
+  tactics: true,
   sweepEnabled: true,
 }
 

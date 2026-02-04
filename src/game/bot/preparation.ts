@@ -480,29 +480,29 @@ export function getDepthBracket(depth: number): DepthRequirement {
 /**
  * Check if the character is ready for a target depth.
  *
- * Checks:
- * 1. Level requirements (class-specific, Angband borg-inspired)
- * 2. Consumable requirements (potions, scrolls, portals)
+ * Checks vary by preparedness level:
+ * - L0: No checks (face-rush mode)
+ * - L1: Basic counts (healing, escape, portal counts scaled by caution)
+ * - L2: L1 + tier requirements + class-specific level check
+ * - L3: L2 + buff/mana requirements for Morgoth
  *
  * @param caution - Personality caution level (0-100). Default 50 for baseline.
  *                  Lower caution = lower requirements (aggressive can yolo).
  *                  Higher caution = stricter requirements (cautious over-prepares).
+ * @param preparednessLevel - Bot training level (0-3). Default 3 for full checks.
  * @returns null if ready, or a string describing the missing requirement
  */
 export function getDepthReadiness(
   character: Character,
   inventory: Item[],
   targetDepth: number,
-  caution: number = 50
+  caution: number = 50,
+  preparednessLevel: number = 3
 ): string | null {
-  // Level check: class-specific requirements
-  // Warriors can go deep early, mages need to overlevel (scaled by upgrade tier)
-  const classId = (character as { classId?: string }).classId
-  const minLevel = getMinLevel(targetDepth, classId, character.upgradeBonuses)
-  if (character.level < minLevel) {
-    return `Need level ${minLevel} for depth ${targetDepth} (have ${character.level})`
-  }
+  // L0: No checks at all (face-rush mode)
+  if (preparednessLevel === 0) return null
 
+  const classId = (character as { classId?: string }).classId
   const baseReq = getDepthBracket(targetDepth)
   const req = scaleRequirement(baseReq, caution)
 
@@ -512,48 +512,62 @@ export function getDepthReadiness(
   const portals = countTownPortals(inventory)
   const hpPercent = (character.hp / character.maxHp) * 100
 
-  // Check requirements (scaled by personality)
-  if (healing < req.healingPotions) {
-    return `Need ${req.healingPotions} healing potions (have ${healing})`
+  // L1+: Basic counts (healing, escape, portal, HP%)
+  if (preparednessLevel >= 1) {
+    if (healing < req.healingPotions) {
+      return `Need ${req.healingPotions} healing potions (have ${healing})`
+    }
+    if (escapes < req.escapeScrolls) {
+      return `Need ${req.escapeScrolls} escape scrolls (have ${escapes})`
+    }
+    if (portals < req.townPortals) {
+      return `Need ${req.townPortals} town portals (have ${portals})`
+    }
+    if (hpPercent < req.minHpPercent) {
+      return `Need ${req.minHpPercent}% HP (have ${Math.floor(hpPercent)}%)`
+    }
   }
 
-  // Tier requirement: if we need potions, at least 1 must be the appropriate tier
-  const requiredTier = getRequiredHealingTier(targetDepth)
-  if (req.healingPotions > 0 && requiredTier > 1) {
-    const highTierCount = countHealingPotionsByTier(inventory, requiredTier)
-    if (highTierCount < 1) {
-      const tierNames: Record<number, string> = {
-        2: 'Cure Serious+',
-        3: 'Cure Critical+',
-        4: 'Healing',
+  // L2+: Tier requirements + level check
+  if (preparednessLevel >= 2) {
+    // Level check: class-specific requirements
+    // Warriors can go deep early, mages need to overlevel (scaled by upgrade tier)
+    const minLevel = getMinLevel(targetDepth, classId, character.upgradeBonuses)
+    if (character.level < minLevel) {
+      return `Need level ${minLevel} for depth ${targetDepth} (have ${character.level})`
+    }
+
+    // Tier requirement: if we need potions, at least 1 must be the appropriate tier
+    const requiredTier = getRequiredHealingTier(targetDepth)
+    if (req.healingPotions > 0 && requiredTier > 1) {
+      const highTierCount = countHealingPotionsByTier(inventory, requiredTier)
+      if (highTierCount < 1) {
+        const tierNames: Record<number, string> = {
+          2: 'Cure Serious+',
+          3: 'Cure Critical+',
+          4: 'Healing',
+        }
+        return `Need 1+ ${tierNames[requiredTier] ?? `T${requiredTier}`} potion (have ${highTierCount})`
       }
-      return `Need 1+ ${tierNames[requiredTier] ?? `T${requiredTier}`} potion (have ${highTierCount})`
     }
   }
 
-  if (escapes < req.escapeScrolls) {
-    return `Need ${req.escapeScrolls} escape scrolls (have ${escapes})`
-  }
-  if (portals < req.townPortals) {
-    return `Need ${req.townPortals} town portals (have ${portals})`
-  }
-  if (hpPercent < req.minHpPercent) {
-    return `Need ${req.minHpPercent}% HP (have ${Math.floor(hpPercent)}%)`
-  }
-
-  // Buff potion requirement (for Morgoth fight at depth 50)
-  if (req.buffPotions && req.buffPotions > 0) {
-    const buffs = countBuffPotions(inventory)
-    if (buffs < req.buffPotions) {
-      return `Need ${req.buffPotions} buff potions for boss fight (have ${buffs})`
+  // L3: Buff/mana requirements for Morgoth
+  if (preparednessLevel >= 3) {
+    // Buff potion requirement (for Morgoth fight at depth 50)
+    if (req.buffPotions && req.buffPotions > 0) {
+      const buffs = countBuffPotions(inventory)
+      if (buffs < req.buffPotions) {
+        return `Need ${req.buffPotions} buff potions for boss fight (have ${buffs})`
+      }
     }
-  }
 
-  // Mana potion requirement (for mana-dependent classes - casters + healers)
-  if (req.manaPotions && req.manaPotions > 0 && isManaDependent(classId)) {
-    const mana = countManaPotions(inventory)
-    if (mana < req.manaPotions) {
-      return `Need ${req.manaPotions} mana potions (have ${mana})`
+    // Mana potion requirement (for mana-dependent classes - casters + healers)
+    if (req.manaPotions && req.manaPotions > 0 && isManaDependent(classId)) {
+      const mana = countManaPotions(inventory)
+      if (mana < req.manaPotions) {
+        return `Need ${req.manaPotions} mana potions (have ${mana})`
+      }
     }
   }
 

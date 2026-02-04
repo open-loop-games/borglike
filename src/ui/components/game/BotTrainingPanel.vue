@@ -32,18 +32,40 @@ const toggles = computed<BotToggles>(() => {
 const toggleUpgrades: { id: ToggleUpgradeId; name: string; desc: string }[] = [
   { id: 'town', name: 'Town Access', desc: 'Visit town for healing and shopping' },
   { id: 'farming', name: 'Resource Farming', desc: 'Farm gold/XP when under-prepared' },
-  { id: 'preparedness', name: 'Depth Readiness', desc: 'Check consumables before descent' },
+  { id: 'tactics', name: 'Combat Tactics', desc: 'Use buffs and pre-combat preparation' },
 ]
 
 // Graded upgrades (levels 1-3) with segment labels
+// Order: targeting, retreat (core decisions) → preparedness, sweep, surf (progression) → kiting (advanced)
 interface GradedUpgrade {
-  key: 'sweep' | 'surf' | 'kiting'
+  key: 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
   name: string
   desc: string
   segments: string[] // Labels for L1, L2, L3
   selectable: boolean // Can user select active level?
 }
 const gradedUpgrades: GradedUpgrade[] = [
+  {
+    key: 'targeting',
+    name: 'Targeting',
+    desc: 'Target selection intelligence',
+    segments: ['Wounded', 'Threat', 'Class'],
+    selectable: false,
+  },
+  {
+    key: 'retreat',
+    name: 'Retreat',
+    desc: 'Flee/consumable intelligence',
+    segments: ['HP%', 'Status', 'Combat'],
+    selectable: false,
+  },
+  {
+    key: 'preparedness',
+    name: 'Preparedness',
+    desc: 'Depth readiness checks',
+    segments: ['Counts', 'Tiers', 'Full'],
+    selectable: false,
+  },
   {
     key: 'sweep',
     name: 'Sweep',
@@ -91,34 +113,32 @@ function isEnabled(id: ToggleUpgradeId): boolean {
   return capabilities.value[id] && toggles.value[id]
 }
 
-function getGradedLevel(key: 'sweep' | 'surf' | 'kiting'): number {
+type GradedKey = 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
+
+function getGradedLevel(key: GradedKey): number {
   return capabilities.value[key]
 }
 
-function getActiveLevel(key: 'sweep' | 'surf' | 'kiting'): number {
+function getActiveLevel(key: GradedKey): number {
   const config = progression.getSlotConfig(props.slot)
   if (key === 'sweep') return config.activeSweepLevel ?? config.capabilities.sweep
   if (key === 'surf') return config.activeSurfLevel ?? config.capabilities.surf
-  return config.capabilities[key] // Kiting always uses max
+  // targeting, retreat, kiting always use max purchased level
+  return config.capabilities[key]
 }
 
 function setActiveLevel(key: 'sweep' | 'surf', level: number) {
   progression.setActiveGradedLevel(props.slot, key, level)
 }
 
-function getNextGradedId(key: 'sweep' | 'surf' | 'kiting'): BotUpgradeId | null {
+function getNextGradedId(key: GradedKey): BotUpgradeId | null {
   const currentLevel = getGradedLevel(key)
   if (currentLevel >= 3) return null
   return `${key}_${currentLevel + 1}` as BotUpgradeId
 }
 
-function isKitingLocked(): boolean {
-  // Kiting requires sweep_1 to be purchased
-  return capabilities.value.sweep < 1
-}
-
 function getSegmentState(
-  key: 'sweep' | 'surf' | 'kiting',
+  key: GradedKey,
   segmentLevel: number
 ): 'selected' | 'available' | 'locked' {
   const unlocked = getGradedLevel(key)
@@ -131,7 +151,8 @@ function getSegmentState(
 
 function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
   if (!up.selectable) return
-  if (up.key === 'kiting') return // Kiting not selectable
+  // Only sweep and surf are selectable
+  if (up.key !== 'sweep' && up.key !== 'surf') return
   const unlocked = getGradedLevel(up.key)
   if (segmentLevel > unlocked) return // Can't select locked segments
   setActiveLevel(up.key, segmentLevel)
@@ -178,23 +199,9 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
     <section class="upgrade-section">
       <h4>Training Levels</h4>
       <div class="upgrade-list">
-        <div
-          v-for="up in gradedUpgrades"
-          :key="up.key"
-          class="upgrade-row graded"
-          :class="{ locked: up.key === 'kiting' && isKitingLocked() }"
-        >
+        <div v-for="up in gradedUpgrades" :key="up.key" class="upgrade-row graded">
           <div class="upgrade-info">
-            <span class="upgrade-name">
-              {{ up.name }}
-              <span
-                v-if="up.key === 'kiting' && isKitingLocked()"
-                class="lock-icon"
-                title="Requires Sweep I"
-              >
-                (locked)
-              </span>
-            </span>
+            <span class="upgrade-name">{{ up.name }}</span>
             <span class="upgrade-desc">{{ up.desc }}</span>
           </div>
           <div class="upgrade-level">
@@ -219,9 +226,6 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
           <div class="upgrade-actions">
             <template v-if="getGradedLevel(up.key) >= 3">
               <span class="max-label">MAX</span>
-            </template>
-            <template v-else-if="up.key === 'kiting' && isKitingLocked()">
-              <span class="locked-label">Locked</span>
             </template>
             <template v-else>
               <button
@@ -297,10 +301,6 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
   border-radius: 4px;
 }
 
-.upgrade-row.locked {
-  opacity: 0.5;
-}
-
 .upgrade-info {
   flex: 1;
   display: flex;
@@ -314,12 +314,6 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
   font-size: 12px;
   font-weight: bold;
   color: var(--text-primary);
-}
-
-.lock-icon {
-  font-size: 10px;
-  font-weight: normal;
-  color: var(--amber);
 }
 
 .upgrade-desc {
@@ -448,11 +442,5 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
   font-weight: bold;
   color: var(--green);
   text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
-}
-
-.locked-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--amber);
 }
 </style>

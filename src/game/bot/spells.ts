@@ -312,6 +312,7 @@ export function getDamageSpellAction(
  * Check if we should cast a buff spell
  *
  * Casts buffs when:
+ * - Tactics capability is enabled
  * - Entering combat (enemies visible but not adjacent)
  * - Before descending to new level
  * - Buff has worn off
@@ -321,8 +322,12 @@ export function getDamageSpellAction(
 export function getBuffSpellAction(
   game: GameState,
   _config: PersonalityConfig,
-  visibleMonsters: Monster[]
+  visibleMonsters: Monster[],
+  tacticsEnabled: boolean = true
 ): GameAction | null {
+  // Gate behind tactics capability
+  if (!tacticsEnabled) return null
+
   const character = game.character
 
   // GOLEM RESTRICTION
@@ -1170,8 +1175,12 @@ export function getLightOrbSpellAction(game: GameState): GameAction | null {
  */
 export function getDimensionDoorKiteAction(
   game: GameState,
-  visibleMonsters: Monster[]
+  visibleMonsters: Monster[],
+  kitingLevel: number = 3
 ): GameAction | null {
+  // Gate behind kiting L3 (advanced caster technique)
+  if (kitingLevel < 3) return null
+
   const character = game.character
 
   // GOLEM RESTRICTION

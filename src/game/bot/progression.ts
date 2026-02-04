@@ -87,12 +87,19 @@ export function getDescentBlocker(
     level: number
     classId?: string
   },
-  caution: number
+  caution: number,
+  preparednessLevel: number = 3
 ): string | null {
   const nextDepth = character.depth + 1
   if (nextDepth > MAX_DEPTH) return 'At max depth'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return getDepthReadiness(character as any, character.inventory as any, nextDepth, caution)
+  return getDepthReadiness(
+    character as any,
+    character.inventory as any,
+    nextDepth,
+    caution,
+    preparednessLevel
+  )
 }
 
 /**
@@ -298,11 +305,17 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
     if (farmingGoal) return farmingGoal
   }
 
-  // GATE: Preparedness check only if capability is enabled
-  // Face-rush mode skips consumable requirements entirely
-  if (effective.preparedness) {
+  // GATE: Preparedness check only if capability level > 0
+  // Face-rush mode (L0) skips consumable requirements entirely
+  if (effective.preparedness > 0) {
     const readinessIssue = profile('prog.depthReadiness', () =>
-      getDepthReadiness(character, character.inventory, nextDepth, effectiveConfig.caution)
+      getDepthReadiness(
+        character,
+        character.inventory,
+        nextDepth,
+        effectiveConfig.caution,
+        effective.preparedness
+      )
     )
     if (readinessIssue) {
       const farmingGoal = profile('prog.initFarm', () => initiateFarmingLoop(context))

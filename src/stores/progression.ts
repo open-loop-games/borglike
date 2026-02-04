@@ -620,11 +620,14 @@ export const useProgressionStore = defineStore('progression', () => {
     return {
       town: config.capabilities.town && config.toggles.town,
       farming: config.capabilities.farming && config.toggles.farming,
-      preparedness: config.capabilities.preparedness && config.toggles.preparedness,
+      tactics: config.capabilities.tactics && config.toggles.tactics,
+      preparedness: config.capabilities.preparedness,
       sweepEnabled: config.toggles.sweepEnabled,
       sweep: activeSweep,
       surf: activeSurf,
       kiting: config.capabilities.kiting,
+      targeting: config.capabilities.targeting,
+      retreat: config.capabilities.retreat,
     }
   }
 

@@ -325,7 +325,8 @@ export interface BotContext {
 export interface EffectiveCapabilities {
   town: boolean
   farming: boolean
-  preparedness: boolean
+  tactics: boolean
+  preparedness: number
   sweep: number
   surf: number
   kiting: number
@@ -339,7 +340,8 @@ export function getEffectiveCapabilities(context: BotContext): EffectiveCapabili
   return {
     town: capabilities.town && toggles.town,
     farming: capabilities.farming && toggles.farming,
-    preparedness: capabilities.preparedness && toggles.preparedness,
+    tactics: capabilities.tactics && toggles.tactics,
+    preparedness: capabilities.preparedness,
     sweep: capabilities.sweep,
     surf: capabilities.surf,
     kiting: capabilities.kiting,
