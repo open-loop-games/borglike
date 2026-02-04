@@ -117,7 +117,7 @@ function resolveSpellTarget(game: GameState, targetId?: string): Monster | null 
  * Calculate spell damage with upgrade bonuses applied
  */
 function calculateSpellDamage(game: GameState, spell: SpellTemplate): number {
-  let damage = calculateSpellPower(game.character, spell, false)
+  const damage = calculateSpellPower(game.character, spell, false)
   const bonuses = game.character.upgradeBonuses ?? DEFAULT_BONUSES
   return Math.floor(damage * (1 + bonuses.damagePercent / 100))
 }
@@ -1091,7 +1091,7 @@ function castTeleportOtherSpell(
  */
 function castTargetedTeleportSpell(
   game: GameState,
-  spell: SpellTemplate,
+  _spell: SpellTemplate,
   targetId?: string
 ): ActionResult {
   if (!targetId) {

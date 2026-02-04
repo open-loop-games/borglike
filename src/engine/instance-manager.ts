@@ -21,7 +21,7 @@ import {
   type Item,
   type BotState,
 } from '@/game'
-import { randomInt } from '@/game/rng'
+import { randomInt } from '@game/rng'
 import { handleRunCompletion } from '@/core/run-completion-service'
 import type { RunConfig } from '@/types'
 import type { MinionType } from '@/game'

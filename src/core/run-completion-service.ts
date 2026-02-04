@@ -5,12 +5,12 @@
  * Handles run end processing: calculating rewards, updating stats, and triggering unlocks.
  */
 
-import type { RunResult } from '@/game/game-runner'
+import type { RunResult } from '@game/game-runner'
 import type { RunStats, EquipmentSnapshot, KillerMonsterSnapshot } from '@/types/progression'
 import { useProgressionStore } from '@stores/progression'
 import { saveRun } from '@stores/persistence'
-import { getMonsterByName } from '@/game/data/monsters'
-import { getBoosterById } from '@/game/data/boosters'
+import { getMonsterByName } from '@game/data/monsters'
+import { getBoosterById } from '@game/data/boosters'
 
 // ============================================================================
 // TYPES

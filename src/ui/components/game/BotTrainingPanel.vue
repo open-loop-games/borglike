@@ -6,7 +6,7 @@ import {
   canPurchaseBotUpgrade,
   type BotUpgradeId,
   type ToggleUpgradeId,
-} from '@/game/data/bot-upgrades'
+} from '@game/data/bot-upgrades'
 import type { BotCapabilities, BotToggles } from '@/types/progression'
 import PanelFrame from '../common/PanelFrame.vue'
 

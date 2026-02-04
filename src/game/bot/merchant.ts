@@ -7,12 +7,7 @@
 import type { GameState, Point } from '../types'
 import type { BotGoal, BotContext, BotState } from './types'
 import { findAdjacentMerchant, sellToMerchant, buyFromMerchant } from '../features'
-import {
-  countHealingPotions,
-  countManaPotions,
-  findOutdatedHealingPotions,
-  isManaDependent,
-} from './preparation'
+import { countHealingPotions, findOutdatedHealingPotions, isManaDependent } from './preparation'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
 
 // ============================================================================

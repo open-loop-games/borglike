@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { GameClass } from '@/game/data/classes'
+import type { GameClass } from '@game/data/classes'
 
 interface Props {
   gameClass: GameClass

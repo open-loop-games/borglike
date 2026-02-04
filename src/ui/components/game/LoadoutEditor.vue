@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
-import { getBoosterById } from '@/game/data/boosters'
-import { races, type Race } from '@/game/data/races'
-import { classes, type GameClass } from '@/game/data/classes'
+import { getBoosterById } from '@game/data/boosters'
+import { races, type Race } from '@game/data/races'
+import { classes, type GameClass } from '@game/data/classes'
 import PanelFrame from '../common/PanelFrame.vue'
 import BotTrainingPanel from './BotTrainingPanel.vue'
 

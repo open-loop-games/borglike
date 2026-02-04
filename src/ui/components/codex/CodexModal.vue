@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
-import { races, type Race } from '@/game/data/races'
-import { classes, type GameClass } from '@/game/data/classes'
+import { races, type Race } from '@game/data/races'
+import { classes, type GameClass } from '@game/data/classes'
 import RaceCard from './RaceCard.vue'
 import ClassCard from './ClassCard.vue'
 import RaceDetailPanel from './RaceDetailPanel.vue'

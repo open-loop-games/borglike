@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { StatModifiers, RaceAbility } from '@/game/data/races'
+import type { StatModifiers, RaceAbility } from '@game/data/races'
 
 const props = defineProps<{
   id: string

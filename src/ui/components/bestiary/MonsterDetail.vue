@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MonsterTemplate } from '@/game/data/monsters'
-import { getAverageDamage, getAbilities } from '@/game/data/monsters'
+import type { MonsterTemplate } from '@game/data/monsters'
+import { getAverageDamage, getAbilities } from '@game/data/monsters'
 import type { BestiaryEntry } from '@/types/progression'
-import { getKnowledgeBonus } from '@/game/knowledge-effects'
+import { getKnowledgeBonus } from '@game/knowledge-effects'
 
 interface Props {
   monster: MonsterTemplate

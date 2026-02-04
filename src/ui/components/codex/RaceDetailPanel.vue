@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Race } from '@/game/data/races'
+import type { Race } from '@game/data/races'
 
 interface Props {
   race: Race

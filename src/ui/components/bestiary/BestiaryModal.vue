@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
-import { monsters, type MonsterTemplate } from '@/game/data/monsters'
+import { monsters, type MonsterTemplate } from '@game/data/monsters'
 import MonsterCard from './MonsterCard.vue'
 import MonsterDetail from './MonsterDetail.vue'
 

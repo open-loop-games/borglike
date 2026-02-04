@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
-import { ALL_ITEMS, type ItemTemplate } from '@/game/data/items'
-import { ARTIFACTS, type ArtifactTemplate } from '@/game/data/artifacts'
+import { ALL_ITEMS, type ItemTemplate } from '@game/data/items'
+import { ARTIFACTS, type ArtifactTemplate } from '@game/data/artifacts'
 import ItemCard from './ItemCard.vue'
 import ItemDetailPanel from './ItemDetailPanel.vue'
 

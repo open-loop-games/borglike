@@ -17,8 +17,8 @@ import type {
   ArmoryEntry,
   SlotConfig,
 } from '@/types/progression'
-import { startingRaces } from '@/game/data/races'
-import { startingClasses } from '@/game/data/classes'
+import { startingRaces } from '@game/data/races'
+import { startingClasses } from '@game/data/classes'
 
 // ============================================================================
 // DATABASE SCHEMA

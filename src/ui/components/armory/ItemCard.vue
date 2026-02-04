@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ItemTemplate } from '@/game/data/items'
-import type { ArtifactTemplate } from '@/game/data/artifacts'
+import type { ItemTemplate } from '@game/data/items'
+import type { ArtifactTemplate } from '@game/data/artifacts'
 import type { ArmoryEntry } from '@/types/progression'
 
 interface Props {

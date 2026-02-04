@@ -15,7 +15,7 @@
  * - Main dispatcher: getProgressionGoal()
  */
 
-import type { Point, GameState } from '../types'
+import type { Point, GameState, Character } from '../types'
 import type { UpgradeBonuses } from '../upgrade-effects'
 import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
@@ -79,27 +79,13 @@ function getLevelFloorCount(context: BotContext): number {
  * Get the reason descent is blocked, or null if ready.
  */
 export function getDescentBlocker(
-  character: {
-    depth: number
-    inventory: { template: { type: string; name: string; tier: number } }[]
-    hp: number
-    maxHp: number
-    level: number
-    classId?: string
-  },
+  character: Character,
   caution: number,
   preparednessLevel: number = 3
 ): string | null {
   const nextDepth = character.depth + 1
   if (nextDepth > MAX_DEPTH) return 'At max depth'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return getDepthReadiness(
-    character as any,
-    character.inventory as any,
-    nextDepth,
-    caution,
-    preparednessLevel
-  )
+  return getDepthReadiness(character, character.inventory, nextDepth, caution, preparednessLevel)
 }
 
 /**

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
-import { races } from '@/game/data/races'
-import { classes } from '@/game/data/classes'
-import { boosters } from '@/game/data/boosters'
+import { races } from '@game/data/races'
+import { classes } from '@game/data/classes'
+import { boosters } from '@game/data/boosters'
 import PanelFrame from './common/PanelFrame.vue'
 import UpgradeList from './meta/UpgradeList.vue'
 import UnlockList from './meta/UnlockList.vue'

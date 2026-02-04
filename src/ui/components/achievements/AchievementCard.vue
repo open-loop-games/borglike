@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Achievement } from '@/game/data/achievements'
+import type { Achievement } from '@game/data/achievements'
 
 interface Props {
   achievement: Achievement

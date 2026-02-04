@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
-import { getBoosterById } from '@/game/data/boosters'
+import { getBoosterById } from '@game/data/boosters'
 import UnlockItem from './UnlockItem.vue'
 
 const progression = useProgressionStore()

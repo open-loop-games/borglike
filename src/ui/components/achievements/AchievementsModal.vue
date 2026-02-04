@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
-import { achievements, type Achievement } from '@/game/data/achievements'
+import { achievements, type Achievement } from '@game/data/achievements'
 import AchievementCard from './AchievementCard.vue'
 
 const progression = useProgressionStore()

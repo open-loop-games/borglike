@@ -2,5 +2,6 @@
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "entry": ["src/main.ts", "src/App.vue"],
   "project": ["src/**/*.{ts,vue}"],
-  "ignore": ["scripts/**"]
+  "ignore": ["scripts/**"],
+  "ignoreDependencies": ["tinypool"]
 }

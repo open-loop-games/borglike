@@ -26,8 +26,8 @@ import {
   getBotUpgradeById,
   canPurchaseBotUpgrade,
   applyBotUpgrade,
-} from '@/game/data/bot-upgrades'
-import { achievements, getAchievementById } from '@/game/data/achievements'
+} from '@game/data/bot-upgrades'
+import { achievements, getAchievementById } from '@game/data/achievements'
 import {
   unlockableRaces,
   prestigeRaces,
@@ -42,7 +42,7 @@ import {
   boosters,
   getBoosterById,
   canUnlockBooster as checkBoosterPrereqs,
-} from '@/game/data/boosters'
+} from '@game/data/boosters'
 import {
   essenceFromDeath,
   essenceFromVictory,

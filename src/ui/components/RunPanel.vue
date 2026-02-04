@@ -3,7 +3,7 @@ import { ref, onUnmounted, computed } from 'vue'
 import type { ActiveRun } from '@/stores/runs'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
-import { getBoosterById } from '@/game/data/boosters'
+import { getBoosterById } from '@game/data/boosters'
 import DungeonGrid from './DungeonGridCanvas.vue'
 import ProgressBar from './common/ProgressBar.vue'
 
