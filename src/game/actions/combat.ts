@@ -4,7 +4,7 @@
  * Handles player attack actions (melee and ranged).
  */
 
-import type { GameState, ActionResult } from '../types'
+import type { GameState, ActionResult, Monster } from '../types'
 import {
   meleeAttack,
   applyDamage,
@@ -207,10 +207,7 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
  * This is the single source of truth for monster kill handling.
  * All kill paths (melee, ranged, spells) should call this function.
  */
-export function handleMonsterKill(
-  game: GameState,
-  monster: { id: string; template: { name: string; experience: number; flags: string[] } }
-): void {
+export function handleMonsterKill(game: GameState, monster: Monster): void {
   // Remove monster from game
   const monsterIndex = game.monsters.findIndex((m) => m.id === monster.id)
   if (monsterIndex >= 0) {
@@ -241,8 +238,7 @@ export function handleMonsterKill(
   game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
 
   // Award gold from monster
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  awardMonsterGold(game, monster.template as any)
+  awardMonsterGold(game, monster.template)
 
   if (leveledUp && newLevel) {
     addMessage(game, `You have reached level ${newLevel}!`, 'good')

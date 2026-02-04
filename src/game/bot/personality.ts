@@ -59,9 +59,6 @@ export const PERSONALITIES: Record<BotPersonality, PersonalityConfig> = {
   },
 }
 
-// Backward compatibility alias
-export const BASE_CONFIGS = PERSONALITIES
-
 // ============================================================================
 // PERSONALITY ACCESS
 // ============================================================================

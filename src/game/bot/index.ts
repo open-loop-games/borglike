@@ -50,7 +50,6 @@ export {
 
 export {
   PERSONALITIES,
-  BASE_CONFIGS,
   getPersonalityConfig,
   getPersonalityTypes,
   isValidPersonality,

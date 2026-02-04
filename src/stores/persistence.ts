@@ -560,10 +560,8 @@ async function checkAndRestoreBackup(): Promise<void> {
     const backupLifetime = backup.lifetimeEssence ?? 0
 
     if (backupLifetime > currentLifetime) {
-      console.log('[Persistence] Restoring from localStorage backup (more recent data detected)')
       restoreProgressionFromData(backup)
       await saveProgression()
-      console.log('[Persistence] Backup restored and saved to IndexedDB')
     }
 
     // Clear the backup after checking (we'll create a new one on next unload)

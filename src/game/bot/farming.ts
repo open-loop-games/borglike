@@ -11,7 +11,7 @@
  * - Town trips: Portal to town when ready to restock
  */
 
-import type { Point, GameState, Tile } from '../types'
+import type { Point, GameState, Tile, Character } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
 import { getEffectiveCapabilities } from './types'
 import { MAX_DEPTH } from '../types'
@@ -636,18 +636,12 @@ function findBlockedDepth(context: BotContext): number {
 /**
  * Check if ready for town trip (has gold target and portal).
  */
-export function isTownTripReady(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  character: { depth: number; gold: number; inventory: any[]; level: number },
-  goldTarget: number
-): boolean {
+export function isTownTripReady(character: Character, goldTarget: number): boolean {
   if (character.depth === 0) return false // Already in town
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const effectiveGold = getEffectiveGold(character as any)
+  const effectiveGold = getEffectiveGold(character)
   if (effectiveGold < goldTarget) return false
   if (character.level < character.depth) return false
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tpScroll = findTownPortalScroll(character as any)
+  const tpScroll = findTownPortalScroll(character)
   return tpScroll !== null
 }
 

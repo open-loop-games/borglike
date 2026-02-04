@@ -827,9 +827,6 @@ export const useProgressionStore = defineStore('progression', () => {
     achievementState.value.unlocked.add(id)
     achievementState.value.newUnlocks.add(id)
 
-    console.log(
-      `[Progression] Achievement unlocked: ${achievement.name} (click to claim ${achievement.reward} essence)`
-    )
     // Save immediately - achievement unlock is important
     saveImmediately().catch((err) =>
       console.error('[Progression] Failed to save after awardAchievement:', err)
@@ -858,10 +855,6 @@ export const useProgressionStore = defineStore('progression', () => {
 
     achievementState.value.collected.add(id)
     addEssence(achievement.reward)
-
-    console.log(
-      `[Progression] Achievement claimed: ${achievement.name} (+${achievement.reward} essence)`
-    )
     // Save happens via addEssence
     return true
   }

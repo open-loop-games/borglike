@@ -35,6 +35,7 @@ export interface ItemTemplate {
     | 'light'
     | 'potion'
     | 'scroll'
+    | 'gold'
   slot?:
     | 'weapon'
     | 'bow'

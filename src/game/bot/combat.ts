@@ -110,7 +110,7 @@ export function shouldEngage(
  * @param classProfile - Optional class profile for ranged damage calculation
  * @param distance - Distance to monster (default 1 for adjacent)
  */
-export function evaluateCombat(
+function evaluateCombat(
   character: Character,
   monster: Monster,
   classProfile?: ClassBehaviorProfile,

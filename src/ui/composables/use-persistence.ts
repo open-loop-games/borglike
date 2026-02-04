@@ -28,7 +28,6 @@ export async function initPersistence(): Promise<boolean> {
   try {
     const hadData = await initPersistenceModule()
     initialized = true
-    console.log('Persistence initialized', hadData ? '(data loaded)' : '(fresh start)')
     return hadData
   } catch (error) {
     console.error('Failed to initialize persistence:', error)
@@ -42,7 +41,6 @@ export async function initPersistence(): Promise<boolean> {
 export async function forceSave(): Promise<void> {
   try {
     await saveProgression()
-    console.log('Progress force-saved')
   } catch (error) {
     console.error('Failed to force-save:', error)
   }
