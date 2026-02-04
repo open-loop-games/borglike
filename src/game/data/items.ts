@@ -1249,24 +1249,6 @@ export const SCROLLS: ItemTemplate[] = [
     effect: 'Magic Mapping - reveal level',
     minDepth: 5,
   },
-  {
-    name: 'Scroll of Treasure Detection',
-    type: 'scroll',
-    tier: 1,
-    weight: 5,
-    effect: 'Detect gold and items',
-    minDepth: 0,
-  },
-
-  // Utility
-  {
-    name: 'Scroll of Light',
-    type: 'scroll',
-    tier: 1,
-    weight: 5,
-    effect: 'Light nearby area',
-    minDepth: 0,
-  },
 
   // Enchantment
   {

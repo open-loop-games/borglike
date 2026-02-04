@@ -166,7 +166,9 @@ export function spawnItemsForLevel(
 
     if (template && pos) {
       // Determine enchantment (deeper = higher chance of enchantment)
-      const enchantment = rollEnchantment(depth, enchantRatePercent)
+      // Only equipment gets enchantment - consumables don't benefit from it
+      const isEquipment = template.slot !== undefined
+      const enchantment = isEquipment ? rollEnchantment(depth, enchantRatePercent) : 0
       const item = createItem(template, enchantment)
       const groundItem = createGroundItem(item, pos)
       items.push(groundItem)
@@ -728,7 +730,9 @@ export function generateMerchantInventory(merchantId: string, depth: number): It
     const template = shopItems[randomInt(0, shopItems.length - 1)]
     if (!template) continue
 
-    const enchantment = rollEnchantmentForShop(depth)
+    // Only equipment gets enchantment - consumables don't benefit from it
+    const isEquipment = template.slot !== undefined
+    const enchantment = isEquipment ? rollEnchantmentForShop(depth) : 0
     const item = createItem(template, enchantment)
 
     // Calculate shop price using quadratic scaling

@@ -804,14 +804,14 @@ export function findProtectionScroll(character: Character): Item | null {
 }
 
 /**
- * Find a mapping scroll (magic mapping or light)
+ * Find a mapping scroll (magic mapping)
  */
 export function findMappingScroll(character: Character): Item | null {
   return (
     character.inventory.find((item) => {
       if (item.template.type !== 'scroll') return false
       const name = item.template.name.toLowerCase()
-      return name.includes('magic mapping') || name.includes('light')
+      return name.includes('magic mapping')
     }) ?? null
   )
 }

@@ -279,33 +279,6 @@ const SCROLL_EFFECTS: Array<{
     },
   },
 
-  // Treasure Detection
-  {
-    match: (e) => e.includes('Detect') && e.includes('gold'),
-    apply: (game) => {
-      for (const groundItem of game.items) {
-        const tile = getTile(game.currentLevel, groundItem.position.x, groundItem.position.y)
-        if (tile) tile.explored = true
-      }
-      return { success: true, message: 'You sense treasures nearby!' }
-    },
-  },
-
-  // Light scroll
-  {
-    match: (e) => e.includes('Light nearby'),
-    apply: (game) => {
-      const pos = game.character.position
-      for (let dy = -10; dy <= 10; dy++) {
-        for (let dx = -10; dx <= 10; dx++) {
-          const tile = getTile(game.currentLevel, pos.x + dx, pos.y + dy)
-          if (tile) tile.explored = true
-        }
-      }
-      return { success: true, message: 'The area is illuminated!' }
-    },
-  },
-
   // Enchant Weapon
   {
     match: (e) => e.includes('+1') && e.includes('weapon'),
