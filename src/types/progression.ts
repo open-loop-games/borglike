@@ -23,11 +23,11 @@ export interface RunLoadout {
 /** Bot capability levels - unlocked through per-slot training */
 export interface BotCapabilities {
   // ON/OFF flags (unlocked or not)
-  town: boolean // Can use town portal, visit healer/shops
   farming: boolean // Can initiate farming loops when under-prepared
   tactics: boolean // Uses pre-combat buffs and buff spells
 
   // Graded levels (0-3)
+  town: number // 0=none, 1=portal, 2=+healer, 3=+commerce
   preparedness: number // 0=none, 1=counts, 2=tiers, 3=full Morgoth prep
   sweep: number // 0=disabled, 1-3=exploration thoroughness
   surf: number // 0=disabled, 1-3=HP thresholds for stair surfing
@@ -38,7 +38,6 @@ export interface BotCapabilities {
 
 /** User toggles for ON/OFF capabilities (can disable even when unlocked) */
 export interface BotToggles {
-  town: boolean
   farming: boolean
   tactics: boolean
   sweepEnabled: boolean // Can disable sweep exploration even when in-range
@@ -46,9 +45,9 @@ export interface BotToggles {
 
 /** Default capabilities - face-rush mode (all disabled) */
 export const DEFAULT_BOT_CAPABILITIES: BotCapabilities = {
-  town: false,
   farming: false,
   tactics: false,
+  town: 0,
   preparedness: 0,
   sweep: 0,
   surf: 0,
@@ -59,9 +58,9 @@ export const DEFAULT_BOT_CAPABILITIES: BotCapabilities = {
 
 /** Full capabilities - for migration of existing saves */
 export const FULL_BOT_CAPABILITIES: BotCapabilities = {
-  town: true,
   farming: true,
   tactics: true,
+  town: 3,
   preparedness: 3,
   sweep: 3,
   surf: 3,
@@ -72,7 +71,6 @@ export const FULL_BOT_CAPABILITIES: BotCapabilities = {
 
 /** Default toggles - all ON when unlocked */
 export const DEFAULT_BOT_TOGGLES: BotToggles = {
-  town: true,
   farming: true,
   tactics: true,
   sweepEnabled: true,

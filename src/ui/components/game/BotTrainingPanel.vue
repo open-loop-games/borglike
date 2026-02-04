@@ -4,6 +4,7 @@ import { useProgressionStore } from '@/stores/progression'
 import {
   BOT_UPGRADES,
   canPurchaseBotUpgrade,
+  getToggleCapabilityField,
   type BotUpgradeId,
   type ToggleUpgradeId,
 } from '@game/data/bot-upgrades'
@@ -28,23 +29,35 @@ const toggles = computed<BotToggles>(() => {
   return progression.getSlotConfig(props.slot).toggles
 })
 
-// ON/OFF upgrades
-const toggleUpgrades: { id: ToggleUpgradeId; name: string; desc: string }[] = [
-  { id: 'town', name: 'Town Access', desc: 'Visit town for healing and shopping' },
-  { id: 'farming', name: 'Resource Farming', desc: 'Farm gold/XP when under-prepared' },
-  { id: 'tactics', name: 'Combat Tactics', desc: 'Use buffs and pre-combat preparation' },
-]
-
 // Graded upgrades (levels 1-3) with segment labels
-// Order: targeting, retreat (core decisions) → preparedness, sweep, surf (progression) → kiting (advanced)
 interface GradedUpgrade {
-  key: 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
+  key: 'town' | 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
   name: string
   desc: string
   segments: string[] // Labels for L1, L2, L3
   selectable: boolean // Can user select active level?
 }
-const gradedUpgrades: GradedUpgrade[] = [
+
+// Toggle upgrades
+interface ToggleUpgrade {
+  id: ToggleUpgradeId
+  name: string
+  desc: string
+}
+
+// === TOWN GROUP ===
+const townUpgrades: GradedUpgrade[] = [
+  {
+    key: 'town',
+    name: 'Town',
+    desc: 'Town services access',
+    segments: ['Portal', 'Healer', 'Commerce'],
+    selectable: false,
+  },
+]
+
+// === COMBAT GROUP ===
+const combatGraded: GradedUpgrade[] = [
   {
     key: 'targeting',
     name: 'Targeting',
@@ -60,6 +73,21 @@ const gradedUpgrades: GradedUpgrade[] = [
     selectable: false,
   },
   {
+    key: 'kiting',
+    name: 'Kiting',
+    desc: 'Ranged positioning',
+    segments: ['2', '3', '4'],
+    selectable: false,
+  },
+]
+
+const combatToggles: ToggleUpgrade[] = [
+  { id: 'tactics', name: 'Tactics', desc: 'Use buffs and pre-combat preparation' },
+]
+
+// === PROGRESSION GROUP ===
+const progressionGraded: GradedUpgrade[] = [
+  {
     key: 'preparedness',
     name: 'Preparedness',
     desc: 'Depth readiness checks',
@@ -68,25 +96,22 @@ const gradedUpgrades: GradedUpgrade[] = [
   },
   {
     key: 'sweep',
-    name: 'Sweep',
+    name: 'Sweep Farming',
     desc: 'Explore before descent',
     segments: ['60%', '75%', '90%'],
     selectable: true,
   },
   {
     key: 'surf',
-    name: 'Surf',
+    name: 'Surf Farming',
     desc: 'Stair farming radius',
     segments: ['5×5', '9×9', '21×21'],
     selectable: true,
   },
-  {
-    key: 'kiting',
-    name: 'Kiting',
-    desc: 'Ranged positioning',
-    segments: ['2', '3', '4'],
-    selectable: false,
-  },
+]
+
+const progressionToggles: ToggleUpgrade[] = [
+  { id: 'farming', name: 'Farming', desc: 'Farm gold/XP when under-prepared' },
 ]
 
 function getUpgradeInfo(id: BotUpgradeId) {
@@ -106,14 +131,18 @@ function toggle(id: ToggleUpgradeId) {
 }
 
 function isUnlocked(id: ToggleUpgradeId): boolean {
-  return capabilities.value[id]
+  const field = getToggleCapabilityField(id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (capabilities.value as any)[field] as boolean
 }
 
 function isEnabled(id: ToggleUpgradeId): boolean {
-  return capabilities.value[id] && toggles.value[id]
+  const field = getToggleCapabilityField(id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (capabilities.value as any)[field] && (toggles.value as any)[field]
 }
 
-type GradedKey = 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
+type GradedKey = 'town' | 'targeting' | 'retreat' | 'preparedness' | 'sweep' | 'surf' | 'kiting'
 
 function getGradedLevel(key: GradedKey): number {
   return capabilities.value[key]
@@ -166,80 +195,181 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
       <span class="essence-display">{{ essence.toLocaleString() }} Essence</span>
     </header>
 
-    <!-- ON/OFF Capabilities -->
-    <section class="upgrade-section">
-      <h4>Capabilities</h4>
-      <div class="upgrade-list">
-        <div v-for="up in toggleUpgrades" :key="up.id" class="upgrade-row">
-          <div class="upgrade-info">
-            <span class="upgrade-name">{{ up.name }}</span>
-            <span class="upgrade-desc">{{ up.desc }}</span>
-          </div>
-          <div class="upgrade-actions">
-            <template v-if="isUnlocked(up.id)">
-              <button
-                class="toggle-btn"
-                :class="{ active: isEnabled(up.id) }"
-                @click="toggle(up.id)"
-              >
-                {{ isEnabled(up.id) ? 'ON' : 'OFF' }}
-              </button>
-            </template>
-            <template v-else>
-              <button class="buy-btn" :disabled="!canPurchase(up.id)" @click="purchase(up.id)">
-                {{ getUpgradeInfo(up.id)?.cost ?? 0 }}
-              </button>
-            </template>
+    <div class="upgrade-list">
+      <!-- TOWN GROUP -->
+      <div v-for="up in townUpgrades" :key="up.key" class="upgrade-row graded">
+        <div class="upgrade-info">
+          <span class="upgrade-name">{{ up.name }}</span>
+          <span class="upgrade-desc">{{ up.desc }}</span>
+        </div>
+        <div class="upgrade-level">
+          <div class="level-bar">
+            <button
+              v-for="n in 3"
+              :key="n"
+              class="level-segment"
+              :class="[
+                getSegmentState(up.key, n),
+                { selectable: up.selectable && n <= getGradedLevel(up.key) },
+              ]"
+              :disabled="n > getGradedLevel(up.key) || !up.selectable"
+              :title="up.selectable && n <= getGradedLevel(up.key) ? 'Click to select' : ''"
+              @click="onSegmentClick(up, n)"
+            >
+              {{ up.segments[n - 1] }}
+            </button>
           </div>
         </div>
+        <div class="upgrade-actions">
+          <template v-if="getGradedLevel(up.key) >= 3">
+            <span class="max-label">MAX</span>
+          </template>
+          <template v-else>
+            <button
+              class="buy-btn"
+              :disabled="!canPurchase(getNextGradedId(up.key)!)"
+              @click="purchase(getNextGradedId(up.key)!)"
+            >
+              {{ getUpgradeInfo(getNextGradedId(up.key)!)?.cost ?? 0 }}
+            </button>
+          </template>
+        </div>
       </div>
-    </section>
 
-    <!-- Graded Capabilities -->
-    <section class="upgrade-section">
-      <h4>Training Levels</h4>
-      <div class="upgrade-list">
-        <div v-for="up in gradedUpgrades" :key="up.key" class="upgrade-row graded">
-          <div class="upgrade-info">
-            <span class="upgrade-name">{{ up.name }}</span>
-            <span class="upgrade-desc">{{ up.desc }}</span>
-          </div>
-          <div class="upgrade-level">
-            <!-- Level bar (3 segments with values) -->
-            <div class="level-bar">
-              <button
-                v-for="n in 3"
-                :key="n"
-                class="level-segment"
-                :class="[
-                  getSegmentState(up.key, n),
-                  { selectable: up.selectable && n <= getGradedLevel(up.key) },
-                ]"
-                :disabled="n > getGradedLevel(up.key) || !up.selectable"
-                :title="up.selectable && n <= getGradedLevel(up.key) ? 'Click to select' : ''"
-                @click="onSegmentClick(up, n)"
-              >
-                {{ up.segments[n - 1] }}
-              </button>
-            </div>
-          </div>
-          <div class="upgrade-actions">
-            <template v-if="getGradedLevel(up.key) >= 3">
-              <span class="max-label">MAX</span>
-            </template>
-            <template v-else>
-              <button
-                class="buy-btn"
-                :disabled="!canPurchase(getNextGradedId(up.key)!)"
-                @click="purchase(getNextGradedId(up.key)!)"
-              >
-                {{ getUpgradeInfo(getNextGradedId(up.key)!)?.cost ?? 0 }}
-              </button>
-            </template>
+      <!-- SPACER -->
+      <div class="group-spacer"></div>
+
+      <!-- COMBAT GROUP (graded) -->
+      <div v-for="up in combatGraded" :key="up.key" class="upgrade-row graded">
+        <div class="upgrade-info">
+          <span class="upgrade-name">{{ up.name }}</span>
+          <span class="upgrade-desc">{{ up.desc }}</span>
+        </div>
+        <div class="upgrade-level">
+          <div class="level-bar">
+            <button
+              v-for="n in 3"
+              :key="n"
+              class="level-segment"
+              :class="[
+                getSegmentState(up.key, n),
+                { selectable: up.selectable && n <= getGradedLevel(up.key) },
+              ]"
+              :disabled="n > getGradedLevel(up.key) || !up.selectable"
+              :title="up.selectable && n <= getGradedLevel(up.key) ? 'Click to select' : ''"
+              @click="onSegmentClick(up, n)"
+            >
+              {{ up.segments[n - 1] }}
+            </button>
           </div>
         </div>
+        <div class="upgrade-actions">
+          <template v-if="getGradedLevel(up.key) >= 3">
+            <span class="max-label">MAX</span>
+          </template>
+          <template v-else>
+            <button
+              class="buy-btn"
+              :disabled="!canPurchase(getNextGradedId(up.key)!)"
+              @click="purchase(getNextGradedId(up.key)!)"
+            >
+              {{ getUpgradeInfo(getNextGradedId(up.key)!)?.cost ?? 0 }}
+            </button>
+          </template>
+        </div>
       </div>
-    </section>
+
+      <!-- COMBAT GROUP (toggles) -->
+      <div v-for="up in combatToggles" :key="up.id" class="upgrade-row">
+        <div class="upgrade-info">
+          <span class="upgrade-name">{{ up.name }}</span>
+          <span class="upgrade-desc">{{ up.desc }}</span>
+        </div>
+        <div class="upgrade-actions">
+          <template v-if="isUnlocked(up.id)">
+            <button
+              class="toggle-btn"
+              :class="{ active: isEnabled(up.id) }"
+              @click="toggle(up.id)"
+            >
+              {{ isEnabled(up.id) ? 'ON' : 'OFF' }}
+            </button>
+          </template>
+          <template v-else>
+            <button class="buy-btn" :disabled="!canPurchase(up.id)" @click="purchase(up.id)">
+              {{ getUpgradeInfo(up.id)?.cost ?? 0 }}
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- SPACER -->
+      <div class="group-spacer"></div>
+
+      <!-- PROGRESSION GROUP (toggles first - farming enables the others) -->
+      <div v-for="up in progressionToggles" :key="up.id" class="upgrade-row">
+        <div class="upgrade-info">
+          <span class="upgrade-name">{{ up.name }}</span>
+          <span class="upgrade-desc">{{ up.desc }}</span>
+        </div>
+        <div class="upgrade-actions">
+          <template v-if="isUnlocked(up.id)">
+            <button
+              class="toggle-btn"
+              :class="{ active: isEnabled(up.id) }"
+              @click="toggle(up.id)"
+            >
+              {{ isEnabled(up.id) ? 'ON' : 'OFF' }}
+            </button>
+          </template>
+          <template v-else>
+            <button class="buy-btn" :disabled="!canPurchase(up.id)" @click="purchase(up.id)">
+              {{ getUpgradeInfo(up.id)?.cost ?? 0 }}
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- PROGRESSION GROUP (graded) -->
+      <div v-for="up in progressionGraded" :key="up.key" class="upgrade-row graded">
+        <div class="upgrade-info">
+          <span class="upgrade-name">{{ up.name }}</span>
+          <span class="upgrade-desc">{{ up.desc }}</span>
+        </div>
+        <div class="upgrade-level">
+          <div class="level-bar">
+            <button
+              v-for="n in 3"
+              :key="n"
+              class="level-segment"
+              :class="[
+                getSegmentState(up.key, n),
+                { selectable: up.selectable && n <= getGradedLevel(up.key) },
+              ]"
+              :disabled="n > getGradedLevel(up.key) || !up.selectable"
+              :title="up.selectable && n <= getGradedLevel(up.key) ? 'Click to select' : ''"
+              @click="onSegmentClick(up, n)"
+            >
+              {{ up.segments[n - 1] }}
+            </button>
+          </div>
+        </div>
+        <div class="upgrade-actions">
+          <template v-if="getGradedLevel(up.key) >= 3">
+            <span class="max-label">MAX</span>
+          </template>
+          <template v-else>
+            <button
+              class="buy-btn"
+              :disabled="!canPurchase(getNextGradedId(up.key)!)"
+              @click="purchase(getNextGradedId(up.key)!)"
+            >
+              {{ getUpgradeInfo(getNextGradedId(up.key)!)?.cost ?? 0 }}
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
   </PanelFrame>
 </template>
 
@@ -274,21 +404,16 @@ function onSegmentClick(up: GradedUpgrade, segmentLevel: number) {
   text-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
 }
 
-.upgrade-section h4 {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
-}
-
 .upgrade-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.group-spacer {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
 }
 
 .upgrade-row {

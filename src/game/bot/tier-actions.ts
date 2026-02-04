@@ -136,7 +136,7 @@ function handleCriticalTier(
     botState,
     personality,
     classProfile.healsPriority,
-    effective.town
+    effective.town >= 1
   )
   if (survivalAction) {
     if (isTeleportAction(game.character, survivalAction)) {
@@ -385,7 +385,7 @@ function handleDangerTier(
     botState,
     personality,
     classProfile.healsPriority,
-    effective.town
+    effective.town >= 1
   )
   if (survivalAction) {
     recordProgress(botState, game.turn)
@@ -598,7 +598,7 @@ function handleCautionTier(
         botState,
         _personality,
         classProfile.healsPriority,
-        effective.town
+        effective.town >= 1
       )
       if (survivalAction) {
         recordProgress(botState, game.turn)
@@ -718,7 +718,7 @@ function handleSafeTier(
         botState,
         personality,
         classProfile.healsPriority,
-        effective.town
+        effective.town >= 1
       )
       if (survivalAction) {
         recordProgress(botState, game.turn)

@@ -8,9 +8,11 @@
 import type { BotCapabilities } from '../../types/progression'
 
 export type BotUpgradeId =
-  | 'town'
   | 'farming'
   | 'tactics'
+  | 'town_1'
+  | 'town_2'
+  | 'town_3'
   | 'preparedness_1'
   | 'preparedness_2'
   | 'preparedness_3'
@@ -46,14 +48,6 @@ export interface BotUpgradeDefinition {
 // TOGGLE UPGRADES (ON/OFF capabilities)
 // =============================================================================
 
-const townUpgrade: BotUpgradeDefinition = {
-  id: 'town',
-  name: 'Town Access',
-  description: 'Bot can use town portal, visit healer, and shop',
-  cost: 100,
-  category: 'toggle',
-}
-
 const farmingUpgrade: BotUpgradeDefinition = {
   id: 'farming',
   name: 'Resource Farming',
@@ -68,6 +62,42 @@ const tacticsUpgrade: BotUpgradeDefinition = {
   description: 'Use buffs and pre-combat preparation',
   cost: 250,
   category: 'toggle',
+}
+
+// =============================================================================
+// TOWN UPGRADES (town access capabilities)
+// =============================================================================
+
+const town1: BotUpgradeDefinition = {
+  id: 'town_1',
+  name: 'Town I',
+  description: 'Use town portal scrolls (escape & return)',
+  cost: 100,
+  category: 'graded',
+  targetField: 'town',
+  targetLevel: 1,
+}
+
+const town2: BotUpgradeDefinition = {
+  id: 'town_2',
+  name: 'Town II',
+  description: 'Visit healer for HP restore',
+  cost: 150,
+  requires: 'town_1',
+  category: 'graded',
+  targetField: 'town',
+  targetLevel: 2,
+}
+
+const town3: BotUpgradeDefinition = {
+  id: 'town_3',
+  name: 'Town III',
+  description: 'Sell loot and buy from shops',
+  cost: 200,
+  requires: 'town_2',
+  category: 'graded',
+  targetField: 'town',
+  targetLevel: 3,
 }
 
 // =============================================================================
@@ -292,9 +322,12 @@ const retreat3: BotUpgradeDefinition = {
 
 export const BOT_UPGRADES: BotUpgradeDefinition[] = [
   // Toggle upgrades
-  townUpgrade,
   farmingUpgrade,
   tacticsUpgrade,
+  // Town upgrades (graded: portal → healer → commerce)
+  town1,
+  town2,
+  town3,
   // Preparedness upgrades
   preparedness1,
   preparedness2,
@@ -322,16 +355,27 @@ export const BOT_UPGRADES: BotUpgradeDefinition[] = [
 ]
 
 /** Toggle upgrade IDs for type narrowing */
-export const TOGGLE_UPGRADE_IDS = ['town', 'farming', 'tactics'] as const
+export const TOGGLE_UPGRADE_IDS = ['farming', 'tactics'] as const
 export type ToggleUpgradeId = (typeof TOGGLE_UPGRADE_IDS)[number]
 
 export function getBotUpgradeById(id: BotUpgradeId): BotUpgradeDefinition | undefined {
   return BOT_UPGRADES.find((u) => u.id === id)
 }
 
+/** Map toggle upgrade IDs to their capability field names */
+export function getToggleCapabilityField(id: ToggleUpgradeId): keyof BotCapabilities {
+  switch (id) {
+    case 'farming':
+      return 'farming'
+    case 'tactics':
+      return 'tactics'
+  }
+}
+
 /** Check if a toggle upgrade is unlocked */
 function isToggleUnlocked(id: ToggleUpgradeId, capabilities: BotCapabilities): boolean {
-  return capabilities[id]
+  const field = getToggleCapabilityField(id)
+  return capabilities[field] as boolean
 }
 
 /** Check if a graded upgrade level is unlocked */
@@ -397,6 +441,7 @@ export function canPurchaseBotUpgrade(
 
 /** Graded capability field names */
 export type GradedCapabilityField =
+  | 'town'
   | 'preparedness'
   | 'sweep'
   | 'surf'
@@ -426,7 +471,8 @@ export function applyBotUpgrade(id: BotUpgradeId, capabilities: BotCapabilities)
   const newCapabilities = { ...capabilities }
 
   if (upgrade.category === 'toggle') {
-    newCapabilities[upgrade.id as ToggleUpgradeId] = true
+    const field = getToggleCapabilityField(upgrade.id as ToggleUpgradeId)
+    ;(newCapabilities as Record<string, boolean | number>)[field] = true
   } else if (upgrade.targetField && upgrade.targetLevel) {
     newCapabilities[upgrade.targetField] = upgrade.targetLevel
   }

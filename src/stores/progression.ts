@@ -26,6 +26,7 @@ import {
   getBotUpgradeById,
   canPurchaseBotUpgrade,
   applyBotUpgrade,
+  getToggleCapabilityField,
 } from '@game/data/bot-upgrades'
 import { achievements, getAchievementById } from '@game/data/achievements'
 import {
@@ -573,19 +574,25 @@ export const useProgressionStore = defineStore('progression', () => {
   function toggleBotCapability(slot: number, capability: ToggleUpgradeId): void {
     const config = getSlotConfig(slot)
 
+    // Map upgrade ID to capability field name
+    const field = getToggleCapabilityField(capability)
+
     // Can only toggle if capability is unlocked
-    if (!config.capabilities[capability]) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!(config.capabilities as any)[field]) return
 
     // Toggle the setting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const currentValue = (config.toggles as any)[field] as boolean
     const newToggles = {
       ...config.toggles,
-      [capability]: !config.toggles[capability],
+      [field]: !currentValue,
     }
 
     // Save updated config
     saveSlotConfig(slot, {
       ...config,
-      toggles: newToggles,
+      toggles: newToggles as BotToggles,
     })
   }
 
@@ -618,7 +625,7 @@ export const useProgressionStore = defineStore('progression', () => {
       config.capabilities.surf
     )
     return {
-      town: config.capabilities.town && config.toggles.town,
+      town: config.capabilities.town,
       farming: config.capabilities.farming && config.toggles.farming,
       tactics: config.capabilities.tactics && config.toggles.tactics,
       preparedness: config.capabilities.preparedness,

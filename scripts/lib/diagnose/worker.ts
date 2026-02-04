@@ -66,9 +66,9 @@ const DEFAULT_CONFIG = {
  * (Duplicated from runner.ts since workers can't import from other modules easily)
  */
 const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town,farming,tactics,preparedness_1,targeting_1,retreat_1',
-  mid: 'town,farming,tactics,preparedness_2,sweep_1,surf_1,targeting_2,retreat_2',
-  late: 'town,farming,tactics,preparedness_3,sweep_2,surf_2,kiting_1,targeting_3,retreat_3',
+  early: 'town_1,farming,tactics,preparedness_1,targeting_1,retreat_1',
+  mid: 'town_2,farming,tactics,preparedness_2,sweep_1,surf_1,targeting_2,retreat_2',
+  late: 'town_3,farming,tactics,preparedness_3,sweep_2,surf_2,kiting_1,targeting_3,retreat_3',
 }
 
 /**
@@ -96,10 +96,13 @@ function parseCapabilities(spec: string): BotCapabilities {
 
   for (const id of ids) {
     // Toggle capabilities
-    if (id === 'town') caps.town = true
-    else if (id === 'farming') caps.farming = true
+    if (id === 'farming') caps.farming = true
     else if (id === 'tactics') caps.tactics = true
-    // Graded capabilities (preparedness_1, sweep_1, etc.)
+    // Graded capabilities (town_1, preparedness_1, sweep_1, etc.)
+    else if (id.startsWith('town_')) {
+      const level = parseInt(id.slice(5), 10)
+      if (level >= 1 && level <= 3) caps.town = Math.max(caps.town, level)
+    }
     else if (id.startsWith('preparedness_')) {
       const level = parseInt(id.slice(13), 10)
       if (level >= 1 && level <= 3) caps.preparedness = Math.max(caps.preparedness, level)
@@ -127,6 +130,29 @@ function parseCapabilities(spec: string): BotCapabilities {
   }
 
   return caps
+}
+
+/**
+ * Parse custom upgrade string into UpgradeLevels.
+ * Format: "vitality=3,might=2,resilience=1"
+ */
+function parseCustomUpgrades(spec: string): Record<string, number> | null {
+  if (!spec.includes('=')) return null
+
+  const levels: Record<string, number> = {}
+  const parts = spec.split(',').map(s => s.trim()).filter(Boolean)
+
+  for (const part of parts) {
+    const [id, levelStr] = part.split('=')
+    if (id && levelStr) {
+      const level = parseInt(levelStr, 10)
+      if (!isNaN(level) && level > 0) {
+        levels[id.trim()] = level
+      }
+    }
+  }
+
+  return Object.keys(levels).length > 0 ? levels : null
 }
 
 /** Compute upgrade bonuses with optional exclusions */
@@ -185,8 +211,14 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
       upgradeBonuses = computeMaxUpgradeBonuses(balance.upgradePowerPercent)
     }
   } else if (cfg.upgrades && cfg.upgrades !== 'none') {
-    // Use upgrade preset (none, early, mid, late, full)
-    upgradeBonuses = computeUpgradeBonusesFromPreset(cfg.upgrades, balance.upgradePowerPercent)
+    // Try parsing as custom upgrade string first (contains '=')
+    const customLevels = parseCustomUpgrades(cfg.upgrades)
+    if (customLevels) {
+      upgradeBonuses = computeUpgradeBonuses(customLevels, balance.upgradePowerPercent)
+    } else {
+      // Fall back to preset name (none, early, mid, late, full)
+      upgradeBonuses = computeUpgradeBonusesFromPreset(cfg.upgrades, balance.upgradePowerPercent)
+    }
   }
 
   // Parse bot capabilities

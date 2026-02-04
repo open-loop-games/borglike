@@ -630,10 +630,11 @@ function selectTownGoal(context: BotContext, botState: BotState, hpRatio: number
   const { game } = context
   const turn = game.turn
 
-  // GATE: Town capability must be unlocked AND enabled
+  // GATE: Check town capability level (0=none, 1=portal, 2=+healer, 3=+commerce)
   const effective = getEffectiveCapabilities(context)
-  if (!effective.town) {
-    // Face-rush mode: exit town immediately
+
+  // Face-rush mode: no town capabilities at all - exit immediately
+  if (effective.town === 0) {
     // Prefer portal if exists to preserve dungeon position
     if (game.townPortal) {
       return {
@@ -653,23 +654,25 @@ function selectTownGoal(context: BotContext, botState: BotState, hpRatio: number
     }
   }
 
-  // 1. Sell items first to get gold for healing
-  const sellShop = selectShopForSelling(game, botState)
-  if (sellShop) {
-    const position = TOWN_SHOP_POSITIONS[sellShop]
-    return {
-      type: 'SELL_TO_MERCHANT',
-      target: { ...position },
-      targetId: sellShop,
-      reason: `Selling loot at ${sellShop.replace('town_', '')}`,
-      startTurn: turn,
+  // 1. Sell items first to get gold for healing (requires town level 3)
+  if (effective.town >= 3) {
+    const sellShop = selectShopForSelling(game, botState)
+    if (sellShop) {
+      const position = TOWN_SHOP_POSITIONS[sellShop]
+      return {
+        type: 'SELL_TO_MERCHANT',
+        target: { ...position },
+        targetId: sellShop,
+        reason: `Selling loot at ${sellShop.replace('town_', '')}`,
+        startTurn: turn,
+      }
     }
   }
 
-  // 2. Visit healer if HP is not full and haven't visited yet
+  // 2. Visit healer if HP is not full and haven't visited yet (requires town level 2)
   // healerVisited is set when we reach the healer, regardless of heal outcome
   // This prevents getting stuck if we can't afford a full heal
-  if (!botState.healerVisited && hpRatio < 1.0) {
+  if (effective.town >= 2 && !botState.healerVisited && hpRatio < 1.0) {
     return {
       type: 'VISIT_HEALER',
       target: { ...HEALER_POSITION },
@@ -679,20 +682,23 @@ function selectTownGoal(context: BotContext, botState: BotState, hpRatio: number
     }
   }
 
-  // 3. Buy from appropriate shops after healing
-  const buyShop = selectShopForBuying(game, botState)
-  if (buyShop) {
-    const position = TOWN_SHOP_POSITIONS[buyShop]
-    return {
-      type: 'BUY_FROM_MERCHANT',
-      target: { ...position },
-      targetId: buyShop,
-      reason: `Buying supplies at ${buyShop.replace('town_', '')}`,
-      startTurn: turn,
+  // 3. Buy from appropriate shops after healing (requires town level 3)
+  if (effective.town >= 3) {
+    const buyShop = selectShopForBuying(game, botState)
+    if (buyShop) {
+      const position = TOWN_SHOP_POSITIONS[buyShop]
+      return {
+        type: 'BUY_FROM_MERCHANT',
+        target: { ...position },
+        targetId: buyShop,
+        reason: `Buying supplies at ${buyShop.replace('town_', '')}`,
+        startTurn: turn,
+      }
     }
   }
 
-  // 4. Return through portal if one exists (after shopping is complete)
+  // 4. Return through portal if one exists (requires townPortal for return)
+  // Note: if we got here via portal, we have portal capability
   if (game.townPortal) {
     return {
       type: 'RETURN_PORTAL',

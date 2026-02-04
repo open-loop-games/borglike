@@ -559,8 +559,8 @@ function handleCancel() {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
-  padding: 12px 16px;
+  gap: 2px;
+  padding: 8px 10px;
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -580,7 +580,7 @@ function handleCancel() {
 
 .personality-name {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: bold;
   color: var(--text-primary);
 }
@@ -591,7 +591,7 @@ function handleCancel() {
 }
 
 .personality-desc {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-secondary);
 }
 
