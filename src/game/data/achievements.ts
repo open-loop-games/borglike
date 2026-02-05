@@ -4,6 +4,8 @@
  * Achievements track player progress and reward essence for completing goals.
  */
 
+import type { GlobalStats } from '@/types/progression'
+
 export interface Achievement {
   id: string
   name: string
@@ -13,6 +15,8 @@ export interface Achievement {
   target: number // For progress tracking (e.g., 100 kills)
   reward: number // Essence reward
   hidden?: boolean // Don't show until unlocked
+  /** GlobalStats key this achievement tracks progress against. Required for cumulative achievements. */
+  statKey?: keyof GlobalStats
 }
 
 /**
@@ -75,6 +79,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 100,
     reward: 100,
+    statKey: 'totalKills',
   },
   {
     id: 'slayer',
@@ -84,6 +89,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 1000,
     reward: 500,
+    statKey: 'totalKills',
   },
   {
     id: 'millionaire',
@@ -93,6 +99,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 10000,
     reward: 500,
+    statKey: 'totalGold',
   },
   {
     id: 'frequent_dier',
@@ -102,6 +109,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 100,
     reward: 1000,
+    statKey: 'totalDeaths',
   },
   {
     id: 'veteran',
@@ -111,6 +119,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 50,
     reward: 300,
+    statKey: 'totalRuns',
   },
 
   // Monster kill tiers (continued)
@@ -122,6 +131,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 5000,
     reward: 1000,
+    statKey: 'totalKills',
   },
   {
     id: 'annihilator',
@@ -131,6 +141,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 25000,
     reward: 2500,
+    statKey: 'totalKills',
   },
   {
     id: 'genocide',
@@ -140,6 +151,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 100000,
     reward: 5000,
+    statKey: 'totalKills',
   },
 
   // Run completion tiers (continued)
@@ -151,6 +163,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 100,
     reward: 500,
+    statKey: 'totalRuns',
   },
   {
     id: 'grizzled',
@@ -160,6 +173,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 250,
     reward: 1000,
+    statKey: 'totalRuns',
   },
   {
     id: 'eternal',
@@ -169,6 +183,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 500,
     reward: 2000,
+    statKey: 'totalRuns',
   },
   {
     id: 'timeless',
@@ -178,6 +193,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 1000,
     reward: 4000,
+    statKey: 'totalRuns',
   },
 
   // Death tiers (continued)
@@ -189,6 +205,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 500,
     reward: 2000,
+    statKey: 'totalDeaths',
   },
   {
     id: 'death_enthusiast',
@@ -198,6 +215,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 1000,
     reward: 3000,
+    statKey: 'totalDeaths',
   },
   {
     id: 'immortally_mortal',
@@ -207,6 +225,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 5000,
     reward: 5000,
+    statKey: 'totalDeaths',
   },
 
   // Gold tiers (continued)
@@ -218,6 +237,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 100000,
     reward: 1500,
+    statKey: 'totalGold',
   },
   {
     id: 'mogul',
@@ -227,6 +247,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 500000,
     reward: 3000,
+    statKey: 'totalGold',
   },
   {
     id: 'dragons_hoard',
@@ -236,6 +257,7 @@ export const achievements: Achievement[] = [
     category: 'cumulative',
     target: 1000000,
     reward: 5000,
+    statKey: 'totalGold',
   },
 
   // Challenge achievements (single-run challenges)

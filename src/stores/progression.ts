@@ -800,10 +800,6 @@ export const useProgressionStore = defineStore('progression', () => {
     return achievementState.value.unlocked.has(id)
   }
 
-  function getAchievementProgress(id: string): number {
-    return achievementState.value.progress[id] ?? 0
-  }
-
   /**
    * Award an achievement if not already unlocked
    * Does NOT grant essence - player must click to collect
@@ -848,13 +844,6 @@ export const useProgressionStore = defineStore('progression', () => {
     addEssence(achievement.reward)
     // Save happens via addEssence
     return true
-  }
-
-  /**
-   * Update progress for cumulative achievements
-   */
-  function updateAchievementProgress(id: string, value: number) {
-    achievementState.value.progress[id] = value
   }
 
   /**
@@ -1055,10 +1044,8 @@ export const useProgressionStore = defineStore('progression', () => {
     // Achievement getters and actions
     isAchievementUnlocked,
     isAchievementCollected,
-    getAchievementProgress,
     awardAchievement,
     collectAchievement,
-    updateAchievementProgress,
     clearNewAchievements,
   }
 })

@@ -119,24 +119,10 @@ const filteredAchievements = computed(() => {
   return result
 })
 
-// Get progress for cumulative achievements
+// Get progress for cumulative achievements via data-driven statKey
 function getProgress(achievement: Achievement): number | undefined {
-  if (achievement.category !== 'cumulative') return undefined
-
-  // Map achievement IDs to their progress source
-  switch (achievement.id) {
-    case 'centurion':
-    case 'slayer':
-      return progression.globalStats.totalKills
-    case 'millionaire':
-      return progression.globalStats.totalGold
-    case 'frequent_dier':
-      return progression.globalStats.totalDeaths
-    case 'veteran':
-      return progression.globalStats.totalRuns
-    default:
-      return progression.getAchievementProgress(achievement.id)
-  }
+  if (!achievement.statKey) return undefined
+  return progression.globalStats[achievement.statKey]
 }
 
 // Stats summary
