@@ -31,7 +31,7 @@ export interface UpgradeDefinition {
 const vitality: UpgradeDefinition = {
   id: 'vitality',
   name: 'Vitality',
-  description: '+5 max HP per level',
+  description: '+15 HP and +3% max HP per level',
   category: 'stats',
   maxLevel: 10,
   baseCost: 50,
@@ -39,8 +39,8 @@ const vitality: UpgradeDefinition = {
   effect: {
     type: 'flat',
     stat: 'maxHp',
-    baseValue: 5,
-    perLevel: 5,
+    baseValue: 15,
+    perLevel: 10,
   },
   icon: '♥',
 }

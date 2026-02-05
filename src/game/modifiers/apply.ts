@@ -134,11 +134,12 @@ export function calculateBaseCombatValues(
   stats: BaseStatValues,
   level: number,
   hitdie: number,
-  usesMagic: boolean
+  usesMagic: boolean,
+  baseHpFraction = 0.7
 ): BaseCombatValues {
-  // HP formula: hitdie * level * (1 + CON/20)
+  // HP formula: hitdie * level * (1 + CON/20) * baseHpFraction
   const conMultiplier = 1 + stats.con / 20
-  const maxHp = Math.floor(hitdie * level * conMultiplier)
+  const maxHp = Math.floor(hitdie * level * conMultiplier * baseHpFraction)
 
   // MP formula: (INT + WIS) * level / 4 (if magic user)
   const maxMp = usesMagic ? Math.floor(((stats.int + stats.wis) * level) / 4) : 0
@@ -312,7 +313,8 @@ export function applyAllModifiers(
     { str, dex, con, int, wis },
     character.level,
     hitdie,
-    usesMagic
+    usesMagic,
+    character.baseHpFraction
   )
 
   // -----------------------------------------------------------------------

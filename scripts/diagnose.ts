@@ -116,6 +116,8 @@ interface Args {
   upgradePower: number
   // Knowledge system
   bestiary: number
+  // HP scaling
+  hpFraction: number
 }
 
 const ALL_ANALYZERS: AnalyzerName[] = [
@@ -168,6 +170,7 @@ function parseArgs(): Args {
     xpRate: 100,
     upgradePower: 100,
     bestiary: 0,
+    hpFraction: 70,
   }
 
   // Parse mode (first positional arg)
@@ -271,6 +274,8 @@ function parseArgs(): Args {
       result.upgradePower = parseInt(arg.slice(16), 10)
     } else if (arg.startsWith('--bestiary=')) {
       result.bestiary = parseInt(arg.slice(11), 10)
+    } else if (arg.startsWith('--hp-fraction=')) {
+      result.hpFraction = parseInt(arg.slice(14), 10)
     }
   }
 
@@ -448,6 +453,7 @@ async function main(): Promise<void> {
       xpRate: args.xpRate,
       upgradePower: args.upgradePower,
       bestiary: args.bestiary,
+      hpFraction: args.hpFraction,
     })
     return
   }
@@ -477,6 +483,7 @@ async function main(): Promise<void> {
       xpRate: args.xpRate,
       upgradePower: args.upgradePower,
       bestiary: args.bestiary,
+      hpFraction: args.hpFraction,
     })
     return
   }
@@ -521,6 +528,7 @@ async function main(): Promise<void> {
     xpRatePercent: args.xpRate,
     upgradePowerPercent: args.upgradePower,
     bestiaryBonusPercent: effectiveBestiary,
+    baseHpFraction: args.hpFraction / 100,
   }
 
   const baseConfig = {

@@ -428,6 +428,9 @@ export interface Character {
   // Upgrade bonuses (stored for recalculation on level up/equip)
   upgradeBonuses?: UpgradeBonuses
 
+  // HP scaling fraction (from balance config, stored for recalculation)
+  baseHpFraction: number
+
   // Spells
   knownSpells: string[]
   spellCooldowns: Record<string, number> // spellId -> turn when spell becomes available
@@ -942,6 +945,9 @@ export interface BalanceOverrides {
 
   // Knowledge/Bestiary
   bestiaryBonusPercent: number // 0 = use actual kills, 1-25 = fixed bonus %
+
+  // HP scaling
+  baseHpFraction: number // 0.70 = 70% of base HP (Vitality restores the rest)
 }
 
 /** Default balance (no overrides) */
@@ -958,6 +964,7 @@ export const DEFAULT_BALANCE: BalanceOverrides = {
   xpRatePercent: 100,
   upgradePowerPercent: 100,
   bestiaryBonusPercent: 0,
+  baseHpFraction: 0.7,
 }
 
 // ============================================================================

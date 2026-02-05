@@ -92,6 +92,7 @@ export function createGame(config: RunConfig): GameState {
     classId: config.classId,
     upgradeBonuses,
     boosterBonuses,
+    baseHpFraction: balance.baseHpFraction,
   })
 
   // Give starting equipment based on class (with booster enchantment bonuses)

@@ -98,11 +98,13 @@ export function createCharacter(config: {
   name?: string
   upgradeBonuses?: UpgradeBonuses
   boosterBonuses?: BoosterBonuses
+  baseHpFraction?: number
 }): Character {
   const race = getRaceById(config.raceId)
   const gameClass = getClassById(config.classId)
   const bonuses = config.upgradeBonuses ?? DEFAULT_BONUSES
   const boosterBonuses = config.boosterBonuses ?? DEFAULT_BOOSTER_BONUSES
+  const baseHpFraction = config.baseHpFraction ?? 0.7
 
   if (!race) {
     throw new Error(`Invalid race ID: ${config.raceId}`)
@@ -126,12 +128,15 @@ export function createCharacter(config: {
   // Calculate hitdie (minimum 1)
   const hitdie = calculateHitdie(race.hitdie, gameClass.hitdie)
 
-  // Calculate initial HP: hitdie * (1 + CON/20) for level 1
+  // Calculate initial HP: hitdie * (1 + CON/20) * baseHpFraction for level 1
   const conBonus = 1 + stats.con / 20
-  let maxHp = Math.floor(hitdie * conBonus)
+  let maxHp = Math.floor(hitdie * conBonus * baseHpFraction)
 
-  // Apply vitality upgrade bonus (flat HP)
+  // Apply vitality upgrade bonus (flat HP, then percent)
   maxHp += bonuses.maxHpBonus
+  if (bonuses.maxHpPercent > 0) {
+    maxHp = Math.floor(maxHp * (1 + bonuses.maxHpPercent / 100))
+  }
 
   // Calculate initial MP: (INT + WIS) / 4 if class uses magic, else 0
   const maxMp = gameClass.usesMagic ? Math.floor((stats.int + stats.wis) / 4) : 0
@@ -211,8 +216,9 @@ export function createCharacter(config: {
     // State
     isDead: false,
 
-    // Store upgrade bonuses for recalculation
+    // Store upgrade bonuses and HP fraction for recalculation
     upgradeBonuses: bonuses,
+    baseHpFraction,
 
     // Spells - initialize with starting spells for class
     knownSpells: getSpellIdsForLevel(config.classId, 1),

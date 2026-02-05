@@ -138,6 +138,9 @@ export function collectUpgradeModifiers(bonuses: UpgradeBonuses): StatModifier[]
   if (bonuses.maxHpBonus > 0) {
     modifiers.push(flatModifier('upgrade', 'maxHp', bonuses.maxHpBonus, 'Vitality'))
   }
+  if (bonuses.maxHpPercent > 0) {
+    modifiers.push(percentModifier('upgrade', 'maxHp', bonuses.maxHpPercent, 'Vitality'))
+  }
 
   if (bonuses.armorBonus > 0) {
     modifiers.push(flatModifier('upgrade', 'armor', bonuses.armorBonus, 'Resilience'))

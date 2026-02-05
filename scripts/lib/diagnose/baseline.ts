@@ -75,6 +75,7 @@ export interface BaselineConfig {
   xpRate?: number
   upgradePower?: number
   bestiary?: number
+  hpFraction?: number
 }
 
 export interface BaselineResult {
@@ -135,6 +136,7 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
     xpRatePercent: config.xpRate ?? 100,
     upgradePowerPercent: config.upgradePower ?? 100,
     bestiaryBonusPercent: effectiveBestiary!,
+    baseHpFraction: (config.hpFraction ?? 70) / 100,
   }
 
   for (const classId of BASELINE_CLASSES) {
@@ -263,6 +265,7 @@ export async function runBaselineRaces(config: BaselineRacesConfig = {}): Promis
     xpRatePercent: config.xpRate ?? 100,
     upgradePowerPercent: config.upgradePower ?? 100,
     bestiaryBonusPercent: effectiveBestiary!,
+    baseHpFraction: (config.hpFraction ?? 70) / 100,
   }
 
   for (const raceId of BASELINE_RACES) {

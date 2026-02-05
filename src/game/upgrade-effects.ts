@@ -15,6 +15,7 @@ import { getUpgradeById, calculateUpgradeEffect } from './data/upgrades'
 export interface UpgradeBonuses {
   // Stat bonuses
   maxHpBonus: number // Flat HP bonus (from vitality)
+  maxHpPercent: number // Percent HP bonus (from vitality, 3% per level)
   damagePercent: number // Damage multiplier percent (from might)
   armorBonus: number // Flat armor bonus (from resilience)
   dodgePercent: number // Dodge chance percent (from swiftness)
@@ -58,6 +59,7 @@ export function computeUpgradeBonuses(
   return {
     // Stat bonuses (scaled)
     maxHpBonus: Math.floor(getEffectValue(levels, 'vitality') * scale),
+    maxHpPercent: Math.floor((levels['vitality'] || 0) * 3 * scale), // 3% per vitality level
     damagePercent: Math.floor(getEffectValue(levels, 'might') * scale),
     armorBonus: Math.floor(getEffectValue(levels, 'resilience') * scale),
     dodgePercent: Math.floor(getEffectValue(levels, 'swiftness') * scale),
@@ -157,6 +159,7 @@ export function computeUpgradeBonusesFromPreset(
  */
 export const DEFAULT_BONUSES: UpgradeBonuses = {
   maxHpBonus: 0,
+  maxHpPercent: 0,
   damagePercent: 0,
   armorBonus: 0,
   dodgePercent: 0,
@@ -214,15 +217,15 @@ export function applyGoldBonus(baseGold: number, bonuses: UpgradeBonuses): numbe
 /**
  * Determine upgrade tier (0-4) based on total upgrade power.
  * Uses maxHpBonus as proxy since it directly reflects survivability.
- * Vitality: 5 + 5*(level-1), max level 10 → 5-50 HP range
+ * Vitality: 15 + 10*(level-1), max level 10 → 15-105 HP range
  */
 export function getUpgradeTier(bonuses: UpgradeBonuses): number {
-  // maxHpBonus from vitality: none=0, early(2)=10, mid(5)=25, late(8)=40, full(10)=50
+  // maxHpBonus from vitality: none=0, early(2)=25, mid(5)=55, late(8)=85, full(10)=105
   const hp = bonuses.maxHpBonus
-  if (hp >= 45) return 4 // full (vitality 9-10)
-  if (hp >= 35) return 3 // late (vitality 7-8)
-  if (hp >= 20) return 2 // mid (vitality 4-6)
-  if (hp >= 5) return 1 // early (vitality 1-3)
+  if (hp >= 90) return 4 // full (vitality 9-10)
+  if (hp >= 70) return 3 // late (vitality 7-8)
+  if (hp >= 40) return 2 // mid (vitality 4-6)
+  if (hp >= 15) return 1 // early (vitality 1-3)
   return 0 // none
 }
 
