@@ -4,7 +4,7 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, max-upgrades) — Vitality Rework (baseHpFraction=0.70)
+### Full Baseline @ `8ed0786` (100 runs, 50k turns, seed=1000, max-upgrades) — Vitality Rework (baseHpFraction=0.70)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
@@ -38,7 +38,7 @@
 | Priest | 44.9 | 45.5 | +0.6 | Healer buff |
 | Druid | 44.6 | 43.0 | -1.6 | Regression |
 
-### Raw Baseline @ `HEAD` (100 runs, 50k turns, seed=1000, upgrades=none, capabilities=none, boosters=none) — Vitality Rework
+### Raw Baseline @ `8ed0786` (100 runs, 50k turns, seed=1000, upgrades=none, capabilities=none, boosters=none) — Vitality Rework
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
@@ -337,40 +337,56 @@ Measures per-upgrade impact on bot performance.
 
 > **Run:** `pnpm diagnose sensitivity --seed=1000 --class=CLASS`
 
-### Warrior Sensitivity @ `b4c83bc` (50 runs, 30k turns, seed=1000)
+### Pre-Rebalance: Warrior Sensitivity @ `8ed0786` (50 runs, 30k turns, seed=1000) — Vitality Rework
 
 | Upgrade | Baseline | Excluded | Delta | Impact |
 |---------|----------|----------|-------|--------|
-| 🟢 Vitality (+HP) | 48.5 | 47.3 | -1.3 | -2.6% |
-| 🟢 Celerity (+Speed) | 48.5 | 47.4 | -1.1 | -2.3% |
-| 🟢 Swiftness (+Dodge) | 48.5 | 47.8 | -0.7 | -1.5% |
-| 🟢 Resilience (+Armor) | 48.5 | 48.1 | -0.4 | -0.8% |
-| 🟢 Might (+Dmg%) | 48.5 | 48.6 | +0.0 | +0.0% |
-| 🟢 Precision (+Acc) | 48.5 | 48.6 | +0.1 | +0.2% |
+| 🟡 Vitality (+HP) | 47.1 | 44.0 | -3.1 | -6.6% |
+| 🟢 Celerity (+Speed) | 47.1 | 46.2 | -1.0 | -2.0% |
+| 🟢 Swiftness (+Dodge) | 47.1 | 47.5 | +0.4 | +0.8% |
+| 🟢 Resilience (+Armor) | 47.1 | 47.8 | +0.7 | +1.4% |
+| 🟢 Precision (+Acc) | 47.1 | 47.9 | +0.7 | +1.5% |
+| 🟢 Might (+Dmg%) | 47.1 | 48.0 | +0.8 | +1.7% |
 
-### Mage Sensitivity @ `b4c83bc` (50 runs, 30k turns, seed=1000)
+### Pre-Rebalance: Mage Sensitivity @ `8ed0786` (50 runs, 30k turns, seed=1000) — Vitality Rework
 
 | Upgrade | Baseline | Excluded | Delta | Impact |
 |---------|----------|----------|-------|--------|
-| 🔴 Vitality (+HP) | 49.0 | 38.4 | -10.6 | -21.6% |
-| 🟢 Might (+Dmg%) | 49.0 | 48.0 | -1.1 | -2.2% |
-| 🟢 Resilience (+Armor) | 49.0 | 48.0 | -1.0 | -2.1% |
-| 🟢 Celerity (+Speed) | 49.0 | 48.1 | -1.0 | -2.0% |
-| 🟢 Swiftness (+Dodge) | 49.0 | 48.6 | -0.4 | -0.9% |
-| 🟢 Precision (+Acc) | 49.0 | 48.8 | -0.3 | -0.6% |
+| 🔴 Vitality (+HP) | 47.8 | 29.3 | -18.5 | -38.7% |
+| 🟢 Resilience (+Armor) | 47.8 | 47.1 | -0.7 | -1.5% |
+| 🟢 Celerity (+Speed) | 47.8 | 47.5 | -0.3 | -0.6% |
+| 🟢 Might (+Dmg%) | 47.8 | 47.6 | -0.2 | -0.4% |
+| 🟢 Swiftness (+Dodge) | 47.8 | 47.9 | +0.1 | +0.2% |
+| 🟢 Precision (+Acc) | 47.8 | 48.2 | +0.4 | +0.8% |
 
-### Cross-Class Comparison
+### Post-Rebalance: 6-Class Sensitivity @ `b4a447f` (50 runs, 30k turns, seed=1000) — Survivability Redistribution
 
-| Upgrade | Warrior | Mage | Notes |
-|---------|---------|------|-------|
-| **Vitality** | -2.6% | -21.6% | Critical for casters (low base HP) |
-| Celerity | -2.3% | -2.0% | Consistent across classes |
-| Might | +0.0% | -2.2% | Only helps casters |
-| Resilience | -0.8% | -2.1% | Slightly more for casters |
-| Swiftness | -1.5% | -0.9% | Consistent |
-| Precision | +0.2% | -0.6% | Minimal impact |
+Changes: Vitality 3%→1%/level, Resilience maxLevel 5→10 +1% armor/level, Swiftness maxLevel 5→10 +1% dodge/level (hit formula multiplier).
 
-**Summary:** Vitality is the most impactful upgrade, especially for casters (8x more critical for mage than warrior). Offensive upgrades (Might, Precision) provide minimal benefit for warrior but help mage. Game is balanced for max upgrades, so high single-upgrade impact is expected for progression feel.
+| Upgrade | Warrior | Mage | Rogue | Ranger | Paladin | Druid |
+|---------|---------|------|-------|--------|---------|-------|
+| **Vitality** | -0.5% | **-39.0%** | **-6.9%** | -1.3% | -3.0% | -5.6% |
+| **Swiftness** | -3.6% | -1.3% | -4.1% | -0.8% | -1.2% | -5.0% |
+| **Resilience** | -0.3% | -0.3% | -2.5% | -1.6% | -0.0% | -4.8% |
+| **Celerity** | +0.8% | -2.7% | +0.6% | -2.9% | -5.4% | -7.9% |
+| **Might** | +1.5% | +0.0% | -1.0% | -1.6% | +0.1% | -1.0% |
+| **Precision** | +0.8% | +0.4% | +0.0% | -0.4% | +0.5% | -1.9% |
+
+**Per-class baselines:** Warrior 47.1, Mage 47.7, Rogue 46.7, Ranger 49.9, Paladin 48.3, Druid 45.1
+
+**Analysis:**
+
+The survivability redistribution works well for mid-tier classes. Key findings:
+
+- **Druid** shows ideal balance: all 6 upgrades matter, spread from -7.9% (Celerity) to -1.0% (Might). Best-balanced class.
+- **Rogue** shows the survivability trio working: Vitality -6.9%, Swiftness -4.1%, Resilience -2.5% — meaningful gradient.
+- **Ranger/Paladin** show Celerity as surprisingly important (-2.9%, -5.4%) — speed enables better kiting/retreat.
+- **Warrior** is the ceiling: too tanky for any single upgrade to register strongly. Expected for a high-armor, high-HP melee class.
+- **Mage** is the floor: Vitality -39% because flat +105 HP on ~490 base HP is a 21% increase regardless of percent component. Thematically correct — squishy casters rely on HP upgrades for bot viability.
+- **Resilience** works for low/mid-armor classes (rogue -2.5%, ranger -1.6%, druid -4.8%) via % armor closing the gap to DR cap. Dead for warrior (already near 50% DR cap) and mage (DR irrelevant when HP is the bottleneck).
+- **Swiftness** dodge multiplier works broadly (warrior -3.6%, rogue -4.1%, druid -5.0%) — clean multiplicative effect on monster hit formula.
+
+**Conclusion:** The rebalance successfully creates upgrade diversity for 4/6 classes. Warrior and mage are expected outliers due to fundamental class characteristics (ceiling/floor effects), not upgrade tuning problems. Mage/archmage/necro being squishy and Vitality-dependent is thematically appropriate.
 
 **Interpretation:**
 - 🔴 High impact (>10% loss): Critical upgrade, prioritize early
@@ -519,8 +535,8 @@ pnpm diagnose batch --runs=50 --seed=1000 --capabilities=mid --class=warrior
 |--------|----------|
 | `none` | No upgrades |
 | `early` | vitality 2, might 2, resilience 1 |
-| `mid` | vitality 5, might 5, resilience 3, swiftness 2, precision 2, celerity 2 |
-| `late` | vitality 8, might 8, resilience 4, swiftness 4, precision 4, celerity 4 |
+| `mid` | vitality 5, might 5, resilience 5, swiftness 4, precision 2, celerity 2 |
+| `late` | vitality 8, might 8, resilience 7, swiftness 6, precision 4, celerity 4 |
 | `full` | All upgrades at max level |
 
 **Booster Presets:**
