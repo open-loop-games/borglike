@@ -8,7 +8,7 @@
 import type { Point, GameState, Monster, Character } from '../types'
 import { getAdjacentPositions } from '../dungeon'
 import { isPoisoned, getPoisonDamage, getPoisonTurnsRemaining } from '../status-effects'
-import type { DangerMap, DangerResult, DangerTier, PersonalityConfig } from './types'
+import type { DangerGrid, DangerMap, DangerResult, DangerTier, PersonalityConfig } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import {
   findHealingPotion,
@@ -20,30 +20,46 @@ import { getEffectiveDamage, countAdjacentMonsters } from './combat'
 import { getMonsterAverageDamage } from '../monster-combat'
 
 // Re-export types for convenience
-export type { DangerMap, DangerResult, DangerTier }
+export type { DangerGrid, DangerMap, DangerResult, DangerTier }
 
 // ============================================================================
 // DANGER CALCULATION
 // ============================================================================
 
-/** Cached danger result with state hash for invalidation */
+/** Cached danger result with numeric hash for invalidation */
 let cachedDangerResult: DangerResult | null = null
-let cachedMonsterHash: string = ''
-let cachedCharPos: string = ''
+let cachedMonsterHash: number = 0
+let cachedCharPosHash: number = 0
+
+/** Pre-computed danger multipliers indexed by Chebyshev distance (0-4) */
+const DANGER_MULTIPLIERS = [2.0, 1.0, 0.6, 0.35, 0.2]
 
 /**
- * Create a hash of monster state for cache invalidation
- * Only includes alive monsters' positions and HP
+ * Numeric hash of monster state for cache invalidation.
+ * FNV-1a inspired — mixes id, position, and HP into a single number.
  */
-function hashMonsterState(monsters: Monster[]): string {
-  let hash = ''
+function hashMonsterState(monsters: Monster[]): number {
+  let hash = 2166136261 // FNV offset basis
   for (const m of monsters) {
     if (m.hp > 0) {
-      // Include position and HP - if either changes, danger changes
-      hash += `${m.id}:${m.position.x},${m.position.y},${m.hp};`
+      // Hash id string via first 4 chars
+      const id = m.id
+      for (let i = 0; i < Math.min(id.length, 4); i++) {
+        hash = Math.imul(hash ^ id.charCodeAt(i), 16777619)
+      }
+      hash = Math.imul(hash ^ m.position.x, 16777619)
+      hash = Math.imul(hash ^ m.position.y, 16777619)
+      hash = Math.imul(hash ^ m.hp, 16777619)
     }
   }
   return hash
+}
+
+/**
+ * Create an empty DangerGrid backed by Int16Array
+ */
+function createDangerGrid(width: number, height: number): DangerGrid {
+  return { data: new Int16Array(width * height), width, height }
 }
 
 /**
@@ -58,12 +74,15 @@ function hashMonsterState(monsters: Monster[]): string {
  * Caches result when monster state unchanged.
  */
 export function computeDangerGrid(game: GameState): DangerResult {
-  // Check cache validity
+  // Check cache validity (numeric hash comparison)
   const monsterHash = hashMonsterState(game.monsters)
-  const charPos = `${game.character.position.x},${game.character.position.y}`
+  const charPosHash = game.character.position.x * 10000 + game.character.position.y
 
-  if (cachedDangerResult && monsterHash === cachedMonsterHash && charPos === cachedCharPos) {
-    // Cache hit - return cached result with updated turn
+  if (
+    cachedDangerResult &&
+    monsterHash === cachedMonsterHash &&
+    charPosHash === cachedCharPosHash
+  ) {
     return {
       ...cachedDangerResult,
       computedAt: game.turn,
@@ -71,30 +90,42 @@ export function computeDangerGrid(game: GameState): DangerResult {
   }
 
   // Cache miss - compute fresh
-  const dangers: DangerMap = new Map()
+  const level = game.currentLevel
+  const dangers = createDangerGrid(level.width, level.height)
   let maxDanger = 0
 
   const character = game.character
-  const monsters = game.monsters
+  const { width } = dangers
+  const data = dangers.data
 
-  // For each monster, add danger to nearby tiles
-  for (const monster of monsters) {
-    // Skip dead monsters
+  // For each monster, add danger to nearby tiles via direct array indexing
+  for (const monster of game.monsters) {
     if (monster.hp <= 0) continue
-
-    // Calculate base threat for this monster
     const threat = getMonsterThreat(monster, character)
+    const mx = monster.position.x
+    const my = monster.position.y
 
-    // Apply danger to tiles around the monster
-    // Danger falls off with distance
-    applyMonsterDanger(dangers, monster.position, threat)
+    // Apply danger in a 9x9 area (radius 4) around the monster
+    const yMin = Math.max(0, my - 4)
+    const yMax = Math.min(dangers.height - 1, my + 4)
+    const xMin = Math.max(0, mx - 4)
+    const xMax = Math.min(dangers.width - 1, mx + 4)
+
+    for (let y = yMin; y <= yMax; y++) {
+      const rowOffset = y * width
+      const dy = Math.abs(y - my)
+      for (let x = xMin; x <= xMax; x++) {
+        const dist = Math.max(Math.abs(x - mx), dy)
+        if (dist > 4) continue
+        const tileDanger = Math.floor(threat * DANGER_MULTIPLIERS[dist]!)
+        data[rowOffset + x]! += tileDanger
+      }
+    }
   }
 
-  // Find max danger for normalization
-  for (const danger of dangers.values()) {
-    if (danger > maxDanger) {
-      maxDanger = danger
-    }
+  // Find max danger
+  for (let i = 0; i < data.length; i++) {
+    if (data[i]! > maxDanger) maxDanger = data[i]!
   }
 
   // Add status effect danger to character's position
@@ -104,12 +135,9 @@ export function computeDangerGrid(game: GameState): DangerResult {
   const statusDanger = getStatusEffectDanger(character, adjacentCount, hasPoisonCure)
 
   if (statusDanger > 0) {
-    const posKey = `${character.position.x},${character.position.y}`
-    const existingDanger = dangers.get(posKey) ?? 0
-    dangers.set(posKey, existingDanger + statusDanger)
-    if (existingDanger + statusDanger > maxDanger) {
-      maxDanger = existingDanger + statusDanger
-    }
+    const idx = character.position.y * width + character.position.x
+    data[idx]! += statusDanger
+    if (data[idx]! > maxDanger) maxDanger = data[idx]!
   }
 
   const result: DangerResult = {
@@ -118,10 +146,9 @@ export function computeDangerGrid(game: GameState): DangerResult {
     computedAt: game.turn,
   }
 
-  // Cache the result
   cachedDangerResult = result
   cachedMonsterHash = monsterHash
-  cachedCharPos = charPos
+  cachedCharPosHash = charPosHash
 
   return result
 }
@@ -320,96 +347,43 @@ export function getMonsterThreat(
 }
 
 /**
- * Apply danger from a monster to surrounding tiles
- *
- * Danger is highest at the monster's position and falls off with distance.
- * Uses a simple radial falloff pattern.
+ * Get danger at a specific position (direct array lookup)
  */
-function applyMonsterDanger(dangers: DangerMap, monsterPos: Point, baseThreat: number): void {
-  // Danger radius - how far the threat extends
-  const radius = 4
-
-  for (let dy = -radius; dy <= radius; dy++) {
-    for (let dx = -radius; dx <= radius; dx++) {
-      const x = monsterPos.x + dx
-      const y = monsterPos.y + dy
-
-      // Calculate distance (Chebyshev for 8-directional)
-      const dist = Math.max(Math.abs(dx), Math.abs(dy))
-
-      // Skip tiles beyond radius
-      if (dist > radius) continue
-
-      // Calculate danger at this distance
-      // Adjacent tiles (dist 1) get full threat
-      // Danger falls off: dist 2 = 60%, dist 3 = 35%, dist 4 = 20%
-      let dangerMultiplier: number
-      switch (dist) {
-        case 0:
-          dangerMultiplier = 2.0 // Monster's own tile is very dangerous
-          break
-        case 1:
-          dangerMultiplier = 1.0 // Adjacent is full threat
-          break
-        case 2:
-          dangerMultiplier = 0.6
-          break
-        case 3:
-          dangerMultiplier = 0.35
-          break
-        default:
-          dangerMultiplier = 0.2
-      }
-
-      const tileDanger = Math.floor(baseThreat * dangerMultiplier)
-
-      // Add to existing danger (multiple monsters stack)
-      const key = `${x},${y}`
-      const existing = dangers.get(key) ?? 0
-      dangers.set(key, existing + tileDanger)
-    }
-  }
+export function getTileDanger(dangers: DangerGrid, pos: Point): number {
+  const { x, y } = pos
+  if (x < 0 || y < 0 || x >= dangers.width || y >= dangers.height) return 0
+  return dangers.data[y * dangers.width + x]!
 }
 
 /**
- * Get danger at a specific position
- */
-export function getTileDanger(dangers: DangerMap, pos: Point): number {
-  const key = `${pos.x},${pos.y}`
-  return dangers.get(key) ?? 0
-}
-
-/**
- * Build a set of "icky" tiles that should be avoided
- *
- * @param dangers - Danger map
- * @param threshold - Danger level above which tiles are icky
- * @param character - Character for HP-based threshold scaling
- * @returns Set of "x,y" keys to avoid
+ * Build a set of "icky" tiles that should be avoided.
+ * Returns Set<string> with "x,y" keys for flow.ts compatibility.
  */
 export function buildAvoidSet(
-  dangers: DangerMap,
+  dangers: DangerGrid,
   threshold: number,
   character: Character
 ): Set<string> {
   const avoid = new Set<string>()
 
   // Scale threshold by HP ratio
-  // Low HP = lower threshold = avoid more tiles
   const hpRatio = character.hp / character.maxHp
   let scaledThreshold = threshold
 
   if (hpRatio < 0.25) {
-    scaledThreshold *= 0.3 // Very cautious when low HP
+    scaledThreshold *= 0.3
   } else if (hpRatio < 0.5) {
-    scaledThreshold *= 0.6 // Cautious when hurt
+    scaledThreshold *= 0.6
   } else if (hpRatio < 0.75) {
-    scaledThreshold *= 0.8 // Slightly cautious
+    scaledThreshold *= 0.8
   }
 
-  for (const [key, danger] of dangers) {
-    if (danger > scaledThreshold) {
-      avoid.add(key)
+  const { data, width, height } = dangers
+  for (let i = 0; i < data.length; i++) {
+    if (data[i]! > scaledThreshold) {
+      const x = i % width
+      const y = (i / width) | 0
+      if (y < height) avoid.add(`${x},${y}`)
     }
   }
 
@@ -460,13 +434,23 @@ export function hasAdjacentMonster(game: GameState, pos: Point): boolean {
 /**
  * Get the total danger around the character's current position
  */
-export function getLocalDanger(dangers: DangerMap, pos: Point): number {
+export function getLocalDanger(dangers: DangerGrid, pos: Point): number {
   let totalDanger = getTileDanger(dangers, pos)
 
-  // Also check adjacent tiles
-  const adjacent = getAdjacentPositions(pos)
-  for (const adj of adjacent) {
-    totalDanger += getTileDanger(dangers, adj) * 0.5 // Adjacent danger at half weight
+  // Also check adjacent tiles (inlined for performance — avoids getAdjacentPositions allocation)
+  const { data, width, height } = dangers
+  const px = pos.x
+  const py = pos.y
+  for (let dy = -1; dy <= 1; dy++) {
+    const ny = py + dy
+    if (ny < 0 || ny >= height) continue
+    const rowOffset = ny * width
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue
+      const nx = px + dx
+      if (nx < 0 || nx >= width) continue
+      totalDanger += data[rowOffset + nx]! * 0.5
+    }
   }
 
   return Math.floor(totalDanger)

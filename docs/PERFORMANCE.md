@@ -1,25 +1,38 @@
 # Performance Documentation
 
-## Current State (2026-01-27)
+## Current State (2026-02-05)
 
 ### Tick Budget
 
 | Mode | Target | Measured | Status |
 |------|--------|----------|--------|
-| Normal (100ms) | <50ms per tick | 0.55ms avg, 3.2ms max | ✅ OK |
-| Turbo (5-20ms) | <5ms per tick | 0.55ms avg, 3.2ms max | ✅ OK |
-| 4x concurrent | <20ms total | ~2.2ms total | ✅ OK |
+| Normal (100ms) | <50ms per tick | 0.47ms avg, 4.7ms max | ✅ OK |
+| Turbo (5-20ms) | <5ms per tick | 0.47ms avg, 4.7ms max | ✅ OK |
+| 4x concurrent | <20ms total | ~1.9ms total | ✅ OK |
 
-**Measurement:** Enable `PROFILE_BOT=1` environment variable to capture per-tick metrics.
+**Measurement:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
 
-### Class Comparison (50k turn limit, max-upgrades, seed=1000)
+### Class Comparison (50k turn limit, upgrades=full, capabilities=full, boosters=class, seed=1000)
 
 | Class | Turns | Total Time | Avg/Tick | Main Cost |
 |-------|-------|------------|----------|-----------|
-| Warrior | 13.8k | 6165ms | 0.45ms | handleFallback (24%) |
-| Mage | 32.9k | 22595ms | 0.69ms | handleFallback (24%), getSweepFrontiers (6%) |
+| Warrior | 13.9k | 6572ms | 0.47ms | handleFallback (24%), computeDangerGrid (17%) |
+| Mage | 29.3k | 17459ms | 0.60ms | handleFallback (24%), computeDangerGrid (15%), getSweepFrontiers (5%) |
+| Druid | 5.0k* | 2163ms | 0.43ms | handleFallback (22%), computeDangerGrid (8%) |
+| Rogue | 5.0k* | 2217ms | 0.44ms | handleFallback (23%), computeDangerGrid (8%) |
 
-Mage ~53% slower per tick due to sweep mode frontier calculation (longer-lived runs spend more time in sweep). Flow computation itself is now fast (~5% of total).
+*Druid/Rogue ran 5k turn cap for spot-check only.
+
+Mage ~27% slower per tick due to sweep mode (frontier + flow). New `computeSafetyFlow` adds ~1.5ms per call for caster flee paths (147 calls, 1.3% total).
+
+### vs Previous Baseline (2026-01-27)
+
+| Class | Old Avg/Tick | New Avg/Tick | Delta | Notes |
+|-------|-------------|-------------|-------|-------|
+| Warrior | 0.45ms | 0.47ms | +5.6% | `computeDangerGrid` +66% from 12 new D19-30 monsters |
+| Mage | 0.69ms | 0.60ms | -13% | Goal persistence improvements, better cache hit rates |
+
+**Important:** Old baseline used legacy `--max-upgrades` flag. Current baseline uses `--upgrades=full --capabilities=full --boosters=class` (diagnose defaults). The legacy flag applies different bonuses and produces very different run behavior.
 
 ---
 
@@ -46,11 +59,17 @@ profile('selectGoal', () => selectGoal(context))
 # Dev server with profiling
 PROFILE_BOT=1 pnpm run dev
 
-# Batch test with profiling (runs are slower)
-PROFILE_BOT=1 npx tsx scripts/diagnose.ts batch --runs=10 --seed=1000 --max-upgrades
+# Single run deep dive with timing (uses diagnose defaults: upgrades=full, capabilities=full, boosters=class)
+PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000
 
-# Single run deep dive with timing
-PROFILE_BOT=1 npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior
+# Batch test with profiling (runs are slower)
+PROFILE_BOT=1 pnpm diagnose batch --runs=10 --seed=1000
+
+# Spot-check a specific class
+PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=mage --turns=5000
+
+# Raw baseline (no upgrades/capabilities/boosters)
+PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --upgrades=none --capabilities=none --boosters=none
 ```
 
 ### Chrome DevTools
@@ -64,17 +83,27 @@ PROFILE_BOT=1 npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior
 
 ## Performance-Critical Code Paths
 
-### Per-Tick Operations
+### Per-Tick Operations (Warrior, 50k turns, seed=1000)
 
 | Operation | File | Avg Time | Max Time | Notes |
 |-----------|------|----------|----------|-------|
-| `buildBotContext` | `context.ts` | 2.6µs | 0.35ms | Filters visible entities |
-| `computeDangerGrid` | `danger.ts` | 47µs | 0.79ms | Uses monster state hash cache |
-| `selectGoal` | `goals.ts` | 39µs | 2.0ms | Priority-based selection |
-| `flow.singleTarget` | `flow.ts` | 319µs | 1.1ms | Single-target BFS (typed array) |
-| `flow.exploration` | `flow.ts` | 73µs | 0.47ms | Dijkstra frontier flow (typed array) |
-| `getFrontierPositions` | `exploration.ts` | 54µs | 1.0ms | Frontier tile detection |
-| `handleFallback` | `tick.ts` | 136µs | 3.2ms | Goal movement execution |
+| `buildBotContext` | `context.ts` | 2.2µs | 0.37ms | Filters visible entities |
+| `computeDangerGrid` | `danger.ts` | 16µs | 0.72ms | Int16Array + FNV-1a hash (Pass 4) |
+| `selectGoal` | `goals.ts` | 23µs | 3.4ms | Priority-based selection |
+| `flow.singleTarget` | `flow.ts` | 194µs | 0.96ms | Single-target BFS (typed array) |
+| `flow.exploration` | `flow.ts` | 64µs | 0.44ms | Dijkstra frontier flow (typed array) |
+| `getFrontierPositions` | `exploration.ts` | 49µs | 1.7ms | Frontier tile detection |
+| `handleFallback` | `tick.ts` | 118µs | 4.6ms | Goal movement execution |
+| `selectActionByTier` | `tier-actions.ts` | 10µs | 0.70ms | Class-specific action selection |
+| `recordVisibleTiles` | `exploration.ts` | 11µs | 0.37ms | Visible tile tracking |
+
+### Mage-Specific Operations (50k turns, seed=1000)
+
+| Operation | File | Avg Time | Max Time | Notes |
+|-----------|------|----------|----------|-------|
+| `getSweepFrontiers` | `exploration.ts` | 155µs | 1.1ms | Sweep mode frontier calculation |
+| `flow.sweep` | `flow.ts` | 157µs | 0.67ms | Multi-target sweep Dijkstra |
+| `computeSafetyFlow` | `safety-flow.ts` | 913µs | 1.3ms | Int16Array + binary heap (Pass 4) |
 
 ### Expensive Operations (Cached)
 
@@ -84,6 +113,8 @@ PROFILE_BOT=1 npx tsx scripts/diagnose.ts deep --seed=12345 --class=warrior
 | Danger grid | Monster state hash | 1 turn | Monster move/damage |
 | Frontier list | Explored tile count | Until exploration | New tile explored |
 | Dijkstra exploration | Level depth | Level change | Descend/ascend |
+| Safety flow | Player position + turn | 1 turn | Position change |
+| Tether sweep flow | Tether origin + seen count | Until seen count changes | New tile seen |
 
 ---
 
@@ -98,6 +129,7 @@ interface BotState {
   cachedDanger: DangerResult | null       // Monster threat grid
   cachedExplorationFlow: ExplorationFlowCache | null  // Dijkstra frontier
   cachedSweepFlow: SweepFlowCache | null  // Caster sweep mode
+  cachedSafetyFlow: SafetyFlowResult | null  // Flee path computation
   lastExploredCount: number               // Quick frontier check
 }
 ```
@@ -106,18 +138,30 @@ interface BotState {
 
 | Cache | Invalidated When | Cost If Missed |
 |-------|------------------|----------------|
-| Flow (FlowGrid) | Goal changes, player moves 5+ tiles | 0.3-1ms |
+| Flow (FlowGrid) | Goal changes, player moves 5+ tiles | 0.2-1ms |
 | Danger | Monster positions/HP change | <1ms |
 | Frontier | New tile explored | 0.5-1ms |
 | Exploration flow | Level change, explored count | 0.5-1ms |
 | Sweep flow | seenThisVisit.size changes | 0.5-1ms |
+| Safety flow | Position change, turn change | 0.4-1.3ms |
+| Tether sweep flow | Tether origin + seen count | 0.2-0.8ms |
 
 ### Danger Grid Hash (`danger.ts`)
 
 ```typescript
-// Monster state hash for intelligent cache invalidation
-function hashMonsterState(monsters: Monster[]): string {
-  return monsters.map(m => `${m.id}:${m.x},${m.y}:${m.hp}`).join(';')
+// FNV-1a numeric hash for cache invalidation (no string allocation)
+function hashMonsterState(monsters: Monster[]): number {
+  let hash = 2166136261
+  for (const m of monsters) {
+    if (m.hp > 0) {
+      for (let i = 0; i < Math.min(m.id.length, 4); i++)
+        hash = Math.imul(hash ^ m.id.charCodeAt(i), 16777619)
+      hash = Math.imul(hash ^ m.position.x, 16777619)
+      hash = Math.imul(hash ^ m.position.y, 16777619)
+      hash = Math.imul(hash ^ m.hp, 16777619)
+    }
+  }
+  return hash
 }
 ```
 
@@ -125,21 +169,31 @@ function hashMonsterState(monsters: Monster[]): string {
 
 ## Known Bottlenecks
 
-### 1. Exploration Thrashing
+### 1. computeDangerGrid (Resolved — Pass 4)
+
+**Symptom:** Was 78µs avg, 17% of warrior total
+**Status:** ✅ Resolved. Int16Array grid + FNV-1a numeric hash → 16µs avg (4.5x faster)
+
+### 2. computeSafetyFlow (Resolved — Pass 4)
+
+**Symptom:** Was 1.5ms avg, 3.8ms max spike
+**Status:** ✅ Resolved. Binary min-heap + typed arrays → 363µs avg warrior, 913µs avg mage (max 1.3ms)
+
+### 3. Exploration Thrashing (Resolved)
 
 **Symptom:** 60%+ of EXPLORE goals are short-distance (<3 tiles)
 **Impact:** Wasted computation, eventual circuit breaker
 **Location:** `exploration.ts:getExplorationGoal()`
-**Status:** Mitigated by Dijkstra exploration flow
+**Status:** ✅ Resolved by Dijkstra exploration flow + goal persistence
 
-### 2. Flow Recomputation
+### 4. Flow Recomputation (Resolved)
 
 **Symptom:** Flow computed multiple times per tick
 **Impact:** 3-9ms wasted per tick
 **Location:** `flow.ts:computeFlow()`
-**Status:** Caching implemented, TTL ~10 turns
+**Status:** ✅ Resolved. Caching implemented, TTL ~10 turns
 
-### 3. Large Frontier Lists
+### 5. Large Frontier Lists
 
 **Symptom:** Frontier >500 tiles on large levels
 **Impact:** Slow distance scoring
@@ -162,11 +216,14 @@ console.log(`Operation took ${performance.now() - start}ms`)
 ### Batch Performance Test
 
 ```bash
-# Baseline timing (100 runs)
-time npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --max-upgrades --turns=30000
+# Baseline timing (100 runs, uses defaults: upgrades=full, capabilities=full, boosters=class)
+time pnpm diagnose batch --runs=100 --seed=1000 --turns=30000
 
-# After optimization
-time npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --max-upgrades --turns=30000
+# After optimization (compare wall clock time)
+time pnpm diagnose batch --runs=100 --seed=1000 --turns=30000
+
+# Full 11-class baseline
+pnpm diagnose baseline --seed=1000
 ```
 
 ### Turbo Mode Stress Test
@@ -180,9 +237,99 @@ time npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --max-upgrades --t
 
 ## Optimization History
 
+### Pass 4: 2026-02-05 - DangerGrid + SafetyFlow Typed Arrays
+
+**Problem 1:** `computeDangerGrid` used `Map<string, number>` with string keys and `getAdjacentPositions()` allocations. 78µs avg, 17% of warrior total.
+
+**Problem 2:** `computeSafetyFlow` used `queue.sort()` inside Dijkstra loop (O(n² log n)), `queue.shift()` for BFS (O(n)), and three `Map<string, number>` allocations.
+
+**Changes (danger.ts):**
+- Replaced `Map<string, number>` danger map with `Int16Array` grid (`DangerGrid` type)
+- FNV-1a numeric hash (`Math.imul`) replaces string concatenation for cache keys
+- Inlined 3x3 neighbor loop in `getLocalDanger()` (no `getAdjacentPositions` allocation)
+- Pre-computed `DANGER_MULTIPLIERS` array replaces conditional chain
+
+**Changes (safety-flow.ts):**
+- Binary min-heap replaces `queue.sort()` in Dijkstra rescan (O(n log n) vs O(n² log n))
+- Circular buffer replaces `queue.shift()` in BFS (O(1) vs O(n))
+- `Int16Array` grids replace three `Map<string, number>` allocations
+- Scaled integer math (×5) preserves -1.2 coefficient exactly without floats
+- Module-level `popX/popY/popCost` avoids heap-pop object allocation
+- Removed `safetyMap` from `SafetyFlowResult` (unused debugging field)
+
+**Results (Warrior, 50k turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| `computeDangerGrid` avg | 78µs | 16µs | **4.5x faster** |
+| `computeSafetyFlow` avg | 3744µs | 363µs | **10x faster** |
+| Total tracked | 6572ms | 5942ms | **-10%** |
+
+**Results (Mage, 50k turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| `computeSafetyFlow` avg | 1491µs | 913µs | **1.6x faster** |
+| `computeSafetyFlow` max | 3.8ms | 1.3ms | **2.9x lower spike** |
+
+**Note:** `fallback.buildAvoidSet` slightly regressed (4.5µs → 6.2µs) due to typed array → string key conversion for flow.ts `avoid` set compatibility. Net win far exceeds this.
+
+**Learnings:**
+- Same typed-array pattern from Pass 3 (flow.ts) applied to danger + safety grids
+- Binary heap eliminates the worst algorithmic issue (sort-inside-loop)
+- Integer scaling (×5) avoids float precision issues while preserving exact ratios
+- Pre-allocated module-level structures (BFS buffer, heap arrays) avoid per-call allocation
+
+---
+
+### Baseline: 2026-02-05 (Post Farming/Capabilities/Balance Rework)
+
+**Test:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
+**Config:** upgrades=full, capabilities=full, boosters=class (diagnose defaults)
+
+**Warrior (13924 turns, natural death):**
+
+| Operation | % Time | Total | Calls | Avg |
+|-----------|--------|-------|-------|-----|
+| handleFallback | 23.7% | 1554ms | 12923 | 120µs |
+| fallback.goalMovement | 23.5% | 1545ms | 12901 | 120µs |
+| computeDangerGrid | 16.6% | 1091ms | 13924 | 78µs |
+| getFrontierPositions | 6.5% | 428ms | 8792 | 49µs |
+| flow.exploration | 6.9% | 455ms | 6445 | 71µs |
+| selectGoal | 4.2% | 279ms | 12901 | 22µs |
+| flow.singleTarget | 3.0% | 196ms | 875 | 224µs |
+| goal.descend | 2.7% | 179ms | 1486 | 121µs |
+| selectActionByTier | 2.6% | 171ms | 13924 | 12µs |
+| buildBotContext | 0.5% | 31ms | 13924 | 2.2µs |
+
+**Summary:**
+- Total tracked: 6572ms for ~13.9k turns = **0.47ms/tick avg**
+- Fallback path dominates (47% of time)
+- `computeDangerGrid` up to 17% (was 8.5%) due to 12 new D19-30 monsters
+- `selectGoal` improved 45% (22µs vs 39µs) from better goal persistence
+- Flow computation ~10% of total
+
+**Mage (29277 turns, natural death):**
+
+| Operation | % Time | Total | Calls | Avg |
+|-----------|--------|-------|-------|-----|
+| handleFallback | 24.2% | 4230ms | 22595 | 187µs |
+| computeDangerGrid | 14.5% | 2531ms | 29277 | 86µs |
+| selectGoal | 6.5% | 1131ms | 22529 | 50µs |
+| getSweepFrontiers | 5.4% | 949ms | 6131 | 155µs |
+| flow.exploration | 3.3% | 578ms | 6198 | 93µs |
+| flow.sweep | 2.9% | 509ms | 3251 | 157µs |
+| computeSafetyFlow | 1.3% | 219ms | 147 | 1491µs |
+| flow.singleTarget | 1.8% | 315ms | 1965 | 216µs |
+
+**Summary:**
+- Total tracked: 17459ms for ~29.3k turns = **0.60ms/tick avg**
+- `computeSafetyFlow` is new (flee path for casters), 1.5ms avg but only 147 calls
+- Sweep overhead (frontiers + flow) = ~8.3% combined
+
+---
+
 ### Baseline: 2026-01-27 (Post Typed Array Flow)
 
-**Test:** ~4500 turns, warrior, max-upgrades
+**Test:** ~4500 turns, warrior, `--max-upgrades` (legacy flag, no capabilities/boosters)
 
 | Operation | % Time | Total | Calls | Avg |
 |-----------|--------|-------|-------|-----|
@@ -202,10 +349,7 @@ time npx tsx scripts/diagnose.ts batch --runs=100 --seed=1000 --max-upgrades --t
 - Flow computation now ~10% of total (was ~17%)
 - Context building very efficient (2.6µs)
 
-**Batch Test:** 100 runs, 50k turns, warrior, max-upgrades
-- Warrior avg depth: 47.8, CB rate: 2%
-- Mage avg depth: 42.5, CB rate: 20%
-- Zero regression from typed array refactor
+**Note:** This baseline used the legacy `--max-upgrades` flag which applies different bonuses than `--upgrades=full`. Not directly comparable to the 2026-02-05 baseline.
 
 ---
 
@@ -359,5 +503,7 @@ Before merging performance-related changes:
 - `src/game/bot/danger.ts` - Danger grid with hash caching
 - `src/game/bot/flow.ts` - Pathfinding with flow caching
 - `src/game/bot/exploration.ts` - Frontier detection and Dijkstra
+- `src/game/bot/safety-flow.ts` - Flee path computation for casters
+- `src/game/bot/farming.ts` - Tether sweep and farming modes
 - `src/game/bot/tick.ts` - Main decision loop
 - `docs/BOT-AI-PLAN.md` - Bot architecture overview

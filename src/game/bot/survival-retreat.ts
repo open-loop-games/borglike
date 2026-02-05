@@ -322,7 +322,7 @@ export function findBestEscapeRoute(game: GameState, dangers: DangerMap): Escape
     let safetyScore = 100
 
     // Penalize for danger
-    const tileDanger = dangers.get(`${adj.x},${adj.y}`) ?? 0
+    const tileDanger = getTileDanger(dangers, adj)
     safetyScore -= tileDanger / 2
 
     // Bonus for moving away from monster centroid

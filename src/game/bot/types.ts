@@ -69,12 +69,19 @@ export interface FlowResult {
   computedAt: number // Turn when computed
 }
 
-/** Danger map: "x,y" -> danger score */
-export type DangerMap = Map<string, number>
+/** Danger grid: flat Int16Array indexed by y * width + x */
+export interface DangerGrid {
+  data: Int16Array
+  width: number
+  height: number
+}
+
+/** @deprecated Alias for DangerGrid (was Map<string, number>) */
+export type DangerMap = DangerGrid
 
 /** Cached danger computation */
 export interface DangerResult {
-  dangers: DangerMap
+  dangers: DangerGrid
   maxDanger: number
   computedAt: number // Turn when computed
 }
@@ -83,8 +90,6 @@ export interface DangerResult {
 export interface SafetyFlowResult {
   /** Target position to flee toward (null if surrounded) */
   target: Point | null
-  /** The computed safety values (for debugging) */
-  safetyMap: Map<string, number>
   /** Turn when computed */
   computedAt: number
 }
