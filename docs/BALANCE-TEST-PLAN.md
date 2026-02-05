@@ -4,7 +4,7 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `d56d88f` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Full Baseline @ `c5643d9` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
@@ -20,43 +20,50 @@
 | **Priest** | 46.0 | 50 | 0% | 23827 | 723 | 3 | ✅ Endgame |
 | **Druid** | 45.9 | 50 | 0% | 22106 | 585 | 0 | ✅ Endgame |
 
-**Summary:** Town capability decomposition and feed system update. **32 Morgoth kills** (9 berserker, 8 ranger, 4 warrior, 3 paladin, 3 priest, 2 archmage, 1 mage, 1 blackguard, 1 rogue). Berserker 6→9, Ranger 7→8, Warrior 3→4, Priest 4→3, Rogue 3→1. Win rate spread 0-9% (berserker). All CB rates ≤2% (Archmage 1%→2%).
+**Summary:** Unchanged from `d56d88f`. **32 Morgoth kills** (9 berserker, 8 ranger, 4 warrior, 3 paladin, 3 priest, 2 archmage, 1 mage, 1 blackguard, 1 rogue). All CB rates ≤2%.
 
-### Raw Baseline @ `d56d88f` (100 runs, 50k turns, seed=1000, no-upgrades, no-capabilities, no-boosters)
+### Raw Baseline @ `c5643d9` (100 runs, 50k turns, seed=1000, upgrades=none, capabilities=none, boosters=none)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
-| **Ranger** | 48.5 | 50 | 0% | 25537 | 723 | 2 | ✅ Endgame |
-| **Necromancer** | 44.6 | 50 | 0% | 42923 | 943 | 0 | ✅ Endgame |
-| **Archmage** | 41.2 | 50 | 0% | 41222 | 857 | 0 | ✅ Endgame |
-| **Mage** | 41.2 | 50 | 0% | 41193 | 857 | 0 | ✅ Endgame |
-| **Rogue** | 37.4 | 50 | 0% | 21750 | 555 | 0 | ⚠️ Mid-game |
-| **Paladin** | 34.2 | 50 | 0% | 20368 | 539 | 0 | ⚠️ Mid-game |
-| **Priest** | 32.1 | 50 | 0% | 21197 | 544 | 0 | ⚠️ Mid-game |
-| **Berserker** | 27.6 | 50 | 0% | 10521 | 296 | 0 | ⚠️ Early-game |
-| **Druid** | 27.0 | 50 | 0% | 19751 | 418 | 0 | ⚠️ Early-game |
-| **Warrior** | 25.9 | 50 | 0% | 10085 | 273 | 0 | ⚠️ Early-game |
-| **Blackguard** | 22.6 | 50 | 0% | 8256 | 236 | 0 | ⚠️ Early-game |
+| **Berserker** | 14.2 | 50 | 2% | 3650 | 86 | 0 | ⚠️ Mid |
+| **Warrior** | 13.1 | 50 | 0% | 3347 | 73 | 0 | ⚠️ Mid |
+| **Ranger** | 12.6 | 50 | 0% | 3087 | 70 | 0 | ⚠️ Mid |
+| **Blackguard** | 11.2 | 46 | 0% | 2789 | 57 | 0 | ⚠️ Mid |
+| **Paladin** | 7.9 | 13 | 0% | 1894 | 30 | 0 | ⚠️ Early |
+| **Priest** | 7.8 | 15 | 0% | 1882 | 31 | 0 | ⚠️ Early |
+| **Necromancer** | 7.4 | 20 | 0% | 1725 | 33 | 0 | ⚠️ Early |
+| **Mage** | 7.3 | 22 | 0% | 1732 | 32 | 0 | ⚠️ Early |
+| **Druid** | 6.5 | 21 | 0% | 1549 | 24 | 0 | ⚠️ Early |
+| **Archmage** | 6.3 | 12 | 0% | 1453 | 26 | 0 | ⚠️ Early |
+| **Rogue** | 5.5 | 25 | 0% | 1306 | 20 | 0 | ⚠️ Early |
 
-**Summary:** True raw game balance without any meta-progression or boosters. **2 Morgoth kills** (ranger only). Ranger dominates (natural ranged advantage). Pure casters (necro/mage/archmage) perform well with sustained damage. Melee classes (warrior/berserker/blackguard) struggle without retreat logic and stat boosters. Spread: 22.6-48.5 (25.9 depth). All CB rates 0%.
+**Summary:** First valid raw baseline. Previous `d56d88f` raw was invalid — `diagnose baseline` had a bug where `--capabilities` wasn't passed through to `runBaseline()`, so capabilities were always `full`. **0 Morgoth kills**. Melee classes (berserker/warrior) lead via face-rush. Casters collapse without capabilities. Spread: 5.5-14.2 (8.7 depth). All CB rates ≤2%.
 
 **Full vs Raw Comparison:**
 
 | Class | Full | Raw | Delta | Notes |
 |-------|------|-----|-------|-------|
-| Ranger | 49.4 | 48.5 | -0.9 | Naturally strong, minimal AI/stat benefit |
-| Necromancer | 47.8 | 44.6 | -3.2 | Sustained damage works without AI |
-| Mage | 48.1 | 41.2 | -6.9 | Benefits from kiting/retreat |
-| Archmage | 48.2 | 41.2 | -7.0 | Benefits from kiting/retreat |
-| Rogue | 47.1 | 37.4 | -9.7 | Shadow Step needs AI to use well |
-| Paladin | 48.9 | 34.2 | -14.7 | Heavy AI + stat dependency |
-| Priest | 46.0 | 32.1 | -13.9 | Needs targeting/retreat/stats |
-| Berserker | 48.5 | 27.6 | -20.9 | Needs STR boost + no retreat |
-| Druid | 45.9 | 27.0 | -18.9 | Shapeshift AI critical |
-| Warrior | 48.0 | 25.9 | -22.1 | Heavy stat + retreat dependency |
-| Blackguard | 49.0 | 22.6 | -26.4 | Most AI/stat dependent class |
+| Archmage | 48.2 | 6.3 | +41.9 | Most capability-dependent |
+| Rogue | 47.1 | 5.5 | +41.6 | Shadow Step useless without AI |
+| Paladin | 48.9 | 7.9 | +41.0 | Healing/retreat/stats all critical |
+| Mage | 48.1 | 7.3 | +40.8 | Needs kiting to function |
+| Necromancer | 47.8 | 7.4 | +40.4 | Sustained damage needs kiting |
+| Druid | 45.9 | 6.5 | +39.4 | Shapeshift AI critical |
+| Priest | 46.0 | 7.8 | +38.2 | Healing AI critical for survival |
+| Blackguard | 49.0 | 11.2 | +37.8 | Needs all AI systems |
+| Ranger | 49.4 | 12.6 | +36.8 | Bow + kiting need capabilities |
+| Warrior | 48.0 | 13.1 | +34.9 | Solid raw melee, big upgrade benefit |
+| Berserker | 48.5 | 14.2 | +34.3 | Best raw, still needs retreat/stats |
+
+**Observations:**
+- Capabilities/upgrades provide +34 to +42 depth — excellent progression feel
+- Melee classes strongest raw (face-rush works), casters weakest (need capabilities)
+- Previous `d56d88f` raw baseline was invalid (diagnose bug: capabilities not passed through)
 
 #### Ungated Bot Behaviors (Investigation @ `d56d88f`)
+
+> **Note:** This investigation was conducted against the `d56d88f` raw baseline, which was later found to be invalid — `diagnose baseline` wasn't passing `--capabilities` through, so capabilities were always `full`. The findings below about ungated behaviors are still accurate (kiting was gated in `66fdc7f`, tactics graded in same commit), but the inflated raw numbers that motivated the investigation were primarily caused by the diagnose bug.
 
 Ranger (48.5) and casters (41-45) perform unexpectedly well with no capabilities. Investigation found several behaviors NOT gated by capability toggles:
 
@@ -94,12 +101,48 @@ Bow attacks (`ranged_attack`) happen automatically for ranged classes without ca
 | KITE goal | ranged | ❌ Gated by `kiting` | ✅ Good |
 
 **Options:**
-1. **Gate kiting in tier-actions**: Add `effective.kiting > 0` check before `findKitePosition` calls
+1. ~~**Gate kiting in tier-actions**: Add `effective.kiting > 0` check before `findKitePosition` calls~~ ✅ Done in `66fdc7f`
 2. **Gate spell casting**: Add `effective.tactics` requirement for damage spells (healing stays free)
 3. **Gate ranged attacks**: Add targeting/tactics check for bow usage
 4. **Accept as intended**: Ranged classes have inherent advantage, progression is for melee
 
-**Recommendation:** Gate kiting movement behind `kiting >= 1` to fix the largest discrepancy. This would drop ranger/caster raw baselines by ~15-20 depth.
+**Resolution:** Kiting gated behind `kiting >= 1` and tactics converted to graded (0-3) in `66fdc7f`. Remaining ungated: spell damage, spell healing, bow attacks.
+
+### Previous Full Baseline @ `d56d88f` (100 runs, 50k turns, seed=1000, max-upgrades)
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 49.4 | 50 | 0% | 22068 | 646 | 8 | ✅ Endgame |
+| **Blackguard** | 49.0 | 50 | 0% | 15228 | 562 | 1 | ✅ Endgame |
+| **Paladin** | 48.9 | 50 | 0% | 22046 | 676 | 3 | ✅ Endgame |
+| **Berserker** | 48.5 | 50 | 0% | 14564 | 508 | 9 | ✅ Endgame |
+| **Archmage** | 48.2 | 50 | 2% | 26589 | 650 | 2 | ✅ Endgame |
+| **Mage** | 48.1 | 50 | 0% | 26968 | 650 | 1 | ✅ Endgame |
+| **Warrior** | 48.0 | 50 | 0% | 15643 | 525 | 4 | ✅ Endgame |
+| **Necromancer** | 47.8 | 50 | 0% | 23519 | 662 | 0 | ✅ Endgame |
+| **Rogue** | 47.1 | 50 | 0% | 22500 | 614 | 1 | ✅ Endgame |
+| **Priest** | 46.0 | 50 | 0% | 23827 | 723 | 3 | ✅ Endgame |
+| **Druid** | 45.9 | 50 | 0% | 22106 | 585 | 0 | ✅ Endgame |
+
+**Summary:** Town capability decomposition and feed system update. **32 Morgoth kills**. All CB rates ≤2%.
+
+### Previous Raw Baseline @ `d56d88f` (100 runs, 50k turns, seed=1000, no-upgrades, no-capabilities, no-boosters)
+
+⚠️ **Invalid:** `diagnose baseline` wasn't passing `--capabilities` through — capabilities were always `full`.
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 48.5 | 50 | 0% | 25537 | 723 | 2 | ✅ Endgame |
+| **Necromancer** | 44.6 | 50 | 0% | 42923 | 943 | 0 | ✅ Endgame |
+| **Archmage** | 41.2 | 50 | 0% | 41222 | 857 | 0 | ✅ Endgame |
+| **Mage** | 41.2 | 50 | 0% | 41193 | 857 | 0 | ✅ Endgame |
+| **Rogue** | 37.4 | 50 | 0% | 21750 | 555 | 0 | ⚠️ Mid-game |
+| **Paladin** | 34.2 | 50 | 0% | 20368 | 539 | 0 | ⚠️ Mid-game |
+| **Priest** | 32.1 | 50 | 0% | 21197 | 544 | 0 | ⚠️ Mid-game |
+| **Berserker** | 27.6 | 50 | 0% | 10521 | 296 | 0 | ⚠️ Early-game |
+| **Druid** | 27.0 | 50 | 0% | 19751 | 418 | 0 | ⚠️ Early-game |
+| **Warrior** | 25.9 | 50 | 0% | 10085 | 273 | 0 | ⚠️ Early-game |
+| **Blackguard** | 22.6 | 50 | 0% | 8256 | 236 | 0 | ⚠️ Early-game |
 
 ### Previous Baseline @ `b4c83bc` (100 runs, 50k turns, seed=1000, max-upgrades)
 

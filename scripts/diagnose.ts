@@ -435,6 +435,7 @@ async function main(): Promise<void> {
       maxUpgrades: args.maxUpgrades,
       upgrades: args.upgrades,
       boosters: args.boosters,
+      capabilities: args.capabilities,
       monsterHp: args.monsterHp,
       monsterDamage: args.monsterDamage,
       startPotions: args.startPotions,
