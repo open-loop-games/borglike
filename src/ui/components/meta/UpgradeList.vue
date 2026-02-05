@@ -18,9 +18,9 @@ const activeCategory = ref<Category>('stats')
 
 const categories: { id: Category; label: string; icon: string }[] = [
   { id: 'stats', label: 'Stats', icon: '♥' },
+  { id: 'bot', label: 'Bot', icon: '⚙' },
   { id: 'meta', label: 'Meta', icon: '◆' },
   { id: 'qol', label: 'QoL', icon: '▶' },
-  { id: 'bot', label: 'Bot', icon: '⚙' },
 ]
 
 const currentUpgrades = computed(() => {

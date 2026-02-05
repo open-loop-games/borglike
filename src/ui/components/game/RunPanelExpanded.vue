@@ -196,18 +196,12 @@ function startKillHold() {
   killHold.start()
 }
 
-// Format bot goal for display (truncate reason if too long)
+// Format bot goal for display (TYPE: reason)
 function formatGoal(goal: string | undefined): string {
   if (!goal) return '...'
-  // Goal format: "TYPE - reason"
   const parts = goal.split(' - ')
   if (parts.length < 2) return goal
-  const type = parts[0]
-  const reason = parts.slice(1).join(' - ')
-  // Truncate reason if too long
-  const maxLen = 20
-  const shortReason = reason.length > maxLen ? reason.slice(0, maxLen) + '...' : reason
-  return `${type}: ${shortReason}`
+  return `${parts[0]}: ${parts.slice(1).join(' - ')}`
 }
 </script>
 
@@ -264,14 +258,12 @@ function formatGoal(goal: string | undefined): string {
       <aside class="stats-panel">
         <!-- AI Status (minimal introspection) -->
         <div v-if="run.state === 'running'" class="ai-status">
-          <div class="ai-goal" :title="run.botGoal">
-            <span class="ai-label">Goal</span>
-            <span class="ai-value">{{ formatGoal(run.botGoal) }}</span>
-          </div>
-          <div v-if="run.depthBlocker" class="ai-blocker" :title="run.depthBlocker">
-            <span class="ai-label">Block</span>
-            <span class="ai-value blocker">{{ run.depthBlocker }}</span>
-          </div>
+          <p class="ai-line" :title="run.botGoal">
+            <span class="ai-label">Goal:</span> {{ formatGoal(run.botGoal) }}
+          </p>
+          <p v-if="run.depthBlocker" class="ai-line prep" :title="run.depthBlocker">
+            <span class="ai-label">Prep:</span> {{ run.depthBlocker }}
+          </p>
         </div>
 
         <!-- Vitals: HP/MP bars + level/XP/gold -->
@@ -743,33 +735,27 @@ function formatGoal(goal: string | undefined): string {
   font-size: var(--text-sm);
 }
 
-.ai-goal,
-.ai-blocker {
-  display: flex;
-  gap: var(--space-2);
-  align-items: baseline;
+.ai-line {
+  margin: 0;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.ai-blocker {
+.ai-line + .ai-line {
   margin-top: var(--space-1);
+}
+
+.ai-line.prep {
+  color: var(--amber);
 }
 
 .ai-label {
   color: var(--text-dim);
   text-transform: uppercase;
   font-size: var(--text-xs);
-  flex-shrink: 0;
-}
-
-.ai-value {
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ai-value.blocker {
-  color: var(--amber);
 }
 
 .stats-panel {
