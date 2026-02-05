@@ -172,7 +172,12 @@ export function prestigeMultiplier(prestigeLevel: number): number {
 /**
  * Calculate XP required to reach a given level.
  *
- * Uses polynomial scaling: XP(level) = baseXP * level^exponent
+ * Two-part curve matching Angband's natural deceleration:
+ *   L1-20:  100 * (L-1)^1.5     — unchanged, smooth early game
+ *   L21-50: 8283 * ((L-1)/19)^4 — steep high-level curve (~1 level/depth from D20-50)
+ *
+ * The high-level exponent (4) compensates for monster XP growing ~depth^2.5
+ * while the join at L20 is continuous (both formulas give 8283 at L=20).
  *
  * @param level - Target level (1-50)
  * @returns Total XP needed to reach that level
@@ -180,5 +185,11 @@ export function prestigeMultiplier(prestigeLevel: number): number {
 export function xpForLevel(level: number): number {
   if (level <= 1) return 0
   const clampedLevel = Math.min(level, MAX_CHARACTER_LEVEL)
-  return Math.floor(BASE_XP_REQUIREMENT * Math.pow(clampedLevel - 1, XP_CURVE_EXPONENT))
+  if (clampedLevel <= 20) {
+    return Math.floor(BASE_XP_REQUIREMENT * Math.pow(clampedLevel - 1, XP_CURVE_EXPONENT))
+  }
+  // Continuous at L20: base20 = 100 * 19^1.5 ≈ 8283
+  const base20 = BASE_XP_REQUIREMENT * Math.pow(19, XP_CURVE_EXPONENT)
+  const HIGH_LEVEL_EXPONENT = 4
+  return Math.floor(base20 * Math.pow((clampedLevel - 1) / 19, HIGH_LEVEL_EXPONENT))
 }

@@ -1,10 +1,28 @@
 # Balance Test Plan
 
-## Current State (2026-02-04)
+## Current State (2026-02-05)
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `c5643d9` (100 runs, 50k turns, seed=1000, max-upgrades)
+### Full Baseline @ `e3a4f33` (100 runs, 50k turns, seed=1000, max-upgrades) — Two-Part XP Curve
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Ranger** | 49.3 | 50 | 0% | 22335 | 636 | 2 | ✅ Endgame |
+| **Paladin** | 48.6 | 50 | 0% | 21720 | 671 | 4 | ✅ Endgame |
+| **Blackguard** | 48.6 | 50 | 0% | 15111 | 543 | 2 | ✅ Endgame |
+| **Mage** | 48.1 | 50 | 1% | 28314 | 635 | 3 | ✅ Endgame |
+| **Warrior** | 47.8 | 50 | 0% | 15727 | 519 | 5 | ✅ Endgame |
+| **Berserker** | 47.6 | 50 | 0% | 14593 | 496 | 11 | ✅ Endgame |
+| **Necromancer** | 47.1 | 50 | 1% | 23536 | 639 | 0 | ✅ Endgame |
+| **Archmage** | 47.1 | 50 | 1% | 26988 | 606 | 0 | ✅ Endgame |
+| **Rogue** | 46.8 | 50 | 0% | 22231 | 597 | 1 | ✅ Endgame |
+| **Priest** | 44.9 | 50 | 0% | 23726 | 695 | 0 | ✅ Endgame |
+| **Druid** | 44.6 | 50 | 0% | 22113 | 561 | 0 | ✅ Endgame |
+
+**Summary:** Two-part XP curve (L1-20: exponent 1.5, L21-50: exponent 4). Modest tightening ~0.5 avg depth. **28 Morgoth kills** (11 berserker, 5 warrior, 4 paladin, 3 mage, 2 ranger, 2 blackguard, 1 rogue). All CB rates ≤1%. Biggest impact on over-leveling classes (druid -1.3, priest -1.1, archmage -1.1). See `docs/XP-CURVE-ANALYSIS.md` for full analysis.
+
+### Previous Full Baseline @ `c5643d9` (100 runs, 50k turns, seed=1000, max-upgrades)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
