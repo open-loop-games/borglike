@@ -10,7 +10,6 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { createGame, processTurn } from '@game/game-loop'
 import { computeMaxUpgradeBonuses, computeUpgradeBonusesFromPreset, computeUpgradeBonuses } from '@game/upgrade-effects'
-import { computeBoosterBonuses, computeClassBoosterBonuses } from '@game/booster-effects'
 import { DEFAULT_BALANCE, MAX_DEPTH, type BalanceOverrides } from '@game/types'
 import { runBotTick, createBotState } from '@game/bot'
 import { reportProfile } from '@bot/profiler'
@@ -18,8 +17,6 @@ import { invalidateFrontierCache } from '@bot/exploration'
 import { invalidateUnexploredCache } from '@bot/context'
 import type { GameState } from '@game/types'
 import type { BotState } from '@bot/types'
-import type { BotCapabilities } from '@/types/progression'
-import { DEFAULT_BOT_CAPABILITIES, FULL_BOT_CAPABILITIES } from '@/types/progression'
 import type {
   DiagnoseConfig,
   DiagnoseResult,
@@ -30,93 +27,13 @@ import type {
   PostTurnContext,
   DiagnosticIssue,
 } from './types'
+import { parseCapabilities, parseCustomUpgrades, resolveBoosterBonuses } from './config-parsing'
+
+// Re-export for public API (consumed by index.ts)
+export { parseCapabilities, CAPABILITY_PRESETS } from './config-parsing'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-
-// ============================================================================
-// CAPABILITIES PARSING
-// ============================================================================
-
-/**
- * Named capability presets for progression testing.
- * Maps preset name to comma-separated capability IDs.
- */
-export const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town_1,farming,tactics_1,preparedness_1,targeting_1,retreat_1',
-  mid: 'town_2,farming,tactics_2,preparedness_2,sweep_1,surf_1,targeting_2,retreat_2',
-  late: 'town_3,farming,tactics_3,preparedness_3,sweep_2,surf_2,kiting_1,targeting_3,retreat_3',
-}
-
-/**
- * Parse capabilities spec string into BotCapabilities object.
- *
- * @param spec - 'none', 'full', preset name, or comma-separated IDs like 'town,farming,sweep_2'
- * @returns BotCapabilities object
- */
-export function parseCapabilities(spec: string): BotCapabilities {
-  const normalized = spec.toLowerCase().trim()
-
-  // Check for named presets first (resolve to comma-separated, then parse)
-  const preset = CAPABILITY_PRESETS[normalized]
-  if (preset) {
-    return parseCapabilities(preset)
-  }
-
-  // Special keywords
-  if (normalized === 'none' || normalized === 'face-rush') {
-    return { ...DEFAULT_BOT_CAPABILITIES }
-  }
-  if (normalized === 'full') {
-    return { ...FULL_BOT_CAPABILITIES }
-  }
-
-  // Start with all disabled
-  const caps: BotCapabilities = { ...DEFAULT_BOT_CAPABILITIES }
-
-  // Parse comma-separated IDs
-  const ids = normalized.split(',').map((s) => s.trim()).filter(Boolean)
-
-  for (const id of ids) {
-    // Toggle capabilities
-    if (id === 'farming') caps.farming = true
-    // Graded capabilities (tactics_1, town_1, preparedness_1, sweep_1, etc.)
-    else if (id.startsWith('tactics_')) {
-      const level = parseInt(id.slice(8), 10)
-      if (level >= 1 && level <= 3) caps.tactics = Math.max(caps.tactics, level)
-    }
-    else if (id.startsWith('town_')) {
-      const level = parseInt(id.slice(5), 10)
-      if (level >= 1 && level <= 3) caps.town = Math.max(caps.town, level)
-    }
-    else if (id.startsWith('preparedness_')) {
-      const level = parseInt(id.slice(13), 10)
-      if (level >= 1 && level <= 3) caps.preparedness = Math.max(caps.preparedness, level)
-    }
-    else if (id.startsWith('sweep_')) {
-      const level = parseInt(id.slice(6), 10)
-      if (level >= 1 && level <= 3) caps.sweep = Math.max(caps.sweep, level)
-    }
-    else if (id.startsWith('surf_')) {
-      const level = parseInt(id.slice(5), 10)
-      if (level >= 1 && level <= 3) caps.surf = Math.max(caps.surf, level)
-    }
-    else if (id.startsWith('kiting_')) {
-      const level = parseInt(id.slice(7), 10)
-      if (level >= 1 && level <= 3) caps.kiting = Math.max(caps.kiting, level)
-    }
-    else if (id.startsWith('targeting_')) {
-      const level = parseInt(id.slice(10), 10)
-      if (level >= 1 && level <= 3) caps.targeting = Math.max(caps.targeting, level)
-    }
-    else if (id.startsWith('retreat_')) {
-      const level = parseInt(id.slice(8), 10)
-      if (level >= 1 && level <= 3) caps.retreat = Math.max(caps.retreat, level)
-    }
-  }
-
-  return caps
-}
 
 // ============================================================================
 // DEFAULTS
@@ -140,32 +57,8 @@ const DEFAULT_CONFIG: Required<Omit<DiagnoseConfig, 'analyzers'>> = {
 }
 
 /**
- * Parse custom upgrade string into UpgradeLevels.
- * Format: "vitality=3,might=2,resilience=1"
- */
-function parseCustomUpgrades(spec: string): Record<string, number> | null {
-  if (!spec.includes('=')) return null
-
-  const levels: Record<string, number> = {}
-  const parts = spec.split(',').map(s => s.trim()).filter(Boolean)
-
-  for (const part of parts) {
-    const [id, levelStr] = part.split('=')
-    if (id && levelStr) {
-      const level = parseInt(levelStr, 10)
-      if (!isNaN(level) && level > 0) {
-        levels[id.trim()] = level
-      }
-    }
-  }
-
-  return Object.keys(levels).length > 0 ? levels : null
-}
-
-/**
  * Compute upgrade bonuses from config options.
  * Handles legacy maxUpgrades flag, presets, and custom upgrade strings.
- * Custom format: "vitality=3,might=2,resilience=1"
  */
 function computeUpgradesFromConfig(cfg: typeof DEFAULT_CONFIG) {
   // Legacy --max-upgrades flag takes precedence if set
@@ -185,25 +78,6 @@ function computeUpgradesFromConfig(cfg: typeof DEFAULT_CONFIG) {
 
   // Fall back to preset name
   return computeUpgradeBonusesFromPreset(cfg.upgrades, cfg.balance.upgradePowerPercent)
-}
-
-/**
- * Compute booster bonuses from config options.
- * 'none' = no boosters, 'class' = class default, or comma-separated IDs
- */
-function computeBoostersFromConfig(cfg: typeof DEFAULT_CONFIG) {
-  if (!cfg.boosters || cfg.boosters === 'none') {
-    return undefined
-  }
-  if (cfg.boosters === 'class') {
-    return computeClassBoosterBonuses(cfg.classId)
-  }
-  // Parse comma-separated booster IDs
-  const boosterIds = cfg.boosters.split(',').map(s => s.trim()).filter(Boolean)
-  if (boosterIds.length > 0) {
-    return computeBoosterBonuses(boosterIds)
-  }
-  return undefined
 }
 
 // ============================================================================
@@ -226,7 +100,7 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
     classId: cfg.classId,
     seed: cfg.seed,
     upgradeBonuses: computeUpgradesFromConfig(cfg),
-    boosterBonuses: computeBoostersFromConfig(cfg),
+    boosterBonuses: resolveBoosterBonuses(cfg.boosters, cfg.classId),
     balanceOverrides: cfg.balance,
   })
 
@@ -663,7 +537,7 @@ export function runDeepDiagnosis(
     classId: cfg.classId,
     seed: cfg.seed,
     upgradeBonuses: computeUpgradesFromConfig(cfg),
-    boosterBonuses: computeBoostersFromConfig(cfg),
+    boosterBonuses: resolveBoosterBonuses(cfg.boosters, cfg.classId),
     balanceOverrides: cfg.balance,
   })
 

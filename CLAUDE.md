@@ -34,22 +34,19 @@ pnpm diagnose [mode]  # Bot diagnostics (deep, quick, batch, find, baseline)
 ## Path Aliases
 
 ```
-@/*       → src/*           # Fallback for anything
+@/*       → src/*           # General fallback (stores, types, core, engine, ui)
 @game/*   → src/game/*      # Core roguelike engine
-@bot/*    → src/game/bot/*  # Bot AI module
-@stores/* → src/stores/*    # Pinia stores
-@types/*  → src/types/*     # Shared type definitions
-@engine/* → src/engine/*    # Instance manager
-@core/*   → src/core/*      # Formulas, bridges
-@ui/*     → src/ui/*        # Vue components
+@bot/*    → src/game/bot/*  # Bot AI module (saves depth: src/game/bot/)
 ```
 
 **Import rules:**
-- Use specific alias when available: `@game/types` not `@/game/types`
-- Bot files import game via `@game/`: `@game/types`, `@game/dungeon`
-- Vue siblings can use relative: `../common/ProgressBar.vue` is fine
-- Scripts use aliases too: `@game/types` not `../../../../src/game/types`
-- Convert to aliases when touching a file (progressive migration)
+- `@game/` and `@bot/` for game engine and bot AI: `@game/types`, `@bot/flow`
+- `@/` for everything else: `@/stores/progression`, `@/types/progression`, `@/core/formulas`
+- Don't use `@/game/types` — use `@game/types` (the specific alias exists for a reason)
+- Relative imports fine for same-module siblings: `./types`, `../common/ProgressBar.vue`
+- Scripts use aliases too — except worker threads (see `scripts/lib/diagnose/config-parsing.ts`)
+
+**Worker caveat:** Tinypool workers can't resolve path aliases at runtime. Shared code imported by workers must use relative paths for `src/` value imports. Type-only imports are fine (erased at compile time).
 
 ## Module Map
 

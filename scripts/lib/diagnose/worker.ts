@@ -3,19 +3,19 @@
  *
  * Tinypool worker that executes runDiagnosis in parallel.
  * NOTE: Uses relative imports because workers can't resolve path aliases.
+ * Shared config-parsing logic lives in ./config-parsing.ts.
  */
 
 import { createGame, processTurn } from '../../../src/game/game-loop'
 import { computeMaxUpgradeBonuses, computeUpgradeBonuses, computeUpgradeBonusesFromPreset } from '../../../src/game/upgrade-effects'
-import { computeBoosterBonuses, computeClassBoosterBonuses } from '../../../src/game/booster-effects'
 import { upgrades as allUpgrades } from '../../../src/game/data/upgrades'
 import { runBotTick, createBotState } from '../../../src/game/bot'
 import { calculateCombatStats, calculateStats } from '../../../src/game/character'
 import type { GameState, BotPersonality, BalanceOverrides } from '../../../src/game/types'
 import { DEFAULT_BALANCE, MAX_DEPTH } from '../../../src/game/types'
 import type { BotState } from '../../../src/game/bot/types'
-import { DEFAULT_BOT_CAPABILITIES, FULL_BOT_CAPABILITIES, type BotCapabilities } from '../../../src/types/progression'
 import type { DiagnoseResult, EndReason, DiagnosticIssue, AnalyzerResult } from './types'
+import { parseCapabilities, parseCustomUpgrades, resolveBoosterBonuses } from './config-parsing'
 
 interface WorkerInput {
   seed: number
@@ -60,104 +60,6 @@ const DEFAULT_CONFIG = {
   capabilities: 'full',
 }
 
-/**
- * Named capability presets for progression testing.
- * Maps preset name to comma-separated capability IDs.
- * (Duplicated from runner.ts since workers can't import from other modules easily)
- */
-const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town_1,farming,tactics_1,preparedness_1,targeting_1,retreat_1',
-  mid: 'town_2,farming,tactics_2,preparedness_2,sweep_1,surf_1,targeting_2,retreat_2',
-  late: 'town_3,farming,tactics_3,preparedness_3,sweep_2,surf_2,kiting_1,targeting_3,retreat_3',
-}
-
-/**
- * Parse capabilities spec string into BotCapabilities object.
- * (Duplicated from runner.ts since workers can't import from other modules easily)
- */
-function parseCapabilities(spec: string): BotCapabilities {
-  const normalized = spec.toLowerCase().trim()
-
-  // Check for named presets first (resolve to comma-separated, then parse)
-  const preset = CAPABILITY_PRESETS[normalized]
-  if (preset) {
-    return parseCapabilities(preset)
-  }
-
-  if (normalized === 'none' || normalized === 'face-rush') {
-    return { ...DEFAULT_BOT_CAPABILITIES }
-  }
-  if (normalized === 'full') {
-    return { ...FULL_BOT_CAPABILITIES }
-  }
-
-  const caps: BotCapabilities = { ...DEFAULT_BOT_CAPABILITIES }
-  const ids = normalized.split(',').map((s) => s.trim()).filter(Boolean)
-
-  for (const id of ids) {
-    // Toggle capabilities
-    if (id === 'farming') caps.farming = true
-    // Graded capabilities (tactics_1, town_1, preparedness_1, sweep_1, etc.)
-    else if (id.startsWith('tactics_')) {
-      const level = parseInt(id.slice(8), 10)
-      if (level >= 1 && level <= 3) caps.tactics = Math.max(caps.tactics, level)
-    }
-    else if (id.startsWith('town_')) {
-      const level = parseInt(id.slice(5), 10)
-      if (level >= 1 && level <= 3) caps.town = Math.max(caps.town, level)
-    }
-    else if (id.startsWith('preparedness_')) {
-      const level = parseInt(id.slice(13), 10)
-      if (level >= 1 && level <= 3) caps.preparedness = Math.max(caps.preparedness, level)
-    }
-    else if (id.startsWith('sweep_')) {
-      const level = parseInt(id.slice(6), 10)
-      if (level >= 1 && level <= 3) caps.sweep = Math.max(caps.sweep, level)
-    }
-    else if (id.startsWith('surf_')) {
-      const level = parseInt(id.slice(5), 10)
-      if (level >= 1 && level <= 3) caps.surf = Math.max(caps.surf, level)
-    }
-    else if (id.startsWith('kiting_')) {
-      const level = parseInt(id.slice(7), 10)
-      if (level >= 1 && level <= 3) caps.kiting = Math.max(caps.kiting, level)
-    }
-    else if (id.startsWith('targeting_')) {
-      const level = parseInt(id.slice(10), 10)
-      if (level >= 1 && level <= 3) caps.targeting = Math.max(caps.targeting, level)
-    }
-    else if (id.startsWith('retreat_')) {
-      const level = parseInt(id.slice(8), 10)
-      if (level >= 1 && level <= 3) caps.retreat = Math.max(caps.retreat, level)
-    }
-  }
-
-  return caps
-}
-
-/**
- * Parse custom upgrade string into UpgradeLevels.
- * Format: "vitality=3,might=2,resilience=1"
- */
-function parseCustomUpgrades(spec: string): Record<string, number> | null {
-  if (!spec.includes('=')) return null
-
-  const levels: Record<string, number> = {}
-  const parts = spec.split(',').map(s => s.trim()).filter(Boolean)
-
-  for (const part of parts) {
-    const [id, levelStr] = part.split('=')
-    if (id && levelStr) {
-      const level = parseInt(levelStr, 10)
-      if (!isNaN(level) && level > 0) {
-        levels[id.trim()] = level
-      }
-    }
-  }
-
-  return Object.keys(levels).length > 0 ? levels : null
-}
-
 /** Compute upgrade bonuses with optional exclusions */
 function computeUpgradesWithExclusions(
   excludeUpgrades: string[],
@@ -168,25 +70,6 @@ function computeUpgradesWithExclusions(
     levels[upgrade.id] = excludeUpgrades.includes(upgrade.id) ? 0 : upgrade.maxLevel
   }
   return computeUpgradeBonuses(levels, upgradePowerPercent)
-}
-
-/**
- * Compute booster bonuses from config options.
- * 'none' = no boosters, 'class' = class default, or comma-separated IDs
- */
-function computeBoostersFromConfig(boosters: string | undefined, classId: string) {
-  if (!boosters || boosters === 'none') {
-    return undefined
-  }
-  if (boosters === 'class') {
-    return computeClassBoosterBonuses(classId)
-  }
-  // Parse comma-separated booster IDs
-  const boosterIds = boosters.split(',').map(s => s.trim()).filter(Boolean)
-  if (boosterIds.length > 0) {
-    return computeBoosterBonuses(boosterIds)
-  }
-  return undefined
 }
 
 function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
@@ -228,7 +111,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
   const capabilities = parseCapabilities(cfg.capabilities)
 
   // Compute booster bonuses
-  const boosterBonuses = computeBoostersFromConfig(cfg.boosters, cfg.classId)
+  const boosterBonuses = resolveBoosterBonuses(cfg.boosters, cfg.classId)
 
   const game: GameState = createGame({
     raceId: cfg.raceId,
