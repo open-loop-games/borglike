@@ -136,7 +136,6 @@ const maxBotUpgrades = 25 // 1 toggle + 8 graded × 3 levels each
             </div>
           </PanelFrame>
         </section>
-
       </div>
 
       <!-- Upgrades Tab -->
@@ -148,7 +147,6 @@ const maxBotUpgrades = 25 // 1 toggle + 8 graded × 3 levels each
       <div v-else-if="activeTab === 'unlocks'" class="tab-content full-height">
         <UnlockList />
       </div>
-
     </div>
   </div>
 </template>
@@ -296,5 +294,4 @@ const maxBotUpgrades = 25 // 1 toggle + 8 graded × 3 levels each
 .summary-value {
   color: var(--cyan);
 }
-
 </style>

@@ -4,41 +4,41 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
-### Full Baseline @ `8ed0786` (100 runs, 50k turns, seed=1000, max-upgrades) — Vitality Rework (baseHpFraction=0.70)
+### Full Baseline @ `b4a447f` (100 runs, 50k turns, seed=1000, max-upgrades) — Survivability Rebalance
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
-| **Ranger** | 48.8 | 50 | 0% | 22560 | 632 | 6 | ✅ Endgame |
-| **Blackguard** | 48.7 | 50 | 0% | 15555 | 547 | 3 | ✅ Endgame |
-| **Paladin** | 48.5 | 50 | 0% | 21646 | 664 | 5 | ✅ Endgame |
-| **Mage** | 48.3 | 50 | 2% | 27670 | 644 | 2 | ✅ Endgame |
-| **Warrior** | 47.6 | 50 | 0% | 15577 | 512 | 4 | ✅ Endgame |
-| **Necromancer** | 47.3 | 50 | 0% | 23436 | 648 | 0 | ✅ Endgame |
-| **Berserker** | 47.1 | 50 | 0% | 14065 | 491 | 5 | ✅ Endgame |
-| **Archmage** | 47.0 | 50 | 1% | 27382 | 609 | 5 | ✅ Endgame |
-| **Rogue** | 46.4 | 50 | 0% | 21595 | 590 | 1 | ✅ Endgame |
-| **Priest** | 45.5 | 50 | 0% | 24077 | 696 | 0 | ✅ Endgame |
-| **Druid** | 43.0 | 50 | 0% | 21365 | 537 | 0 | ✅ Endgame |
+| **Ranger** | 49.5 | 50 | 0% | 21944 | 639 | 6 | ✅ Endgame |
+| **Blackguard** | 48.4 | 50 | 0% | 14995 | 543 | 2 | ✅ Endgame |
+| **Paladin** | 48.2 | 50 | 0% | 21320 | 660 | 3 | ✅ Endgame |
+| **Berserker** | 48.0 | 50 | 0% | 14157 | 505 | 12 | ✅ Endgame |
+| **Mage** | 47.8 | 50 | 2% | 28869 | 634 | 1 | ✅ Endgame |
+| **Warrior** | 47.0 | 50 | 0% | 15606 | 504 | 7 | ✅ Endgame |
+| **Rogue** | 46.8 | 50 | 0% | 21968 | 596 | 1 | ✅ Endgame |
+| **Archmage** | 46.7 | 50 | 4% | 27588 | 606 | 0 | ✅ Endgame |
+| **Necromancer** | 46.4 | 50 | 0% | 23077 | 622 | 1 | ✅ Endgame |
+| **Priest** | 45.4 | 50 | 0% | 24542 | 696 | 0 | ✅ Endgame |
+| **Druid** | 45.2 | 50 | 0% | 22575 | 567 | 1 | ✅ Endgame |
 
-**Summary:** Vitality rework — base HP × 0.70, Vitality gives flat 15+10/level + 3%/level. **31 Morgoth kills** (6 ranger, 5 paladin, 5 berserker, 5 archmage, 4 warrior, 3 blackguard, 2 mage, 1 rogue). All CB rates ≤2%. Archmage 0→5 Morgoth kills confirms caster HP buff working. Druid -1.6 only notable regression (may need investigation).
+**Summary:** Survivability rebalance — Vitality 3%→1%/level, Resilience/Swiftness maxLevel 5→10 with +1% armor/dodge per level. **34 Morgoth kills** (12 berserker, 7 warrior, 6 ranger, 3 paladin, 2 blackguard, 1 mage, 1 rogue, 1 necro, 1 druid). All CB rates ≤4%. Druid +2.2 depth recovery (was previous regression). Berserker surges to 12 Morgoth kills.
 
-**vs Previous Full (`e3a4f33`):**
+**vs Previous Full (`8ed0786`):**
 
 | Class | Old | New | Delta | Notes |
 |-------|-----|-----|-------|-------|
-| Ranger | 49.3 | 48.8 | -0.5 | Within noise |
-| Blackguard | 48.6 | 48.7 | +0.1 | Unchanged |
-| Paladin | 48.6 | 48.5 | -0.1 | Unchanged |
-| Mage | 48.1 | 48.3 | +0.2 | Slight buff |
-| Warrior | 47.8 | 47.6 | -0.2 | Unchanged |
-| Necromancer | 47.1 | 47.3 | +0.2 | Slight buff |
-| Berserker | 47.6 | 47.1 | -0.5 | Within noise |
-| Archmage | 47.1 | 47.0 | -0.1 | Unchanged (but +5 Morgoth!) |
-| Rogue | 46.8 | 46.4 | -0.4 | Within noise |
-| Priest | 44.9 | 45.5 | +0.6 | Healer buff |
-| Druid | 44.6 | 43.0 | -1.6 | Regression |
+| Ranger | 48.8 | 49.5 | +0.7 | Slight buff |
+| Blackguard | 48.7 | 48.4 | -0.3 | Noise |
+| Paladin | 48.5 | 48.2 | -0.3 | Noise |
+| Berserker | 47.1 | 48.0 | +0.9 | Dodge helps melee |
+| Mage | 48.3 | 47.8 | -0.5 | Noise (Vitality nerf) |
+| Warrior | 47.6 | 47.0 | -0.6 | Slight dip (Vitality nerf) |
+| Rogue | 46.4 | 46.8 | +0.4 | Slight buff |
+| Archmage | 47.0 | 46.7 | -0.3 | Noise |
+| Necromancer | 47.3 | 46.4 | -0.9 | Slight dip |
+| Priest | 45.5 | 45.4 | -0.1 | Unchanged |
+| Druid | 43.0 | 45.2 | **+2.2** | Biggest winner (all upgrades matter) |
 
-### Raw Baseline @ `8ed0786` (100 runs, 50k turns, seed=1000, upgrades=none, capabilities=none, boosters=none) — Vitality Rework
+### Raw Baseline @ `b4a447f` (100 runs, 50k turns, seed=1000, upgrades=none, capabilities=none, boosters=none) — Survivability Rebalance
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
@@ -54,45 +54,29 @@
 | **Archmage** | 4.5 | 10 | 0% | 1019 | 16 | 0 | ⚠️ Early |
 | **Rogue** | 3.6 | 27 | 0% | 788 | 11 | 0 | ⚠️ Early |
 
-**Summary:** Raw baseline after Vitality rework (baseHpFraction=0.70). **0 Morgoth kills**. Significant depth reduction across all classes: avg -2.9 depth vs pre-rework. Max depth outliers crushed: warrior 49→45, berserker 50→43, blackguard 47→17. All CB rates 0%. Spread: 3.6-9.4 (5.8 depth, was 9.2).
-
-**vs Previous Raw (`6b5f82e`):**
-
-| Class | Old | New | Delta | Old Max | New Max | Notes |
-|-------|-----|-----|-------|---------|---------|-------|
-| Berserker | 14.6 | 8.2 | **-6.4** | 50 | 43 | Biggest hit (was worst outlier) |
-| Warrior | 12.8 | 9.0 | **-3.8** | 49 | 45 | Target outlier fixed |
-| Ranger | 12.2 | 9.4 | **-2.8** | 34 | 35 | Slight max increase (noise) |
-| Blackguard | 11.0 | 7.7 | **-3.3** | 47 | 17 | Max depth -30 |
-| Paladin | 7.9 | 6.1 | -1.8 | 13 | 13 | Proportional |
-| Priest | 7.8 | 4.8 | -3.0 | 15 | 12 | Proportional |
-| Necromancer | 7.4 | 5.6 | -1.8 | 19 | 20 | Proportional |
-| Mage | 7.3 | 5.2 | -2.1 | 25 | 13 | Max depth -12 |
-| Druid | 6.5 | 4.9 | -1.6 | 22 | 13 | Proportional |
-| Archmage | 6.3 | 4.5 | -1.8 | 12 | 10 | Proportional |
-| Rogue | 5.4 | 3.6 | -1.8 | 26 | 27 | Proportional |
+**Summary:** Raw baseline unchanged from `8ed0786` — identical numbers. Expected: no upgrades = no effect from upgrade rebalance. **0 Morgoth kills**. All CB rates 0%. Spread: 3.6-9.4.
 
 **Full vs Raw Comparison:**
 
 | Class | Full | Raw | Delta | Notes |
 |-------|------|-----|-------|-------|
-| Archmage | 47.0 | 4.5 | +42.5 | Most capability-dependent |
-| Rogue | 46.4 | 3.6 | +42.8 | Shadow Step useless without AI |
-| Paladin | 48.5 | 6.1 | +42.4 | Healing/retreat/stats all critical |
-| Mage | 48.3 | 5.2 | +43.1 | Needs kiting to function |
-| Necromancer | 47.3 | 5.6 | +41.7 | Sustained damage needs kiting |
-| Druid | 43.0 | 4.9 | +38.1 | Shapeshift AI critical |
-| Priest | 45.5 | 4.8 | +40.7 | Healing AI critical for survival |
-| Blackguard | 48.7 | 7.7 | +41.0 | Needs all AI systems |
-| Ranger | 48.8 | 9.4 | +39.4 | Bow + kiting need capabilities |
-| Warrior | 47.6 | 9.0 | +38.6 | Raw nerfed, full preserved |
-| Berserker | 47.1 | 8.2 | +38.9 | Raw nerfed, full preserved |
+| Mage | 47.8 | 5.2 | +42.6 | Needs kiting to function |
+| Rogue | 46.8 | 3.6 | +43.2 | Shadow Step useless without AI |
+| Archmage | 46.7 | 4.5 | +42.2 | Most capability-dependent |
+| Paladin | 48.2 | 6.1 | +42.1 | Healing/retreat/stats all critical |
+| Necromancer | 46.4 | 5.6 | +40.8 | Sustained damage needs kiting |
+| Priest | 45.4 | 4.8 | +40.6 | Healing AI critical for survival |
+| Blackguard | 48.4 | 7.7 | +40.7 | Needs all AI systems |
+| Ranger | 49.5 | 9.4 | +40.1 | Bow + kiting need capabilities |
+| Druid | 45.2 | 4.9 | +40.3 | Shapeshift AI critical (+2.2 from rebalance) |
+| Berserker | 48.0 | 8.2 | +39.8 | Dodge helps melee |
+| Warrior | 47.0 | 9.0 | +38.0 | Slight Vitality nerf absorbed |
 
 **Observations:**
-- Capabilities/upgrades provide +38 to +43 depth — even stronger progression feel than before
-- Vitality rework increased progression delta by +3-5 depth (raw weaker, full unchanged)
-- Raw melee outliers eliminated (no more depth 49 warriors or depth 50 berserkers)
-- Casters benefit slightly at full (archmage +5 Morgoth kills from flat+percent HP)
+- Capabilities/upgrades provide +38 to +43 depth — strong progression feel
+- Raw baseline unchanged (upgrade-only changes don't affect raw)
+- Druid progression delta increased by +2.2 (survivability upgrades now all contribute)
+- Berserker progression delta increased by +0.9 (dodge multiplier helps melee)
 
 ## Race Baseline (Phase 1)
 

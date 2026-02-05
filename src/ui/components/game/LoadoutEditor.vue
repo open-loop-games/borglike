@@ -383,11 +383,7 @@ function handleCancel() {
             <!-- Farming Toggle -->
             <div v-if="globalCaps.farming" class="control-row">
               <span class="control-label">Farming</span>
-              <button
-                class="toggle-btn"
-                :class="{ active: farmingEnabled }"
-                @click="toggleFarming"
-              >
+              <button class="toggle-btn" :class="{ active: farmingEnabled }" @click="toggleFarming">
                 {{ farmingEnabled ? 'ON' : 'OFF' }}
               </button>
             </div>
@@ -395,11 +391,7 @@ function handleCancel() {
             <div v-if="globalCaps.sweep > 0" class="control-row">
               <span class="control-label">Sweep</span>
               <div class="control-actions">
-                <button
-                  class="toggle-btn"
-                  :class="{ active: sweepEnabled }"
-                  @click="toggleSweep"
-                >
+                <button class="toggle-btn" :class="{ active: sweepEnabled }" @click="toggleSweep">
                   {{ sweepEnabled ? 'ON' : 'OFF' }}
                 </button>
                 <div v-if="sweepEnabled" class="level-selector">

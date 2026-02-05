@@ -69,7 +69,8 @@ const migrations: Record<number, MigrationFn> = {
         // Boolean: OR
         if (caps.farming) merged.farming = true
         // Numeric: max (handle legacy boolean tactics)
-        const tactics = typeof caps.tactics === 'boolean' ? (caps.tactics ? 3 : 0) : Number(caps.tactics ?? 0)
+        const tactics =
+          typeof caps.tactics === 'boolean' ? (caps.tactics ? 3 : 0) : Number(caps.tactics ?? 0)
         merged.tactics = Math.max(merged.tactics, tactics)
         merged.town = Math.max(merged.town, Number(caps.town ?? 0))
         merged.preparedness = Math.max(merged.preparedness, Number(caps.preparedness ?? 0))
