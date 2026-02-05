@@ -720,6 +720,40 @@ export const monsters: MonsterTemplate[] = [
     ],
   },
 
+  // Depth 19
+  {
+    name: 'Ghast',
+    char: 'z',
+    color: 'umber',
+    minDepth: 19,
+    hp: 140,
+    speed: 110,
+    armor: 48,
+    experience: 130,
+    flags: ['UNDEAD', 'EVIL'],
+    attacks: [
+      { method: 'CLAW', dice: '2d4', effect: { type: 'PARALYZE' } },
+      { method: 'CLAW', dice: '2d4', effect: { type: 'PARALYZE' } },
+      { method: 'BITE', dice: '2d4', effect: { type: 'HURT' } },
+    ],
+    spells: { freq: 6, list: ['HOLD', 'SCARE'] },
+  },
+  {
+    name: 'Killer Slicer Beetle',
+    char: 'K',
+    color: 'yellow',
+    minDepth: 19,
+    hp: 120,
+    speed: 110,
+    armor: 80,
+    experience: 150,
+    flags: ['ANIMAL'],
+    attacks: [
+      { method: 'BITE', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'BITE', dice: '3d5', effect: { type: 'HURT' } },
+    ],
+  },
+
   // Depth 20
   {
     name: 'Bolg, Son of Azog',
@@ -773,7 +807,111 @@ export const monsters: MonsterTemplate[] = [
     ],
   },
 
+  // Depth 21
+  {
+    name: 'Grave Wight',
+    char: 'W',
+    color: 'blue',
+    minDepth: 21,
+    hp: 130,
+    speed: 110,
+    armor: 50,
+    experience: 200,
+    flags: ['UNDEAD', 'EVIL'],
+    attacks: [
+      { method: 'HIT', dice: '2d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '2d5', effect: { type: 'HURT' } },
+      { method: 'TOUCH', dice: '1d6', effect: { type: 'DRAIN' } },
+    ],
+    spells: { freq: 6, list: ['SCARE', 'BLIND'] },
+  },
+  {
+    name: 'Manticore',
+    char: 'H',
+    color: 'yellow',
+    minDepth: 21,
+    hp: 200,
+    speed: 120,
+    armor: 40,
+    experience: 220,
+    flags: ['ANIMAL', 'EVIL'],
+    attacks: [
+      { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
+      { method: 'STING', dice: '2d4', effect: { type: 'ELEMENTAL', element: 'POISON' } },
+    ],
+  },
+
+  // Depth 22
+  {
+    name: 'Fire Elemental',
+    char: 'E',
+    color: 'red',
+    minDepth: 22,
+    hp: 170,
+    speed: 120,
+    armor: 50,
+    experience: 260,
+    flags: [],
+    attacks: [
+      { method: 'HIT', dice: '3d5', effect: { type: 'ELEMENTAL', element: 'FIRE' } },
+      { method: 'HIT', dice: '3d5', effect: { type: 'ELEMENTAL', element: 'FIRE' } },
+    ],
+    spells: { freq: 5, list: ['BO_FIRE'] },
+    immune: ['FIRE'],
+  },
+  {
+    name: 'Ogre Mage',
+    char: 'O',
+    color: 'blue',
+    minDepth: 22,
+    hp: 220,
+    speed: 110,
+    armor: 55,
+    experience: 280,
+    flags: ['GIANT', 'EVIL'],
+    attacks: [
+      { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
+    ],
+    spells: { freq: 4, list: ['CONFUSE', 'SLOW'] },
+  },
+
   // Depth 23
+  {
+    name: 'Earth Elemental',
+    char: 'E',
+    color: 'umber',
+    minDepth: 23,
+    hp: 250,
+    speed: 100,
+    armor: 80,
+    experience: 300,
+    flags: [],
+    attacks: [
+      { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d6', effect: { type: 'HURT' } },
+    ],
+    immune: ['FIRE', 'COLD', 'ELEC'],
+  },
+  {
+    name: 'Cave Troll',
+    char: 'T',
+    color: 'umber',
+    minDepth: 23,
+    hp: 230,
+    speed: 110,
+    armor: 55,
+    experience: 320,
+    flags: ['TROLL', 'EVIL'],
+    attacks: [
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'BITE', dice: '2d6', effect: { type: 'HURT' } },
+    ],
+  },
+
   {
     name: 'Azog, Enemy of the Dwarves',
     char: 'o',
@@ -829,6 +967,25 @@ export const monsters: MonsterTemplate[] = [
     immune: ['COLD'],
   },
 
+  {
+    name: 'Water Elemental',
+    char: 'E',
+    color: 'blue',
+    minDepth: 25,
+    hp: 200,
+    speed: 110,
+    armor: 45,
+    experience: 380,
+    flags: [],
+    attacks: [
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
+    ],
+    spells: { freq: 5, list: ['BO_COLD', 'SLOW'] },
+    immune: ['ACID', 'COLD'],
+  },
+
   // Depth 26
   {
     name: 'Dark Elven Mage',
@@ -876,6 +1033,25 @@ export const monsters: MonsterTemplate[] = [
       { method: 'HIT', dice: '4d6', effect: { type: 'HURT' } },
       { method: 'HIT', dice: '4d6', effect: { type: 'HURT' } },
     ],
+  },
+
+  {
+    name: 'Master Vampire',
+    char: 'V',
+    color: 'green',
+    minDepth: 27,
+    hp: 300,
+    speed: 120,
+    armor: 60,
+    experience: 550,
+    flags: ['UNDEAD', 'EVIL'],
+    attacks: [
+      { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '2d6', effect: { type: 'HURT' } },
+      { method: 'BITE', dice: '3d4', effect: { type: 'DRAIN' } },
+    ],
+    spells: { freq: 4, list: ['HOLD', 'SCARE', 'CONFUSE', 'BR_DARK'] },
+    immune: ['DARK'],
   },
 
   // ============================================
@@ -937,6 +1113,25 @@ export const monsters: MonsterTemplate[] = [
     immune: ['ELEC'],
   },
 
+  {
+    name: 'Death Knight',
+    char: 'p',
+    color: 'lightDark',
+    minDepth: 29,
+    hp: 450,
+    speed: 120,
+    armor: 90,
+    experience: 650,
+    flags: ['UNDEAD', 'EVIL'],
+    attacks: [
+      { method: 'HIT', dice: '4d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
+    ],
+    spells: { freq: 5, list: ['BLIND', 'SCARE', 'BR_DARK'] },
+    immune: ['COLD', 'DARK'],
+  },
+
   // Depth 30
   {
     name: 'Olog-hai',
@@ -952,6 +1147,24 @@ export const monsters: MonsterTemplate[] = [
       { method: 'CLAW', dice: '3d5', effect: { type: 'HURT' } },
       { method: 'CLAW', dice: '3d5', effect: { type: 'HURT' } },
       { method: 'BITE', dice: '3d6', effect: { type: 'HURT' } },
+    ],
+  },
+
+  {
+    name: 'Mountain Troll',
+    char: 'T',
+    color: 'red',
+    minDepth: 30,
+    hp: 550,
+    speed: 110,
+    armor: 85,
+    experience: 700,
+    flags: ['TROLL', 'EVIL'],
+    attacks: [
+      { method: 'HIT', dice: '4d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '4d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
+      { method: 'HIT', dice: '3d5', effect: { type: 'HURT' } },
     ],
   },
 
