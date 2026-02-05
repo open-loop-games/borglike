@@ -670,10 +670,10 @@ export function calculateRangedAttackCount(character: Character): number {
   const gameClass = getClassById(character.classId)
   if (!gameClass) return 1
 
-  // FAST_SHOT: Rangers get +1 shot per 3 levels
+  // FAST_SHOT: Rangers get +1 shot per 3 levels, capped at 6
   if (character.classId === 'ranger') {
     const levelBonus = Math.floor(character.level / 3)
-    return 1 + levelBonus
+    return Math.min(1 + levelBonus, 6)
   }
 
   // Other classes: 1 shot

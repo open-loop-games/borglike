@@ -164,12 +164,8 @@ const rangerSpells: ClassSpellList = {
     { spellId: 'natures_balm', learnLevel: 5 }, // Early heal for sustain
     { spellId: 'hunters_mark', learnLevel: 8 }, // +25% damage buff
     { spellId: 'entangle', learnLevel: 10 },
-    { spellId: 'thorn_strike', learnLevel: 15 },
     { spellId: 'camouflage', learnLevel: 18 }, // Escape/protection
-    { spellId: 'summon_bear', learnLevel: 22 }, // Stronger summon
     { spellId: 'resist_elements', learnLevel: 25 },
-    // Late-game pack tactics
-    { spellId: 'summon_pack', learnLevel: 32 }, // Summon wolf + bear together
     { spellId: 'ice_storm', learnLevel: 40 }, // LOS cold + slow
   ],
 }

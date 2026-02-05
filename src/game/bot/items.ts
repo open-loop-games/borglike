@@ -393,6 +393,16 @@ export function calculateEquipmentScore(item: Item, classId?: string): number {
     score += avgDamage * 10
   }
 
+  // Bow: damage * multiplier is the key metric, plus hitBonus
+  if (template.type === 'bow' && template.damage) {
+    const avgDamage = parseDiceAverage(template.damage)
+    const multiplier = template.multiplier ?? 1
+    score += avgDamage * multiplier * 10
+    if (template.hitBonus) {
+      score += template.hitBonus * 5
+    }
+  }
+
   // Spell power bonus (staves) - casters value this highly
   if (template.spellPower) {
     score += template.spellPower * 2
@@ -547,6 +557,8 @@ function getEquipSlot(template: ItemTemplate): EquipSlot | null {
       return 'amulet'
     case 'light':
       return 'light'
+    case 'bow':
+      return 'bow'
     default:
       return null
   }
