@@ -108,5 +108,13 @@ export {
   formatBatchResult,
   formatIssues,
   formatOneLiner,
+  formatBaselineResults,
+  formatBaselineRaceResults,
+  formatSensitivityResults,
+  formatFindResults,
 } from './output'
 export type { TurnLogOptions } from './output'
+
+// File output
+export { DEFAULT_OUTPUT_DIR, generateFileName, writeOutputFiles, shouldWriteFiles } from './file-output'
+export type { DiagnoseOutputEnvelope } from './file-output'

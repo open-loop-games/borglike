@@ -47,7 +47,6 @@ import {
   formatResult,
   formatBatchResult,
   formatTurnLog,
-  formatOneLiner,
   formatMapSnapshot,
   compareVariants,
   formatVariantComparison,
@@ -55,7 +54,12 @@ import {
   runBaseline,
   runBaselineRaces,
   runSensitivityTest,
+  formatBaselineResults,
+  formatBaselineRaceResults,
+  formatSensitivityResults,
+  formatFindResults,
 } from './lib/diagnose'
+import { DEFAULT_OUTPUT_DIR, generateFileName, writeOutputFiles, shouldWriteFiles } from './lib/diagnose/file-output'
 import type { CompareVariant } from './lib/diagnose'
 import type { AnalyzerName } from './lib/diagnose'
 import type { BotPersonality } from '@game/types'
@@ -118,6 +122,11 @@ interface Args {
   bestiary: number
   // HP scaling
   hpFraction: number
+  // Output control
+  /** Force stdout output (no file writing) */
+  forceStdout: boolean
+  /** Custom output directory */
+  outputDir?: string
 }
 
 const ALL_ANALYZERS: AnalyzerName[] = [
@@ -171,6 +180,7 @@ function parseArgs(): Args {
     upgradePower: 100,
     bestiary: 0,
     hpFraction: 70,
+    forceStdout: false,
   }
 
   // Parse mode (first positional arg)
@@ -276,6 +286,11 @@ function parseArgs(): Args {
       result.bestiary = parseInt(arg.slice(11), 10)
     } else if (arg.startsWith('--hp-fraction=')) {
       result.hpFraction = parseInt(arg.slice(14), 10)
+    // Output control
+    } else if (arg === '--stdout') {
+      result.forceStdout = true
+    } else if (arg.startsWith('--output=')) {
+      result.outputDir = arg.slice(9)
     }
   }
 
@@ -334,6 +349,14 @@ OPTIONS:
   --randomize     Randomize race/class/personality per run (batch mode)
   --races         Compare races instead of personalities (compare mode)
   --races=a,b,c   Compare specific races (e.g., --races=human,dwarf,elf)
+  --stdout        Force stdout output (skip file writing)
+  --output=DIR    Custom output directory (default: /tmp/borglike-diagnose)
+
+OUTPUT:
+  Most modes write results to /tmp/borglike-diagnose/ as .txt + .json files.
+  Progress bars stay on stdout; final results go to files.
+  quick mode defaults to stdout (use --output=DIR to override).
+  Use --stdout to force all output to stdout (old behavior).
 
 EXAMPLES:
   # Deep dive on a specific problematic seed with explored map
@@ -390,7 +413,45 @@ ANALYZERS:
 // CLI-SPECIFIC HELPERS
 // ============================================================================
 
-// (Kept minimal - complex logic lives in lib/)
+/** Build a plain-object config snapshot from CLI args (for JSON envelope) */
+function buildConfigSnapshot(args: Args): Record<string, unknown> {
+  return {
+    runs: args.runs,
+    turns: args.turns,
+    seed: args.seed,
+    race: args.race,
+    classId: args.classId,
+    personality: args.personality,
+    upgrades: args.upgrades,
+    boosters: args.boosters,
+    capabilities: args.capabilities,
+    maxUpgrades: args.maxUpgrades,
+  }
+}
+
+/** Route output to files or stdout based on mode and flags */
+function outputResult(
+  args: Args,
+  mode: string,
+  text: string,
+  jsonData: unknown,
+  nameParts: { classId?: string; race?: string; seed?: number; runs?: number },
+): void {
+  if (!shouldWriteFiles(mode, args.forceStdout)) {
+    console.log(text)
+    return
+  }
+  const dir = args.outputDir ?? DEFAULT_OUTPUT_DIR
+  const baseName = generateFileName({ mode, ...nameParts })
+  const envelope = {
+    mode,
+    timestamp: new Date().toISOString(),
+    config: buildConfigSnapshot(args),
+    result: jsonData,
+  }
+  const { txtPath, jsonPath } = writeOutputFiles({ dir, baseName, text, json: envelope })
+  console.log(`\nOutput:\n  ${txtPath}\n  ${jsonPath}`)
+}
 
 // ============================================================================
 // MAIN
@@ -404,7 +465,7 @@ async function main(): Promise<void> {
     return
   }
 
-  // Handle compare mode separately
+  // Handle compare mode
   if (args.mode === 'compare') {
     const variant: CompareVariant = args.compareRaces ? 'race' : 'personality'
     const variantLabel = variant === 'race' ? 'race' : 'personality'
@@ -424,13 +485,20 @@ async function main(): Promise<void> {
       upgrades: args.upgrades,
       boosters: args.boosters,
     })
-    console.log(formatVariantComparison(result))
+
+    const text = formatVariantComparison(result)
+    outputResult(args, 'compare', text, result, {
+      classId: args.classId,
+      race: args.race,
+      runs: args.runs,
+    })
     return
   }
 
-  // Handle baseline mode - run all classes with standard parameters
+  // Handle baseline mode
   if (args.mode === 'baseline') {
-    await runBaseline({
+    const startTime = Date.now()
+    const results = await runBaseline({
       runs: args.runs !== 50 ? args.runs : undefined,
       turns: args.turns !== 20000 ? args.turns : undefined,
       seed: args.seed,
@@ -455,12 +523,16 @@ async function main(): Promise<void> {
       bestiary: args.bestiary,
       hpFraction: args.hpFraction,
     })
+    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
+    const text = formatBaselineResults(results, { totalTime })
+    outputResult(args, 'baseline', text, results, { race: args.race })
     return
   }
 
-  // Handle baseline-races mode - run all races with standard parameters
+  // Handle baseline-races mode
   if (args.mode === 'baseline-races') {
-    await runBaselineRaces({
+    const startTime = Date.now()
+    const results = await runBaselineRaces({
       runs: args.runs !== 50 ? args.runs : undefined,
       turns: args.turns !== 20000 ? args.turns : undefined,
       seed: args.seed,
@@ -485,12 +557,16 @@ async function main(): Promise<void> {
       bestiary: args.bestiary,
       hpFraction: args.hpFraction,
     })
+    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
+    const text = formatBaselineRaceResults(results, { totalTime })
+    outputResult(args, 'baseline-races', text, results, { classId: args.classId })
     return
   }
 
-  // Handle sensitivity mode - test upgrade impact
+  // Handle sensitivity mode
   if (args.mode === 'sensitivity') {
-    await runSensitivityTest({
+    const startTime = Date.now()
+    const result = await runSensitivityTest({
       runs: args.runs !== 50 ? args.runs : undefined,
       turns: args.turns !== 20000 ? args.turns : undefined,
       seed: args.seed,
@@ -499,6 +575,12 @@ async function main(): Promise<void> {
       raceId: args.race,
       personality: args.personality,
     })
+    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
+    const text = formatSensitivityResults(result, { classId: args.classId, totalTime })
+    outputResult(args, 'sensitivity', text, result, {
+      classId: args.classId,
+      race: args.race,
+    })
     return
   }
 
@@ -506,14 +588,13 @@ async function main(): Promise<void> {
   const analyzers = args.includeMap
     ? createAllAnalyzersWithMap({
         showFullMap: args.fullMap,
-        captureBothMaps: args.fullMap, // Capture both when full map requested
+        captureBothMaps: args.fullMap,
       })
     : args.analyzers.length === ALL_ANALYZERS.length
       ? createAllAnalyzers()
       : createAnalyzers(args.analyzers)
 
   // Build balance overrides from args
-  // When --max-upgrades is used, default bestiary to 25% (hard cap) unless explicitly set
   const effectiveBestiary = args.bestiary > 0 ? args.bestiary : (args.maxUpgrades ? 25 : 0)
   const balance = {
     monsterHpPercent: args.monsterHp,
@@ -552,33 +633,40 @@ async function main(): Promise<void> {
       console.log(`Running deep diagnosis on seed ${seed}...`)
       const result = runDeepDiagnosis({ ...baseConfig, seed })
 
+      // Build text output
+      const textParts: string[] = []
       if (!args.logOnly) {
-        console.log(formatResult(result))
+        textParts.push(formatResult(result))
       } else {
-        // Brief header for log-only mode
-        console.log(`Seed: ${result.seed} | End: ${result.endReason} | Turn: ${result.finalState.turn} | Depth: ${result.finalState.depth}`)
+        textParts.push(`Seed: ${result.seed} | End: ${result.endReason} | Turn: ${result.finalState.turn} | Depth: ${result.finalState.depth}`)
       }
 
-      console.log(formatTurnLog(result.turnLog, {
+      textParts.push(formatTurnLog(result.turnLog, {
         maxTurns: args.logOnly ? Infinity : 100,
         onlyFlagged: false,
         from: args.from,
         to: args.to,
       }))
 
-      // Show map if included
       if (args.includeMap) {
         const mapAnalyzer = analyzers.find((a) => a.name === 'map') as MapVisualizer | undefined
         if (mapAnalyzer) {
           const lastMap = mapAnalyzer.getLastMap()
           if (lastMap) {
-            console.log('\n' + formatMapSnapshot(lastMap, {
-              showExplored: !args.fullMap, // Only show explored if not showing full
+            textParts.push('\n' + formatMapSnapshot(lastMap, {
+              showExplored: !args.fullMap,
               showFull: args.fullMap,
             }))
           }
         }
       }
+
+      const text = textParts.join('\n')
+      outputResult(args, 'deep', text, result, {
+        classId: args.classId,
+        race: args.race,
+        seed,
+      })
       break
     }
 
@@ -586,13 +674,19 @@ async function main(): Promise<void> {
       const seed = args.seed ?? Date.now()
       console.log(`Running quick diagnosis on seed ${seed}...`)
       const result = runDiagnosis({ ...baseConfig, seed })
-      console.log(formatResult(result))
+      const text = formatResult(result)
+      // Quick defaults to stdout (shouldWriteFiles returns false for 'quick')
+      outputResult(args, 'quick', text, result, {
+        classId: args.classId,
+        race: args.race,
+        seed,
+      })
       break
     }
 
     case 'batch': {
       console.log(`Running batch diagnosis (${args.runs} runs, ${args.threads} threads)...`)
-      runBatchDiagnosisParallel({
+      const result = await runBatchDiagnosisParallel({
         ...baseConfig,
         runs: args.runs,
         startSeed: args.seed,
@@ -600,16 +694,38 @@ async function main(): Promise<void> {
         onProgress: (completed, total) => {
           process.stdout.write(`\rProgress: ${completed}/${total}`)
         },
-      }).then((result) => {
-        console.log('\n')
-        console.log(formatBatchResult(result))
+      })
+      console.log('\n')
+
+      const text = formatBatchResult(result)
+      const depth = result.aggregateMetrics['worker-metrics.maxDepth']
+      const kills = result.aggregateMetrics['worker-metrics.kills']
+      const turns = result.aggregateMetrics['worker-metrics.totalTurns']
+      const jsonData = {
+        summary: {
+          avgDepth: depth?.avg ?? 0,
+          maxDepth: depth?.max ?? 0,
+          cbRate: result.circuitBreakerCount / result.totalRuns,
+          avgTurns: turns?.avg ?? 0,
+          avgKills: kills?.avg ?? 0,
+          morgothKills: result.morgothKillCount,
+          victoryCount: result.victoryCount,
+        },
+        deathCauses: result.deathCauses,
+        problemSeeds: result.problemRuns.map(r => r.seed),
+        aggregateMetrics: result.aggregateMetrics,
+      }
+      outputResult(args, 'batch', text, jsonData, {
+        classId: args.classId,
+        race: args.race,
+        runs: args.runs,
       })
       break
     }
 
     case 'find': {
       console.log(`Searching for problematic seeds (${args.runs} runs, ${args.threads} threads)...`)
-      runBatchDiagnosisParallel({
+      const result = await runBatchDiagnosisParallel({
         ...baseConfig,
         runs: args.runs,
         startSeed: args.seed,
@@ -618,21 +734,27 @@ async function main(): Promise<void> {
         onProgress: (completed, total) => {
           process.stdout.write(`\rProgress: ${completed}/${total}`)
         },
-      }).then((result) => {
-        console.log('\n')
-        if (result.problemRuns.length === 0) {
-          console.log('No problematic runs found!')
-        } else {
-          console.log(`Found ${result.problemRuns.length} problematic runs:\n`)
-          for (const run of result.problemRuns) {
-            console.log(formatOneLiner(run))
-          }
-          console.log('\nRun with "deep <seed>" for detailed analysis.')
-        }
+      })
+      console.log('\n')
+
+      const text = formatFindResults(result.problemRuns)
+      const jsonData = {
+        problemRuns: result.problemRuns.map(r => ({
+          seed: r.seed,
+          endReason: r.endReason,
+          depth: r.finalState.depth,
+          turn: r.finalState.turn,
+          kills: r.finalState.kills,
+          issueCount: r.allIssues.length,
+        })),
+      }
+      outputResult(args, 'find', text, jsonData, {
+        classId: args.classId,
+        race: args.race,
+        runs: args.runs,
       })
       break
     }
-
   }
 }
 

@@ -119,7 +119,6 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
   console.log('='.repeat(60))
 
   const results: BaselineResult[] = []
-  const startTime = Date.now()
 
   // Build balance config - use max bestiary if maxUpgrades enabled
   const effectiveBestiary = (config.bestiary ?? 0) > 0 ? config.bestiary : (maxUpgrades ? 25 : 0)
@@ -184,36 +183,8 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
     process.stdout.write(`\r${classId.padEnd(12)} [${'█'.repeat(20)}] done (${elapsed}s)\n`)
   }
 
-  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
-
   // Sort by avg depth descending
   results.sort((a, b) => b.avgDepth - a.avgDepth)
-
-  // Print results table
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('BASELINE RESULTS')
-  console.log('='.repeat(60))
-  console.log(`\n| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth |`)
-  console.log('|-------|-----------|-----------|---------|-----------|-------|---------|')
-  for (const r of results) {
-    const status = r.avgDepth >= 30 ? '✅' : r.avgDepth >= 10 ? '⚠️' : '❌'
-    console.log(
-      `| ${status} ${r.classId.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
-    )
-  }
-
-  console.log(`\nTotal time: ${totalTime}s`)
-  console.log(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
-  console.log('```')
-  console.log(`| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Status |`)
-  console.log('|-------|-----------|-----------|---------|-----------|-------|--------|')
-  for (const r of results) {
-    const status = r.avgDepth >= 30 ? '✅ Endgame' : r.avgDepth >= 10 ? '⚠️ Mid' : '⚠️ Early'
-    console.log(
-      `| **${r.classId.charAt(0).toUpperCase() + r.classId.slice(1)}** | ${r.avgDepth.toFixed(1)} | ${r.maxDepth} | ${r.cbRate.toFixed(0)}% | ${r.avgTurns.toFixed(0)} | ${r.avgKills.toFixed(0)} | ${status} |`
-    )
-  }
-  console.log('```')
 
   return results
 }
@@ -248,7 +219,6 @@ export async function runBaselineRaces(config: BaselineRacesConfig = {}): Promis
   console.log('='.repeat(60))
 
   const results: BaselineRaceResult[] = []
-  const startTime = Date.now()
 
   // Build balance config
   const effectiveBestiary = (config.bestiary ?? 0) > 0 ? config.bestiary : (maxUpgrades ? 25 : 0)
@@ -313,38 +283,8 @@ export async function runBaselineRaces(config: BaselineRacesConfig = {}): Promis
     process.stdout.write(`\r${raceId.padEnd(12)} [${'█'.repeat(20)}] done (${elapsed}s)\n`)
   }
 
-  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
-
   // Sort by avg depth descending
   results.sort((a, b) => b.avgDepth - a.avgDepth)
-
-  // Print results table
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('RACE BASELINE RESULTS')
-  console.log('='.repeat(60))
-  console.log(`\n| Race | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth |`)
-  console.log('|------|-----------|-----------|---------|-----------|-------|---------|')
-  for (const r of results) {
-    const status = r.avgDepth >= 30 ? '✅' : r.avgDepth >= 10 ? '⚠️' : '❌'
-    const displayName = r.raceId.replace('_', '-')
-    console.log(
-      `| ${status} ${displayName.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
-    )
-  }
-
-  console.log(`\nTotal time: ${totalTime}s`)
-  console.log(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
-  console.log('```')
-  console.log(`| Race | Avg Depth | Max Depth | CB Rate | Turns | Kills | Status |`)
-  console.log('|------|-----------|-----------|---------|-------|-------|--------|')
-  for (const r of results) {
-    const status = r.avgDepth >= 30 ? '✅ Endgame' : r.avgDepth >= 10 ? '⚠️ Mid' : '⚠️ Early'
-    const displayName = r.raceId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-')
-    console.log(
-      `| **${displayName}** | ${r.avgDepth.toFixed(1)} | ${r.maxDepth} | ${r.cbRate.toFixed(0)}% | ${r.avgTurns.toFixed(0)} | ${r.avgKills.toFixed(0)} | ${status} |`
-    )
-  }
-  console.log('```')
 
   return results
 }

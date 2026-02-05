@@ -82,8 +82,6 @@ export async function runSensitivityTest(config: SensitivityConfig = {}): Promis
   console.log(`Testing ${SENSITIVITY_UPGRADES.length + 1} configurations (baseline + ${SENSITIVITY_UPGRADES.length} exclusions)`)
   console.log('='.repeat(60))
 
-  const startTime = Date.now()
-
   // Build base config
   const baseConfig = {
     raceId,
@@ -147,45 +145,8 @@ export async function runSensitivityTest(config: SensitivityConfig = {}): Promis
     process.stdout.write(`\r-${upgradeId.padEnd(11)} [${'█'.repeat(20)}] done depth=${excludedDepth.toFixed(1)} (${depthDelta >= 0 ? '+' : ''}${depthDelta.toFixed(1)})\n`)
   }
 
-  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
-
   // Sort by impact (most negative first = most important upgrade)
   impacts.sort((a, b) => a.depthDelta - b.depthDelta)
-
-  // Print results table
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('SENSITIVITY RESULTS')
-  console.log('='.repeat(60))
-  console.log(`\nBaseline avg depth: ${baselineDepth.toFixed(1)}`)
-  console.log(`\n| Upgrade | Baseline | Excluded | Delta | Impact |`)
-  console.log('|---------|----------|----------|-------|--------|')
-  for (const impact of impacts) {
-    const deltaStr = impact.depthDelta >= 0 ? `+${impact.depthDelta.toFixed(1)}` : impact.depthDelta.toFixed(1)
-    const impactStr = impact.percentImpact >= 0 ? `+${impact.percentImpact.toFixed(1)}%` : `${impact.percentImpact.toFixed(1)}%`
-    const importance = impact.percentImpact < -10 ? '🔴' : impact.percentImpact < -5 ? '🟡' : '🟢'
-    console.log(
-      `| ${importance} ${impact.upgradeName.padEnd(18)} | ${baselineDepth.toFixed(1).padStart(8)} | ${impact.excludedDepth.toFixed(1).padStart(8)} | ${deltaStr.padStart(5)} | ${impactStr.padStart(6)} |`
-    )
-  }
-
-  console.log(`\nTotal time: ${totalTime}s`)
-  console.log(`\n**Interpretation:**`)
-  console.log(`- 🔴 High impact (>10% loss): Critical upgrade, prioritize early`)
-  console.log(`- 🟡 Medium impact (5-10%): Important but not blocking`)
-  console.log(`- 🟢 Low impact (<5%): Nice-to-have, can defer`)
-
-  console.log(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
-  console.log('```')
-  console.log(`| Upgrade | Baseline | Excluded | Delta | Impact |`)
-  console.log('|---------|----------|----------|-------|--------|')
-  for (const impact of impacts) {
-    const deltaStr = impact.depthDelta >= 0 ? `+${impact.depthDelta.toFixed(1)}` : impact.depthDelta.toFixed(1)
-    const impactStr = impact.percentImpact >= 0 ? `+${impact.percentImpact.toFixed(1)}%` : `${impact.percentImpact.toFixed(1)}%`
-    console.log(
-      `| ${impact.upgradeName} | ${baselineDepth.toFixed(1)} | ${impact.excludedDepth.toFixed(1)} | ${deltaStr} | ${impactStr} |`
-    )
-  }
-  console.log('```')
 
   return {
     baselineAvgDepth: baselineDepth,

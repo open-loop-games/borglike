@@ -126,13 +126,16 @@ Batch modes (`batch`, `find`, `compare`) generate sequential seeds from a starti
 Without `--seed`, the start is `Date.now()` — different each run. For reproducible A/B testing, always specify `--seed`:
 
 ```bash
-# Before code change
-pnpm diagnose batch --seed=1000 --runs=100 > before.txt
+# Before code change — results written to /tmp/borglike-diagnose/
+pnpm diagnose batch --seed=1000 --runs=100
 
-# After code change
-pnpm diagnose batch --seed=1000 --runs=100 > after.txt
+# After code change — compare the .json files
+pnpm diagnose batch --seed=1000 --runs=100
 
-# Compare results on identical seeds
+# Or force stdout for manual diff:
+pnpm diagnose batch --seed=1000 --runs=100 --stdout > before.txt
+# (make changes)
+pnpm diagnose batch --seed=1000 --runs=100 --stdout > after.txt
 diff before.txt after.txt
 ```
 
@@ -227,7 +230,44 @@ pnpm diagnose deep 1768965560201 --map
 --randomize       Randomize race/class/personality per run
 --races           Compare races instead of personalities (compare mode)
 --races=a,b,c     Compare specific races (e.g., --races=human,dwarf,elf)
+--stdout          Force stdout output (skip file writing)
+--output=DIR      Custom output directory (default: /tmp/borglike-diagnose)
 ```
+
+## File Output
+
+Most modes write results to `/tmp/borglike-diagnose/` as `.txt` + `.json` files by default. Progress bars stay on stdout; final results go to files.
+
+```
+Output:
+  /tmp/borglike-diagnose/20260205-1430-baseline-human.txt
+  /tmp/borglike-diagnose/20260205-1430-baseline-human.json
+```
+
+**Per-mode defaults:**
+
+| Mode | Default Output |
+|------|---------------|
+| `quick` | stdout (small, interactive) |
+| All others | file output to `/tmp/borglike-diagnose/` |
+
+**Flags:**
+- `--stdout` -- Force all output to stdout (old behavior, no files written)
+- `--output=DIR` -- Custom output directory
+
+**JSON structure:** All `.json` files include a standard envelope:
+```json
+{
+  "mode": "baseline",
+  "timestamp": "2026-02-05T14:30:00.000Z",
+  "config": { "runs": 100, "turns": 50000, "seed": 1000, ... },
+  "result": [ ... ]
+}
+```
+
+The `result` field contains the structured data for the mode (e.g., `BaselineResult[]` for baseline, summary object for batch). Use this for programmatic parsing instead of regex on the `.txt` file.
+
+**Reading results:** Use `Read` tool or jq on the `.json` file for structured data, or `.txt` for human-readable output with copy-paste markdown tables.
 
 ## Common Pitfalls
 

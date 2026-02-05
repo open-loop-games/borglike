@@ -12,6 +12,8 @@ import type {
   DiagnosticIssue,
 } from './types'
 import type { TurnLogEntry } from './runner'
+import type { BaselineResult, BaselineRaceResult } from './baseline'
+import type { SensitivityResult } from './sensitivity'
 
 // ============================================================================
 // FORMATTING HELPERS
@@ -321,4 +323,151 @@ export function formatOneLiner(result: DiagnoseResult): string {
     `end=${result.endReason} ` +
     `issues=${result.allIssues.length}`
   )
+}
+
+// ============================================================================
+// BASELINE OUTPUT
+// ============================================================================
+
+/** Format baseline class results as text table */
+export function formatBaselineResults(
+  results: BaselineResult[],
+  opts: { totalTime: string }
+): string {
+  const lines: string[] = []
+
+  lines.push(`\n${'='.repeat(60)}`)
+  lines.push('BASELINE RESULTS')
+  lines.push('='.repeat(60))
+  lines.push(`\n| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth |`)
+  lines.push('|-------|-----------|-----------|---------|-----------|-------|---------|')
+  for (const r of results) {
+    const status = r.avgDepth >= 30 ? '\u2705' : r.avgDepth >= 10 ? '\u26A0\uFE0F' : '\u274C'
+    lines.push(
+      `| ${status} ${r.classId.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
+    )
+  }
+
+  lines.push(`\nTotal time: ${opts.totalTime}s`)
+  lines.push(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
+  lines.push('```')
+  lines.push(`| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Status |`)
+  lines.push('|-------|-----------|-----------|---------|-----------|-------|--------|')
+  for (const r of results) {
+    const status = r.avgDepth >= 30 ? '\u2705 Endgame' : r.avgDepth >= 10 ? '\u26A0\uFE0F Mid' : '\u26A0\uFE0F Early'
+    lines.push(
+      `| **${r.classId.charAt(0).toUpperCase() + r.classId.slice(1)}** | ${r.avgDepth.toFixed(1)} | ${r.maxDepth} | ${r.cbRate.toFixed(0)}% | ${r.avgTurns.toFixed(0)} | ${r.avgKills.toFixed(0)} | ${status} |`
+    )
+  }
+  lines.push('```')
+
+  return lines.join('\n')
+}
+
+// ============================================================================
+// BASELINE RACE OUTPUT
+// ============================================================================
+
+/** Format baseline race results as text table */
+export function formatBaselineRaceResults(
+  results: BaselineRaceResult[],
+  opts: { totalTime: string }
+): string {
+  const lines: string[] = []
+
+  lines.push(`\n${'='.repeat(60)}`)
+  lines.push('RACE BASELINE RESULTS')
+  lines.push('='.repeat(60))
+  lines.push(`\n| Race | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth |`)
+  lines.push('|------|-----------|-----------|---------|-----------|-------|---------|')
+  for (const r of results) {
+    const status = r.avgDepth >= 30 ? '\u2705' : r.avgDepth >= 10 ? '\u26A0\uFE0F' : '\u274C'
+    const displayName = r.raceId.replace('_', '-')
+    lines.push(
+      `| ${status} ${displayName.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
+    )
+  }
+
+  lines.push(`\nTotal time: ${opts.totalTime}s`)
+  lines.push(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
+  lines.push('```')
+  lines.push(`| Race | Avg Depth | Max Depth | CB Rate | Turns | Kills | Status |`)
+  lines.push('|------|-----------|-----------|---------|-------|-------|--------|')
+  for (const r of results) {
+    const status = r.avgDepth >= 30 ? '\u2705 Endgame' : r.avgDepth >= 10 ? '\u26A0\uFE0F Mid' : '\u26A0\uFE0F Early'
+    const displayName = r.raceId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-')
+    lines.push(
+      `| **${displayName}** | ${r.avgDepth.toFixed(1)} | ${r.maxDepth} | ${r.cbRate.toFixed(0)}% | ${r.avgTurns.toFixed(0)} | ${r.avgKills.toFixed(0)} | ${status} |`
+    )
+  }
+  lines.push('```')
+
+  return lines.join('\n')
+}
+
+// ============================================================================
+// SENSITIVITY OUTPUT
+// ============================================================================
+
+/** Format sensitivity test results as text table */
+export function formatSensitivityResults(
+  result: SensitivityResult,
+  opts: { classId: string; totalTime: string }
+): string {
+  const lines: string[] = []
+
+  lines.push(`\n${'='.repeat(60)}`)
+  lines.push('SENSITIVITY RESULTS')
+  lines.push('='.repeat(60))
+  lines.push(`\nBaseline avg depth: ${result.baselineAvgDepth.toFixed(1)}`)
+  lines.push(`\n| Upgrade | Baseline | Excluded | Delta | Impact |`)
+  lines.push('|---------|----------|----------|-------|--------|')
+  for (const impact of result.impacts) {
+    const deltaStr = impact.depthDelta >= 0 ? `+${impact.depthDelta.toFixed(1)}` : impact.depthDelta.toFixed(1)
+    const impactStr = impact.percentImpact >= 0 ? `+${impact.percentImpact.toFixed(1)}%` : `${impact.percentImpact.toFixed(1)}%`
+    const importance = impact.percentImpact < -10 ? '\uD83D\uDD34' : impact.percentImpact < -5 ? '\uD83D\uDFE1' : '\uD83D\uDFE2'
+    lines.push(
+      `| ${importance} ${impact.upgradeName.padEnd(18)} | ${result.baselineAvgDepth.toFixed(1).padStart(8)} | ${impact.excludedDepth.toFixed(1).padStart(8)} | ${deltaStr.padStart(5)} | ${impactStr.padStart(6)} |`
+    )
+  }
+
+  lines.push(`\nTotal time: ${opts.totalTime}s`)
+  lines.push(`\n**Interpretation:**`)
+  lines.push(`- \uD83D\uDD34 High impact (>10% loss): Critical upgrade, prioritize early`)
+  lines.push(`- \uD83D\uDFE1 Medium impact (5-10%): Important but not blocking`)
+  lines.push(`- \uD83D\uDFE2 Low impact (<5%): Nice-to-have, can defer`)
+
+  lines.push(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
+  lines.push('```')
+  lines.push(`| Upgrade | Baseline | Excluded | Delta | Impact |`)
+  lines.push('|---------|----------|----------|-------|--------|')
+  for (const impact of result.impacts) {
+    const deltaStr = impact.depthDelta >= 0 ? `+${impact.depthDelta.toFixed(1)}` : impact.depthDelta.toFixed(1)
+    const impactStr = impact.percentImpact >= 0 ? `+${impact.percentImpact.toFixed(1)}%` : `${impact.percentImpact.toFixed(1)}%`
+    lines.push(
+      `| ${impact.upgradeName} | ${result.baselineAvgDepth.toFixed(1)} | ${impact.excludedDepth.toFixed(1)} | ${deltaStr} | ${impactStr} |`
+    )
+  }
+  lines.push('```')
+
+  return lines.join('\n')
+}
+
+// ============================================================================
+// FIND MODE OUTPUT
+// ============================================================================
+
+/** Format problem runs found by find mode */
+export function formatFindResults(problemRuns: DiagnoseResult[]): string {
+  if (problemRuns.length === 0) {
+    return 'No problematic runs found!'
+  }
+
+  const lines: string[] = []
+  lines.push(`Found ${problemRuns.length} problematic runs:\n`)
+  for (const run of problemRuns) {
+    lines.push(formatOneLiner(run))
+  }
+  lines.push('\nRun with "deep <seed>" for detailed analysis.')
+  return lines.join('\n')
 }
