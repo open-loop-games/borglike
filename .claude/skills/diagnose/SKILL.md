@@ -47,6 +47,66 @@ All modes share these defaults:
 
 The ONLY difference between standard and baseline is turn count and run count.
 
+## Pre-Run Checklist
+
+**Follow these steps before every diagnostic run.**
+
+### 1. Verify Flag Syntax
+
+Never guess flag names. If unsure, check the source:
+
+```bash
+# Confirm exact flag syntax before running
+pnpm diagnose --help
+```
+
+Known gotchas:
+- `--upgrades=none` NOT `--no-upgrades`
+- `--capabilities=full` NOT `--all-capabilities`
+- `--seed=N` NOT positional `N`
+
+### 2. Sanity Check Before Full Suite
+
+Run a small trial first to confirm the configuration is taking effect:
+
+```bash
+# WRONG - jump straight to 100 runs
+pnpm diagnose batch --seed=1000 --runs=100 --capabilities=none
+
+# RIGHT - verify with a small run first, check output looks sane
+pnpm diagnose batch --seed=1000 --runs=5 --capabilities=none
+# Check: are capabilities actually disabled? Does output shape look right?
+# Then run the full suite
+pnpm diagnose batch --seed=1000 --runs=100 --capabilities=none
+```
+
+What to check in the sanity run:
+- Configuration section confirms your flags took effect
+- Output format matches expectations (not empty, not erroring)
+- Results are plausible (e.g., `--capabilities=none` should show worse performance than `--capabilities=full`)
+
+### 3. Separate Data from Interpretation
+
+When presenting diagnostic results, **always separate what you observed from what you conclude**:
+
+```
+## Observations (data)
+- Necromancer CB rate: 18% at 50k turns (baseline was 12%)
+- CB runs cluster at depths 15-20
+- All CB runs show farming goal stuck for 800+ turns
+
+## Interpretation (may be wrong)
+- Likely cause: farming goal not releasing at deeper depths
+- Could also be: monster density too high for caster at those depths
+- Confounding factor: diagnose.ts capability passthrough bug was present in last baseline
+```
+
+Rules:
+- State raw numbers before drawing conclusions
+- Flag when results might have confounding causes (bugs in the diagnostic tool itself, wrong flags, different seed sets)
+- If two explanations fit the data, present both — don't pick one and overstate confidence
+- Note when a result contradicts expectations — that's often a sign the test setup is wrong, not the code
+
 ## Seeds and Determinism
 
 **The game engine is fully deterministic.** Given identical inputs (seed, race, class, personality, upgrades, balance), a run produces identical output every time. This enables:
@@ -170,6 +230,8 @@ pnpm diagnose deep 1768965560201 --map
 ```
 
 ## Common Pitfalls
+
+> **See also: Pre-Run Checklist above.** These pitfalls are why the checklist exists.
 
 ### Pitfall 1: Testing with wrong turn count
 ```bash

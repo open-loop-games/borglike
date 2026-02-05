@@ -1,58 +1,55 @@
 # XP Curve Analysis
 
-## Current Status
+## Current Status (2026-02-05)
 
-**REVERTED** - Changes caused unacceptable regression vs baseline. See "Experiment Results" below.
+**OPEN** — Raw (no-upgrade) warrior runs still snowball past D20 to D40+.
 
-No changes to `src/core/formulas.ts` - using original values:
+Formula unchanged (`src/core/formulas.ts`):
 - `XP_CURVE_EXPONENT`: 1.5
-- `xpFromMonster()`: Original formula (no depth compression)
+- `BASE_XP_REQUIREMENT`: 100
+- `xpForLevel(level) = 100 * (level-1)^1.5`
+- No overlevel penalty, no depth compression
+
+Monster data changed: 12 new monsters added in D19-30 range (see Experiment 2). XP values unchanged from Angband source.
 
 ---
 
-## Experiment Results (2026-01-30)
+## The Problem
 
-### Attempted Fixes
+Raw (no-upgrade, no-capability) warrior runs that survive past D20 snowball to D40+. This is a 1-in-50 outlier but represents a broken XP economy in the D20-30 range.
 
-1. **XP Curve Exponent**: 1.5 → 1.8
-2. **Depth Compression**: 100% at D1 → 33% at D50
-3. **Overlevel Penalty Threshold**: Disabled before L10, then L15
+### Raw Warrior Turn-Count Progression (50 runs, seed=1000)
 
-### Batch Test Results (20 runs, 50k turns, seed=1000, --max-upgrades)
+| Turns | Avg Depth | Max Depth | Avg Level | Max Level |
+|-------|-----------|-----------|-----------|-----------|
+| 2k | 7.8 | 9 | ~3 | ~5 |
+| 5k | 10.8 | 20 | 4.3 | 12 |
+| 10k | 12.4 | 40 | 7.7 | 50 |
+| 20k | 12.8 | 47 | 7.7 | 50 |
+| 50k | 12.8 | 47 | 7.7 | 50 |
 
-| Class | Baseline | With Fixes | Delta | Verdict |
-|-------|----------|------------|-------|---------|
-| **Warrior** | 48.5 | 47.4 | -1.1 | ✅ Acceptable |
-| **Mage** | 42.5 | 35.8 | **-6.7** | ❌ Regression |
+The snowball window is **5k-10k turns**: the outlier goes from D20/L12 to D40/L50.
 
-### Why Fixes Failed
+### Root Cause: XP Growth Outpaces Level Requirements
 
-1. **Mage without upgrades**: Avg D7.5 (stuck farming, never progressed)
-2. **Mage with upgrades**: Avg D35.8 (still -6.7 from baseline)
-3. **Overlevel penalty threshold** (L10, L15): No effect - mages hit threshold then got penalized while still on early depths
-4. **Root cause**: Bot AI behavior (SQUISHY), not XP formula
+Monster XP per depth grows **21x** from D10→D30, while XP-to-next-level only grows **3x** (L10→L50):
 
-### Conclusion
+```
+Depth | Kills | AvgXP | XP/Depth | Level | XPtoNext | Lvls/Depth
+------|-------|-------|----------|-------|----------|----------
+   10 |     8 |    46 |      368 |     3 |      237 |     1.6
+   16 |    11 |    63 |      693 |     8 |      410 |     1.7
+   20 |    12 |   133 |    1,596 |    15 |      571 |     2.8  ← inflection
+   22 |    13 |   178 |    2,314 |    22 |      695 |     3.3
+   25 |    14 |   280 |    3,920 |    35 |      881 |     4.5
+   30 |    17 |   467 |    7,939 |    50 |    1,055 |     7.5
+```
 
-The "L50 at D34" observation was **not a balance problem** - it was working as intended. The baseline shows:
-- All 11 classes reach endgame (avg 40-49 depth)
-- 13 Morgoth kills across classes
-- CB rates 0-14% (acceptable)
+At D20+, characters gain 3-7 levels per depth. Total XP from D10-D40 is **92k** — nearly **3x** the 34.3k needed for L50. Once a raw warrior breaches D20, leveling outpaces the danger curve.
 
-The XP changes broke mage progression without providing meaningful benefit. **Reverted all changes.**
+### Origin
 
----
-
-## Problem Statement
-
-The XP economy was broken: characters hit max level (50) by depth 34, leaving 16 depths with no progression. Casters suffered most - stuck farming early depths where XP was lowest.
-
-**Root Cause Discovered:** Monster data was imported from Angband (100 dungeon levels) and compressed to 50 levels, but XP values were never adjusted. This caused:
-- Monster XP scaled for 100-level progression
-- Level curve only spans 50 levels
-- Result: L50 reached halfway through the dungeon
-
-### Angband's XP Formula
+Monster XP values imported from Angband (100 dungeon levels) compressed to 50 levels. XP values were never rescaled.
 
 From Angband source (`src/mon-util.c:1072`):
 ```c
@@ -60,186 +57,218 @@ new_exp = ((long)mon->race->mexp * mon->race->level) / div;
 // XP = (base_exp × monster_depth) / player_level
 ```
 
-Angband multiplies base XP by monster depth. Borglike used base XP directly without this scaling.
-
-### Depth Compression Examples
-
-| Monster | Angband Depth | Borglike Depth | Base XP | Compression |
-|---------|---------------|----------------|---------|-------------|
-| Smaug | 62 | 50 | 30,000 | 1.24x |
-| Beholder | ~80 | 40 | 6,000 | 2x |
-| Morgoth | 100 | 50 | 60,000 | 2x |
+Angband's `/player_level` divisor naturally prevents snowballing. Borglike awards flat XP.
 
 ---
 
-## Baseline Data (Before Fix)
+## Experiment 1: Formula Changes (2026-01-30) — FAILED
 
-**Seed 1000, max upgrades:**
+### Changes Attempted
 
-### Warrior Progression
-| Turns | Depth | Level | Kills | XP |
-|-------|-------|-------|-------|-----|
-| 2,000 | 8 | 4 | 35 | 524 |
-| 5,000 | 17 | 13 | 119 | 4,554 |
-| 10,000 | **34** | **50** | 321 | 106,770 |
+1. **XP Curve Exponent**: 1.5 → 1.8
+2. **Depth Compression**: `xp *= max(0.33, 1 - depth/75)` (100% at D1 → 33% at D50)
+3. **Overlevel Penalty**: `xp *= max(0.1, 1 - levelDiff*0.1)` (disabled before L10/L15)
 
-### Mage Progression
-| Turns | Depth | Level | Kills | XP |
-|-------|-------|-------|-------|-----|
-| 2,000 | 3 | 2 | 24 | 260 |
-| 5,000 | 5 | 4 | 56 | 657 |
-| 10,000 | 8 | 8 | 143 | 2,240 |
-| 16,000 | **29** | **50** | 360 | 58,959 |
+### Results (20 runs, 50k turns, seed=1000, max-upgrades)
 
-**Breakpoint:** D20-25 - Monster XP exceeds XP-per-level, causing instant leveling.
+| Class | Baseline | With Fixes | Delta | Verdict |
+|-------|----------|------------|-------|---------|
+| **Warrior** | 48.5 | 47.4 | -1.1 | ✅ Acceptable |
+| **Mage** | 42.5 | 35.8 | **-6.7** | ❌ Regression |
+
+### Why It Failed
+
+All three changes hurt mages who intentionally farm lower depths:
+- Mage at L8 farming D3: overlevel penalty → 40% XP, steeper curve → 2x requirements
+- Mage batch avg dropped to D7.5 (stuck farming, never progressed)
+- **Key insight**: any level-vs-depth penalty breaks the farming loop that casters rely on
+
+**Reverted all changes.**
 
 ---
 
-## Implemented Fix
+## Experiment 2: Monster Variety (2026-02-05) — PARTIAL SUCCESS
 
-### 1. Increased XP Curve Exponent (1.5 → 1.8)
+### Approach
+
+Add monsters from Angband source to fill gaps in D19-30, creating a smoother difficulty ramp. "Add first, test, then reduce, test."
+
+### 12 Monsters Added to `src/game/data/monsters.ts`
+
+| Depth | Monster | XP | Key Traits |
+|-------|---------|-----|------------|
+| 19 | Ghast | 130 | Undead, paralyze claws |
+| 19 | Killer Slicer Beetle | 150 | High armor (80), fast bites |
+| 21 | Grave Wight | 200 | Undead, drain, scare/blind |
+| 21 | Manticore | 220 | Fast (120), poison sting |
+| 22 | Fire Elemental | 260 | Fire attacks + bolt, fire immune |
+| 22 | Ogre Mage | 280 | Giant, confuse/slow spells |
+| 23 | Earth Elemental | 300 | High armor (80), triple immune |
+| 23 | Cave Troll | 320 | Troll, 3-attack |
+| 25 | Water Elemental | 380 | Cold bolt + slow, acid/cold immune |
+| 27 | Master Vampire | 550 | Fast, drain, hold/scare/confuse/dark |
+| 29 | Death Knight | 650 | High HP (450), armor (90), blind/dark |
+| 30 | Mountain Troll | 700 | Very high HP (550), 4-attack |
+
+### Results
+
+**Seed 1012 (former worst snowball):** D50 → D25 (died to Ghast paralyze)
+
+**Raw warrior batch (50 runs, seed=1000):**
+
+| Metric | Before (c5643d9) | After (new monsters) |
+|--------|-------------------|----------------------|
+| Avg depth | 13.1 | 12.8 |
+| Max depth | 50 | 47 |
+| Avg kills | 73 | 69 |
+
+**Full baseline (max upgrades):** No regression — all 11 classes 45+ avg depth, 31+ Morgoth kills, CB ≤3%.
+
+### Assessment
+
+More monster variety improved the experience and killed the specific worst-case seed (1012). But the overall max depth only dropped from 50 to 47 — the snowball is slowed, not eliminated. A lucky raw warrior can still ride the XP curve to the mid-40s.
+
+---
+
+## Experiment 3: XP Value Reduction (2026-02-05) — INSUFFICIENT
+
+### Approach
+
+Cut all D20-30 regular (non-unique) monster XP values by 50% ("Cut B").
+
+### Simulation Results
+
+| Depth | Current AvgXP | Cut B AvgXP | Current Lvls/D | Cut B Lvls/D |
+|-------|---------------|-------------|----------------|--------------|
+| 20 | 121 | 100 | 2.6 | 2.3 |
+| 22 | 166 | 114 | 3.2 | 2.4 |
+| 25 | 276 | 149 | 4.6 | 2.8 |
+| 28 | 353 | 177 | 5.5 | 3.2 |
+| 30 | 457 | 228 | 7.4 | 4.0 |
+
+### Actual Test Results (50 runs raw warrior)
+
+| Turns | Before Max | Cut B Max | Delta |
+|-------|-----------|-----------|-------|
+| 5k | 20 | 20 | 0 |
+| 10k | 40 | 39 | -1 |
+| 20k | 47 | 45 | -2 |
+| 50k | 47 | 45 | -2 |
+
+### Why It Failed
+
+1. **6-level spawn window**: Unchanged D15-19 monsters (XP 40-150) stay in the D20-25 pool, dragging the average up
+2. **XP inversion**: After -50% cut, D18-19 monsters (120-150 XP) gave MORE XP than D20-21 monsters (75-175 XP)
+3. **Still 2+ levels/depth**: Even at -50%, the bot gains 2.3-4.0 levels per depth through D20-30
+4. **Total surplus unchanged**: D15-35 total XP was still 63k vs 34.3k needed for L50 (1.8x surplus)
+
+**Reverted — XP reduction alone can't solve this without creating inversions.**
+
+---
+
+## Why Simple Fixes Don't Work
+
+### The Fundamental Mismatch
+
+| Mechanic | D10 | D20 | D30 | Growth |
+|----------|-----|-----|-----|--------|
+| Monsters per depth | 10 | 15 | 20 | 2x |
+| Avg monster XP | 46 | 133 | 467 | 10x |
+| **XP per depth** | **368** | **1,596** | **7,939** | **21x** |
+| XP to next level | 237 | 571 | 1,055 | **3x** |
+
+XP supply grows 21x while XP demand grows 3x. Any character that survives long enough hits a runaway feedback loop.
+
+### Why Each Approach Hits a Wall
+
+| Approach | Problem |
+|----------|---------|
+| **Formula changes** (exponent, compression, overlevel penalty) | All forms of level-vs-depth comparison hurt mages who intentionally farm lower depths |
+| **XP value reduction** | Can't cut D20-30 below D15-19 without creating inversions; 6-level spawn window dilutes cuts |
+| **Angband-style `/playerLevel` divisor** | Mathematically identical to overlevel penalty — same mage farming regression |
+| **Steeper XP curve** (1.5→1.8) | Too aggressive at 1.8; modest increases (1.6) untested but would affect all progression |
+
+---
+
+## Open Ideas
+
+### A. XP Cap Per Depth Visit
+
+Cap total XP gained per depth at N× XP-to-next-level. Prevents gaining 3-7 levels per depth while preserving individual kill rewards.
 
 ```typescript
-// src/core/formulas.ts
-export const XP_CURVE_EXPONENT = 1.8
-```
-
-Effect on XP requirements:
-| Level | Before (1.5) | After (1.8) | Increase |
-|-------|--------------|-------------|----------|
-| L10 | 2,700 | 5,160 | +91% |
-| L25 | 11,757 | 30,505 | +159% |
-| L50 | 34,300 | 110,243 | +221% |
-
-### 2. Steep Depth Compression in xpFromMonster()
-
-```typescript
-// src/core/formulas.ts - xpFromMonster()
-// Scale from 100% at D1 to 33% at D50
-const depthScale = 1 - monsterDepth / 75
-xp *= Math.max(0.33, depthScale)
-```
-
-Effect on monster XP:
-| Depth | Scale | Beholder (6000) | Morgoth (60000) |
-|-------|-------|-----------------|-----------------|
-| D10 | 87% | 5,220 | - |
-| D25 | 67% | - | - |
-| D40 | 47% | 2,820 | - |
-| D50 | 33% | - | 19,800 |
-
----
-
-## Results After Fix
-
-**Seed 1000, max upgrades:**
-
-### Warrior Progression (IMPROVED ✅)
-| Turns | Depth | Level | Before L | Change |
-|-------|-------|-------|----------|--------|
-| 2,000 | 7 | 3 | 4 | -1 |
-| 5,000 | 13 | 8 | 13 | -5 |
-| 10,000 | 26 | 28 | **50** | -22 |
-| 13,000 | **37** | **50** | 50 | L50 delayed by 3 depths |
-
-### Mage Progression (BROKEN ❌)
-| Turns | Depth | Level | Before L | Issue |
-|-------|-------|-------|----------|-------|
-| 5,000 | 3 | 3 | 4 | Slower |
-| 10,000 | 5 | 6 | 8 | Stuck |
-| 20,000 | 15 | 13 | **50** | Way behind |
-| 30,000 | 38 | **50** | 50 | +14k turns |
-
-### Batch Results (20 runs, 50k turns)
-
-| Class | Avg Depth | Before | Victories |
-|-------|-----------|--------|-----------|
-| Warrior | 36.3 | 43.1 | 1 (5%) |
-| Mage | **7.5** | N/A | 0 |
-
-Mage batch avg depth of 7.5 indicates they're stuck farming early game.
-
----
-
-## Early Game Problem
-
-The higher XP exponent compounds the mage farming problem:
-
-**Mage at L8 farming D3:**
-- Monster base XP: ~10-15
-- Depth compression: 96% (minimal at D3)
-- Overlevel penalty: L8 vs expected L2 = 6 levels over = **40% XP**
-- Net XP per kill: ~5-6
-- XP needed for L5→L6: **1,212** (was 800)
-- Kills needed: **200+** (was ~130)
-
-The overlevel penalty was designed when the exponent was 1.5. With 1.8 exponent, mages need ~2x more XP but get the same penalized amount.
-
----
-
-## Early Game Fix Options
-
-### Option A: No Overlevel Penalty Before L10 (Recommended)
-
-```typescript
-// Only apply overlevel penalty once player reaches L10
-if (levelDiff > 0 && playerLevel >= 10) {
-  xp *= Math.max(0.1, 1 - levelDiff * 0.1)
+// Track XP gained on current depth, cap at 1.5x next-level
+const cap = xpToNextLevel(level) * 1.5
+if (xpGainedThisDepth + xpToAward > cap) {
+  xpToAward = Math.max(0, cap - xpGainedThisDepth)
 }
 ```
 
-**Pros:** Directly helps mages farm early without affecting warrior mid/late game
-**Cons:** Slight XP boost for warriors L1-9 (minimal impact)
+**Pros**: Directly targets multi-level-per-depth snowball. Doesn't compare level to depth. Doesn't create XP inversions.
+**Cons**: Requires new state tracking (xpGainedThisDepth). Would also cap farming/sweep XP on a single depth.
+**Risk**: Upgraded bots farming one depth repeatedly would hit cap each visit — need to test impact.
 
-### Option B: XP Floor for D1-10
+### B. Modest XP Curve Steepening (1.5 → 1.6)
 
-```typescript
-// Guarantee at least 50% XP in early depths
-if (monsterDepth <= 10) {
-  xp = Math.max(xp, monsterXP * depthScale * 0.5)
-}
-```
+| Level | 1.5 Exponent | 1.6 Exponent | Increase |
+|-------|-------------|-------------|----------|
+| L10 | 2,700 | 3,981 | +47% |
+| L25 | 11,757 | 20,238 | +72% |
+| L50 | 34,300 | 65,975 | +92% |
 
-**Pros:** Simple, predictable
-**Cons:** May not be enough for mages at L8+ farming D3
+Doubles L50 requirement without the 3x increase of 1.8. May slow snowball enough without breaking mages.
+**Risk**: Previous 1.8 broke mages. 1.6 is gentler but still global — needs full 11-class baseline testing.
 
-### Option C: Early Game XP Multiplier
+### C. Global XP Reduction (balance flag)
 
-```typescript
-// Bonus XP while leveling up
-if (playerLevel < 10) {
-  xp *= 1.5
-}
-```
+Use the existing `balance.xpRatePercent` to reduce all XP by 30-50% globally.
 
-**Pros:** Speeds up early game for everyone
-**Cons:** Makes warrior early game even faster
+**Pros**: One-line change, easy to tune.
+**Cons**: Affects ALL classes at ALL tiers. Would need rebalancing of upgrade progression.
 
-### Option D: Softer Overlevel Penalty
+### D. Deeper Monster Additions (D31-50 gaps)
 
-```typescript
-// Reduce from 10%/level to 5%/level, floor at 30%
-xp *= Math.max(0.3, 1 - levelDiff * 0.05)
-```
+Current gaps: D37-38, D41-44, D46, D49. Filling these with appropriate monsters could create more death opportunities for snowball characters in the D30-50 range. Doesn't fix the root XP problem but makes the snowball harder to sustain.
 
-**Pros:** Helps all overleveled scenarios
-**Cons:** May re-break late game if warriors overlevel
+### E. Combat Difficulty Scaling
+
+Instead of touching XP, make D20-30 monsters harder to survive. Higher HP, more dangerous abilities. The bot survives D20 because the monsters aren't lethal enough relative to a L15+ character's HP pool.
 
 ---
 
-## Monster Spawn Formula
+## Upgraded vs Raw Progression (Reference)
 
-From `src/game/monster-ai.ts:112`:
+Warrior batch, 50 runs each, seed=1000:
+
+| Tier | Upgrades/Caps/Boosters | Avg Depth | Max Depth | Kills | Victories |
+|------|------------------------|-----------|-----------|-------|-----------|
+| Raw | none/none/none | 12.8 | 47 | 69 | 0 |
+| Early | early/early/none | 16.6 | 50 | 112 | 0 |
+| Mid | mid/mid/class | 40.7 | 50 | 415 | 0 |
+| Late | late/late/class | 45.3 | 50 | 534 | 1 |
+| Full | full/full/class | 45.7 | 50 | 482 | 0 |
+
+The early→mid jump (+24 depth) is the biggest progression step. The raw→early gap (+4) is modest, suggesting upgrades matter most at mid tier (vitality 5, sweep, surf).
+
+---
+
+## Monster Spawn System
+
 ```typescript
+// Spawn window: 6-level range
+getSpawnableMonsters(depth) → filter(m => m.minDepth <= depth && m.minDepth >= depth - 6)
+
+// Count per depth
 const monsterCount = 5 + Math.floor(depth / 2)
 ```
 
-| Depth | Spawned | ~Killed (85%) |
-|-------|---------|---------------|
-| D1 | 5 | 4 |
-| D10 | 10 | 8 |
-| D25 | 17 | 14 |
-| D50 | 30 | 25 |
+| Depth | Spawned | ~Killed (85%) | Pool Size |
+|-------|---------|---------------|-----------|
+| D10 | 10 | 8 | 22 |
+| D20 | 15 | 12 | 26 |
+| D25 | 17 | 14 | 23 |
+| D30 | 20 | 17 | 24 |
+| D40 | 25 | 21 | 26 |
 
 ---
 
@@ -247,54 +276,31 @@ const monsterCount = 5 + Math.floor(depth / 2)
 
 | File | Content |
 |------|---------|
-| `src/core/formulas.ts:91` | `XP_CURVE_EXPONENT = 1.8` |
-| `src/core/formulas.ts:96` | `BASE_XP_REQUIREMENT = 100` |
-| `src/core/formulas.ts:480-510` | `xpFromMonster()` with depth compression |
-| `src/game/data/monsters.ts` | Monster `experience` values (Angband source) |
-| `src/game/bot/preparation.ts:697-740` | SQUISHY level requirement (depth + 5) |
-| `src/game/monster-ai.ts:112` | Monster spawn formula |
+| `src/core/formulas.ts:22` | `XP_CURVE_EXPONENT = 1.5` |
+| `src/core/formulas.ts:25` | `BASE_XP_REQUIREMENT = 100` |
+| `src/core/formulas.ts:180` | `xpForLevel()` |
+| `src/game/actions/combat.ts:213` | `handleMonsterKill()` — XP award flow |
+| `src/game/data/monsters.ts` | Monster `experience` values |
+| `src/game/data/monsters.ts:1653` | `getSpawnableMonsters()` — 6-level window |
 
 ---
 
 ## Testing Commands
 
 ```bash
-# Compare warrior vs mage progression
-for turns in 5000 10000 15000 20000; do
-  pnpm diagnose quick --seed=1000 --class=warrior --turns=$turns
-  pnpm diagnose quick --seed=1000 --class=mage --turns=$turns
+# Raw warrior progression at different turn counts
+for turns in 2000 5000 10000 20000 50000; do
+  pnpm diagnose batch --runs=50 --seed=1000 --class=warrior \
+    --upgrades=none --capabilities=none --boosters=none --turns=$turns
 done
 
-# Batch test (statistical)
-pnpm diagnose batch --seed=1000 --runs=20 --turns=50000 --class=warrior
-pnpm diagnose batch --seed=1000 --runs=20 --turns=50000 --class=mage
+# Full baseline regression check
+pnpm diagnose baseline --seed=1000 --turns=50000 --max-upgrades
 
-# Full baseline
-pnpm diagnose baseline --seed=1000 --turns=50000
+# Specific seed investigation
+pnpm diagnose quick --seed=1012 --class=warrior \
+  --upgrades=none --capabilities=none --boosters=none --turns=50000
+
+# XP curve simulation (node one-liner)
+node -e "for(let l=1;l<=50;l+=5) console.log('L'+l, Math.floor(100*Math.pow(l-1,1.5)))"
 ```
-
----
-
-## Next Steps
-
-**CLOSED** - XP curve changes reverted. Original balance preserved.
-
-If revisiting in future:
-1. The "problem" (L50 at D34) may not actually be a problem - baseline shows healthy endgame
-2. Any XP changes must be validated against full 11-class baseline
-3. Mage issues are likely bot AI (SQUISHY behavior), not XP formula
-4. Consider whether level progression even matters if classes reach endgame
-
----
-
-## Simulation vs Reality
-
-Our simulations assumed flat 12 kills/depth. Actual data shows:
-- Early game: 4-8 kills/depth
-- Mid game: 10-15 kills/depth
-- Late game: 20-25 kills/depth
-
-Simulation predicted L50 at D49, actual result is D37. The difference comes from:
-- Unique monster XP spikes (Bolg 800, Azog 1111)
-- Level revisits giving extra kills
-- Town portal farming phases

@@ -102,9 +102,6 @@ Bow attacks (`ranged_attack`) happen automatically for ranged classes without ca
 
 **Options:**
 1. ~~**Gate kiting in tier-actions**: Add `effective.kiting > 0` check before `findKitePosition` calls~~ ✅ Done in `66fdc7f`
-2. **Gate spell casting**: Add `effective.tactics` requirement for damage spells (healing stays free)
-3. **Gate ranged attacks**: Add targeting/tactics check for bow usage
-4. **Accept as intended**: Ranged classes have inherent advantage, progression is for melee
 
 **Resolution:** Kiting gated behind `kiting >= 1` and tactics converted to graded (0-3) in `66fdc7f`. Remaining ungated: spell damage, spell healing, bow attacks.
 
