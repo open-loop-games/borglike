@@ -15,10 +15,12 @@ import { getUpgradeById, calculateUpgradeEffect } from './data/upgrades'
 export interface UpgradeBonuses {
   // Stat bonuses
   maxHpBonus: number // Flat HP bonus (from vitality)
-  maxHpPercent: number // Percent HP bonus (from vitality, 3% per level)
+  maxHpPercent: number // Percent HP bonus (from vitality, 1% per level)
   damagePercent: number // Damage multiplier percent (from might)
   armorBonus: number // Flat armor bonus (from resilience)
-  dodgePercent: number // Dodge chance percent (from swiftness)
+  armorPercent: number // Percent armor bonus (from resilience, 1% per level)
+  dodgePercent: number // Flat evasion bonus (from swiftness, despite name)
+  dodgeChancePercent: number // Dodge chance vs monsters (from swiftness, 1% per level)
   accuracyBonus: number // Flat accuracy bonus (from precision)
   speedBonus: number // Flat speed bonus (from celerity)
 
@@ -59,10 +61,12 @@ export function computeUpgradeBonuses(
   return {
     // Stat bonuses (scaled)
     maxHpBonus: Math.floor(getEffectValue(levels, 'vitality') * scale),
-    maxHpPercent: Math.floor((levels['vitality'] || 0) * 3 * scale), // 3% per vitality level
+    maxHpPercent: Math.floor((levels['vitality'] || 0) * 1 * scale), // 1% per vitality level
     damagePercent: Math.floor(getEffectValue(levels, 'might') * scale),
     armorBonus: Math.floor(getEffectValue(levels, 'resilience') * scale),
+    armorPercent: Math.floor((levels['resilience'] || 0) * 1 * scale), // 1% per resilience level
     dodgePercent: Math.floor(getEffectValue(levels, 'swiftness') * scale),
+    dodgeChancePercent: Math.floor((levels['swiftness'] || 0) * 1 * scale), // 1% per swiftness level
     accuracyBonus: Math.floor(getEffectValue(levels, 'precision') * scale),
     speedBonus: Math.floor(getEffectValue(levels, 'celerity') * scale),
 
@@ -109,16 +113,16 @@ export const UPGRADE_PRESETS: Record<string, UpgradeLevels> = {
   mid: {
     vitality: 5,
     might: 5,
-    resilience: 3,
-    swiftness: 2,
+    resilience: 5,
+    swiftness: 4,
     precision: 2,
     celerity: 2,
   },
   late: {
     vitality: 8,
     might: 8,
-    resilience: 4,
-    swiftness: 4,
+    resilience: 7,
+    swiftness: 6,
     precision: 4,
     celerity: 4,
   },
@@ -162,7 +166,9 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   maxHpPercent: 0,
   damagePercent: 0,
   armorBonus: 0,
+  armorPercent: 0,
   dodgePercent: 0,
+  dodgeChancePercent: 0,
   accuracyBonus: 0,
   speedBonus: 0,
   xpMultiplier: 1,

@@ -31,7 +31,7 @@ export interface UpgradeDefinition {
 const vitality: UpgradeDefinition = {
   id: 'vitality',
   name: 'Vitality',
-  description: '+15 HP and +3% max HP per level',
+  description: '+15 HP and +1% max HP per level',
   category: 'stats',
   maxLevel: 10,
   baseCost: 50,
@@ -65,9 +65,9 @@ const might: UpgradeDefinition = {
 const resilience: UpgradeDefinition = {
   id: 'resilience',
   name: 'Resilience',
-  description: '+2 armor per level',
+  description: '+2 armor and +1% armor per level',
   category: 'stats',
-  maxLevel: 5,
+  maxLevel: 10,
   baseCost: 100,
   costScaling: 1.8,
   effect: {
@@ -82,9 +82,9 @@ const resilience: UpgradeDefinition = {
 const swiftness: UpgradeDefinition = {
   id: 'swiftness',
   name: 'Swiftness',
-  description: '+2% dodge chance per level',
+  description: '+2 evasion and +1% dodge per level',
   category: 'stats',
-  maxLevel: 5,
+  maxLevel: 10,
   baseCost: 150,
   costScaling: 2.0,
   effect: {

@@ -145,6 +145,9 @@ export function collectUpgradeModifiers(bonuses: UpgradeBonuses): StatModifier[]
   if (bonuses.armorBonus > 0) {
     modifiers.push(flatModifier('upgrade', 'armor', bonuses.armorBonus, 'Resilience'))
   }
+  if (bonuses.armorPercent > 0) {
+    modifiers.push(percentModifier('upgrade', 'armor', bonuses.armorPercent, 'Resilience'))
+  }
 
   if (bonuses.accuracyBonus > 0) {
     modifiers.push(flatModifier('upgrade', 'accuracy', bonuses.accuracyBonus, 'Precision'))

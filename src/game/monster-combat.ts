@@ -164,6 +164,7 @@ function resolveSingleAttack(
  * Base: 75% hit chance
  * + Monster speed bonus: (speed - 100) / 2 percent
  * - Character evasion: evasion / 4 percent
+ * × (1 - dodgeChance%) from Swiftness upgrade
  * Clamped to 15-95%
  */
 function calculateHitChance(monster: Monster, character: Character): number {
@@ -175,7 +176,13 @@ function calculateHitChance(monster: Monster, character: Character): number {
   // Evasion penalty: agile characters dodge more
   const evasionPenalty = character.combat.evasion / 400
 
-  const hitChance = baseChance + speedBonus - evasionPenalty
+  let hitChance = baseChance + speedBonus - evasionPenalty
+
+  // Dodge chance from Swiftness upgrade — reduces monster hit probability
+  const dodgeChance = character.upgradeBonuses?.dodgeChancePercent ?? 0
+  if (dodgeChance > 0) {
+    hitChance *= 1 - dodgeChance / 100
+  }
 
   // Clamp to 15-95%
   return Math.max(0.15, Math.min(0.95, hitChance))
