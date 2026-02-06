@@ -308,11 +308,8 @@ export function getStatusACBonus(character: Character): number {
   return bonus
 }
 
-/**
- * Get AC bonus from protection buff only (Mage Armor, Shield, Sanctuary, Cloak of Shadows)
- * Used by bot tactical estimation to account for active magical defenses.
- */
-export function getProtectionBonus(character: Character): number {
+/** Get AC bonus from protection buff only (Mage Armor, Shield, Sanctuary, Cloak of Shadows) */
+function getProtectionBonus(character: Character): number {
   const protection = character.statusEffects.find((e) => e.type === 'protection')
   return protection?.value ?? 0
 }
@@ -560,6 +557,15 @@ function applyArmorReduction(damage: number, armor: number, penetration: number)
   const effectiveArmor = Math.max(0, armor - penetration)
   const reduction = Math.min(effectiveArmor / 2, 50)
   return Math.floor((damage * (100 - reduction)) / 100)
+}
+
+/**
+ * Estimate damage after character's armor reduction for bot tactical decisions.
+ * Mirrors the real applyArmorReduction formula with full AC (equipment + blessing + protection).
+ */
+export function estimateDamageAfterArmor(rawDamage: number, character: Character): number {
+  const totalArmor = character.combat.armor + getStatusACBonus(character)
+  return Math.max(1, applyArmorReduction(rawDamage, totalArmor, 0))
 }
 
 /** Map monster Element to character ResistanceType (only ELEC→LIGHTNING differs) */

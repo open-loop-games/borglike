@@ -17,7 +17,7 @@ import { hasAbility, getDiceAverage } from '../data/monsters'
 import { getMonsterEffectiveSpeed, hasLineOfSight } from '../monster-ai'
 import { calculateLightRadius } from '../lighting'
 import { getTile, isWalkable } from '../dungeon'
-import { getProtectionBonus } from '../combat'
+import { estimateDamageAfterArmor } from '../combat'
 
 // ============================================================================
 // RACE RESTRICTIONS
@@ -716,10 +716,6 @@ export function getSmartDebuffAction(
   const bestDamageSpell = damageSpells.sort((a, b) => b.spell.level - a.spell.level)[0]
   const estimatedSpellDamage = bestDamageSpell ? bestDamageSpell.spell.level * 3 + 10 : 0
 
-  // Calculate armor reduction for damage estimation (include protection buffs)
-  const effectiveArmor = character.combat.armor + getProtectionBonus(character)
-  const armorReduction = Math.min(effectiveArmor / 2, 50) // Max 50% reduction
-
   // Find monsters worth slowing: fast/hasted AND high damage AND not easily killed
   const worthSlowing = visibleMonsters.filter((m) => {
     // Must be awake
@@ -735,7 +731,7 @@ export function getSmartDebuffAction(
 
     // Calculate expected damage per turn after armor
     const rawDamage = m.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
-    const effectiveDamage = Math.floor((rawDamage * (100 - armorReduction)) / 100)
+    const effectiveDamage = estimateDamageAfterArmor(rawDamage, character)
 
     // Must be HIGH DAMAGE: can kill us in 4 or fewer hits
     const hitsToKill = effectiveDamage > 0 ? character.hp / effectiveDamage : Infinity
@@ -807,10 +803,6 @@ export function getTeleportOtherAction(
   const adjacentCount = countAdjacentMonsters(game, character.position)
   if (adjacentCount > 1) return null
 
-  // Calculate armor reduction for damage estimation (include protection buffs)
-  const effectiveArmorTP = character.combat.armor + getProtectionBonus(character)
-  const armorReduction = Math.min(effectiveArmorTP / 2, 50)
-
   // Find dangerous monsters worth banishing
   const dangerous = visibleMonsters.filter((m) => {
     if (!m.isAwake) return false
@@ -824,7 +816,7 @@ export function getTeleportOtherAction(
     if (character.hp / character.maxHp >= 0.5) return false
 
     const rawDamage = m.template.attacks.reduce((sum, atk) => sum + getDiceAverage(atk.dice), 0)
-    const effectiveDamage = Math.floor((rawDamage * (100 - armorReduction)) / 100)
+    const effectiveDamage = estimateDamageAfterArmor(rawDamage, character)
     const hitsToKill = effectiveDamage > 0 ? character.hp / effectiveDamage : Infinity
 
     return hitsToKill <= 4
@@ -1109,9 +1101,7 @@ export function getSummonSpellAction(
       return { type: 'cast', spellId: 'summon_skeleton' }
     }
     // Both alive — heal the most damaged if below 50%
-    const mostDamaged = skeletons.reduce((a, b) =>
-      (a.hp / a.maxHp) < (b.hp / b.maxHp) ? a : b
-    )
+    const mostDamaged = skeletons.reduce((a, b) => (a.hp / a.maxHp < b.hp / b.maxHp ? a : b))
     if (mostDamaged.hp < mostDamaged.maxHp * 0.5 && character.mp >= character.maxMp * 0.3) {
       return { type: 'cast', spellId: 'summon_skeleton' }
     }

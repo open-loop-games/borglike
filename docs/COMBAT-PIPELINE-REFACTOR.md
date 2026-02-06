@@ -157,8 +157,13 @@ Knowledge reduction now applies per-attack inside `resolveDefense()`.
 ### R4: PFE in Legacy Attack Path → Moot (dead code removed)
 `attack(monster, character)` was never called. Dead code removed; `attack()` is now `Character → Monster` only.
 
-### R5: Bot Armor Estimation Divergence → Follow-up
-Still 4 different formulas in bot files. Create `estimateDefense()` helper in a follow-up PR.
+### R5: Bot Armor Estimation Divergence → Fixed
+Added `estimateDamageAfterArmor(rawDamage, character)` to `combat.ts`. Replaced:
+- `bot/combat.ts`: flat subtraction → `estimateDamageAfterArmor()`
+- `bot/danger.ts`: `armor/20` (10x too aggressive) → correct `min(armor/2, 50)%` formula
+- `bot/spells.ts`: already correct formula → replaced with helper (2 sites)
+- `bot/survival-retreat.ts`: flat subtraction → `estimateDamageAfterArmor()`
+Also unexported `getProtectionBonus()` (no external consumers remain).
 
 ### R6: spellPower on Armor → Separate feature
 Not a combat pipeline issue. Handle when robes get spellPower.

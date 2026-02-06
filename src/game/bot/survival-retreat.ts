@@ -37,7 +37,7 @@ import {
   EQUIPMENT_INVENTORY_LIMIT,
 } from './preparation'
 import { getAverageDamage } from '../data/monsters'
-import { getProtectionBonus } from '../combat'
+import { estimateDamageAfterArmor } from '../combat'
 import { computeSafetyFlow } from './safety-flow'
 import { resetCorridorFollowing } from './exploration'
 import { profile } from './profiler'
@@ -448,12 +448,10 @@ export function getHitsTillDeath(game: GameState): number {
     return Infinity
   }
 
-  // Average damage from nearby monsters (include protection buff AC)
-  const effectiveArmor = character.combat.armor + getProtectionBonus(character)
+  // Average damage from nearby monsters (percentage-based armor reduction)
   const avgDamage =
     nearbyMonsters.reduce((sum, m) => {
-      const rawDamage = getAverageDamage(m.template)
-      return sum + Math.max(rawDamage - effectiveArmor, 1)
+      return sum + estimateDamageAfterArmor(getAverageDamage(m.template), character)
     }, 0) / nearbyMonsters.length
 
   return Math.floor(character.hp / avgDamage)

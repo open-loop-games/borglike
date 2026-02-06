@@ -11,7 +11,7 @@ import type { BotContext, PersonalityConfig, BotGoal } from './types'
 import { getEffectiveCapabilities } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
-import { canRangedAttack, getBowRange, getProtectionBonus } from '../combat'
+import { canRangedAttack, getBowRange, estimateDamageAfterArmor } from '../combat'
 import { getAverageDamage } from '../data/monsters'
 import { resetCorridorFollowing } from './exploration'
 import { calculateLightRadius } from '../lighting'
@@ -124,9 +124,8 @@ function evaluateCombat(
     : Math.max(character.combat.meleeDamage, 1)
   const turnsToKill = Math.ceil(monster.hp / playerDamage)
 
-  // Calculate expected damage we'll take (include protection buff AC)
-  const effectiveArmor = character.combat.armor + getProtectionBonus(character)
-  const monsterDamage = Math.max(getAverageDamage(template) - effectiveArmor, 1)
+  // Calculate expected damage we'll take (percentage-based armor reduction)
+  const monsterDamage = estimateDamageAfterArmor(getAverageDamage(template), character)
   const expectedDamage = monsterDamage * turnsToKill
 
   // Can we win?
