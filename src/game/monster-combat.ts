@@ -60,9 +60,10 @@ export function resolveMonsterAttacks(
   const template = monster.template
   const attacks = template.attacks
 
-  // If no structured attacks, fall back to legacy damage
+  // All monsters should have attacks defined — bail with zero damage if somehow missing
   if (!attacks || attacks.length === 0) {
-    return resolveLegacyAttack(monster, character)
+    console.warn(`Monster ${monster.template.name} has no attacks defined`)
+    return { totalDamage: 0, hits: [], statusEffectsInflicted: [] }
   }
 
   const hits: AttackHitResult[] = []
@@ -303,32 +304,6 @@ function getStatusValue(type: StatusEffectType): number {
       return 20 // -20% all stats
     default:
       return 0
-  }
-}
-
-// ============================================================================
-// FALLBACK FOR MONSTERS WITHOUT ATTACKS
-// ============================================================================
-
-/**
- * Resolve attack for monsters without defined attacks
- * This is a safety fallback - all monsters should now have attacks defined
- */
-function resolveLegacyAttack(_monster: Monster, _character: Character): MonsterAttackResult {
-  // No attacks = no damage
-  // This shouldn't happen with fully migrated monster data
-  return {
-    totalDamage: 0,
-    hits: [
-      {
-        hit: false,
-        damage: 0,
-        method: 'HIT',
-        effect: { type: 'HURT' },
-        statusInflicted: null,
-      },
-    ],
-    statusEffectsInflicted: [],
   }
 }
 

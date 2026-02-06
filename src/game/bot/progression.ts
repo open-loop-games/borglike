@@ -28,7 +28,7 @@ import {
   findExplorationTarget,
 } from './exploration'
 import { getDepthReadiness, getUniqueBlocker, isUnderLeveled } from './preparation'
-import { monsters as MONSTERS } from '../data/monsters'
+import { monsters as MONSTERS, VICTORY_BOSS_NAME } from '../data/monsters'
 import {
   handleActiveFarmingLoop,
   initiateFarmingLoop,
@@ -211,7 +211,7 @@ export function getMorgothHuntGoal(context: BotContext): BotGoal | null {
   if (character.depth !== MAX_DEPTH) return null
 
   const morgothVisible = visibleMonsters.some(
-    (m) => m.template.name === 'Morgoth, Lord of Darkness' && m.hp > 0
+    (m) => m.template.name === VICTORY_BOSS_NAME && m.hp > 0
   )
   if (morgothVisible) {
     botState.morgothFlipActive = false

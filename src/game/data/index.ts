@@ -34,6 +34,7 @@ export {
   monsters,
   COLORS,
   MONSTER_COUNTS,
+  VICTORY_BOSS_NAME,
   getMonstersForDepth,
   getSpawnableMonsters,
   getMonsterByName,

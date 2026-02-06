@@ -17,6 +17,7 @@ import {
   EQUIPMENT_INVENTORY_LIMIT,
 } from './preparation'
 import { isDangerousItemBlacklisted } from './state'
+import { getDiceAverage } from '../dice'
 
 // ============================================================================
 // TYPES
@@ -197,7 +198,13 @@ function evaluateEquipment(item: Item, character: Character): ItemEvaluation {
 
   // Only rangers equip bows — other classes waste turns shooting instead of casting
   if (template.type === 'bow' && character.classId !== 'ranger') {
-    return { score: 0, isUseful: false, reason: 'Non-ranger ignores bow', slot: null, isUpgrade: false }
+    return {
+      score: 0,
+      isUseful: false,
+      reason: 'Non-ranger ignores bow',
+      slot: null,
+      isUpgrade: false,
+    }
   }
 
   const slot = getEquipSlot(template)
@@ -394,13 +401,13 @@ export function calculateEquipmentScore(item: Item, classId?: string): number {
 
   // Weapon/Staff: damage is primary
   if ((template.type === 'weapon' || template.type === 'staff') && template.damage) {
-    const avgDamage = parseDiceAverage(template.damage)
+    const avgDamage = getDiceAverage(template.damage)
     score += avgDamage * 10
   }
 
   // Bow: damage * multiplier is the key metric, plus hitBonus
   if (template.type === 'bow' && template.damage) {
-    const avgDamage = parseDiceAverage(template.damage)
+    const avgDamage = getDiceAverage(template.damage)
     const multiplier = template.multiplier ?? 1
     score += avgDamage * multiplier * 10
     if (template.hitBonus) {
@@ -602,20 +609,6 @@ function getEquippedItem(character: Character, slot: EquipSlot): Item | null {
   return character.equipment[slot] ?? null
 }
 
-/**
- * Parse dice notation and return average value
- * e.g. "2d6" => 7, "3d4" => 7.5
- */
-function parseDiceAverage(dice: string): number {
-  const match = dice.match(/(\d+)d(\d+)/)
-  if (!match) return 0
-
-  const count = parseInt(match[1]!, 10)
-  const sides = parseInt(match[2]!, 10)
-
-  // Average of a die is (1 + sides) / 2
-  return count * ((1 + sides) / 2)
-}
 
 /**
  * Check if an item is a consumable

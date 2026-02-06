@@ -21,6 +21,7 @@ import { MINION_TEMPLATES, chebyshevDistance } from './types'
 import { hasLineOfSight } from './monster-ai'
 import { calculateLightRadius } from './lighting'
 import { randomInt, random } from './rng'
+import { rollDice } from './dice'
 import { getSpellById, getSchoolStat, type SpellTemplate } from './data/spells'
 import { getSpellIdsForLevel } from './data/class-spells'
 import { applyDamage, calculateSpellDeadliness, applyDeadliness } from './combat'
@@ -227,20 +228,6 @@ export function getAvailableSpells(
 // SPELL POWER CALCULATION
 // ============================================================================
 
-/**
- * Roll dice from notation like "2d6"
- */
-function rollDice(notation: string): number {
-  const match = notation.match(/(\d+)d(\d+)/)
-  if (!match || !match[1] || !match[2]) return 0
-  const numDice = parseInt(match[1], 10)
-  const sides = parseInt(match[2], 10)
-  let total = 0
-  for (let i = 0; i < numDice; i++) {
-    total += randomInt(1, sides)
-  }
-  return total
-}
 
 /**
  * Calculate spell power (damage or heal) based on character stats
@@ -1327,9 +1314,7 @@ function summonMinion(game: GameState, minionType: MinionType): ActionResult {
 
   if (existing.length >= template.maxCount) {
     // At cap — heal the most damaged one instead of spawning
-    const mostDamaged = existing.reduce((a, b) =>
-      (a.hp / a.maxHp) < (b.hp / b.maxHp) ? a : b
-    )
+    const mostDamaged = existing.reduce((a, b) => (a.hp / a.maxHp < b.hp / b.maxHp ? a : b))
     mostDamaged.maxHp = scaledMaxHp
     const oldHp = mostDamaged.hp
     mostDamaged.hp = mostDamaged.maxHp

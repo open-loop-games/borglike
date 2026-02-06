@@ -903,21 +903,6 @@ export function getBestSpellForPurpose(
   return matching[0]?.spell ?? null
 }
 
-/**
- * Check if character has any castable spells
- */
-export function hasCastableSpells(game: GameState): boolean {
-  const available = getAvailableSpells(game.character, game.turn)
-  return available.some((entry) => entry.canCast)
-}
-
-/**
- * Check if character has enough mana for their cheapest spell
- */
-export function canCastAnySpell(game: GameState): boolean {
-  const available = getAvailableSpells(game.character, game.turn)
-  return available.some((entry) => entry.canCast)
-}
 
 /**
  * Check if character can cast any damage spell right now

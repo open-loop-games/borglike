@@ -9,6 +9,7 @@
 import { createGame, processTurn } from '../../../src/game/game-loop'
 import { computeMaxUpgradeBonuses, computeUpgradeBonuses, computeUpgradeBonusesFromPreset } from '../../../src/game/upgrade-effects'
 import { upgrades as allUpgrades } from '../../../src/game/data/upgrades'
+import { VICTORY_BOSS_NAME } from '../../../src/game/data/monsters'
 import { runBotTick, createBotState } from '../../../src/game/bot'
 import { calculateCombatStats, calculateStats } from '../../../src/game/character'
 import type { GameState, BotPersonality, BalanceOverrides } from '../../../src/game/types'
@@ -216,7 +217,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
   const armorItem = char.equipment.armor
 
   // Check if Morgoth was killed
-  const morgothKills = game.stats.monsterKills['Morgoth, Lord of Darkness'] ?? 0
+  const morgothKills = game.stats.monsterKills[VICTORY_BOSS_NAME] ?? 0
 
   const analyzerResults: AnalyzerResult[] = [{
     name: 'worker-metrics',

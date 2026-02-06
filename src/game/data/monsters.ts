@@ -1644,6 +1644,9 @@ export const monsters: MonsterTemplate[] = [
   },
 ]
 
+/** Victory boss name — used for win condition checks across the codebase */
+export const VICTORY_BOSS_NAME = 'Morgoth, Lord of Darkness'
+
 // Helper function to get monsters for a given depth range
 export function getMonstersForDepth(minDepth: number, maxDepth: number): MonsterTemplate[] {
   return monsters.filter((m) => m.minDepth >= minDepth && m.minDepth <= maxDepth)

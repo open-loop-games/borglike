@@ -25,7 +25,7 @@ import { applyDamage } from './combat'
 import { getEffectiveStats } from './modifiers'
 import { checkSecondWind } from './status-effects'
 import { getKnowledgeBonuses } from './knowledge-effects'
-import { getSpawnableMonsters, getMonsterByName } from './data/index'
+import { getSpawnableMonsters, getMonsterByName, VICTORY_BOSS_NAME } from './data/index'
 import {
   findPath,
   findOpenPositions,
@@ -40,8 +40,6 @@ import { damageMinionById } from './minion-ai'
 import { rollDice } from './dice'
 import { incrementStat, checkCloseCall } from './stats-helpers'
 
-/** Victory boss name */
-const VICTORY_BOSS_NAME = 'Morgoth, Lord of Darkness'
 
 // ============================================================================
 // UNIQUE ID GENERATION
@@ -711,11 +709,7 @@ export function processMonsterTurns(game: GameState): GameEvent[] {
   const playerSpeed = getEffectiveStats(game.character).speed
 
   for (const monster of game.monsters) {
-    // Apply slow debuff to speed calculation
-    const slowDebuff = monster.debuffs.find((d) => d.type === 'slow')
-    const effectiveSpeed = slowDebuff
-      ? Math.floor((monster.template.speed * (100 - slowDebuff.value)) / 100)
-      : monster.template.speed
+    const effectiveSpeed = getMonsterEffectiveSpeed(monster)
 
     // Add energy based on monster speed, scaled by player speed
     // Player speed > 100 (e.g., hasted) means monsters act relatively slower

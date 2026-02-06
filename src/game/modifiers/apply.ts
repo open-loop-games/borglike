@@ -7,6 +7,7 @@
  */
 
 import type { StatModifier, ModifiableStatTarget, ModifierSource, EffectiveStats } from './types'
+import { getDiceAverage } from '../dice'
 
 // ============================================================================
 // APPLICATION ORDER
@@ -166,17 +167,6 @@ import type { Character } from '../types'
 /** Equipment slots that provide armor */
 const ARMOR_SLOTS = ['armor', 'shield', 'helm', 'gloves', 'boots'] as const
 
-/**
- * Parse dice notation and return average damage
- */
-function parseDiceAverage(dice: string | undefined): number {
-  if (!dice) return 0
-  const match = dice.match(/(\d+)d(\d+)/)
-  if (!match || !match[1] || !match[2]) return 0
-  const numDice = parseInt(match[1], 10)
-  const sides = parseInt(match[2], 10)
-  return Math.floor((numDice * (sides + 1)) / 2)
-}
 
 /**
  * Calculate equipment-based armor (protection values, not stat bonuses)
@@ -213,11 +203,11 @@ export function calculateEquipmentMeleeDamage(character: Character): number {
   let damage = 0
 
   // Parse dice notation for base weapon damage
-  damage += parseDiceAverage(weapon.template.damage) + weapon.enchantment
+  damage += getDiceAverage(weapon.template.damage ?? '') + weapon.enchantment
 
   // Artifact damage
   if (weapon.artifact?.damage) {
-    damage += parseDiceAverage(weapon.artifact.damage)
+    damage += getDiceAverage(weapon.artifact.damage)
   }
 
   return damage
@@ -236,11 +226,11 @@ export function calculateEquipmentRangedDamage(character: Character): number {
   const launcherMult = bow.template.multiplier ?? 1
 
   // Parse dice notation for bow damage, apply multiplier
-  damage += parseDiceAverage(bow.template.damage) * launcherMult + bow.enchantment
+  damage += getDiceAverage(bow.template.damage ?? '') * launcherMult + bow.enchantment
 
   // Artifact bow damage
   if (bow.artifact?.damage) {
-    damage += parseDiceAverage(bow.artifact.damage) * launcherMult
+    damage += getDiceAverage(bow.artifact.damage) * launcherMult
   }
 
   return damage

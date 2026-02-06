@@ -18,13 +18,7 @@ import { DEFAULT_BONUSES, applyXPBonus } from '../upgrade-effects'
 import { awardMonsterGold } from '../features'
 import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 import { getKnowledgeBonuses } from '../knowledge-effects'
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-/** Victory boss name (used for win condition check) */
-const VICTORY_BOSS_NAME = 'Morgoth, Lord of Darkness'
+import { VICTORY_BOSS_NAME } from '../data/index'
 
 // ============================================================================
 // MELEE COMBAT

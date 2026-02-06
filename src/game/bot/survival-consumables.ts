@@ -6,6 +6,7 @@
  */
 
 import type { GameState, GameAction, Monster } from '../types'
+import { VICTORY_BOSS_NAME } from '../data/monsters'
 import type { PersonalityConfig, DangerMap, BotState } from './types'
 import { isPoisoned } from '../status-effects'
 import {
@@ -185,7 +186,7 @@ export function getSurvivalConsumableAction(
   // Check if fighting Morgoth - needs aggressive healing (at 50% not 75%)
   const fightingMorgoth = game.monsters.some(
     (m) =>
-      m.template.name === 'Morgoth, Lord of Darkness' &&
+      m.template.name === VICTORY_BOSS_NAME &&
       m.hp > 0 &&
       Math.max(
         Math.abs(m.position.x - character.position.x),
@@ -381,7 +382,7 @@ export function getPreCombatBuffAction(
 
   // Check if Morgoth is visible - triggers full buffing protocol
   const morgothVisible = visibleMonsters.some(
-    (m) => m.template.name === 'Morgoth, Lord of Darkness'
+    (m) => m.template.name === VICTORY_BOSS_NAME
   )
 
   // Check if already buffed
@@ -509,7 +510,7 @@ export function getCombatBuffAction(
   // This is critical - Morgoth fight is long and buffs may wear off
   const fightingMorgoth = game.monsters.some(
     (m) =>
-      m.template.name === 'Morgoth, Lord of Darkness' &&
+      m.template.name === VICTORY_BOSS_NAME &&
       m.hp > 0 &&
       Math.max(
         Math.abs(m.position.x - character.position.x),
