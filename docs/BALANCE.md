@@ -525,10 +525,97 @@ Matching capability and upgrade tiers — simulates realistic player progression
 
 ```bash
 # All races × 3 archetype classes (matrix mode, single pool)
-pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns=50000
+pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns=50000 --seed=1000
 ```
 
-*Not yet run at current commit.*
+### Cross-Class × Race @ `d7fcb0b` (50 runs, 50k turns, seed=1000, upgrades=full)
+
+| Class | Race | Avg Depth | Max Depth | CB Rate | Kills | Morgoth | Turns |
+|-------|------|-----------|-----------|---------|-------|---------|-------|
+| **Ranger** | **High_elf** | 49.7 | 50 | 0% | 685 | 4 | 20680 |
+| **Ranger** | **Hobbit** | 49.4 | 50 | 0% | 677 | 6 | 20286 |
+| **Ranger** | **Kobold** | 49.3 | 50 | 2% | 679 | 3 | 20580 |
+| **Ranger** | **Half_orc** | 48.8 | 50 | 0% | 657 | 2 | 22291 |
+| **Ranger** | **Half_elf** | 48.7 | 50 | 0% | 657 | 5 | 21831 |
+| **Ranger** | **Elf** | 48.5 | 50 | 0% | 659 | 3 | 20842 |
+| **Mage** | **Dunadan** | 48.3 | 50 | 4% | 661 | 2 | 28348 |
+| **Ranger** | **Gnome** | 48.3 | 50 | 2% | 673 | 2 | 19843 |
+| **Ranger** | **Dunadan** | 48.2 | 50 | 0% | 651 | 1 | 22639 |
+| **Ranger** | **Dwarf** | 48.0 | 50 | 0% | 669 | 3 | 22318 |
+| **Mage** | **Gnome** | 48.0 | 50 | 0% | 640 | 1 | 26735 |
+| **Ranger** | **Half_troll** | 47.6 | 50 | 0% | 654 | 0 | 21127 |
+| **Warrior** | **Dunadan** | 47.5 | 50 | 0% | 515 | 2 | 16288 |
+| **Mage** | **Human** | 47.5 | 50 | 2% | 612 | 1 | 26254 |
+| **Warrior** | **Half_orc** | 47.4 | 50 | 0% | 519 | 2 | 15353 |
+| **Mage** | **Hobbit** | 47.3 | 50 | 2% | 637 | 2 | 28028 |
+| **Mage** | **Half_orc** | 47.3 | 50 | 0% | 633 | 1 | 28328 |
+| **Mage** | **Kobold** | 47.1 | 50 | 2% | 638 | 0 | 28289 |
+| **Warrior** | **Kobold** | 46.9 | 50 | 0% | 515 | 0 | 14972 |
+| **Mage** | **Dwarf** | 46.8 | 50 | 0% | 629 | 1 | 28102 |
+| **Warrior** | **Half_troll** | 46.5 | 50 | 0% | 510 | 2 | 15123 |
+| **Ranger** | **Human** | 46.4 | 50 | 0% | 597 | 0 | 21261 |
+| **Mage** | **High_elf** | 46.1 | 50 | 4% | 631 | 1 | 26435 |
+| **Warrior** | **High_elf** | 45.9 | 50 | 0% | 496 | 0 | 14594 |
+| **Warrior** | **Gnome** | 45.8 | 50 | 0% | 491 | 0 | 14804 |
+| **Warrior** | **Half_elf** | 45.2 | 50 | 0% | 490 | 0 | 15630 |
+| **Warrior** | **Dwarf** | 45.1 | 50 | 0% | 496 | 1 | 14480 |
+| **Warrior** | **Human** | 43.9 | 50 | 0% | 450 | 0 | 14447 |
+| **Warrior** | **Hobbit** | 43.4 | 50 | 0% | 457 | 2 | 14638 |
+| **Warrior** | **Elf** | 43.3 | 50 | 0% | 458 | 1 | 14184 |
+| **Mage** | **Half_troll** | 42.5 | 50 | 0% | 559 | 0 | 25535 |
+| **Mage** | **Elf** | 41.4 | 50 | 2% | 547 | 1 | 24000 |
+| **Mage** | **Half_elf** | 38.3 | 50 | 0% | 507 | 0 | 23031 |
+
+Runtime: 446s (33 cells, 1650 total runs, 20 threads).
+
+### Per-Class Summary
+
+| Class | Avg Depth | Range | Morgoth | CB Max |
+|-------|-----------|-------|---------|--------|
+| **Ranger** | 48.4 | 46.4–49.7 | 29 | 2% |
+| **Warrior** | 45.5 | 43.3–47.5 | 8 | 0% |
+| **Mage** | 45.3 | 38.3–48.3 | 10 | 4% |
+
+**Ranger** is the strongest archetype across all races — tight clustering, high Morgoth kills. **Warrior** is consistent (all 0% CB) but lower ceiling. **Mage** has the widest spread (10 depth gap) due to race sensitivity.
+
+### Race Rankings (averaged across 3 classes)
+
+| Race | Avg Depth | Best Class | Worst Class |
+|------|-----------|------------|-------------|
+| Dunadan | 48.0 | Mage 48.3 | Warrior 47.5 |
+| Half-Orc | 47.8 | Ranger 48.8 | Warrior 47.4 |
+| Gnome | 47.4 | Ranger 48.3 | Warrior 45.8 |
+| Kobold | 47.8 | Ranger 49.3 | Warrior 46.9 |
+| Hobbit | 46.7 | Ranger 49.4 | Warrior 43.4 |
+| Dwarf | 46.6 | Ranger 48.0 | Warrior 45.1 |
+| Half-Troll | 45.5 | Ranger 47.6 | Mage 42.5 |
+| High-Elf | 47.2 | Ranger 49.7 | Warrior 45.9 |
+| Human | 45.9 | Mage 47.5 | Warrior 43.9 |
+| Half-Elf | 44.1 | Ranger 48.7 | Mage 38.3 |
+| Elf | 44.4 | Ranger 48.5 | Mage 41.4 |
+
+### Observations
+
+- **Ranger dominates**: 10 of top 12 slots. High-Elf Ranger (49.7, 4 Morgoth) and Hobbit Ranger (49.4, 6 Morgoth) are the strongest combos in the game
+- **Ranger/Human is surprisingly weak**: 46.4 avg, worst ranger by 1.9 depth — human's "average at everything" doesn't help ranger's DEX-favoring kit
+- **Mage is race-sensitive**: 10 depth gap between best (Dunadan 48.3) and worst (Half-Elf 38.3). High-CON races (Dunadan, Half-Orc, Gnome) carry mage; low-CON races (Half-Elf, Elf) get crushed
+- **Mage/Half-Elf 38.3 is a trap option**: -19.4% vs Mage/Human. Half-Elf's split stats don't help mage at all — low CON kills survivability, split INT/DEX doesn't compensate
+- **Mage/Elf 41.4 also weak**: -12.8% vs Mage/Human. High DEX is wasted, low CON is fatal
+- **Warrior is race-insensitive**: 4.2 depth spread (43.3–47.5), all 0% CB. Warrior's high base HP makes race choice less impactful
+- **55 Morgoth kills total**: Ranger accounts for 29 (53%). Hobbit Ranger leads with 6 kills in 50 runs
+
+### Success Criteria: ⚠️ Partial
+
+- ✅ No race/class combo >10% better than human/same-class (max: Ranger/High-Elf +7.1% vs Ranger/Human)
+- ❌ Mage/Half-Elf -19.4% vs Mage/Human (threshold: 15%)
+- ⚠️ Mage/Elf -12.8% vs Mage/Human (close to threshold)
+- ✅ All warrior combos viable (43.3+ avg depth)
+- ✅ All ranger combos viable (46.4+ avg depth)
+- ✅ CB rates ≤4% across all combos
+
+**Action items:**
+- Mage/Half-Elf and Mage/Elf are balance concerns — caster + low-CON is punishing. Options: buff Half-Elf/Elf CON, add caster-specific HP scaling, or accept as intended weakness
+- Ranger/Human underperformance is surprising — investigate whether human's neutral stats miss a breakpoint that other races hit
 
 ---
 

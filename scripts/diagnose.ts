@@ -150,6 +150,8 @@ interface Args {
   upgradeTiers: string[]
   /** Paired progression tiers (sets both upgrades and capabilities) */
   progressionTiers: string[]
+  /** Whether the user explicitly passed --threads */
+  userSetThreads: boolean
 }
 
 const ALL_ANALYZERS: AnalyzerName[] = [
@@ -211,6 +213,7 @@ function parseArgs(): Args {
     capTiers: [],
     upgradeTiers: [],
     progressionTiers: [],
+    userSetThreads: false,
   }
 
   // Parse mode (first positional arg)
@@ -271,6 +274,7 @@ function parseArgs(): Args {
       result.logOnly = true
     } else if (arg.startsWith('--threads=')) {
       result.threads = parseInt(arg.slice(10), 10)
+      result.userSetThreads = true
     } else if (arg === '--max-upgrades') {
       result.maxUpgrades = true
     } else if (arg.startsWith('--exclude-upgrade=')) {
@@ -380,7 +384,7 @@ OPTIONS:
   --seed=N        Specific seed to test (default: random)
   --runs=N        Number of runs for batch/find/compare modes (default: 50)
   --turns=N       Max turns per run (default: 20000)
-  --threads=N     Worker threads for batch/find modes (default: 8)
+  --threads=N     Worker threads (default: 8, matrix default: 20)
   --race=ID       Race ID (default: human)
   --class=ID      Class ID (default: warrior)
   --personality=P Bot personality (default: cautious)
@@ -663,6 +667,9 @@ async function main(): Promise<void> {
   if (args.mode === 'matrix') {
     const startTime = Date.now()
 
+    // Matrix defaults to 20 threads (filling a large pool), unless user explicitly set --threads
+    const matrixThreads = args.userSetThreads ? args.threads : 20
+
     // Resolve tiers: --progression sets both, otherwise use individual flags
     let matrixUpgradeTiers = args.upgradeTiers.length > 0 ? args.upgradeTiers : [args.upgrades]
     let matrixCapTiers = args.capTiers.length > 0 ? args.capTiers : [args.capabilities]
@@ -698,7 +705,7 @@ async function main(): Promise<void> {
       runs: args.runs,
       maxTurns: args.turns,
       startSeed: args.seed,
-      threads: args.threads,
+      threads: matrixThreads,
       boosters: args.boosters,
       maxUpgrades: args.maxUpgrades,
       balance,

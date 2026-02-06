@@ -49,7 +49,7 @@ let _poolThreads = 0
  * If thread count changed, destroys and recreates.
  * All batch callers share one pool within the process.
  */
-async function getOrCreatePool(threads: number): Promise<Tinypool> {
+export async function getOrCreatePool(threads: number): Promise<Tinypool> {
   if (_pool && _poolThreads === threads) return _pool
   if (_pool) {
     await _pool.destroy()
@@ -407,6 +407,98 @@ export interface WorkerInput {
     excludeUpgrades?: string[]
     randomize?: boolean
     balance?: Partial<BalanceOverrides>
+    capabilities?: string
+    upgrades?: string
+    boosters?: string
+  }
+}
+
+/**
+ * Run multiple diagnostic sessions in parallel using worker threads
+ */
+/**
+ * Aggregate an array of DiagnoseResults into a BatchResult.
+ * Pure function — no pool or I/O, just number crunching.
+ */
+export function aggregateBatchResults(
+  results: DiagnoseResult[],
+  config: BatchConfig,
+): BatchResult {
+  const problemRuns: DiagnoseResult[] = []
+  const runSummaries: BatchResult['runs'] = []
+  const metricSums: Record<string, number[]> = {}
+  const issueCounter = new Map<string, number>()
+  const deathCauses = new Map<string, number>()
+  let victoryCount = 0
+  let morgothKillCount = 0
+  let circuitBreakerCount = 0
+
+  for (const result of results) {
+    if (result.hasErrors || result.hasWarnings) {
+      problemRuns.push(result)
+    }
+
+    if (result.endReason === 'victory') victoryCount++
+    else if (result.endReason === 'circuit_breaker') circuitBreakerCount++
+
+    for (const ar of result.analyzerResults) {
+      for (const [key, value] of Object.entries(ar.metrics)) {
+        if (typeof value === 'number') {
+          const fullKey = `${ar.name}.${key}`
+          if (!metricSums[fullKey]) metricSums[fullKey] = []
+          metricSums[fullKey].push(value)
+          if (key === 'morgothKills' && value > 0) morgothKillCount++
+        } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
+          deathCauses.set(value, (deathCauses.get(value) ?? 0) + 1)
+        }
+      }
+    }
+
+    for (const issue of result.allIssues) {
+      issueCounter.set(issue.message, (issueCounter.get(issue.message) ?? 0) + 1)
+    }
+
+    const killedByMetric = result.analyzerResults
+      .find(ar => ar.name === 'worker-metrics')?.metrics?.killedBy
+    runSummaries.push({
+      seed: result.seed,
+      depth: result.finalState.depth,
+      killedBy: typeof killedByMetric === 'string' ? killedByMetric : 'unknown',
+      endReason: result.endReason,
+      turns: result.finalState.turn,
+      kills: result.finalState.kills,
+    })
+  }
+
+  const aggregateMetrics: Record<string, { min: number; max: number; avg: number }> = {}
+  for (const [key, values] of Object.entries(metricSums)) {
+    if (values.length > 0) {
+      aggregateMetrics[key] = {
+        min: Math.min(...values),
+        max: Math.max(...values),
+        avg: values.reduce((a, b) => a + b, 0) / values.length,
+      }
+    }
+  }
+
+  runSummaries.sort((a, b) => a.seed - b.seed)
+
+  return {
+    config,
+    totalRuns: config.runs,
+    successfulRuns: results.length - problemRuns.length,
+    runs: runSummaries,
+    problemRuns,
+    aggregateMetrics,
+    aggregateIssues: Array.from(issueCounter.entries())
+      .map(([message, count]) => ({ message, count }))
+      .sort((a, b) => b.count - a.count),
+    deathCauses: Array.from(deathCauses.entries())
+      .map(([monster, count]) => ({ monster, count }))
+      .sort((a, b) => b.count - a.count),
+    victoryCount,
+    morgothKillCount,
+    circuitBreakerCount,
   }
 }
 
@@ -418,18 +510,12 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
   const threadCount = Math.min(config.threads ?? 8, cpus().length)
 
   const results: DiagnoseResult[] = []
-  const problemRuns: DiagnoseResult[] = []
-  const runSummaries: BatchResult['runs'] = []
+  const pool = await getOrCreatePool(threadCount)
 
-  // Aggregate metrics across runs
-  const metricSums: Record<string, number[]> = {}
-  const issueCounter = new Map<string, number>()
-  const deathCauses = new Map<string, number>() // Track what killed us
-  let victoryCount = 0
-  let morgothKillCount = 0
-  let circuitBreakerCount = 0
+  let completed = 0
+  const total = config.runs
 
-  // Build work items
+  const workItems: WorkerInput[] = []
   const baseConfig = {
     raceId: config.raceId,
     classId: config.classId,
@@ -444,117 +530,19 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     upgrades: config.upgrades,
     boosters: config.boosters,
   }
-
-  const workItems: WorkerInput[] = []
   for (let i = 0; i < config.runs; i++) {
     workItems.push({ seed: startSeed + i, config: baseConfig })
   }
 
-  let completed = 0
-  const total = workItems.length
-
-  // Use singleton pool (shared across all batch calls within the process)
-  const pool = await getOrCreatePool(threadCount)
-
   const promises = workItems.map(async (item) => {
     const result: DiagnoseResult = await pool.run(item)
-
     results.push(result)
-
-    if (result.hasErrors || result.hasWarnings) {
-      problemRuns.push(result)
-    }
-
-    // Track end reasons
-    if (result.endReason === 'victory') {
-      victoryCount++
-    } else if (result.endReason === 'circuit_breaker') {
-      circuitBreakerCount++
-    }
-
-    // Aggregate metrics
-    for (const ar of result.analyzerResults) {
-      for (const [key, value] of Object.entries(ar.metrics)) {
-        if (typeof value === 'number') {
-          const fullKey = `${ar.name}.${key}`
-          if (!metricSums[fullKey]) {
-            metricSums[fullKey] = []
-          }
-          metricSums[fullKey].push(value)
-          // Track morgoth kills specifically
-          if (key === 'morgothKills' && value > 0) {
-            morgothKillCount++
-          }
-        } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
-          // Track death causes
-          const count = deathCauses.get(value) ?? 0
-          deathCauses.set(value, count + 1)
-        }
-      }
-    }
-
-    // Count issues
-    for (const issue of result.allIssues) {
-      const count = issueCounter.get(issue.message) ?? 0
-      issueCounter.set(issue.message, count + 1)
-    }
-
-    // Build per-run summary
-    const killedByMetric = result.analyzerResults
-      .find(ar => ar.name === 'worker-metrics')?.metrics?.killedBy
-    runSummaries.push({
-      seed: result.seed,
-      depth: result.finalState.depth,
-      killedBy: typeof killedByMetric === 'string' ? killedByMetric : 'unknown',
-      endReason: result.endReason,
-      turns: result.finalState.turn,
-      kills: result.finalState.kills,
-    })
-
     completed++
     config.onProgress?.(completed, total)
   })
 
   await Promise.all(promises)
-
-  // Compute aggregate metrics
-  const aggregateMetrics: Record<string, { min: number; max: number; avg: number }> = {}
-  for (const [key, values] of Object.entries(metricSums)) {
-    if (values.length > 0) {
-      aggregateMetrics[key] = {
-        min: Math.min(...values),
-        max: Math.max(...values),
-        avg: values.reduce((a, b) => a + b, 0) / values.length,
-      }
-    }
-  }
-
-  // Sort issues by frequency
-  const aggregateIssues = Array.from(issueCounter.entries())
-    .map(([message, count]) => ({ message, count }))
-    .sort((a, b) => b.count - a.count)
-
-  // Sort death causes by frequency
-  const sortedDeathCauses = Array.from(deathCauses.entries())
-    .map(([monster, count]) => ({ monster, count }))
-    .sort((a, b) => b.count - a.count)
-
-  // Sort run summaries by seed for deterministic output
-  runSummaries.sort((a, b) => a.seed - b.seed)
-
-  return {
-    config,
-    totalRuns: config.runs,
-    successfulRuns: results.length - problemRuns.length,
-    runs: runSummaries,
-    problemRuns,
-    aggregateMetrics,
-    aggregateIssues,
-    deathCauses: sortedDeathCauses,
-    victoryCount,
-    morgothKillCount,
-    circuitBreakerCount,
-  }
+  return aggregateBatchResults(results, config)
 }
 
 // ============================================================================

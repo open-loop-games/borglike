@@ -6,9 +6,11 @@
  * a full batch run; results are collected per-cell for comparison.
  */
 
-import { runBatchDiagnosisParallel } from './runner'
+import { cpus } from 'os'
+import { getOrCreatePool, aggregateBatchResults } from './runner'
+import type { WorkerInput } from './runner'
 import { BASELINE_CLASSES, BASELINE_RACES } from './baseline'
-import type { BatchResult } from './types'
+import type { BatchResult, DiagnoseResult } from './types'
 import type { BalanceOverrides } from '@game/types'
 
 // ============================================================================
@@ -135,12 +137,45 @@ export function buildCellLabel(cell: MatrixCell, varyingAxes: MatrixAxis[]): str
   return parts.join('-') || 'default'
 }
 
-/** Run the full matrix. */
+/** Build a BatchResult from per-cell raw results. */
+function buildCellResult(
+  cell: MatrixCell,
+  label: string,
+  rawResults: DiagnoseResult[],
+  runs: number,
+): MatrixCellResult {
+  const batchResult = aggregateBatchResults(rawResults, { runs } as any)
+  const depthMetrics = batchResult.aggregateMetrics['worker-metrics.maxDepth']
+  const killMetrics = batchResult.aggregateMetrics['worker-metrics.kills']
+  const turnMetrics = batchResult.aggregateMetrics['worker-metrics.totalTurns']
+  return {
+    cell,
+    label,
+    avgDepth: depthMetrics?.avg ?? 0,
+    maxDepth: depthMetrics?.max ?? 0,
+    cbRate: (batchResult.circuitBreakerCount / runs) * 100,
+    avgKills: killMetrics?.avg ?? 0,
+    morgothKills: batchResult.morgothKillCount,
+    avgTurns: turnMetrics?.avg ?? 0,
+    victoryCount: batchResult.victoryCount,
+    batchResult,
+  }
+}
+
+/**
+ * Run the full matrix.
+ *
+ * All cells' work items are submitted to the pool at once — when slow runs
+ * from one cell are still running, threads naturally pick up work from the
+ * next cell. Progress is reported per-cell with a completion line as each
+ * cell finishes.
+ */
 export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
   const startTime = Date.now()
   const cells = buildCells(config)
   const varyingAxes = findVaryingAxes(config)
-  const results: MatrixCellResult[] = []
+  const startSeed = config.startSeed ?? Date.now()
+  const threadCount = Math.min(config.threads, cpus().length)
 
   const label = config.headerLabel ?? 'MATRIX TEST'
   console.log(`\n${'='.repeat(60)}`)
@@ -158,65 +193,105 @@ export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
     if (config.upgradeTiers.length > 1) dimParts.push(`${config.upgradeTiers.length} upgrade tiers`)
     if (config.capabilityTiers.length > 1) dimParts.push(`${config.capabilityTiers.length} cap tiers`)
   }
+  const totalWork = cells.length * config.runs
   console.log(`Cells: ${cells.length} (${dimParts.join(' x ') || 'single config'})`)
-  console.log(`Per cell: ${config.runs} runs, ${config.maxTurns} turns, ${config.threads} threads`)
+  console.log(`Runs: ${totalWork} total (${config.runs}/cell), ${config.maxTurns} turns, ${threadCount} threads`)
   console.log('='.repeat(60))
 
-  for (let i = 0; i < cells.length; i++) {
-    const cell = cells[i]!
-    const cellLabel = buildCellLabel(cell, varyingAxes)
-    const cellStart = Date.now()
-    const padLen = Math.max(20, cellLabel.length + 2)
-    process.stdout.write(`\n${cellLabel.padEnd(padLen)} `)
+  // Build labels and per-cell tracking
+  const cellLabels = cells.map(c => buildCellLabel(c, varyingAxes))
+  const maxLabelLen = Math.max(20, ...cellLabels.map(l => l.length + 2))
+  const perCellResults: DiagnoseResult[][] = cells.map(() => [])
+  const perCellDone: boolean[] = cells.map(() => false)
 
-    const batchResult = await runBatchDiagnosisParallel({
-      raceId: cell.raceId,
-      classId: cell.classId,
-      personality: cell.personality as any,
-      maxTurns: config.maxTurns,
-      runs: config.runs,
-      startSeed: config.startSeed,
-      threads: config.threads,
-      maxUpgrades: config.maxUpgrades,
-      upgrades: cell.upgrades,
-      capabilities: cell.capabilities,
-      boosters: config.boosters,
-      balance: config.balance as any,
-      onProgress: (completed, total) => {
-        const pct = Math.floor((completed / total) * 20)
-        process.stdout.write(
-          `\r${cellLabel.padEnd(padLen)} [${'█'.repeat(pct)}${'░'.repeat(20 - pct)}] ${completed}/${total}`
-        )
-      },
-    })
-
-    const depthMetrics = batchResult.aggregateMetrics['worker-metrics.maxDepth']
-    const killMetrics = batchResult.aggregateMetrics['worker-metrics.kills']
-    const turnMetrics = batchResult.aggregateMetrics['worker-metrics.totalTurns']
-
-    const cellResult: MatrixCellResult = {
-      cell,
-      label: cellLabel,
-      avgDepth: depthMetrics?.avg ?? 0,
-      maxDepth: depthMetrics?.max ?? 0,
-      cbRate: (batchResult.circuitBreakerCount / config.runs) * 100,
-      avgKills: killMetrics?.avg ?? 0,
-      morgothKills: batchResult.morgothKillCount,
-      avgTurns: turnMetrics?.avg ?? 0,
-      victoryCount: batchResult.victoryCount,
-      batchResult,
+  // Flatten all work items across all cells, tagged with cell index
+  interface TaggedWork { cellIdx: number; item: WorkerInput }
+  const allWork: TaggedWork[] = []
+  for (let ci = 0; ci < cells.length; ci++) {
+    const cell = cells[ci]!
+    for (let ri = 0; ri < config.runs; ri++) {
+      allWork.push({
+        cellIdx: ci,
+        item: {
+          seed: startSeed + ri,
+          config: {
+            raceId: cell.raceId,
+            classId: cell.classId,
+            personality: cell.personality,
+            maxTurns: config.maxTurns,
+            maxUpgrades: config.maxUpgrades,
+            balance: config.balance as any,
+            capabilities: cell.capabilities,
+            upgrades: cell.upgrades,
+            boosters: config.boosters,
+          },
+        },
+      })
     }
-    results.push(cellResult)
-
-    const elapsed = ((Date.now() - cellStart) / 1000).toFixed(1)
-    process.stdout.write(`\r${cellLabel.padEnd(padLen)} [${'█'.repeat(20)}] done (${elapsed}s) depth=${cellResult.avgDepth.toFixed(1)}\n`)
   }
+
+  // Progress tracking
+  let totalCompleted = 0
+  let cellsFinished = 0
+  const cellStartTimes: number[] = []
+  const isTTY = process.stdout.isTTY ?? false
+
+  // TTY: overwriting progress bar, throttled to ~5% increments
+  const progressStep = Math.max(1, Math.floor(totalWork / 20))
+  let lastProgressAt = 0
+  const writeProgressBar = () => {
+    if (!isTTY) return
+    if (totalCompleted - lastProgressAt < progressStep && totalCompleted < totalWork) return
+    lastProgressAt = totalCompleted
+    const pct = Math.floor((totalCompleted / totalWork) * 30)
+    process.stdout.write(
+      `\r[${'█'.repeat(pct)}${'░'.repeat(30 - pct)}] ${totalCompleted}/${totalWork} (${cellsFinished}/${cells.length} cells)`
+    )
+  }
+  writeProgressBar()
+
+  // Submit all work to the shared pool
+  const pool = await getOrCreatePool(threadCount)
+
+  const promises = allWork.map(async ({ cellIdx, item }) => {
+    if (!cellStartTimes[cellIdx]) cellStartTimes[cellIdx] = Date.now()
+
+    const result: DiagnoseResult = await pool.run(item)
+    perCellResults[cellIdx]!.push(result)
+    totalCompleted++
+
+    // Cell just finished — print completion line (always, TTY or not)
+    if (!perCellDone[cellIdx] && perCellResults[cellIdx]!.length === config.runs) {
+      perCellDone[cellIdx] = true
+      cellsFinished++
+      const elapsed = ((Date.now() - (cellStartTimes[cellIdx] ?? startTime)) / 1000).toFixed(1)
+      const cellResult = buildCellResult(cells[cellIdx]!, cellLabels[cellIdx]!, perCellResults[cellIdx]!, config.runs)
+      const line = `${cellLabels[cellIdx]!.padEnd(maxLabelLen)} depth=${cellResult.avgDepth.toFixed(1)} kills=${cellResult.avgKills.toFixed(0)} cb=${cellResult.cbRate.toFixed(0)}% (${elapsed}s)`
+      if (isTTY) {
+        // Clear progress bar, print cell line, redraw bar
+        process.stdout.write(`\r${' '.repeat(80)}\r${line}\n`)
+      } else {
+        process.stdout.write(`${line}\n`)
+      }
+    }
+    writeProgressBar()
+  })
+
+  await Promise.all(promises)
+
+  // Clear progress bar
+  if (isTTY) process.stdout.write('\r' + ' '.repeat(80) + '\r')
+
+  // Build final results (aggregate each cell)
+  const results: MatrixCellResult[] = cells.map((cell, ci) =>
+    buildCellResult(cell, cellLabels[ci]!, perCellResults[ci]!, config.runs)
+  )
 
   return {
     config,
     cells: results,
     varyingAxes,
-    totalRuns: cells.length * config.runs,
+    totalRuns: totalWork,
     totalTime: (Date.now() - startTime) / 1000,
   }
 }

@@ -14,8 +14,8 @@
  */
 
 // Core runner
-export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis, parseCapabilities, CAPABILITY_PRESETS, destroyPool } from './runner'
-export type { TurnLogEntry, ParallelBatchConfig } from './runner'
+export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis, aggregateBatchResults, getOrCreatePool, parseCapabilities, CAPABILITY_PRESETS, destroyPool } from './runner'
+export type { TurnLogEntry, ParallelBatchConfig, WorkerInput } from './runner'
 
 // Modes
 export { runBaseline, runBaselineRaces, BASELINE_CLASSES, BASELINE_RACES, BASELINE_DEFAULTS } from './baseline'
