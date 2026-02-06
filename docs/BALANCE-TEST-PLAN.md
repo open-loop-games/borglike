@@ -4,6 +4,40 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
+### Full Baseline @ `25c9691` (100 runs, 50k turns, seed=1000, max-upgrades) — Ranger Nerf + Bow Fix
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Mage** | 48.4 | 50 | 2% | 28091 | 638 | 2 | ✅ Endgame |
+| **Berserker** | 48.2 | 50 | 0% | 14220 | 503 | 5 | ✅ Endgame |
+| **Paladin** | 48.1 | 50 | 0% | 21305 | 648 | 4 | ✅ Endgame |
+| **Blackguard** | 48.0 | 50 | 0% | 15211 | 542 | 4 | ✅ Endgame |
+| **Ranger** | 47.9 | 50 | 0% | 21635 | 633 | 5 | ✅ Endgame |
+| **Warrior** | 47.8 | 50 | 0% | 15596 | 518 | 6 | ✅ Endgame |
+| **Archmage** | 46.7 | 50 | 3% | 27220 | 602 | 3 | ✅ Endgame |
+| **Rogue** | 46.7 | 50 | 0% | 22491 | 595 | 2 | ✅ Endgame |
+| **Necromancer** | 46.2 | 50 | 0% | 23124 | 622 | 0 | ✅ Endgame |
+| **Priest** | 45.1 | 50 | 0% | 24274 | 683 | 0 | ✅ Endgame |
+| **Druid** | 43.9 | 50 | 0% | 22396 | 548 | 0 | ✅ Endgame |
+
+**Summary:** Ranger nerf + bow evaluation fix. Ranger changes: fix bot bow eval (getEquipSlot + multiplier/hitBonus scoring), cap FAST_SHOT at 6, remove thorn strike/summon bear/summon pack from spells, Root Shot 100% stun→50% slow. Non-ranger guard: prevent non-rangers from equipping bows (casters were picking up bows and shooting instead of casting). **31 Morgoth kills** (6 warrior, 5 berserker, 5 ranger, 4 paladin, 4 blackguard, 3 archmage, 2 mage, 2 rogue). All CB rates ≤3%. Ranger drops from #1 to #5 (-1.6 depth).
+
+**vs Previous Full (`b4a447f`):**
+
+| Class | Old | New | Delta | Notes |
+|-------|-----|-----|-------|-------|
+| Mage | 47.8 | 48.4 | +0.6 | Noise |
+| Berserker | 48.0 | 48.2 | +0.2 | Noise |
+| Paladin | 48.2 | 48.1 | -0.1 | Noise |
+| Blackguard | 48.4 | 48.0 | -0.4 | Noise |
+| Ranger | 49.5 | 47.9 | **-1.6** | Intended nerf (Root Shot 50% slow) |
+| Warrior | 47.0 | 47.8 | +0.8 | Noise |
+| Archmage | 46.7 | 46.7 | 0.0 | Unchanged |
+| Rogue | 46.8 | 46.7 | -0.1 | Noise |
+| Necromancer | 46.4 | 46.2 | -0.2 | Noise |
+| Priest | 45.4 | 45.1 | -0.3 | Noise |
+| Druid | 45.2 | 43.9 | -1.3 | Slight dip |
+
 ### Full Baseline @ `b4a447f` (100 runs, 50k turns, seed=1000, max-upgrades) — Survivability Rebalance
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
@@ -83,33 +117,51 @@
 > **Run:** `pnpm diagnose baseline-races --seed=1000 --turns=50000 --max-upgrades`
 > **Guide:** See `docs/BALANCE-TESTING-GUIDE.md` for methodology
 
-### Race Baseline @ `b4c83bc` (100 runs, 50k turns, seed=1000, class=warrior, max-upgrades)
+### Race Baseline @ `0789dc4` (100 runs, 50k turns, seed=1000, class=warrior, max-upgrades)
 
 | Race | Avg Depth | Max Depth | CB Rate | Turns | Kills | Morgoth | Status |
 |------|-----------|-----------|---------|-------|-------|---------|--------|
-| **Half-Troll** | 49.2 | 50 | 0% | 15627 | 558 | 7 | ✅ Endgame |
-| **Kobold** | 49.1 | 50 | 0% | 15470 | 568 | 4 | ✅ Endgame |
-| **Dwarf** | 48.4 | 50 | 0% | 16013 | 552 | 11 | ✅ Endgame |
-| **High-Elf** | 48.4 | 50 | 0% | 15564 | 553 | 3 | ✅ Endgame |
-| **Half-Orc** | 48.3 | 50 | 0% | 16647 | 543 | 7 | ✅ Endgame |
-| **Gnome** | 48.1 | 50 | 0% | 15073 | 547 | 5 | ✅ Endgame |
-| **Human** | 48.1 | 50 | 0% | 16176 | 522 | 3 | ✅ Endgame |
-| **Dunadan** | 47.9 | 50 | 0% | 15769 | 529 | 4 | ✅ Endgame |
-| **Elf** | 47.9 | 50 | 0% | 15572 | 536 | 2 | ✅ Endgame |
-| **Hobbit** | 47.7 | 50 | 0% | 15322 | 540 | 4 | ✅ Endgame |
-| **Half-Elf** | 47.6 | 50 | 0% | 15303 | 533 | 4 | ✅ Endgame |
+| **Kobold** | 48.9 | 50 | 0% | 15495 | 559 | 8 | ✅ Endgame |
+| **Dunadan** | 48.7 | 50 | 0% | 16142 | 537 | 10 | ✅ Endgame |
+| **Half-Orc** | 48.3 | 50 | 0% | 15379 | 545 | 8 | ✅ Endgame |
+| **Half-Troll** | 48.1 | 50 | 0% | 15911 | 535 | 4 | ✅ Endgame |
+| **Dwarf** | 47.9 | 50 | 0% | 15253 | 544 | 7 | ✅ Endgame |
+| **Gnome** | 47.9 | 50 | 0% | 15021 | 539 | 6 | ✅ Endgame |
+| **Half-Elf** | 47.7 | 50 | 0% | 15217 | 528 | 2 | ✅ Endgame |
+| **Hobbit** | 47.4 | 50 | 0% | 15196 | 531 | 5 | ✅ Endgame |
+| **High-Elf** | 47.3 | 50 | 0% | 14969 | 530 | 2 | ✅ Endgame |
+| **Human** | 47.0 | 50 | 0% | 15606 | 504 | 7 | ✅ Endgame |
+| **Elf** | 47.0 | 50 | 0% | 15478 | 520 | 6 | ✅ Endgame |
 
-**Summary:** All 11 races endgame-viable (47.6-49.2 avg depth). **54 Morgoth kills** (11 dwarf, 7 half-troll, 7 half-orc, 5 gnome, 4 kobold, 4 dunadan, 4 hobbit, 4 half-elf, 3 human, 3 high-elf, 2 elf). **All CB rates 0%** - perfect stability after melee balance pass. Spread of 1.6 depth between best/worst.
+**Summary:** All 11 races endgame-viable (47.0-48.9 avg depth). **65 Morgoth kills** (10 dunadan, 8 kobold, 8 half-orc, 7 dwarf, 7 human, 6 gnome, 6 elf, 5 hobbit, 4 half-troll, 2 half-elf, 2 high-elf). **All CB rates 0%**. Spread of 1.9 depth between best/worst.
+
+**vs Previous (`b4c83bc`):**
+
+| Race | Old | New | Delta | Notes |
+|------|-----|-----|-------|-------|
+| Kobold | 49.1 | 48.9 | -0.2 | Noise |
+| Dunadan | 47.9 | 48.7 | +0.8 | Surges to #2, 10 Morgoth kills |
+| Half-Orc | 48.3 | 48.3 | 0.0 | Unchanged |
+| Half-Troll | 49.2 | 48.1 | -1.1 | Drops from #1 |
+| Dwarf | 48.4 | 47.9 | -0.5 | Noise |
+| Gnome | 48.1 | 47.9 | -0.2 | Noise |
+| Half-Elf | 47.6 | 47.7 | +0.1 | Unchanged |
+| Hobbit | 47.7 | 47.4 | -0.3 | Noise |
+| High-Elf | 48.4 | 47.3 | -1.1 | Noise |
+| Human | 48.1 | 47.0 | -1.1 | Noise |
+| Elf | 47.9 | 47.0 | -0.9 | Noise |
+
+All deltas within noise range (no game code changed between commits). Ranking shuffled but all races remain endgame-viable.
 
 **Observed Tiers:**
-- **Top** (half-troll, kobold): 49.1-49.2 avg, +1 above human
-- **Middle** (dwarf, high-elf, half-orc, gnome, human): 48.1-48.4 avg, baseline cluster
-- **Bottom** (dunadan, elf, hobbit, half-elf): 47.6-47.9 avg, slightly below but viable
+- **Top** (kobold, dunadan): 48.7-48.9 avg, +1.7-1.9 above human
+- **Middle** (half-orc, half-troll, dwarf, gnome, half-elf): 47.7-48.3 avg, baseline cluster
+- **Bottom** (hobbit, high-elf, human, elf): 47.0-47.4 avg, slightly below but viable
 
 **Success Criteria:** ✅ All passed
-- ✅ All races reach depth 40+ average (lowest: 47.6)
-- ✅ No race exceeds human by >5 avg depth (max delta: +1.1)
-- ✅ No race falls below human by >8 avg depth (max delta: -0.5)
+- ✅ All races reach depth 40+ average (lowest: 47.0)
+- ✅ No race exceeds human by >5 avg depth (max delta: +1.9)
+- ✅ No race falls below human by >8 avg depth (min delta: 0.0)
 - ✅ CB rates <5% (all 0%)
 
 ---
@@ -162,65 +214,74 @@ Tests bot performance at different unlock stages.
 ### Progression Test Commands
 
 ```bash
-# Test each progression stage
-pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=none --turns=20000
-pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=early --turns=20000
-pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=mid --turns=30000
-pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=late --turns=40000
-pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capabilities=full --turns=50000
+# Test each progression stage (upgrades=mid for progression feel)
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --upgrades=mid --capabilities=none --turns=20000
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --upgrades=mid --capabilities=early --turns=25000
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --upgrades=mid --capabilities=mid --turns=35000
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --upgrades=mid --capabilities=late --turns=45000
+pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --upgrades=mid --capabilities=full --turns=50000
 ```
 
-### Capability Progression @ `6b89d2a` (50 runs, seed=1000, class=warrior, upgrades=mid)
+### Capability Progression @ `0789dc4` (50 runs, seed=1000, class=warrior, upgrades=mid)
 
 | Preset | Capabilities | Avg Depth | Max Depth | CB Rate | Delta |
 |--------|--------------|-----------|-----------|---------|-------|
-| `none` | (all disabled) | 32.2 | 50 | 0% | baseline |
-| `early` | town, farming, tactics, preparedness_1, targeting_1, retreat_1 | 38.2 | 50 | 0% | +6.0 |
-| `mid` | +preparedness_2, sweep_1, surf_1, targeting_2, retreat_2 | 44.2 | 50 | 0% | +12.0 |
-| `late` | +preparedness_3, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 44.2 | 50 | 0% | +12.0 |
-| `full` | (all maxed) | 43.6 | 50 | 0% | +11.4 |
+| `none` | (all disabled) | 32.9 | 50 | 0% | baseline |
+| `early` | town, farming, tactics, preparedness_1, targeting_1, retreat_1 | 32.3 | 50 | 0% | -0.6 |
+| `mid` | +preparedness_2, sweep_1, surf_1, targeting_2, retreat_2 | 37.1 | 50 | 0% | +4.2 |
+| `late` | +preparedness_3, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 39.8 | 50 | 0% | +6.9 |
+| `full` | (all maxed) | 39.9 | 50 | 0% | +7.0 |
 
 **Observations:**
-- Strong progression none → early → mid (+6.0 per tier)
-- Late/full plateau for warrior (doesn't benefit from kiting or additional sweep)
-- 1 victory at full tier
+- Progression from none→mid→late: +4.2 then +2.7 (diminishing returns for warrior)
+- Early tier shows no gain (-0.6, noise) — basic capabilities don't help tanky warrior at mid upgrades
+- Late/full plateau for warrior (kiting doesn't help melee)
 - All CB rates 0%
 
-**Success Criteria:** ✅ Passed
-- ✅ Clear progression through mid tier (+6 depth per tier)
-- ✅ All CB rates 0%
-- ⚠️ Late/full show no gain over mid for warrior (class-specific, not a bug)
-
-### Capability Progression @ `6b89d2a` (50 runs, seed=1000, class=mage, upgrades=mid)
+### Capability Progression @ `0789dc4` (50 runs, seed=1000, class=mage, upgrades=mid)
 
 | Preset | Capabilities | Avg Depth | Max Depth | CB Rate | Delta |
 |--------|--------------|-----------|-----------|---------|-------|
-| `none` | (all disabled) | 28.9 | 49 | 4% | baseline |
-| `early` | town, farming, tactics, preparedness_1, targeting_1, retreat_1 | 40.5 | 50 | 0% | +11.6 |
-| `mid` | +preparedness_2, sweep_1, surf_1, targeting_2, retreat_2 | 45.4 | 50 | 0% | +16.5 |
-| `late` | +preparedness_3, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 47.9 | 50 | 0% | +19.0 |
-| `full` | (all maxed) | 47.8 | 50 | 6% | +18.9 |
+| `none` | (all disabled) | 16.9 | 27 | 0% | baseline |
+| `early` | town, farming, tactics, preparedness_1, targeting_1, retreat_1 | 17.7 | 31 | 0% | +0.8 |
+| `mid` | +preparedness_2, sweep_1, surf_1, targeting_2, retreat_2 | 25.9 | 39 | 4% | +9.0 |
+| `late` | +preparedness_3, sweep_2, surf_2, kiting_1, targeting_3, retreat_3 | 40.8 | 50 | 0% | +23.9 |
+| `full` | (all maxed) | 42.9 | 50 | 4% | +26.0 |
 
 **Observations:**
-- Mage shows continued improvement through late tier (kiting matters for casters)
-- Early tier critical: +11.6 depth (targeting/retreat compensate for low HP)
-- Full tier has 6% CB rate (known caster CB issue at 50k turns)
-- Mid test required 40k turns (sweep/surf extend run time)
+- Mage shows dramatic progression: none→late is +23.9 depth
+- Kiting (late tier) is transformative: +14.9 depth jump from mid→late
+- Early tier minimal (+0.8) — basic capabilities can't compensate for squishy mage at mid upgrades
+- Mid tier 4% CB rate, full tier 4% CB rate
 
 **Cross-Class Comparison (Warrior vs Mage):**
 
 | Preset | Warrior | Mage | Mage vs Warrior |
 |--------|---------|------|-----------------|
-| `none` | 32.2 | 28.9 | -3.3 (mage struggles without capabilities) |
-| `early` | 38.2 | 40.5 | +2.3 (targeting/retreat critical for casters) |
-| `mid` | 44.2 | 45.4 | +1.2 |
-| `late` | 44.2 | 47.9 | +3.7 (kiting helps mage, not warrior) |
-| `full` | 43.6 | 47.8 | +4.2 |
+| `none` | 32.9 | 16.9 | -16.0 (mage struggles hard without capabilities) |
+| `early` | 32.3 | 17.7 | -14.6 (basic capabilities insufficient for mage) |
+| `mid` | 37.1 | 25.9 | -11.2 (sweep/surf help but mage still behind) |
+| `late` | 39.8 | 40.8 | +1.0 (kiting equalizes) |
+| `full` | 39.9 | 42.9 | +3.0 (mage exceeds warrior) |
 
-**Success Criteria:** ✅ Passed
-- ✅ Clear progression through late tier for mage
-- ✅ Kiting provides measurable benefit (+2.5 depth late vs mid)
-- ⚠️ Full tier 6% CB rate (existing known issue)
+**vs Previous (`6b89d2a`):**
+
+| Preset | War Old | War New | Mage Old | Mage New | Notes |
+|--------|---------|---------|----------|----------|-------|
+| `none` | 32.2 | 32.9 | 28.9 | 16.9 | Mage -12 (Vitality nerf) |
+| `early` | 38.2 | 32.3 | 40.5 | 17.7 | Both regressed |
+| `mid` | 44.2 | 37.1 | 45.4 | 25.9 | Both regressed |
+| `late` | 44.2 | 39.8 | 47.9 | 40.8 | Kiting partially compensates |
+| `full` | 43.6 | 39.9 | 47.8 | 42.9 | Gap narrows at full |
+
+Regressions caused by Vitality nerf (3%→1%/level) in survivability rebalance. At mid-tier upgrades, Vitality 5 now gives +5% HP instead of +15%. Power was redistributed to Resilience/Swiftness but those need max levels to compensate. At max-upgrades, both classes are endgame-viable (warrior 47.0, mage 47.8 in full baseline).
+
+**Success Criteria:** ⚠️ Partial
+- ✅ Clear progression mid→late→full for both classes
+- ✅ Kiting transforms mage performance (+14.9 depth)
+- ⚠️ Early tier provides no meaningful benefit for either class at mid upgrades
+- ⚠️ Mid-tier upgrades significantly weaker post-Vitality nerf (mage none: 28.9→16.9)
+- ⚠️ Mage 4% CB at mid and full tiers
 
 ---
 
@@ -228,27 +289,39 @@ pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --max-upgrades --capab
 
 Tests meta-upgrade impact on bot performance.
 
-### Upgrade Progression @ `b4c83bc` (50 runs, seed=1000, class=warrior, capabilities=full)
+### Upgrade Progression @ `0789dc4` (50 runs, seed=1000, class=warrior, capabilities=full)
 
 | Preset | Upgrades | Avg Depth | Max Depth | CB Rate | Delta | Victories |
 |--------|----------|-----------|-----------|---------|-------|-----------|
-| `none` | No upgrades | 42.6 | 50 | 0% | baseline | 0 |
-| `early` | vitality 2, might 2, resilience 1 | 44.9 | 50 | 0% | +2.3 | 0 |
-| `mid` | vit 5, mgt 5, res 3, swf 2, prc 2, cel 2 | 44.5 | 50 | 0% | +1.9 | 1 |
-| `late` | vit 8, mgt 8, res 4, swf 4, prc 4, cel 4 | 45.6 | 50 | 0% | +3.0 | 2 |
-| `full` | All maxed | 45.3 | 50 | 0% | +2.7 | 1 |
+| `none` | No upgrades | 31.2 | 50 | 0% | baseline | 0 |
+| `early` | vitality 2, might 2, resilience 1 | 35.6 | 50 | 0% | +4.4 | 0 |
+| `mid` | vit 5, mgt 5, res 5, swf 4, prc 2, cel 2 | 39.9 | 50 | 0% | +8.7 | 0 |
+| `late` | vit 8, mgt 8, res 7, swf 6, prc 4, cel 4 | 40.2 | 50 | 0% | +9.0 | 0 |
+| `full` | All maxed | 45.1 | 50 | 0% | +13.9 | 0 |
+
+**vs Previous (`b4c83bc`):**
+
+| Preset | Old | New | Delta | Notes |
+|--------|-----|-----|-------|-------|
+| `none` | 42.6 | 31.2 | -11.4 | Base much weaker |
+| `early` | 44.9 | 35.6 | -9.3 | Early less impactful |
+| `mid` | 44.5 | 39.9 | -4.6 | Narrowing |
+| `late` | 45.6 | 40.2 | -5.4 | Late plateau |
+| `full` | 45.3 | 45.1 | -0.2 | Full tier unchanged |
 
 **Observations:**
-- Base game much stronger: 42.6 without upgrades (was 37.2)
-- Progression curve flatter: +2.7 total spread (was +9.3)
-- Upgrades still help but less dramatically
-- Some noise in mid/full tiers (within margin of error)
+- Upgrades now provide much stronger progression: +13.9 total spread (was +2.7)
+- Base game weaker without upgrades: 31.2 (was 42.6) — upgrades matter more
+- Clear staircase: none→early +4.4, early→mid +4.3, mid→late +0.3, late→full +4.9
+- Late plateau: mid→late only +0.3 (resilience/swiftness diminishing returns at caps=full)
+- Full tier converges: 45.1 vs old 45.3 — endgame unchanged
 
 **Success Criteria:** ✅ Passed
-- ✅ Upgrades provide improvement at all tiers
-- ✅ Bot viable even without upgrades (42.6 depth)
+- ✅ Upgrades provide meaningful improvement at all tiers (+13.9 total)
+- ✅ Strong progression feel (each tier noticeably better)
+- ⚠️ Late plateau (mid→late only +0.3) — resilience/swiftness saturate with full capabilities
 
-### Paired Progression @ `b4c83bc` (50 runs, seed=1000)
+### Paired Progression @ `0789dc4` (50 runs, seed=1000)
 
 Tests realistic player progression with matching capability and upgrade tiers.
 
@@ -256,31 +329,41 @@ Tests realistic player progression with matching capability and upgrade tiers.
 
 | Tier | Avg Depth | Kills | CB | Delta |
 |------|-----------|-------|-----|-------|
-| none/none | 23.1 | 174 | 0% | baseline |
-| early/early | 35.1 | 327 | 0% | +12.0 |
-| mid/mid | 41.9 | 466 | 0% | +6.8 |
-| late/late | 45.8 | 533 | 0% | +3.9 |
-| full/full | 45.3 | 479 | 0% | -0.5 |
+| none/none | 21.1 | 144 | 0% | baseline |
+| early/early | 19.9 | 126 | 0% | -1.2 |
+| mid/mid | 37.1 | 372 | 0% | +16.0 |
+| late/late | 40.0 | 441 | 0% | +18.9 |
+| full/full | 45.1 | 463 | 0% | +24.0 |
 
 **Mage:**
 
 | Tier | Avg Depth | Kills | CB | Delta |
 |------|-----------|-------|-----|-------|
-| none/none | 14.1 | 73 | 6% | baseline |
-| early/early | 24.9 | 196 | 0% | +10.8 |
-| mid/mid | 43.8 | 820 | 0% | +18.9 |
-| late/late | 48.1 | 784 | 0% | +4.3 |
-| full/full | 47.9 | 648 | 0% | -0.2 |
+| none/none | 6.5 | 27 | 0% | baseline |
+| early/early | 12.1 | 61 | 0% | +5.6 |
+| mid/mid | 25.9 | 582 | 4% | +19.4 |
+| late/late | 46.3 | 816 | 0% | +39.8 |
+| full/full | 48.2 | 638 | 2% | +41.7 |
 
 **Cross-Class Comparison:**
 
 | Tier | Warrior | Mage | Mage vs Warrior |
 |------|---------|------|-----------------|
-| none/none | 23.1 | 14.1 | -9.0 (mage struggles) |
-| early/early | 35.1 | 24.9 | -10.2 (mage struggles) |
-| mid/mid | 41.9 | 43.8 | +1.9 (mage catches up) |
-| late/late | 45.8 | 48.1 | +2.3 (mage exceeds) |
-| full/full | 45.3 | 47.9 | +2.6 (mage exceeds) |
+| none/none | 21.1 | 6.5 | -14.6 (mage nearly unplayable) |
+| early/early | 19.9 | 12.1 | -7.8 (both struggle) |
+| mid/mid | 37.1 | 25.9 | -11.2 (mage still behind) |
+| late/late | 40.0 | 46.3 | +6.3 (mage surges past) |
+| full/full | 45.1 | 48.2 | +3.1 (mage exceeds) |
+
+**vs Previous (`b4c83bc`):**
+
+| Tier | War Old | War New | Mage Old | Mage New |
+|------|---------|---------|----------|----------|
+| none/none | 23.1 | 21.1 | 14.1 | 6.5 |
+| early/early | 35.1 | 19.9 | 24.9 | 12.1 |
+| mid/mid | 41.9 | 37.1 | 43.8 | 25.9 |
+| late/late | 45.8 | 40.0 | 48.1 | 46.3 |
+| full/full | 45.3 | 45.1 | 47.9 | 48.2 |
 
 **Cost Breakdown:**
 
@@ -290,27 +373,21 @@ Tests realistic player progression with matching capability and upgrade tiers.
 | Upgrades | 0 | 412 | 3,309 | 11,997 | 25,421 |
 | **Total** | 0 | 1,562 | 5,889 | 17,401 | 33,459 |
 
-**Progression Economics (Warrior):**
-
-| Transition | Depth Gain | Essence Cost | Runs at Current Tier |
-|------------|------------|--------------|----------------------|
-| none → early | +12.0 | 1,562 | ~3 runs |
-| early → mid | +6.8 | 4,327 | ~3-4 runs |
-| mid → late | +3.9 | 11,512 | ~5 runs |
-| late → full | -0.5 | 16,058 | ~6-7 runs |
-
 **Observations:**
-- Warrior: Smooth progression, early tiers best value (+12 depth for ~2 runs)
-- Mage: Struggles at none/early (14.1, 24.9 depth), needs mid tier to be viable
-- Mage mid tier is critical: +18.9 depth jump (vitality 5 + sweep/surf kick in)
-- Both classes: late → full provides no benefit (-0.5 warrior, -0.2 mage)
-- Mage exceeds warrior at mid+ tiers once HP threshold is reached
+- **Warrior early/early regression**: 19.9 < none/none 21.1 — early capabilities (town/farming) waste turns that warrior could use face-rushing. Early upgrades too weak to compensate.
+- **Mage none/none collapsed**: 14.1 → 6.5 — Vitality nerf devastates raw mage (no HP buffer)
+- **Mage late/late surges**: 46.3 depth — kiting + late upgrades combine powerfully
+- **Full tier converges**: warrior 45.1 (was 45.3), mage 48.2 (was 47.9) — endgame stable
+- **Mid-game valley**: Both classes significantly weaker at early/mid tiers post-rebalance
+- **Mage crossover shifted**: Mage now exceeds warrior at late tier (was mid)
 
 **Success Criteria:** ⚠️ Partial
-- ✅ Clear progression through late tier for both classes
-- ✅ Reasonable time-to-tier (2-6 runs per tier)
-- ⚠️ Mage early game harsh (6% CB at none, -10 depth vs warrior)
-- ❌ Full tier provides no benefit over late for either class
+- ✅ Clear progression late→full for both classes
+- ✅ Full tier endgame unchanged (warrior 45.1, mage 48.2)
+- ⚠️ Warrior early/early is a regression (-1.2 vs none/none)
+- ⚠️ Mage none/none nearly unplayable (6.5 avg depth)
+- ⚠️ Mid-game valley: early/mid tiers significantly weaker than pre-rebalance
+- ❌ Mage doesn't catch warrior until late tier (was mid)
 
 ---
 

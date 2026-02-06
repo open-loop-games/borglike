@@ -196,6 +196,12 @@ function evaluateConsumable(item: Item, character: Character): ItemEvaluation {
  */
 function evaluateEquipment(item: Item, character: Character): ItemEvaluation {
   const template = item.template
+
+  // Only rangers equip bows — other classes waste turns shooting instead of casting
+  if (template.type === 'bow' && character.classId !== 'ranger') {
+    return { score: 0, isUseful: false, reason: 'Non-ranger ignores bow', slot: null, isUpgrade: false }
+  }
+
   const slot = getEquipSlot(template)
 
   if (!slot) {
@@ -369,6 +375,7 @@ export function compareEquipment(
  * Decide whether to equip an item from inventory
  */
 export function shouldEquip(item: Item, character: Character): boolean {
+  if (item.template.type === 'bow' && character.classId !== 'ranger') return false
   const slot = getEquipSlot(item.template)
   if (!slot) return false
 
