@@ -129,9 +129,7 @@ const metaAchievements = computed(() => {
               prestige: cls.prestige,
             }"
             @click="
-              isClassUnlocked(cls.id) && !isClassCollected(cls.id)
-                ? claimClass(cls.id)
-                : undefined
+              isClassUnlocked(cls.id) && !isClassCollected(cls.id) ? claimClass(cls.id) : undefined
             "
           >
             <span class="cell-icon">&amp;</span>

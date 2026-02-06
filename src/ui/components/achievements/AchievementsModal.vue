@@ -214,10 +214,7 @@ function claimById(id: string) {
       <!-- Mastery grid (shown for 'all' and 'mastery' filters) -->
       <MasteryGrid v-if="showMasteryGrid" @claim="claimById" />
 
-      <div
-        v-if="filteredAchievements.length === 0 && !showMasteryGrid"
-        class="empty-state"
-      >
+      <div v-if="filteredAchievements.length === 0 && !showMasteryGrid" class="empty-state">
         <p>No achievements match your filters.</p>
       </div>
     </div>

@@ -32,15 +32,26 @@ import { getKnowledgeBonuses } from './knowledge-effects'
 
 /** Map monster spell prefixes to element types */
 const SPELL_ELEMENT_MAP: Record<string, Element> = {
-  BR_FIRE: 'FIRE', BR_COLD: 'COLD', BR_ELEC: 'ELEC',
-  BR_ACID: 'ACID', BR_POISON: 'POISON', BR_DARK: 'DARK',
-  BO_FIRE: 'FIRE', BO_COLD: 'COLD', BO_ELEC: 'ELEC', BO_ACID: 'ACID',
+  BR_FIRE: 'FIRE',
+  BR_COLD: 'COLD',
+  BR_ELEC: 'ELEC',
+  BR_ACID: 'ACID',
+  BR_POISON: 'POISON',
+  BR_DARK: 'DARK',
+  BO_FIRE: 'FIRE',
+  BO_COLD: 'COLD',
+  BO_ELEC: 'ELEC',
+  BO_ACID: 'ACID',
 }
 
 /** Display names for elements */
 const ELEMENT_NAMES: Record<Element, string> = {
-  FIRE: 'fire', COLD: 'cold', ELEC: 'lightning',
-  ACID: 'acid', POISON: 'poison', DARK: 'darkness',
+  FIRE: 'fire',
+  COLD: 'cold',
+  ELEC: 'lightning',
+  ACID: 'acid',
+  POISON: 'poison',
+  DARK: 'darkness',
 }
 
 // ============================================================================
@@ -177,7 +188,9 @@ function executeBreathWeapon(
   const rawDamage = Math.min(baseDamage, caps[element])
 
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent,
+    monster.template.name,
+    game.bestiary,
+    game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent
   )
   const { finalDamage } = resolveDefense(character, {
@@ -223,7 +236,9 @@ function executeBoltSpell(
   const rawDamage = rollDice('5d8') + Math.floor(character.depth / 2)
 
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent,
+    monster.template.name,
+    game.bestiary,
+    game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent
   )
   const { finalDamage } = resolveDefense(character, {
@@ -461,4 +476,3 @@ function executeBrainSmash(monster: Monster, character: Character): SpellResult 
     message,
   }
 }
-

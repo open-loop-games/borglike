@@ -609,7 +609,6 @@ function getEquippedItem(character: Character, slot: EquipSlot): Item | null {
   return character.equipment[slot] ?? null
 }
 
-
 /**
  * Check if an item is a consumable
  */

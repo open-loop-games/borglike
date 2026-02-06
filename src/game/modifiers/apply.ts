@@ -167,7 +167,6 @@ import type { Character } from '../types'
 /** Equipment slots that provide armor */
 const ARMOR_SLOTS = ['armor', 'shield', 'helm', 'gloves', 'boots'] as const
 
-
 /**
  * Calculate equipment-based armor (protection values, not stat bonuses)
  * This is separate from the modifier system as it's base equipment stats.

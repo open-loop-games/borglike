@@ -228,7 +228,6 @@ export function getAvailableSpells(
 // SPELL POWER CALCULATION
 // ============================================================================
 
-
 /**
  * Calculate spell power (damage or heal) based on character stats
  * Formula: basePower + (primaryStat - 10) * scaling + level * scaling/3

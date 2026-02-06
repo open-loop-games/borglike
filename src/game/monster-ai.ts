@@ -40,7 +40,6 @@ import { damageMinionById } from './minion-ai'
 import { rollDice } from './dice'
 import { incrementStat, checkCloseCall } from './stats-helpers'
 
-
 // ============================================================================
 // UNIQUE ID GENERATION
 // ============================================================================

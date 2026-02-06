@@ -784,11 +784,7 @@ function startGameLoop(runId: string): void {
  * Handle game end (sync path) -- does everything except awaiting IndexedDB save.
  * Returns the deferred save promise for the caller to flush later.
  */
-function handleGameEndSync(
-  runId: string,
-  result: RunResult,
-  slot: number
-): Promise<void> {
+function handleGameEndSync(runId: string, result: RunResult, slot: number): Promise<void> {
   const runs = useRunsStore()
   const feed = useFeedStore()
 

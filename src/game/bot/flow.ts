@@ -224,11 +224,7 @@ const DY = [-1, -1, -1, 0, 0, 1, 1, 1]
  * @param avoid - Danger grid avoidance (tiles above threshold are excluded)
  * @returns FlowGrid with costs for all reachable tiles
  */
-export function computeFlow(
-  level: DungeonLevel,
-  goal: Point,
-  avoid?: FlowAvoidance
-): FlowGrid {
+export function computeFlow(level: DungeonLevel, goal: Point, avoid?: FlowAvoidance): FlowGrid {
   const { width, height } = level
   const grid = createFlowGrid(width, height)
 

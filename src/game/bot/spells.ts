@@ -876,7 +876,6 @@ export function getBestSpellForPurpose(
   return matching[0]?.spell ?? null
 }
 
-
 /**
  * Check if character can cast any damage spell right now
  * Used to determine if casters should get KITE goals

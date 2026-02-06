@@ -471,7 +471,6 @@ export function handleClearBlacklistStrategy(botState: BotState, turn: number): 
 // HELPERS
 // ============================================================================
 
-
 /**
  * Check if bot has been on same position for too long
  */

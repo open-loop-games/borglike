@@ -111,11 +111,16 @@ const nextUnlock = computed(() => {
           <span class="knowledge-value">+{{ knowledgeBonus.toFixed(1) }}%</span>
         </div>
         <div class="knowledge-bar">
-          <div class="knowledge-fill" :style="{ width: `${(knowledgeBonus / bestiaryCapPercent) * 100}%` }"></div>
+          <div
+            class="knowledge-fill"
+            :style="{ width: `${(knowledgeBonus / bestiaryCapPercent) * 100}%` }"
+          ></div>
         </div>
         <div class="knowledge-tiers">
           <span :class="{ active: knowledgeBonus >= 10 }">10%</span>
-          <span :class="{ active: knowledgeBonus >= bestiaryCapPercent }">{{ bestiaryCapPercent }}%</span>
+          <span :class="{ active: knowledgeBonus >= bestiaryCapPercent }"
+            >{{ bestiaryCapPercent }}%</span
+          >
         </div>
         <div class="knowledge-desc">
           Deal +{{ knowledgeBonus.toFixed(1) }}% damage, take -{{ knowledgeBonus.toFixed(1) }}%

@@ -61,14 +61,14 @@ function chainCost(config: ChainCostConfig, tier: number): number {
 // =============================================================================
 
 const CHAIN_COSTS = {
-  tactics:       { baseCost: 200, costScaling: 1.8 },
-  town:          { baseCost: 100, costScaling: 1.5 },
-  preparedness:  { baseCost: 150, costScaling: 1.8 },
-  sweep:         { baseCost: 150, costScaling: 1.8 },
-  surf:          { baseCost: 200, costScaling: 1.8 },
-  kiting:        { baseCost: 250, costScaling: 2.0 },
-  targeting:     { baseCost: 200, costScaling: 1.8 },
-  retreat:       { baseCost: 250, costScaling: 1.8 },
+  tactics: { baseCost: 200, costScaling: 1.8 },
+  town: { baseCost: 100, costScaling: 1.5 },
+  preparedness: { baseCost: 150, costScaling: 1.8 },
+  sweep: { baseCost: 150, costScaling: 1.8 },
+  surf: { baseCost: 200, costScaling: 1.8 },
+  kiting: { baseCost: 250, costScaling: 2.0 },
+  targeting: { baseCost: 200, costScaling: 1.8 },
+  retreat: { baseCost: 250, costScaling: 1.8 },
 }
 
 // =============================================================================

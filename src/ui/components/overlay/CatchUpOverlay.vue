@@ -17,11 +17,7 @@ const overallPercent = computed(() => Math.round(engineState.overallProgress * 1
       <h2 class="catchup-title">Catching Up...</h2>
 
       <div class="slot-progress-list">
-        <div
-          v-for="entry in engineState.catchUpProgress"
-          :key="entry.slot"
-          class="slot-progress"
-        >
+        <div v-for="entry in engineState.catchUpProgress" :key="entry.slot" class="slot-progress">
           <div class="slot-label" :style="{ color: SLOT_COLORS[entry.slot] }">
             Slot {{ entry.slot + 1 }}
           </div>
@@ -29,15 +25,23 @@ const overallPercent = computed(() => Math.round(engineState.overallProgress * 1
             <div
               class="progress-bar-fill"
               :style="{
-                width: entry.ticksTotal > 0 ? (entry.ticksCompleted / entry.ticksTotal * 100) + '%' : '0%',
+                width:
+                  entry.ticksTotal > 0
+                    ? (entry.ticksCompleted / entry.ticksTotal) * 100 + '%'
+                    : '0%',
               }"
             />
           </div>
           <span class="slot-percent">
-            {{ entry.ticksTotal > 0 ? Math.round(entry.ticksCompleted / entry.ticksTotal * 100) : 0 }}%
+            {{
+              entry.ticksTotal > 0
+                ? Math.round((entry.ticksCompleted / entry.ticksTotal) * 100)
+                : 0
+            }}%
           </span>
           <span v-if="entry.deathsDuringCatchUp > 0" class="slot-deaths">
-            ({{ entry.deathsDuringCatchUp }} {{ entry.deathsDuringCatchUp === 1 ? 'death' : 'deaths' }})
+            ({{ entry.deathsDuringCatchUp }}
+            {{ entry.deathsDuringCatchUp === 1 ? 'death' : 'deaths' }})
           </span>
         </div>
       </div>
@@ -45,17 +49,12 @@ const overallPercent = computed(() => Math.round(engineState.overallProgress * 1
       <div class="overall-section">
         <div class="overall-label">Overall</div>
         <div class="progress-bar-track overall-track">
-          <div
-            class="progress-bar-fill overall-fill"
-            :style="{ width: overallPercent + '%' }"
-          />
+          <div class="progress-bar-fill overall-fill" :style="{ width: overallPercent + '%' }" />
         </div>
         <span class="overall-percent">{{ overallPercent }}%</span>
       </div>
 
-      <div class="catchup-info">
-        Simulating {{ targetSeconds }}s of game time...
-      </div>
+      <div class="catchup-info">Simulating {{ targetSeconds }}s of game time...</div>
 
       <button class="skip-btn" @click="skipCatchUp()">Skip</button>
     </div>

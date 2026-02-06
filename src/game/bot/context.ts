@@ -319,4 +319,3 @@ export function getBotStatus(context: BotContext): string {
 
   return parts.join(' | ')
 }
-

@@ -69,7 +69,6 @@ import { botSellItems, botBuySupplies } from './merchant'
 import { profile } from './profiler'
 import { selectActionByTier, calculateImmediateTier } from './tier-actions'
 
-
 /**
  * Run one tick of bot decision making
  *
@@ -192,16 +191,12 @@ export function runBotTick(
 
   // Stuck recovery (dungeon only)
   if (game.character.depth > 0) {
-    const stuckAction = profile('stuckRecovery', () =>
-      handleStuckRecovery(game, context, botState)
-    )
+    const stuckAction = profile('stuckRecovery', () => handleStuckRecovery(game, context, botState))
     if (stuckAction) return stuckAction
   }
 
   // Goal-based movement (explore/descend/town/farm)
-  return profile('goalMovement', () =>
-    executeGoalMovement(game, context, botState, dangerResult)
-  )
+  return profile('goalMovement', () => executeGoalMovement(game, context, botState, dangerResult))
 }
 
 // ============================================================================
@@ -653,7 +648,9 @@ function executeGoalMovement(
   if (killAction) return killAction
 
   // 7. Step toward goal
-  const direction = profile('goalMovement.selectStep', () => selectStep(game, botState, reachableFlow))
+  const direction = profile('goalMovement.selectStep', () =>
+    selectStep(game, botState, reachableFlow)
+  )
   recordPosition(botState, pos)
 
   // Record progress for productive goals (not FLEE/RECOVER)

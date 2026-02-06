@@ -382,9 +382,7 @@ export function getPreCombatBuffAction(
   if (visibleMonsters.length === 0) return null
 
   // Check if Morgoth is visible - triggers full buffing protocol
-  const morgothVisible = visibleMonsters.some(
-    (m) => m.template.name === VICTORY_BOSS_NAME
-  )
+  const morgothVisible = visibleMonsters.some((m) => m.template.name === VICTORY_BOSS_NAME)
 
   // Check if already buffed
   const hasBlessing = hasStatusEffect(character, 'blessing')
