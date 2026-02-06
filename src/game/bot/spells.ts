@@ -24,11 +24,17 @@ import { estimateDamageAfterArmor } from '../combat'
 // ============================================================================
 
 /**
- * Check if character can cast spells
- * GOLEM RESTRICTION: Golems cannot cast spells
+ * Get castable spells for a character, respecting race restrictions.
+ * GOLEM RESTRICTION: Golems cannot cast spells — returns empty array.
+ * Combines the race gate with getAvailableSpells() so every spell function
+ * only needs a single call instead of a two-step guard + fetch.
  */
-function canCastSpells(character: Character): boolean {
-  return character.raceId !== 'golem'
+function getCastableSpells(
+  character: Character,
+  turn: number
+): { spell: SpellTemplate; canCast: boolean; reason?: string }[] {
+  if (character.raceId === 'golem') return []
+  return getAvailableSpells(character, turn)
 }
 
 // ============================================================================
@@ -54,10 +60,6 @@ export function getHealingSpellAction(
   healsPriority: boolean = false
 ): GameAction | null {
   const character = game.character
-
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   const hpRatio = character.hp / character.maxHp
   const hpDown = character.maxHp - character.hp
 
@@ -66,8 +68,8 @@ export function getHealingSpellAction(
     return null
   }
 
-  // Get available heal spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available heal spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const healSpells = available.filter(
     (entry) =>
       entry.canCast && (entry.spell.effectType === 'heal' || entry.spell.effectType === 'lifedrain')
@@ -201,15 +203,12 @@ export function getDamageSpellAction(
 ): GameAction | null {
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   if (visibleMonsters.length === 0) {
     return null
   }
 
-  // Get available damage spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available damage spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const damageSpells = available.filter(
     (entry) =>
       entry.canCast &&
@@ -331,11 +330,8 @@ export function getBuffSpellAction(
 
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
-  // Get available buff spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available buff spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const buffSpells = available.filter((entry) => entry.canCast && entry.spell.effectType === 'buff')
 
   if (buffSpells.length === 0) return null
@@ -469,10 +465,6 @@ export function getEscapeSpellAction(
   dangers: DangerMap
 ): GameAction | null {
   const character = game.character
-
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   const hpRatio = character.hp / character.maxHp
   const pos = character.position
 
@@ -490,8 +482,8 @@ export function getEscapeSpellAction(
 
   if (!isEmergency) return null
 
-  // Get available teleport spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available teleport spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const teleportSpells = available.filter(
     (entry) => entry.canCast && entry.spell.effectType === 'teleport'
   )
@@ -528,10 +520,7 @@ export function getEscapeSpellAction(
 export function getTeleportSpellAction(game: GameState): GameAction | null {
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
-  const available = getAvailableSpells(character, game.turn)
+  const available = getCastableSpells(character, game.turn)
   const teleportSpells = available.filter(
     (entry) => entry.canCast && entry.spell.effectType === 'teleport'
   )
@@ -560,10 +549,7 @@ export function getTeleportSpellAction(game: GameState): GameAction | null {
 export function getPhaseDoorSpellAction(game: GameState): GameAction | null {
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
-  const available = getAvailableSpells(character, game.turn)
+  const available = getCastableSpells(character, game.turn)
 
   // Find phase door specifically (teleportRange > 0 means short-range)
   const phaseDoor = available.find(
@@ -598,13 +584,10 @@ export function getDebuffSpellAction(
 
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   if (visibleMonsters.length === 0) return null
 
-  // Get available debuff spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available debuff spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const debuffSpells = available.filter(
     (entry) => entry.canCast && entry.spell.effectType === 'debuff'
   )
@@ -687,12 +670,9 @@ export function getSmartDebuffAction(
 
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   if (visibleMonsters.length === 0) return null
 
-  const available = getAvailableSpells(character, game.turn)
+  const available = getCastableSpells(character, game.turn)
 
   // Find slow spell
   const slowSpell = available.find(
@@ -780,13 +760,10 @@ export function getTeleportOtherAction(
 ): GameAction | null {
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   if (visibleMonsters.length === 0) return null
 
-  // Get available spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const teleportOtherSpell = available.find(
     (entry) => entry.canCast && entry.spell.id === 'teleport_other'
   )
@@ -870,10 +847,7 @@ export function getBestSpellForPurpose(
   game: GameState,
   purpose: 'damage' | 'heal' | 'escape' | 'buff'
 ): SpellTemplate | null {
-  // GOLEM RESTRICTION
-  if (!canCastSpells(game.character)) return null
-
-  const available = getAvailableSpells(game.character, game.turn)
+  const available = getCastableSpells(game.character, game.turn)
 
   const matching = available.filter((entry) => {
     if (!entry.canCast) return false
@@ -908,7 +882,7 @@ export function getBestSpellForPurpose(
  * Used to determine if casters should get KITE goals
  */
 export function hasCastableDamageSpell(game: GameState): boolean {
-  const available = getAvailableSpells(game.character, game.turn)
+  const available = getCastableSpells(game.character, game.turn)
   return available.some(
     (entry) =>
       entry.canCast &&
@@ -944,9 +918,6 @@ export function getShadowStepAction(
   // Only Rogues have Shadow Step
   if (character.classId !== 'rogue') return null
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   // Don't use when already have Sneak Attack buff (waste of cooldown)
   const hasSneakAttack = character.statusEffects.some((e) => e.type === 'sneak_attack')
   if (hasSneakAttack) return null
@@ -955,8 +926,8 @@ export function getShadowStepAction(
   const hpRatio = character.hp / character.maxHp
   if (hpRatio < 0.4) return null
 
-  // Get Shadow Step spell
-  const available = getAvailableSpells(character, game.turn)
+  // Get Shadow Step spell (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const shadowStepSpell = available.find(
     (entry) => entry.canCast && entry.spell.id === 'shadow_step'
   )
@@ -1008,8 +979,8 @@ export function getShadowStepAction(
 export function getRootShotAction(game: GameState, adjacentMonster: Monster): GameAction | null {
   const character = game.character
 
-  // Get available spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
 
   // Look for root_shot specifically (damage spell with 100% slow = stun)
   const rootShot = available.find((entry) => entry.canCast && entry.spell.id === 'root_shot')
@@ -1047,11 +1018,8 @@ export function getSummonSpellAction(
 ): GameAction | null {
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
-  // Get available summon spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available summon spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const summonSpells = available.filter(
     (entry) => entry.canCast && entry.spell.effectType === 'summon'
   )
@@ -1127,9 +1095,6 @@ export function classShouldSummon(classId: string): boolean {
 export function getLightOrbSpellAction(game: GameState): GameAction | null {
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   // Only caster classes have vision buffs
   const visionSpellId =
     character.classId === 'mage' || character.classId === 'archmage'
@@ -1153,8 +1118,8 @@ export function getLightOrbSpellAction(game: GameState): GameAction | null {
     return null
   }
 
-  // Get available spells
-  const available = getAvailableSpells(character, game.turn)
+  // Get available spells (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const visionSpell = available.find((entry) => entry.canCast && entry.spell.id === visionSpellId)
 
   if (visionSpell) {
@@ -1193,16 +1158,13 @@ export function getDimensionDoorKiteAction(
 
   const character = game.character
 
-  // GOLEM RESTRICTION
-  if (!canCastSpells(character)) return null
-
   // Only for caster classes (no bow = caster, bow = archer who uses physical kiting)
   if (character.equipment.bow) return null
 
   if (visibleMonsters.length === 0) return null
 
-  // Check if DD is available
-  const available = getAvailableSpells(character, game.turn)
+  // Check if DD is available (getCastableSpells handles golem restriction)
+  const available = getCastableSpells(character, game.turn)
   const ddSpell = available.find((entry) => entry.canCast && entry.spell.id === 'dimension_door')
   if (!ddSpell) return null
 
