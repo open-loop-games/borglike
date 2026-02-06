@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { achievements, type Achievement } from '@game/data/achievements'
 import AchievementCard from './AchievementCard.vue'
+import MasteryGrid from './MasteryGrid.vue'
 
 const progression = useProgressionStore()
 
@@ -21,14 +22,20 @@ const sortBy = ref<'name' | 'reward' | 'status'>('status')
 const searchQuery = ref('')
 
 // Categories for filter
-const categories = ['all', 'progress', 'challenge', 'cumulative'] as const
+const categories = ['all', 'progress', 'challenge', 'cumulative', 'mastery'] as const
 
 // Category sort order
 const categoryOrder: Record<string, number> = {
   progress: 0,
   challenge: 1,
   cumulative: 2,
+  mastery: 3,
 }
+
+// Whether to show the mastery grid (shown for 'all' and 'mastery' filters)
+const showMasteryGrid = computed(
+  () => categoryFilter.value === 'all' || categoryFilter.value === 'mastery'
+)
 
 // Icon groups for sorting related achievements together
 const iconGroupOrder: Record<string, number> = {
@@ -61,12 +68,12 @@ function getStatusPriority(achievement: Achievement): number {
   return 3 // Collected (completed, no action)
 }
 
-// Filter and sort achievements
+// Filter and sort achievements (mastery rendered separately via MasteryGrid)
 const filteredAchievements = computed(() => {
-  let result = [...achievements]
+  let result = achievements.filter((a) => a.category !== 'mastery')
 
   // Apply category filter
-  if (categoryFilter.value !== 'all') {
+  if (categoryFilter.value !== 'all' && categoryFilter.value !== 'mastery') {
     result = result.filter((a) => a.category === categoryFilter.value)
   }
 
@@ -146,6 +153,10 @@ function selectAchievement(achievement: Achievement) {
 function claimAchievement(achievement: Achievement) {
   progression.collectAchievement(achievement.id)
 }
+
+function claimById(id: string) {
+  progression.collectAchievement(id)
+}
 </script>
 
 <template>
@@ -186,7 +197,8 @@ function claimAchievement(achievement: Achievement) {
     </div>
 
     <div class="modal-content">
-      <div class="achievement-grid">
+      <!-- Regular achievements as cards -->
+      <div v-if="filteredAchievements.length > 0" class="achievement-grid">
         <AchievementCard
           v-for="achievement in filteredAchievements"
           :key="achievement.id"
@@ -199,7 +211,13 @@ function claimAchievement(achievement: Achievement) {
         />
       </div>
 
-      <div v-if="filteredAchievements.length === 0" class="empty-state">
+      <!-- Mastery grid (shown for 'all' and 'mastery' filters) -->
+      <MasteryGrid v-if="showMasteryGrid" @claim="claimById" />
+
+      <div
+        v-if="filteredAchievements.length === 0 && !showMasteryGrid"
+        class="empty-state"
+      >
         <p>No achievements match your filters.</p>
       </div>
     </div>

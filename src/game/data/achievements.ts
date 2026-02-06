@@ -2,21 +2,28 @@
  * Achievement Definitions
  *
  * Achievements track player progress and reward essence for completing goals.
+ * Mastery achievements track wins per race/class and are displayed in a compact grid.
  */
 
 import type { GlobalStats } from '@/types/progression'
+import { races, startingRaces } from './races'
+import { classes, startingClasses } from './classes'
 
 export interface Achievement {
   id: string
   name: string
   description: string
   icon: string // ASCII/emoji
-  category: 'progress' | 'challenge' | 'cumulative'
+  category: 'progress' | 'challenge' | 'cumulative' | 'mastery'
   target: number // For progress tracking (e.g., 100 kills)
   reward: number // Essence reward
   hidden?: boolean // Don't show until unlocked
   /** GlobalStats key this achievement tracks progress against. Required for cumulative achievements. */
   statKey?: keyof GlobalStats
+  /** Whether this is a prestige race/class achievement (visually marked in UI) */
+  prestige?: boolean
+  /** Mastery sub-group for grid layout */
+  group?: 'race' | 'class' | 'meta'
 }
 
 /**
@@ -111,17 +118,6 @@ export const achievements: Achievement[] = [
     reward: 1000,
     statKey: 'totalDeaths',
   },
-  {
-    id: 'veteran',
-    name: 'Veteran',
-    description: 'Complete 50 runs',
-    icon: '#',
-    category: 'cumulative',
-    target: 50,
-    reward: 300,
-    statKey: 'totalRuns',
-  },
-
   // Monster kill tiers (continued)
   {
     id: 'butcher',
@@ -154,46 +150,56 @@ export const achievements: Achievement[] = [
     statKey: 'totalKills',
   },
 
-  // Run completion tiers (continued)
+  // Depth 50 tiers — reaching the final level
   {
-    id: 'seasoned',
-    name: 'Seasoned',
-    description: 'Complete 100 runs',
-    icon: '#',
+    id: 'deep_diver',
+    name: 'Deep Diver',
+    description: 'Reach depth 50 fifty times',
+    icon: 'v',
+    category: 'cumulative',
+    target: 50,
+    reward: 300,
+    statKey: 'timesReachedDepth50',
+  },
+  {
+    id: 'abyss_regular',
+    name: 'Abyss Regular',
+    description: 'Reach depth 50 one hundred times',
+    icon: 'v',
     category: 'cumulative',
     target: 100,
     reward: 500,
-    statKey: 'totalRuns',
+    statKey: 'timesReachedDepth50',
   },
   {
-    id: 'grizzled',
-    name: 'Grizzled',
-    description: 'Complete 250 runs',
-    icon: '#',
+    id: 'bottom_dweller',
+    name: 'Bottom Dweller',
+    description: 'Reach depth 50 two hundred fifty times',
+    icon: 'v',
     category: 'cumulative',
     target: 250,
     reward: 1000,
-    statKey: 'totalRuns',
+    statKey: 'timesReachedDepth50',
   },
   {
-    id: 'eternal',
-    name: 'Eternal',
-    description: 'Complete 500 runs',
-    icon: '#',
+    id: 'abyss_veteran',
+    name: 'Abyss Veteran',
+    description: 'Reach depth 50 five hundred times',
+    icon: 'v',
     category: 'cumulative',
     target: 500,
     reward: 2000,
-    statKey: 'totalRuns',
+    statKey: 'timesReachedDepth50',
   },
   {
-    id: 'timeless',
-    name: 'Timeless',
-    description: 'Complete 1,000 runs',
-    icon: '#',
+    id: 'eternal_delver',
+    name: 'Eternal Delver',
+    description: 'Reach depth 50 one thousand times',
+    icon: 'v',
     category: 'cumulative',
     target: 1000,
     reward: 4000,
-    statKey: 'totalRuns',
+    statKey: 'timesReachedDepth50',
   },
 
   // Death tiers (continued)
@@ -289,6 +295,82 @@ export const achievements: Achievement[] = [
     reward: 250,
     hidden: true,
   },
+
+  // =========================================================================
+  // Mastery achievements — win as each race/class
+  // =========================================================================
+
+  // Race mastery (14 races)
+  ...races.map(
+    (race): Achievement => ({
+      id: `win_race_${race.id}`,
+      name: `${race.name} Victor`,
+      description: `Win the game as a ${race.name}`,
+      icon: '@',
+      category: 'mastery',
+      target: 1,
+      reward: 500,
+      prestige: race.prestige,
+      group: 'race',
+    })
+  ),
+
+  // Class mastery (11 classes)
+  ...classes.map(
+    (cls): Achievement => ({
+      id: `win_class_${cls.id}`,
+      name: `${cls.name} Victor`,
+      description: `Win the game as a ${cls.name}`,
+      icon: '&',
+      category: 'mastery',
+      target: 1,
+      reward: 500,
+      prestige: cls.prestige,
+      group: 'class',
+    })
+  ),
+
+  // Meta mastery achievements
+  {
+    id: 'win_all_starting_races',
+    name: 'Racial Trio',
+    description: `Win with all ${startingRaces.length} starting races`,
+    icon: '+',
+    category: 'mastery',
+    target: startingRaces.length,
+    reward: 2000,
+    group: 'meta',
+  },
+  {
+    id: 'win_all_starting_classes',
+    name: 'Class Trio',
+    description: `Win with all ${startingClasses.length} starting classes`,
+    icon: '+',
+    category: 'mastery',
+    target: startingClasses.length,
+    reward: 2000,
+    group: 'meta',
+  },
+  {
+    id: 'win_all_races',
+    name: 'Master of Races',
+    description: `Win with all ${races.length} races`,
+    icon: '+',
+    category: 'mastery',
+    target: races.length,
+    reward: 10000,
+    group: 'meta',
+  },
+  {
+    id: 'win_all_classes',
+    name: 'Master of Classes',
+    description: `Win with all ${classes.length} classes`,
+    icon: '+',
+    category: 'mastery',
+    target: classes.length,
+    reward: 10000,
+    group: 'meta',
+  },
 ]
 
 /**
@@ -310,4 +392,24 @@ export function getAchievementsByCategory(category: Achievement['category']): Ac
  */
 export function getTotalAchievementRewards(): number {
   return achievements.reduce((sum, a) => sum + a.reward, 0)
+}
+
+/** Mastery achievements only */
+export function getMasteryAchievements(): Achievement[] {
+  return achievements.filter((a) => a.category === 'mastery')
+}
+
+/** Race mastery achievements (individual wins) */
+export function getRaceAchievements(): Achievement[] {
+  return achievements.filter((a) => a.category === 'mastery' && a.group === 'race')
+}
+
+/** Class mastery achievements (individual wins) */
+export function getClassAchievements(): Achievement[] {
+  return achievements.filter((a) => a.category === 'mastery' && a.group === 'class')
+}
+
+/** Meta mastery achievements (collection milestones) */
+export function getMetaAchievements(): Achievement[] {
+  return achievements.filter((a) => a.category === 'mastery' && a.group === 'meta')
 }

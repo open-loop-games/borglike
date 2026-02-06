@@ -697,6 +697,9 @@ export const useProgressionStore = defineStore('progression', () => {
     if (stats.maxDepth > globalStats.value.maxDepthEver) {
       globalStats.value.maxDepthEver = stats.maxDepth
     }
+    if (stats.maxDepth >= 50) {
+      globalStats.value.timesReachedDepth50 = (globalStats.value.timesReachedDepth50 ?? 0) + 1
+    }
   }
 
   /**

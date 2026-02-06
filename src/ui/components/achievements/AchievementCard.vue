@@ -45,6 +45,8 @@ const categoryColor = computed(() => {
       return 'var(--orange)'
     case 'cumulative':
       return 'var(--purple)'
+    case 'mastery':
+      return 'var(--gold)'
     default:
       return 'var(--text-dim)'
   }

@@ -11,6 +11,8 @@ import { useProgressionStore } from '@stores/progression'
 import { saveRun } from '@stores/persistence'
 import { getMonsterByName } from '@game/data/monsters'
 import { getBoosterById } from '@game/data/boosters'
+import { races, startingRaces } from '@game/data/races'
+import { classes, startingClasses } from '@game/data/classes'
 
 // ============================================================================
 // TYPES
@@ -414,12 +416,38 @@ function checkAchievements(
   if (progression.globalStats.totalDeaths >= 1000) checkAndAward('death_enthusiast')
   if (progression.globalStats.totalDeaths >= 5000) checkAndAward('immortally_mortal')
 
-  // Run completion tiers
-  if (progression.globalStats.totalRuns >= 50) checkAndAward('veteran')
-  if (progression.globalStats.totalRuns >= 100) checkAndAward('seasoned')
-  if (progression.globalStats.totalRuns >= 250) checkAndAward('grizzled')
-  if (progression.globalStats.totalRuns >= 500) checkAndAward('eternal')
-  if (progression.globalStats.totalRuns >= 1000) checkAndAward('timeless')
+  // Depth 50 tiers
+  const depth50 = progression.globalStats.timesReachedDepth50 ?? 0
+  if (depth50 >= 50) checkAndAward('deep_diver')
+  if (depth50 >= 100) checkAndAward('abyss_regular')
+  if (depth50 >= 250) checkAndAward('bottom_dweller')
+  if (depth50 >= 500) checkAndAward('abyss_veteran')
+  if (depth50 >= 1000) checkAndAward('eternal_delver')
+
+  // Mastery achievements (victory-only — check all, not just current, for retroactive awards)
+  if (result.reason === 'victory') {
+    const raceWins = progression.globalStats.victoriesPerRace ?? {}
+    const classWins = progression.globalStats.victoriesPerClass ?? {}
+
+    // Individual race/class wins
+    for (const race of races) {
+      if ((raceWins[race.name] ?? 0) >= 1) checkAndAward(`win_race_${race.id}`)
+    }
+    for (const cls of classes) {
+      if ((classWins[cls.name] ?? 0) >= 1) checkAndAward(`win_class_${cls.id}`)
+    }
+
+    // Meta achievements — count distinct wins
+    const startingRaceWins = startingRaces.filter((r) => (raceWins[r.name] ?? 0) >= 1).length
+    const startingClassWins = startingClasses.filter((c) => (classWins[c.name] ?? 0) >= 1).length
+    const totalRaceWins = races.filter((r) => (raceWins[r.name] ?? 0) >= 1).length
+    const totalClassWins = classes.filter((c) => (classWins[c.name] ?? 0) >= 1).length
+
+    if (startingRaceWins >= startingRaces.length) checkAndAward('win_all_starting_races')
+    if (startingClassWins >= startingClasses.length) checkAndAward('win_all_starting_classes')
+    if (totalRaceWins >= races.length) checkAndAward('win_all_races')
+    if (totalClassWins >= classes.length) checkAndAward('win_all_classes')
+  }
 
   return newAchievements
 }
