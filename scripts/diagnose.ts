@@ -711,6 +711,7 @@ async function main(): Promise<void> {
           morgothKills: result.morgothKillCount,
           victoryCount: result.victoryCount,
         },
+        runs: result.runs,
         deathCauses: result.deathCauses,
         problemSeeds: result.problemRuns.map(r => r.seed),
         aggregateMetrics: result.aggregateMetrics,

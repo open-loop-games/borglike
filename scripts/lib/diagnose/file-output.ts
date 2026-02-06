@@ -17,7 +17,7 @@ export interface DiagnoseOutputEnvelope {
   result: unknown
 }
 
-/** Generate a timestamped filename: YYYYMMDD-HHMM-{mode}-{class}-{race}[-seedN][-Nruns] */
+/** Generate a timestamped filename: YYYYMMDD-HHMMSS-{mode}-{class}-{race}[-seedN][-Nruns] */
 export function generateFileName(opts: {
   mode: string
   classId?: string
@@ -28,7 +28,7 @@ export function generateFileName(opts: {
   const now = new Date()
   const pad2 = (n: number) => String(n).padStart(2, '0')
   const date = `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`
-  const time = `${pad2(now.getHours())}${pad2(now.getMinutes())}`
+  const time = `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`
 
   const parts = [date, time, opts.mode]
   if (opts.classId) parts.push(opts.classId)

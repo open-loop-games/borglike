@@ -232,6 +232,10 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
       morgothKills,
       isVictory: game.isVictory,
     },
+    details: Object.entries(game.stats.spellUsage)
+      .filter(([, v]) => v.casts > 0)
+      .sort((a, b) => b[1].damage - a[1].damage)
+      .map(([name, v]) => `spell:${name} casts=${v.casts} dmg=${v.damage} mana=${v.mana}`),
     issues: [],
   }, {
     name: 'stats',

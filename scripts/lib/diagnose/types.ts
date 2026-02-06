@@ -150,10 +150,22 @@ export interface BatchConfig extends Omit<DiagnoseConfig, 'seed'> {
 }
 
 /** Aggregated result from batch runs */
+/** Per-run summary for batch output (lightweight — no full analyzer data) */
+export interface RunSummary {
+  seed: number
+  depth: number
+  killedBy: string
+  endReason: EndReason
+  turns: number
+  kills: number
+}
+
 export interface BatchResult {
   config: BatchConfig
   totalRuns: number
   successfulRuns: number
+  /** Per-run summaries for structured queries (e.g. find Morgoth-death seeds) */
+  runs: RunSummary[]
   problemRuns: DiagnoseResult[]
   aggregateMetrics: Record<string, { min: number; max: number; avg: number }>
   aggregateIssues: { message: string; count: number }[]

@@ -234,6 +234,7 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
   const startSeed = config.startSeed ?? Date.now()
   const results: DiagnoseResult[] = []
   const problemRuns: DiagnoseResult[] = []
+  const runSummaries: BatchResult['runs'] = []
 
   // Aggregate metrics across runs
   const metricSums: Record<string, number[]> = {}
@@ -264,6 +265,7 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
     }
 
     // Aggregate metrics from each analyzer
+    let killedBy = 'unknown'
     for (const ar of result.analyzerResults) {
       for (const [key, value] of Object.entries(ar.metrics)) {
         if (typeof value === 'number') {
@@ -276,9 +278,12 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
           if (key === 'morgothKills' && value > 0) {
             morgothKillCount++
           }
-        } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
-          const count = deathCauses.get(value) ?? 0
-          deathCauses.set(value, count + 1)
+        } else if (key === 'killedBy' && typeof value === 'string') {
+          if (result.endReason === 'death') {
+            const count = deathCauses.get(value) ?? 0
+            deathCauses.set(value, count + 1)
+          }
+          killedBy = value
         }
       }
     }
@@ -288,6 +293,16 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
       const count = issueCounter.get(issue.message) ?? 0
       issueCounter.set(issue.message, count + 1)
     }
+
+    // Build per-run summary
+    runSummaries.push({
+      seed: result.seed,
+      depth: result.finalState.depth,
+      killedBy,
+      endReason: result.endReason,
+      turns: result.finalState.turn,
+      kills: result.finalState.kills,
+    })
   }
 
   // Compute aggregate metrics
@@ -316,6 +331,7 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
     config,
     totalRuns: config.runs,
     successfulRuns: results.length - problemRuns.length,
+    runs: runSummaries,
     problemRuns,
     aggregateMetrics,
     aggregateIssues,
@@ -363,6 +379,7 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
 
   const results: DiagnoseResult[] = []
   const problemRuns: DiagnoseResult[] = []
+  const runSummaries: BatchResult['runs'] = []
 
   // Aggregate metrics across runs
   const metricSums: Record<string, number[]> = {}
@@ -450,6 +467,18 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
         issueCounter.set(issue.message, count + 1)
       }
 
+      // Build per-run summary
+      const killedByMetric = result.analyzerResults
+        .find(ar => ar.name === 'worker-metrics')?.metrics?.killedBy
+      runSummaries.push({
+        seed: result.seed,
+        depth: result.finalState.depth,
+        killedBy: typeof killedByMetric === 'string' ? killedByMetric : 'unknown',
+        endReason: result.endReason,
+        turns: result.finalState.turn,
+        kills: result.finalState.kills,
+      })
+
       completed++
       config.onProgress?.(completed, total)
     })
@@ -481,10 +510,14 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     .map(([monster, count]) => ({ monster, count }))
     .sort((a, b) => b.count - a.count)
 
+  // Sort run summaries by seed for deterministic output
+  runSummaries.sort((a, b) => a.seed - b.seed)
+
   return {
     config,
     totalRuns: config.runs,
     successfulRuns: results.length - problemRuns.length,
+    runs: runSummaries,
     problemRuns,
     aggregateMetrics,
     aggregateIssues,
@@ -518,7 +551,7 @@ export interface TurnLogEntry {
  */
 export function runDeepDiagnosis(
   config: DiagnoseConfig
-): DiagnoseResult & { turnLog: TurnLogEntry[] } {
+): DiagnoseResult & { turnLog: TurnLogEntry[]; spellUsage: Record<string, { casts: number; damage: number; mana: number }> } {
   const cfg = { ...DEFAULT_CONFIG, ...config }
   const analyzers = config.analyzers ?? []
   const turnLog: TurnLogEntry[] = []
@@ -582,9 +615,15 @@ export function runDeepDiagnosis(
         actionType = target ? `${action.type}:${target.template.name}` : action.type
         break
       }
-      case 'cast':
-        actionType = `cast:${(action as any).spellId}`
+      case 'cast': {
+        const castTarget = (action as any).targetId
+          ? game.monsters.find(m => m.id === (action as any).targetId)
+          : null
+        actionType = castTarget
+          ? `cast:${(action as any).spellId}@${castTarget.template.name}`
+          : `cast:${(action as any).spellId}`
         break
+      }
       default:
         actionType = action.type
     }
@@ -718,5 +757,6 @@ export function runDeepDiagnosis(
     hasErrors: allIssues.some((i) => i.severity === 'error'),
     hasWarnings: allIssues.some((i) => i.severity === 'warning'),
     turnLog,
+    spellUsage: game.stats.spellUsage,
   }
 }
