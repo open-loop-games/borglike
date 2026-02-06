@@ -38,12 +38,37 @@ export interface BotUpgradeDefinition {
   id: BotUpgradeId
   name: string
   description: string
-  cost: number
+  cost: number // Computed from chain config for graded, explicit for toggles
   requires?: BotUpgradeId // Prerequisite upgrade
   category: 'toggle' | 'graded'
   // For graded upgrades - which field and what level it grants
   targetField?: GradedCapabilityField
   targetLevel?: number
+}
+
+// Chain cost configuration: cost = floor(baseCost * costScaling^tierIndex)
+interface ChainCostConfig {
+  baseCost: number
+  costScaling: number
+}
+
+function chainCost(config: ChainCostConfig, tier: number): number {
+  return Math.floor(config.baseCost * Math.pow(config.costScaling, tier - 1))
+}
+
+// =============================================================================
+// CHAIN COST CONFIGS
+// =============================================================================
+
+const CHAIN_COSTS = {
+  tactics:       { baseCost: 200, costScaling: 1.8 },
+  town:          { baseCost: 100, costScaling: 1.5 },
+  preparedness:  { baseCost: 150, costScaling: 1.8 },
+  sweep:         { baseCost: 150, costScaling: 1.8 },
+  surf:          { baseCost: 200, costScaling: 1.8 },
+  kiting:        { baseCost: 250, costScaling: 2.0 },
+  targeting:     { baseCost: 200, costScaling: 1.8 },
+  retreat:       { baseCost: 250, costScaling: 1.8 },
 }
 
 // =============================================================================
@@ -66,7 +91,7 @@ const tactics1: BotUpgradeDefinition = {
   id: 'tactics_1',
   name: 'Tactics I',
   description: 'Use debuff spells (slow, weaken)',
-  cost: 200,
+  cost: chainCost(CHAIN_COSTS.tactics, 1),
   category: 'graded',
   targetField: 'tactics',
   targetLevel: 1,
@@ -76,7 +101,7 @@ const tactics2: BotUpgradeDefinition = {
   id: 'tactics_2',
   name: 'Tactics II',
   description: 'Use pre-combat buffs and buff spells',
-  cost: 360,
+  cost: chainCost(CHAIN_COSTS.tactics, 2),
   requires: 'tactics_1',
   category: 'graded',
   targetField: 'tactics',
@@ -87,7 +112,7 @@ const tactics3: BotUpgradeDefinition = {
   id: 'tactics_3',
   name: 'Tactics III',
   description: 'Smart debuff targeting (threat analysis)',
-  cost: 648,
+  cost: chainCost(CHAIN_COSTS.tactics, 3),
   requires: 'tactics_2',
   category: 'graded',
   targetField: 'tactics',
@@ -102,7 +127,7 @@ const town1: BotUpgradeDefinition = {
   id: 'town_1',
   name: 'Town I',
   description: 'Use town portal scrolls (escape & return)',
-  cost: 100,
+  cost: chainCost(CHAIN_COSTS.town, 1),
   category: 'graded',
   targetField: 'town',
   targetLevel: 1,
@@ -112,7 +137,7 @@ const town2: BotUpgradeDefinition = {
   id: 'town_2',
   name: 'Town II',
   description: 'Visit healer for HP restore',
-  cost: 150,
+  cost: chainCost(CHAIN_COSTS.town, 2),
   requires: 'town_1',
   category: 'graded',
   targetField: 'town',
@@ -123,7 +148,7 @@ const town3: BotUpgradeDefinition = {
   id: 'town_3',
   name: 'Town III',
   description: 'Sell loot and buy from shops',
-  cost: 200,
+  cost: chainCost(CHAIN_COSTS.town, 3),
   requires: 'town_2',
   category: 'graded',
   targetField: 'town',
@@ -138,7 +163,7 @@ const preparedness1: BotUpgradeDefinition = {
   id: 'preparedness_1',
   name: 'Preparedness I',
   description: 'Check basic consumable counts before descent',
-  cost: 150,
+  cost: chainCost(CHAIN_COSTS.preparedness, 1),
   category: 'graded',
   targetField: 'preparedness',
   targetLevel: 1,
@@ -148,7 +173,7 @@ const preparedness2: BotUpgradeDefinition = {
   id: 'preparedness_2',
   name: 'Preparedness II',
   description: 'Require appropriate potion tiers and level',
-  cost: 270,
+  cost: chainCost(CHAIN_COSTS.preparedness, 2),
   requires: 'preparedness_1',
   category: 'graded',
   targetField: 'preparedness',
@@ -159,7 +184,7 @@ const preparedness3: BotUpgradeDefinition = {
   id: 'preparedness_3',
   name: 'Preparedness III',
   description: 'Full Morgoth preparation protocol',
-  cost: 486,
+  cost: chainCost(CHAIN_COSTS.preparedness, 3),
   requires: 'preparedness_2',
   category: 'graded',
   targetField: 'preparedness',
@@ -174,7 +199,7 @@ const sweep1: BotUpgradeDefinition = {
   id: 'sweep_1',
   name: 'Sweep I',
   description: 'Explore 60% of floor tiles before descent',
-  cost: 150,
+  cost: chainCost(CHAIN_COSTS.sweep, 1),
   category: 'graded',
   targetField: 'sweep',
   targetLevel: 1,
@@ -184,7 +209,7 @@ const sweep2: BotUpgradeDefinition = {
   id: 'sweep_2',
   name: 'Sweep II',
   description: 'Explore 75% of floor tiles before descent',
-  cost: 270,
+  cost: chainCost(CHAIN_COSTS.sweep, 2),
   requires: 'sweep_1',
   category: 'graded',
   targetField: 'sweep',
@@ -195,7 +220,7 @@ const sweep3: BotUpgradeDefinition = {
   id: 'sweep_3',
   name: 'Sweep III',
   description: 'Explore 90% of floor tiles before descent',
-  cost: 486,
+  cost: chainCost(CHAIN_COSTS.sweep, 3),
   requires: 'sweep_2',
   category: 'graded',
   targetField: 'sweep',
@@ -210,7 +235,7 @@ const surf1: BotUpgradeDefinition = {
   id: 'surf_1',
   name: 'Surf I',
   description: 'Farm within 5×5 area around stairs',
-  cost: 200,
+  cost: chainCost(CHAIN_COSTS.surf, 1),
   category: 'graded',
   targetField: 'surf',
   targetLevel: 1,
@@ -220,7 +245,7 @@ const surf2: BotUpgradeDefinition = {
   id: 'surf_2',
   name: 'Surf II',
   description: 'Farm within 9×9 area around stairs',
-  cost: 360,
+  cost: chainCost(CHAIN_COSTS.surf, 2),
   requires: 'surf_1',
   category: 'graded',
   targetField: 'surf',
@@ -231,7 +256,7 @@ const surf3: BotUpgradeDefinition = {
   id: 'surf_3',
   name: 'Surf III',
   description: 'Farm within 21×21 area around stairs',
-  cost: 648,
+  cost: chainCost(CHAIN_COSTS.surf, 3),
   requires: 'surf_2',
   category: 'graded',
   targetField: 'surf',
@@ -246,7 +271,7 @@ const kiting1: BotUpgradeDefinition = {
   id: 'kiting_1',
   name: 'Kiting I',
   description: 'Basic ranged positioning (2 tile distance)',
-  cost: 250,
+  cost: chainCost(CHAIN_COSTS.kiting, 1),
   category: 'graded',
   targetField: 'kiting',
   targetLevel: 1,
@@ -256,7 +281,7 @@ const kiting2: BotUpgradeDefinition = {
   id: 'kiting_2',
   name: 'Kiting II',
   description: 'Improved ranged positioning (3 tile distance)',
-  cost: 500,
+  cost: chainCost(CHAIN_COSTS.kiting, 2),
   requires: 'kiting_1',
   category: 'graded',
   targetField: 'kiting',
@@ -267,7 +292,7 @@ const kiting3: BotUpgradeDefinition = {
   id: 'kiting_3',
   name: 'Kiting III',
   description: 'Optimal ranged positioning (4 tile distance)',
-  cost: 1000,
+  cost: chainCost(CHAIN_COSTS.kiting, 3),
   requires: 'kiting_2',
   category: 'graded',
   targetField: 'kiting',
@@ -282,7 +307,7 @@ const targeting1: BotUpgradeDefinition = {
   id: 'targeting_1',
   name: 'Targeting I',
   description: 'Prioritize wounded targets over closest',
-  cost: 200,
+  cost: chainCost(CHAIN_COSTS.targeting, 1),
   category: 'graded',
   targetField: 'targeting',
   targetLevel: 1,
@@ -292,7 +317,7 @@ const targeting2: BotUpgradeDefinition = {
   id: 'targeting_2',
   name: 'Targeting II',
   description: 'Evaluate threat levels when selecting targets',
-  cost: 360,
+  cost: chainCost(CHAIN_COSTS.targeting, 2),
   requires: 'targeting_1',
   category: 'graded',
   targetField: 'targeting',
@@ -303,7 +328,7 @@ const targeting3: BotUpgradeDefinition = {
   id: 'targeting_3',
   name: 'Targeting III',
   description: 'Class-aware optimal range and positioning',
-  cost: 648,
+  cost: chainCost(CHAIN_COSTS.targeting, 3),
   requires: 'targeting_2',
   category: 'graded',
   targetField: 'targeting',
@@ -318,7 +343,7 @@ const retreat1: BotUpgradeDefinition = {
   id: 'retreat_1',
   name: 'Retreat I',
   description: 'Flee based on personality caution threshold',
-  cost: 250,
+  cost: chainCost(CHAIN_COSTS.retreat, 1),
   category: 'graded',
   targetField: 'retreat',
   targetLevel: 1,
@@ -328,7 +353,7 @@ const retreat2: BotUpgradeDefinition = {
   id: 'retreat_2',
   name: 'Retreat II',
   description: 'Recognize deadly status effect combinations',
-  cost: 450,
+  cost: chainCost(CHAIN_COSTS.retreat, 2),
   requires: 'retreat_1',
   category: 'graded',
   targetField: 'retreat',
@@ -339,7 +364,7 @@ const retreat3: BotUpgradeDefinition = {
   id: 'retreat_3',
   name: 'Retreat III',
   description: 'Full combat evaluation and class-specific tactics',
-  cost: 810,
+  cost: chainCost(CHAIN_COSTS.retreat, 3),
   requires: 'retreat_2',
   category: 'graded',
   targetField: 'retreat',
