@@ -574,4 +574,3 @@ Before merging performance-related changes:
 - `src/game/bot/safety-flow.ts` - Flee path computation for casters
 - `src/game/bot/farming.ts` - Tether sweep and farming modes
 - `src/game/bot/tick.ts` - Main decision loop
-- `docs/BOT-AI-PLAN.md` - Bot architecture overview

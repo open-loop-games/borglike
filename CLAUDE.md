@@ -56,13 +56,13 @@ jq, bun
 ```
 src/
 ├── engine/          # Instance manager (multi-run orchestration)
-├── game/            # Core roguelike engine
-│   ├── bot/         # Angband-inspired auto-player (17 files)
-│   ├── dungeon/     # Multiple generators (classic, cavern, labyrinth, vaults)
-│   └── data/        # Static data (races, classes, monsters, spells, items)
-├── stores/          # Pinia (progression, runs, persistence, settings, feed)
+├── game/            # Core roguelike engine (24 root files)
+│   ├── bot/         # Angband-inspired auto-player (27 files)
+│   ├── dungeon/     # Multiple generators (classic, cavern, labyrinth, vaults) (9 files)
+│   └── data/        # Static data (races, classes, monsters, spells, items) (19 files)
+├── stores/          # Pinia (progression, runs, persistence, settings, feed) (7 files)
 ├── core/            # Formulas, run-completion bridge
-└── ui/components/   # Vue components (24 total)
+└── ui/components/   # Vue components (37 total)
 ```
 
 ## Code Rules
@@ -112,11 +112,11 @@ src/
 
 ## Documentation
 
-- `docs/PLAN.md` - Roadmap and phase tracking
-- `docs/ARCHITECTURE.md` - System diagrams (needs update)
+- `docs/ARCHITECTURE.md` - System design and data flow
 - `docs/ANGBAND-LITE-DESIGN.md` - Game design (races, classes, balance)
+- `docs/BALANCE.md` - Balance methodology, tooling, and baselines
+- `docs/PERFORMANCE.md` - Performance profiling and optimization
 - `TODO.md` - Current tasks and technical debt
-- `/work/temp/angband/` - Angband and Borg source
 
 ## Development Notes
 
