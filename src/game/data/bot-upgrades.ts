@@ -270,7 +270,7 @@ const surf3: BotUpgradeDefinition = {
 const kiting1: BotUpgradeDefinition = {
   id: 'kiting_1',
   name: 'Kiting I',
-  description: 'Basic ranged positioning (2 tile distance)',
+  description: 'Ranged stance — prefer ranged attacks over melee approach',
   cost: chainCost(CHAIN_COSTS.kiting, 1),
   category: 'graded',
   targetField: 'kiting',
@@ -280,7 +280,7 @@ const kiting1: BotUpgradeDefinition = {
 const kiting2: BotUpgradeDefinition = {
   id: 'kiting_2',
   name: 'Kiting II',
-  description: 'Improved ranged positioning (3 tile distance)',
+  description: 'Active kiting — maintain distance from enemies',
   cost: chainCost(CHAIN_COSTS.kiting, 2),
   requires: 'kiting_1',
   category: 'graded',
@@ -291,7 +291,7 @@ const kiting2: BotUpgradeDefinition = {
 const kiting3: BotUpgradeDefinition = {
   id: 'kiting_3',
   name: 'Kiting III',
-  description: 'Optimal ranged positioning (4 tile distance)',
+  description: 'Optimal positioning — class-tuned engagement range',
   cost: chainCost(CHAIN_COSTS.kiting, 3),
   requires: 'kiting_2',
   category: 'graded',

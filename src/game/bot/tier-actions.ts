@@ -156,9 +156,11 @@ function handleCriticalTier(
   // 4. For ranged classes: try to kite away or attack from distance
   if (classProfile.prefersRanged) {
     // Try to kite away if adjacent (physical movement works for all ranged classes)
-    // Requires kiting L1+ capability
-    if (adjacentMonster && effective.kiting >= 1) {
-      const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+    // Requires kiting L2+ for active repositioning
+    if (adjacentMonster && effective.kiting >= 2) {
+      const optimalRange =
+        effective.kiting >= 3 ? (classProfile.engageDistance || 3) : 3
+      const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
       if (kiteDir) {
         recordProgress(botState, game.turn)
         return { type: 'move', direction: kiteDir }
@@ -303,9 +305,11 @@ function handleDangerTier(
       }
 
       // 2. Kite away if adjacent (physical movement works for all ranged classes)
-      // Requires kiting L1+ capability
-      if (capabilities.kiting >= 1) {
-        const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+      // Requires kiting L2+ for active repositioning
+      if (capabilities.kiting >= 2) {
+        const optimalRange =
+          capabilities.kiting >= 3 ? (classProfile.engageDistance || 3) : 3
+        const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
         if (kiteDir) {
           recordProgress(botState, game.turn)
           return { type: 'move', direction: kiteDir }
@@ -528,9 +532,11 @@ function handleCautionTier(
           return rootAction
         }
 
-        // Bow users: kite away (requires kiting L1+)
-        if (capabilities.kiting >= 1) {
-          const kiteDir = findKitePosition(game, adjacentMonster, classProfile)
+        // Bow users: kite away (requires kiting L2+ for active repositioning)
+        if (capabilities.kiting >= 2) {
+          const optimalRange =
+            capabilities.kiting >= 3 ? (classProfile.engageDistance || 3) : 3
+          const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
           if (kiteDir) {
             recordProgress(botState, game.turn)
             return { type: 'move', direction: kiteDir }

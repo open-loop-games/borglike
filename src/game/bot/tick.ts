@@ -555,9 +555,11 @@ function getKillApproachAction(
       }
     }
 
-    // Adjacent - try to kite away (requires kiting L1+)
-    if (shouldAvoidMelee(classProfile, distance) && capabilities.kiting >= 1) {
-      const kiteDir = findKitePosition(game, targetMonster, classProfile)
+    // Adjacent - try to kite away (requires kiting L2+ for active repositioning)
+    if (shouldAvoidMelee(classProfile, distance) && capabilities.kiting >= 2) {
+      const optimalRange =
+        capabilities.kiting >= 3 ? (classProfile.engageDistance || 3) : 3
+      const kiteDir = findKitePosition(game, targetMonster, optimalRange)
       if (kiteDir) {
         recordProgress(botState, game.turn)
         return { type: 'move', direction: kiteDir }

@@ -679,7 +679,7 @@ export function findBestRangedTarget(game: GameState, visibleMonsters: Monster[]
 export function findKitePosition(
   game: GameState,
   targetMonster: Monster,
-  classProfile: ClassBehaviorProfile
+  optimalRange: number
 ): Direction | null {
   const character = game.character
   const pos = character.position
@@ -688,8 +688,6 @@ export function findKitePosition(
   const currentDx = targetPos.x - pos.x
   const currentDy = targetPos.y - pos.y
   const currentDist = Math.max(Math.abs(currentDx), Math.abs(currentDy))
-
-  const optimalRange = classProfile.engageDistance || 3
 
   // Calculate effective max range: bow range for archers, light radius for casters
   const bowRange = getBowRange(character)
@@ -770,29 +768,13 @@ export function shouldAvoidMelee(classProfile: ClassBehaviorProfile, distance: n
 // ============================================================================
 
 /**
- * Kiting levels control engage distance for ranged classes.
- * L0 = no kiting (fight melee), L1-L3 = increasing distance.
+ * Get optimal kiting range based on level.
+ * L2: standard 3-tile distance. L3: class-tuned engageDistance.
+ * Only called for L2+; L0/L1 don't actively reposition.
  */
-const KITING_DISTANCES: Record<number, number | null> = {
-  0: null, // L0: no kiting, fight melee
-  1: 2, // L1: close kiting
-  2: 3, // L2: standard kiting
-  3: null, // L3: use class profile's engageDistance
-}
-
-/**
- * Get kite distance based on kiting level and class profile.
- * Returns null if kiting is disabled (L0).
- */
-function getKiteDistance(kitingLevel: number, classEngageDistance: number): number | null {
-  const level = Math.max(0, Math.min(3, kitingLevel))
-  const fixedDistance = KITING_DISTANCES[level]
-  if (level === 0) return null // Kiting disabled
-  if (fixedDistance !== null && fixedDistance !== undefined) {
-    return fixedDistance
-  }
-  // L3: use class profile's engage distance
-  return classEngageDistance
+function getOptimalRange(kitingLevel: number, classEngageDistance: number): number {
+  if (kitingLevel >= 3) return classEngageDistance
+  return 3 // L2 default
 }
 
 /**
@@ -816,17 +798,15 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
 
   // GATE: Kiting capability check
   const effective = getEffectiveCapabilities(context)
-  const optimalRange = getKiteDistance(effective.kiting, classProfile.engageDistance || 3)
-  if (optimalRange === null) return null // L0: no kiting, fight melee
+  const kitingLevel = effective.kiting
+  if (kitingLevel === 0) return null // L0: no kiting, fight melee
 
   // Determine if bow user or ranged caster
   const hasBow = hasRangedWeapon(game)
   const isRangedCaster = !hasBow // prefersRanged but no bow = caster
 
   // Determine effective range: bow range for archers, or use engageDistance for casters
-  // Spells have effectively infinite range, but we use engageDistance as "preferred" range
   const effectiveRange = hasBow ? getBowRange(character) : 10 // Casters can hit anything visible
-  // optimalRange is now set above based on kiting level
 
   // Find closest visible monster to evaluate positioning
   const closest = findClosestMonster(visibleMonsters, pos)
@@ -834,6 +814,30 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
 
   const closestMonster = closest.monster
   const closestDist = closest.distance
+
+  // L1: Ranged stance — attack at range, but NO repositioning (zero CB risk)
+  // Only Case 3 (at range → attack). If too close, let melee handle it.
+  if (kitingLevel === 1) {
+    if (closestDist < 2) return null // Too close, let melee handle
+
+    // Attack from current position if in range
+    const target = findBestRangedTarget(game, visibleMonsters)
+    if (target) {
+      if (hasBow ? canRangedAttack(character, target.position) : true) {
+        return {
+          type: 'KITE',
+          target: target.position,
+          targetId: target.id,
+          reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${target.template.name} at range`,
+          startTurn: game.turn,
+        }
+      }
+    }
+    return null
+  }
+
+  // L2/L3: Full active kiting with repositioning
+  const optimalRange = getOptimalRange(kitingLevel, classProfile.engageDistance || 3)
 
   // Case 1: Too far - let KILL goal handle approach (only for bow users)
   // Casters can always cast if they can see the target
@@ -843,7 +847,7 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
 
   // Case 2: Too close - need to kite away (same for bow and casters)
   if (closestDist < optimalRange) {
-    const kiteDirection = findKitePosition(game, closestMonster, classProfile)
+    const kiteDirection = findKitePosition(game, closestMonster, optimalRange)
 
     if (kiteDirection) {
       // Calculate the position we'd move to
