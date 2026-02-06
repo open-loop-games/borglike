@@ -7,6 +7,7 @@
 
 import type { GameState, GameAction, Monster } from '../types'
 import { VICTORY_BOSS_NAME } from '../data/monsters'
+import { countExploredTiles } from '../dungeon'
 import type { PersonalityConfig, DangerMap, BotState } from './types'
 import { isPoisoned } from '../status-effects'
 import {
@@ -653,15 +654,7 @@ export function getUtilityConsumableAction(
  */
 function calculateExplorationRatio(game: GameState): number {
   const totalTiles = game.currentLevel.width * game.currentLevel.height
-  let exploredCount = 0
-  for (const row of game.currentLevel.tiles) {
-    if (row) {
-      for (const tile of row) {
-        if (tile?.explored) exploredCount++
-      }
-    }
-  }
-  return exploredCount / totalTiles
+  return countExploredTiles(game.currentLevel) / totalTiles
 }
 
 /**

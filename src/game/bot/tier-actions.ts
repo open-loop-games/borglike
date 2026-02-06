@@ -17,7 +17,7 @@ import { canRangedAttack } from '../combat'
 import type { BotState, BotContext, DangerResult, DangerTier } from './types'
 import { getEffectiveCapabilities } from './types'
 import { recordProgress, setGoal, resetAfterTeleport } from './state'
-import { isSamePosition } from './movement'
+import { isSamePoint } from '../types'
 import {
   getLocalDanger,
   getDangerThreshold,
@@ -750,7 +750,7 @@ function handleSafeTier(
   }
 
   // 1. Pick up items at current position
-  const itemHere = game.items.find((item) => isSamePosition(item.position, game.character.position))
+  const itemHere = game.items.find((item) => isSamePoint(item.position, game.character.position))
   if (itemHere && localDanger < dangerThreshold) {
     recordProgress(botState, game.turn)
     return { type: 'pickup', itemId: itemHere.id }

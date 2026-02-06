@@ -6,7 +6,7 @@
  */
 
 import type { GameState, Monster, Character, Point, Direction } from '../types'
-import { chebyshevDistance, isAdjacent, getDirectionFromDelta } from '../types'
+import { chebyshevDistance, isAdjacent, getDirectionFromDelta, isMonsterAt } from '../types'
 import type { BotContext, PersonalityConfig, BotGoal } from './types'
 import { getEffectiveCapabilities } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
@@ -428,9 +428,7 @@ export function countAdjacentMonsters(game: GameState, pos: Point): number {
   let count = 0
 
   for (const adj of adjacent) {
-    if (game.monsters.some((m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0)) {
-      count++
-    }
+    if (isMonsterAt(game.monsters, adj)) count++
   }
 
   return count
@@ -594,10 +592,7 @@ function countEscapeRoutes(game: GameState, pos: Point): number {
     if (!tile || !isWalkable(tile)) continue
 
     // Check if not occupied by monster
-    const hasMonster = game.monsters.some(
-      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
-    )
-    if (!hasMonster) {
+    if (!isMonsterAt(game.monsters, adj)) {
       routes++
     }
   }
@@ -720,10 +715,7 @@ export function findKitePosition(
     if (!isWalkable(tile) && tile.type !== 'door_closed') continue
 
     // Skip if occupied by monster
-    const hasMonster = game.monsters.some(
-      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
-    )
-    if (hasMonster) continue
+    if (isMonsterAt(game.monsters, adj)) continue
 
     // Calculate new distance to target
     const newDx = targetPos.x - adj.x

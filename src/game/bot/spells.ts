@@ -6,7 +6,7 @@
  */
 
 import type { GameState, GameAction, Monster, Character, Point } from '../types'
-import { chebyshevDistance } from '../types'
+import { chebyshevDistance, isMonsterAt } from '../types'
 import type { PersonalityConfig, DangerMap } from './types'
 import type { SpellTemplate } from '../data/spells'
 import { getAvailableSpells, getNearestVisibleMonster, selectAOETargets } from '../spell-resolution'
@@ -344,8 +344,7 @@ export function getBuffSpellAction(
   if (character.mp < character.maxMp * 0.3) return null
 
   // Check if we already have active buffs
-  // Cast to string[] because damage_bonus/ac_bonus exist at runtime but aren't in StatusEffectType union
-  const existingBuffTypes = character.statusEffects.map((e) => e.type) as string[]
+  const existingBuffTypes = character.statusEffects.map((e) => e.type)
 
   // Consider casting if enemies are visible but not adjacent
   const adjacentCount = countAdjacentMonsters(game, character.position)
@@ -1289,10 +1288,7 @@ function findDDKiteDestination(
       if (!hasLineOfSight(currentPos, dest, game.currentLevel)) continue
 
       // Check no monster at destination
-      const blocked = game.monsters.some(
-        (m) => m.position.x === destX && m.position.y === destY && m.hp > 0
-      )
-      if (blocked) continue
+      if (isMonsterAt(game.monsters, { x: destX, y: destY })) continue
 
       // Score: prefer further distance
       let score = r * 10

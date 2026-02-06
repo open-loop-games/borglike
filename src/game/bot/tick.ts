@@ -11,9 +11,9 @@
  * - SAFE:     normal flow (combat > items > movement)
  */
 
-import type { GameState, GameAction, BotPersonality, DungeonLevel } from '../types'
+import type { GameState, GameAction, BotPersonality } from '../types'
 import type { BotCapabilities, BotToggles, SweepLevelRange } from '@/types/progression'
-import { getTile } from '../dungeon'
+import { getTile, countExploredTiles } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 
 import type { BotState, BotGoal, BotContext, DangerResult, PersonalityConfig } from './types'
@@ -37,7 +37,8 @@ import {
   getFlowCost,
   MAX_FLOW_COST,
 } from './flow'
-import { selectStep, isSamePosition } from './movement'
+import { selectStep } from './movement'
+import { isSamePoint } from '../types'
 import { buildBotContext } from './context'
 import { computeDangerGrid, buildAvoidSet, getDangerThreshold, getMonsterThreat } from './danger'
 import {
@@ -62,20 +63,6 @@ import { botSellItems, botBuySupplies } from './merchant'
 import { profile } from './profiler'
 import { selectActionByTier, calculateImmediateTier } from './tier-actions'
 
-/**
- * Count explored tiles in a level (for cache validation)
- */
-function countExploredTiles(level: DungeonLevel): number {
-  let count = 0
-  for (let y = 0; y < level.height; y++) {
-    const row = level.tiles[y]
-    if (!row) continue
-    for (let x = 0; x < level.width; x++) {
-      if (row[x]?.explored) count++
-    }
-  }
-  return count
-}
 
 /**
  * Run one tick of bot decision making
@@ -293,7 +280,7 @@ function handleStuckRecovery(
  * Check if bot has arrived at goal position.
  */
 function isAtGoal(pos: { x: number; y: number }, goal: BotGoal): boolean {
-  return goal.target !== null && isSamePosition(pos, goal.target)
+  return goal.target !== null && isSamePoint(pos, goal.target)
 }
 
 /**
@@ -714,7 +701,7 @@ function executeGoalAction(
 
     case 'TAKE': {
       const itemAtGoal = game.items.find((item) =>
-        isSamePosition(item.position, game.character.position)
+        isSamePoint(item.position, game.character.position)
       )
       if (itemAtGoal) {
         return { type: 'pickup', itemId: itemAtGoal.id }

@@ -6,11 +6,10 @@
 
 import type { Point, GameState, Direction } from '../types'
 import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
-import { getDirectionFromDelta, isAdjacent, isSamePoint } from '../types'
+import { getDirectionFromDelta, isAdjacent } from '../types'
 
-// Re-export for backwards compatibility
+// Re-export for convenience
 export { isAdjacent }
-export { isSamePoint as isSamePosition }
 import type { BotState } from './types'
 import { CARDINAL_DIRECTIONS } from './types'
 import type { FlowGrid } from './flow'

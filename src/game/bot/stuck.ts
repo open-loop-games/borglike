@@ -10,7 +10,7 @@ import { getTile, isWalkable } from '../dungeon'
 import type { BotState } from './types'
 import { computeFlow } from './flow'
 import { selectStep } from './movement'
-import { isSamePoint, manhattanDistance } from '../types'
+import { isSamePoint, manhattanDistance, isMonsterAt } from '../types'
 import { recordProgress } from './state'
 
 // ============================================================================
@@ -92,7 +92,7 @@ export function isOscillating(state: BotState): boolean {
     const a2 = history[len - 3]!
     const b2 = history[len - 4]!
 
-    if (isSamePos(a1, a2) && isSamePos(b1, b2)) {
+    if (isSamePoint(a1, a2) && isSamePoint(b1, b2)) {
       return true
     }
   }
@@ -106,7 +106,7 @@ export function isOscillating(state: BotState): boolean {
     const b2 = history[len - 5]!
     const c2 = history[len - 6]!
 
-    if (isSamePos(a1, a2) && isSamePos(b1, b2) && isSamePos(c1, c2)) {
+    if (isSamePoint(a1, a2) && isSamePoint(b1, b2) && isSamePoint(c1, c2)) {
       return true
     }
   }
@@ -224,10 +224,7 @@ export function getWallFollowDirection(game: GameState, state: BotState): Direct
     if (!isWalkable(tile) && tile.type !== 'door_closed') continue
 
     // Check if occupied by monster
-    const hasMonster = game.monsters.some(
-      (m) => m.position.x === target.x && m.position.y === target.y
-    )
-    if (hasMonster) continue
+    if (isMonsterAt(game.monsters, target)) continue
 
     return dir
   }
@@ -474,9 +471,6 @@ export function handleClearBlacklistStrategy(botState: BotState, turn: number): 
 // HELPERS
 // ============================================================================
 
-function isSamePos(a: Point, b: Point): boolean {
-  return a.x === b.x && a.y === b.y
-}
 
 /**
  * Check if bot has been on same position for too long

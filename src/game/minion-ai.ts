@@ -5,7 +5,7 @@
  */
 
 import type { GameState, Minion, Monster, Point, GameEvent } from './types'
-import { MINION_TEMPLATES } from './types'
+import { MINION_TEMPLATES, isMonsterAt } from './types'
 import { getTile, isWalkable } from './dungeon'
 import { applyDamage } from './combat'
 import { handleMonsterKill } from './actions/combat'
@@ -224,9 +224,7 @@ function canMinionMoveTo(game: GameState, pos: Point): boolean {
   if (pos.x === game.character.position.x && pos.y === game.character.position.y) return false
 
   // Check for monsters
-  if (game.monsters.some((m) => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0)) {
-    return false
-  }
+  if (isMonsterAt(game.monsters, pos)) return false
 
   // Check for other minions
   if (game.minions.some((m) => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0)) {

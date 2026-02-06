@@ -9,9 +9,9 @@
 declare const process: { env: Record<string, string | undefined> } | undefined
 
 import type { GameState, Point, DungeonLevel, Tile, Direction } from '../types'
-import { DIRECTION_VECTORS, chebyshevDistance } from '../types'
+import { DIRECTION_VECTORS, chebyshevDistance, isMonsterAt } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { getTile, isWalkable, getAdjacentPositions } from '../dungeon'
+import { getTile, isWalkable, getAdjacentPositions, countExploredTiles } from '../dungeon'
 import { isTargetBlacklisted } from './state'
 
 // ============================================================================
@@ -135,15 +135,7 @@ export function findFrontierTiles(game: GameState): FrontierTile[] {
   const pos = game.character.position
 
   // Count explored tiles for cache invalidation
-  let exploredCount = 0
-  for (let y = 0; y < level.height; y++) {
-    const row = level.tiles[y]
-    if (!row) continue
-    for (let x = 0; x < level.width; x++) {
-      const tile = row[x]
-      if (tile?.explored) exploredCount++
-    }
-  }
+  const exploredCount = countExploredTiles(level)
 
   // Check if we need to recompute the frontier positions
   let cachedTiles: Array<{ position: Point; unexploredNeighbors: number }>
@@ -190,14 +182,7 @@ export function getFrontierPositions(game: GameState): Point[] {
   const level = game.currentLevel
 
   // Count explored tiles for cache validation
-  let exploredCount = 0
-  for (let y = 0; y < level.height; y++) {
-    const row = level.tiles[y]
-    if (!row) continue
-    for (let x = 0; x < level.width; x++) {
-      if (row[x]?.explored) exploredCount++
-    }
-  }
+  const exploredCount = countExploredTiles(level)
 
   // Check cache
   if (
@@ -914,10 +899,7 @@ export function findCorridorContinuation(game: GameState, botState: BotState): P
     if (!isWalkableTile(level, target.x, target.y)) continue
 
     // Check if occupied by monster
-    const hasMonster = game.monsters.some(
-      (m) => m.position.x === target.x && m.position.y === target.y
-    )
-    if (hasMonster) continue
+    if (isMonsterAt(game.monsters, target)) continue
 
     // Count unexplored neighbors of target (exploration potential)
     let unexploredCount = 0

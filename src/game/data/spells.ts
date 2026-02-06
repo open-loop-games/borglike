@@ -13,7 +13,7 @@ import type { SpellSchool, SpellEffectType, SpellDamageType, StatusEffectType } 
 
 /** Buff effect granted by a spell */
 export interface SpellBuff {
-  type: StatusEffectType | 'ac_bonus' | 'damage_bonus'
+  type: StatusEffectType
   value: number
   duration: number // in turns
 }

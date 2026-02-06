@@ -6,7 +6,7 @@
  */
 
 import type { GameState, Point, Direction } from '../types'
-import { getDirectionFromDelta } from '../types'
+import { getDirectionFromDelta, isMonsterAt } from '../types'
 import type {
   PersonalityConfig,
   DangerMap,
@@ -314,10 +314,7 @@ export function findBestEscapeRoute(game: GameState, dangers: DangerMap): Escape
     if (!isWalkable(tile) && tile.type !== 'door_closed') continue
 
     // Skip if occupied by monster
-    const hasMonster = game.monsters.some(
-      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
-    )
-    if (hasMonster) continue
+    if (isMonsterAt(game.monsters, adj)) continue
 
     // Calculate safety score
     let safetyScore = 100
@@ -384,10 +381,7 @@ export function findEscapeDirection(game: GameState, threatPos: Point): Directio
     if (!isWalkable(tile) && tile.type !== 'door_closed') continue
 
     // Skip if occupied by monster
-    const hasMonster = game.monsters.some(
-      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
-    )
-    if (hasMonster) continue
+    if (isMonsterAt(game.monsters, adj)) continue
 
     // Calculate distance from threat
     const distFromThreat = Math.hypot(adj.x - threatPos.x, adj.y - threatPos.y)
@@ -694,10 +688,7 @@ export function evaluatePhaseDoorSafety(
       if (!tile || !isWalkable(tile)) continue
 
       // Check if occupied by monster
-      const hasMonster = game.monsters.some(
-        (m) => m.position.x === x && m.position.y === y && m.hp > 0
-      )
-      if (hasMonster) continue
+      if (isMonsterAt(game.monsters, { x, y })) continue
 
       totalSamples++
       const tileDanger = getTileDanger(dangers, { x, y })
@@ -892,10 +883,7 @@ export function getFleeGoal(
     const tile = getTile(game.currentLevel, adj.x, adj.y)
     if (!tile || (!isWalkable(tile) && tile.type !== 'door_closed')) continue
 
-    const hasMonster = game.monsters.some(
-      (m) => m.position.x === adj.x && m.position.y === adj.y && m.hp > 0
-    )
-    if (!hasMonster) {
+    if (!isMonsterAt(game.monsters, adj)) {
       walkableEscapes.push(adj)
     }
   }

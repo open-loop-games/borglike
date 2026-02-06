@@ -10,7 +10,7 @@ import { FULL_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../../types/progress
 import { getDefaultSweepLevelRange } from './types'
 import { manhattanDistance } from '../types'
 import type { BotContext, BotState, PersonalityConfig } from './types'
-import { getTile } from '../dungeon'
+import { getTile, countExploredTiles } from '../dungeon'
 import { getPersonalityConfig } from './personality'
 import { getClassProfile } from './class-profiles'
 import { profile } from './profiler'
@@ -273,14 +273,7 @@ function getCachedUnexploredTiles(game: GameState, botState: BotState): Point[] 
 
   // Fallback: count explored tiles (only when frontier cache is cold)
   if (exploredCount === null) {
-    exploredCount = 0
-    for (let y = 0; y < level.height; y++) {
-      const row = level.tiles[y]
-      if (!row) continue
-      for (let x = 0; x < level.width; x++) {
-        if (row[x]?.explored) exploredCount++
-      }
-    }
+    exploredCount = countExploredTiles(level)
   }
 
   // Update cache

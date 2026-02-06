@@ -659,7 +659,7 @@ function getPassiveDamageMultiplier(character: Character): number {
   }
 
   // damage_bonus status effect: Envenom, Shadow Dance, Hunter's Mark, Dark Pact
-  const damageBuff = character.statusEffects.find((e) => e.type === ('damage_bonus' as never))
+  const damageBuff = character.statusEffects.find((e) => e.type === 'damage_bonus')
   if (damageBuff) {
     mult *= 1 + damageBuff.value / 100
   }
@@ -1086,7 +1086,7 @@ export function rangedAttack(
   baseDamage = applyDeadliness(baseDamage, deadliness)
 
   // damage_bonus status effect (Hunter's Mark, etc.)
-  const rangedDamageBuff = attacker.statusEffects.find((e) => e.type === ('damage_bonus' as never))
+  const rangedDamageBuff = attacker.statusEffects.find((e) => e.type === 'damage_bonus')
   if (rangedDamageBuff) {
     baseDamage = Math.floor(baseDamage * (1 + rangedDamageBuff.value / 100))
   }

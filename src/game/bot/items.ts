@@ -8,7 +8,7 @@
 import type { Item, GroundItem, Character, EquipSlot, ItemTemplate, GameAction } from '../types'
 import type { PersonalityConfig, BotContext, BotGoal, DangerMap } from './types'
 import { getLocalDanger } from './danger'
-import { isSamePosition } from './movement'
+import { isSamePoint } from '../types'
 import {
   getConsumableType,
   isAtConsumableCap,
@@ -1026,7 +1026,7 @@ export function getTakeGoal(
   const pos = game.character.position
 
   // Check for item at current position first
-  const itemHere = game.items.find((item) => isSamePosition(item.position, pos))
+  const itemHere = game.items.find((item) => isSamePoint(item.position, pos))
   if (itemHere) {
     return {
       type: 'TAKE',

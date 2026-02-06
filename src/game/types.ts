@@ -209,6 +209,8 @@ export type StatusEffectType =
   | 'active_form'
   | 'enhanced_light' // +2 FOV radius from Light Orb spell
   | 'sneak_attack' // Rogue's post-teleport 2.5x damage buff (consumed on attack)
+  | 'damage_bonus' // Flat damage bonus from buff spells (e.g. warrior shout)
+  | 'ac_bonus' // Flat AC bonus from buff spells (e.g. stone skin)
   // Debuffs (from monster attacks)
   | 'blind'
   | 'confused'
@@ -484,6 +486,16 @@ export interface Monster {
 /** Check if monster is a boss or unique (dangerous target) */
 export function isBossOrUnique(m: Monster): boolean {
   return m.template.flags?.includes('UNIQUE') || m.template.flags?.includes('BOSS') || false
+}
+
+/** Check if a living monster occupies the given position */
+export function isMonsterAt(monsters: Monster[], pos: Point): boolean {
+  return monsters.some((m) => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0)
+}
+
+/** Get the living monster at the given position, if any */
+export function getMonsterAt(monsters: Monster[], pos: Point): Monster | undefined {
+  return monsters.find((m) => m.position.x === pos.x && m.position.y === pos.y && m.hp > 0)
 }
 
 // ============================================================================
