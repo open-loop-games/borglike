@@ -14,12 +14,16 @@
  */
 
 // Core runner
-export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis, parseCapabilities, CAPABILITY_PRESETS } from './runner'
+export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiagnosis, parseCapabilities, CAPABILITY_PRESETS, destroyPool } from './runner'
 export type { TurnLogEntry, ParallelBatchConfig } from './runner'
 
 // Modes
 export { runBaseline, runBaselineRaces, BASELINE_CLASSES, BASELINE_RACES, BASELINE_DEFAULTS } from './baseline'
 export type { BaselineConfig, BaselineResult, BaselineRacesConfig, BaselineRaceResult } from './baseline'
+
+// Matrix mode
+export { runMatrix, formatMatrixSummary, buildCellLabel, ALL_CAPABILITY_TIERS, ALL_UPGRADE_TIERS, ALL_PERSONALITIES } from './matrix'
+export type { MatrixConfig, MatrixCell, MatrixCellResult, MatrixResult, MatrixAxis } from './matrix'
 
 // Sensitivity testing
 export { runSensitivityTest, SENSITIVITY_UPGRADES } from './sensitivity'

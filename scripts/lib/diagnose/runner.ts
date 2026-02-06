@@ -36,6 +36,47 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 // ============================================================================
+// SINGLETON THREAD POOL
+// ============================================================================
+
+const workerPath = join(__dirname, 'worker.ts')
+
+let _pool: Tinypool | null = null
+let _poolThreads = 0
+
+/**
+ * Get or create the singleton worker pool.
+ * If thread count changed, destroys and recreates.
+ * All batch callers share one pool within the process.
+ */
+async function getOrCreatePool(threads: number): Promise<Tinypool> {
+  if (_pool && _poolThreads === threads) return _pool
+  if (_pool) {
+    await _pool.destroy()
+    _pool = null
+    _poolThreads = 0
+  }
+  _pool = new Tinypool({
+    filename: workerPath,
+    minThreads: threads,
+    maxThreads: threads,
+    runtime: 'child_process',
+    execArgv: ['--import', 'tsx/esm'],
+  })
+  _poolThreads = threads
+  return _pool
+}
+
+/** Destroy the singleton pool. Call at process exit or when done with all batch runs. */
+export async function destroyPool(): Promise<void> {
+  if (_pool) {
+    await _pool.destroy()
+    _pool = null
+    _poolThreads = 0
+  }
+}
+
+// ============================================================================
 // DEFAULTS
 // ============================================================================
 
@@ -375,7 +416,6 @@ export interface WorkerInput {
 export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Promise<BatchResult> {
   const startSeed = config.startSeed ?? Date.now()
   const threadCount = Math.min(config.threads ?? 8, cpus().length)
-  const workerPath = join(__dirname, 'worker.ts')
 
   const results: DiagnoseResult[] = []
   const problemRuns: DiagnoseResult[] = []
@@ -413,80 +453,69 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
   let completed = 0
   const total = workItems.length
 
-  // Create thread pool with tsx loader
-  const pool = new Tinypool({
-    filename: workerPath,
-    minThreads: threadCount,
-    maxThreads: threadCount,
-    runtime: 'child_process',
-    execArgv: ['--import', 'tsx/esm'],
-  })
+  // Use singleton pool (shared across all batch calls within the process)
+  const pool = await getOrCreatePool(threadCount)
 
-  try {
-    // Run all tasks in parallel
-    const promises = workItems.map(async (item) => {
-      const result: DiagnoseResult = await pool.run(item)
+  const promises = workItems.map(async (item) => {
+    const result: DiagnoseResult = await pool.run(item)
 
-      results.push(result)
+    results.push(result)
 
-      if (result.hasErrors || result.hasWarnings) {
-        problemRuns.push(result)
-      }
+    if (result.hasErrors || result.hasWarnings) {
+      problemRuns.push(result)
+    }
 
-      // Track end reasons
-      if (result.endReason === 'victory') {
-        victoryCount++
-      } else if (result.endReason === 'circuit_breaker') {
-        circuitBreakerCount++
-      }
+    // Track end reasons
+    if (result.endReason === 'victory') {
+      victoryCount++
+    } else if (result.endReason === 'circuit_breaker') {
+      circuitBreakerCount++
+    }
 
-      // Aggregate metrics
-      for (const ar of result.analyzerResults) {
-        for (const [key, value] of Object.entries(ar.metrics)) {
-          if (typeof value === 'number') {
-            const fullKey = `${ar.name}.${key}`
-            if (!metricSums[fullKey]) {
-              metricSums[fullKey] = []
-            }
-            metricSums[fullKey].push(value)
-            // Track morgoth kills specifically
-            if (key === 'morgothKills' && value > 0) {
-              morgothKillCount++
-            }
-          } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
-            // Track death causes
-            const count = deathCauses.get(value) ?? 0
-            deathCauses.set(value, count + 1)
+    // Aggregate metrics
+    for (const ar of result.analyzerResults) {
+      for (const [key, value] of Object.entries(ar.metrics)) {
+        if (typeof value === 'number') {
+          const fullKey = `${ar.name}.${key}`
+          if (!metricSums[fullKey]) {
+            metricSums[fullKey] = []
           }
+          metricSums[fullKey].push(value)
+          // Track morgoth kills specifically
+          if (key === 'morgothKills' && value > 0) {
+            morgothKillCount++
+          }
+        } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
+          // Track death causes
+          const count = deathCauses.get(value) ?? 0
+          deathCauses.set(value, count + 1)
         }
       }
+    }
 
-      // Count issues
-      for (const issue of result.allIssues) {
-        const count = issueCounter.get(issue.message) ?? 0
-        issueCounter.set(issue.message, count + 1)
-      }
+    // Count issues
+    for (const issue of result.allIssues) {
+      const count = issueCounter.get(issue.message) ?? 0
+      issueCounter.set(issue.message, count + 1)
+    }
 
-      // Build per-run summary
-      const killedByMetric = result.analyzerResults
-        .find(ar => ar.name === 'worker-metrics')?.metrics?.killedBy
-      runSummaries.push({
-        seed: result.seed,
-        depth: result.finalState.depth,
-        killedBy: typeof killedByMetric === 'string' ? killedByMetric : 'unknown',
-        endReason: result.endReason,
-        turns: result.finalState.turn,
-        kills: result.finalState.kills,
-      })
-
-      completed++
-      config.onProgress?.(completed, total)
+    // Build per-run summary
+    const killedByMetric = result.analyzerResults
+      .find(ar => ar.name === 'worker-metrics')?.metrics?.killedBy
+    runSummaries.push({
+      seed: result.seed,
+      depth: result.finalState.depth,
+      killedBy: typeof killedByMetric === 'string' ? killedByMetric : 'unknown',
+      endReason: result.endReason,
+      turns: result.finalState.turn,
+      kills: result.finalState.kills,
     })
 
-    await Promise.all(promises)
-  } finally {
-    await pool.destroy()
-  }
+    completed++
+    config.onProgress?.(completed, total)
+  })
+
+  await Promise.all(promises)
 
   // Compute aggregate metrics
   const aggregateMetrics: Record<string, { min: number; max: number; avg: number }> = {}

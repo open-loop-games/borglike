@@ -58,8 +58,18 @@ import {
   formatBaselineRaceResults,
   formatSensitivityResults,
   formatFindResults,
+  destroyPool,
+  runMatrix,
+  formatMatrixSummary,
+  BASELINE_CLASSES,
+  BASELINE_RACES,
+  ALL_CAPABILITY_TIERS,
+  ALL_UPGRADE_TIERS,
+  ALL_PERSONALITIES,
 } from './lib/diagnose'
 import { DEFAULT_OUTPUT_DIR, generateFileName, writeOutputFiles, shouldWriteFiles } from './lib/diagnose/file-output'
+import { mkdirSync, writeFileSync } from 'fs'
+import { join } from 'path'
 import type { CompareVariant } from './lib/diagnose'
 import type { AnalyzerName } from './lib/diagnose'
 import type { BotPersonality } from '@game/types'
@@ -69,7 +79,7 @@ import type { BotPersonality } from '@game/types'
 // ============================================================================
 
 interface Args {
-  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'baseline-races' | 'sensitivity' | 'help'
+  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'baseline-races' | 'sensitivity' | 'matrix' | 'help'
   seed?: number
   runs: number
   turns: number
@@ -127,6 +137,19 @@ interface Args {
   forceStdout: boolean
   /** Custom output directory */
   outputDir?: string
+  // Matrix mode
+  /** Classes for matrix mode */
+  matrixClasses: string[]
+  /** Races for matrix mode */
+  matrixRaces: string[]
+  /** Personalities for matrix mode */
+  matrixPersonalities: string[]
+  /** Capability tiers for matrix mode */
+  capTiers: string[]
+  /** Upgrade tiers for matrix mode */
+  upgradeTiers: string[]
+  /** Paired progression tiers (sets both upgrades and capabilities) */
+  progressionTiers: string[]
 }
 
 const ALL_ANALYZERS: AnalyzerName[] = [
@@ -181,6 +204,13 @@ function parseArgs(): Args {
     bestiary: 0,
     hpFraction: 70,
     forceStdout: false,
+    // Matrix defaults
+    matrixClasses: [],
+    matrixRaces: [],
+    matrixPersonalities: [],
+    capTiers: [],
+    upgradeTiers: [],
+    progressionTiers: [],
   }
 
   // Parse mode (first positional arg)
@@ -194,6 +224,7 @@ function parseArgs(): Args {
     mode === 'baseline' ||
     mode === 'baseline-races' ||
     mode === 'sensitivity' ||
+    mode === 'matrix' ||
     mode === 'help'
   ) {
     result.mode = mode
@@ -249,8 +280,30 @@ function parseArgs(): Args {
     } else if (arg === '--races') {
       result.compareRaces = true
     } else if (arg.startsWith('--races=')) {
-      result.compareRaces = true
-      result.raceList = arg.slice(8).split(',').filter(Boolean)
+      const val = arg.slice(8)
+      if (result.mode === 'matrix') {
+        result.matrixRaces = val === 'all' ? [...BASELINE_RACES] : val.split(',').filter(Boolean)
+      } else {
+        result.compareRaces = true
+        result.raceList = val.split(',').filter(Boolean)
+      }
+    // Matrix mode options
+    } else if (arg.startsWith('--classes=')) {
+      const val = arg.slice(10)
+      result.matrixClasses = val === 'all' ? [...BASELINE_CLASSES] : val.split(',').filter(Boolean)
+    } else if (arg.startsWith('--personalities=')) {
+      const val = arg.slice(16)
+      result.matrixPersonalities = val === 'all' ? [...ALL_PERSONALITIES] : val.split(',').filter(Boolean)
+    } else if (arg.startsWith('--cap-tiers=')) {
+      const val = arg.slice(12)
+      result.capTiers = val === 'all' ? [...ALL_CAPABILITY_TIERS] : val.split(',').filter(Boolean)
+    } else if (arg.startsWith('--upgrade-tiers=')) {
+      const val = arg.slice(16)
+      result.upgradeTiers = val === 'all' ? [...ALL_UPGRADE_TIERS] : val.split(',').filter(Boolean)
+    } else if (arg.startsWith('--progression=')) {
+      const val = arg.slice(14)
+      result.progressionTiers = val === 'all' ? [...ALL_UPGRADE_TIERS] : val.split(',').filter(Boolean)
+      result.progressionTiers = arg.slice(14).split(',').filter(Boolean)
     } else if (arg.startsWith('--capabilities=')) {
       result.capabilities = arg.slice(15)
     } else if (arg.startsWith('--upgrades=')) {
@@ -320,6 +373,7 @@ MODES:
   baseline        Run full baseline across all 11 classes (100 runs, 50k turns)
   baseline-races  Run full baseline across all 11 races (100 runs, 50k turns)
   sensitivity     Test per-upgrade impact on performance
+  matrix          Run cartesian product of classes/races/tiers (shared pool)
   help            Show this help message
 
 OPTIONS:
@@ -351,6 +405,14 @@ OPTIONS:
   --races=a,b,c   Compare specific races (e.g., --races=human,dwarf,elf)
   --stdout        Force stdout output (skip file writing)
   --output=DIR    Custom output directory (default: /tmp/borglike-diagnose)
+
+MATRIX OPTIONS:
+  --classes=X     Comma-separated class IDs or 'all' (default: --class value)
+  --races=X       Comma-separated race IDs or 'all' (in matrix mode)
+  --personalities=X  Comma-separated or 'all' (default: --personality value)
+  --cap-tiers=X   Capability tiers to iterate (e.g., none,early,mid,late,full)
+  --upgrade-tiers=X  Upgrade tiers to iterate (e.g., none,early,mid,late,full)
+  --progression=X Paired tiers: sets BOTH upgrades AND capabilities to same values
 
 OUTPUT:
   Most modes write results to /tmp/borglike-diagnose/ as .txt + .json files.
@@ -394,6 +456,18 @@ EXAMPLES:
 
   # Test with mid-game capabilities
   pnpm diagnose batch --runs=50 --capabilities=mid --class=warrior
+
+  # Matrix: cross-class race testing (replaces 9 parallel processes)
+  pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns=50000
+
+  # Matrix: capability progression for one class
+  pnpm diagnose matrix --class=warrior --upgrades=mid --cap-tiers=none,early,mid,late,full
+
+  # Matrix: paired progression (upgrade + capability at same tier)
+  pnpm diagnose matrix --class=warrior --progression=none,early,mid,late,full
+
+  # Matrix: all classes (equivalent to baseline, single pool)
+  pnpm diagnose matrix --classes=all --runs=100 --turns=50000
 
 ANALYZERS:
   stuck       - Detects repeated actions, waits, twitch counter issues
@@ -465,6 +539,7 @@ async function main(): Promise<void> {
     return
   }
 
+  try {
   // Handle compare mode
   if (args.mode === 'compare') {
     const variant: CompareVariant = args.compareRaces ? 'race' : 'personality'
@@ -581,6 +656,130 @@ async function main(): Promise<void> {
       classId: args.classId,
       race: args.race,
     })
+    return
+  }
+
+  // Handle matrix mode
+  if (args.mode === 'matrix') {
+    const startTime = Date.now()
+
+    // Resolve tiers: --progression sets both, otherwise use individual flags
+    let matrixUpgradeTiers = args.upgradeTiers.length > 0 ? args.upgradeTiers : [args.upgrades]
+    let matrixCapTiers = args.capTiers.length > 0 ? args.capTiers : [args.capabilities]
+    if (args.progressionTiers.length > 0) {
+      matrixUpgradeTiers = args.progressionTiers
+      matrixCapTiers = args.progressionTiers
+    }
+
+    // Build balance overrides
+    const effectiveBestiary = args.bestiary > 0 ? args.bestiary : (args.maxUpgrades ? 25 : 0)
+    const balance = {
+      monsterHpPercent: args.monsterHp,
+      monsterDamagePercent: args.monsterDamage,
+      startingPotions: args.startPotions,
+      potionRatePercent: args.potionRate,
+      regenPer10Turns: args.regen,
+      armorPenetration: args.armorPen,
+      enchantRatePercent: args.enchantRate,
+      itemRatePercent: args.itemRate,
+      levelupHpPercent: args.levelupHp,
+      xpRatePercent: args.xpRate,
+      upgradePowerPercent: args.upgradePower,
+      bestiaryBonusPercent: effectiveBestiary,
+      baseHpFraction: args.hpFraction / 100,
+    }
+
+    const result = await runMatrix({
+      classes: args.matrixClasses.length > 0 ? args.matrixClasses : [args.classId],
+      races: args.matrixRaces.length > 0 ? args.matrixRaces : [args.race],
+      personalities: args.matrixPersonalities.length > 0 ? args.matrixPersonalities : [args.personality],
+      upgradeTiers: matrixUpgradeTiers,
+      capabilityTiers: matrixCapTiers,
+      runs: args.runs,
+      maxTurns: args.turns,
+      startSeed: args.seed,
+      threads: args.threads,
+      boosters: args.boosters,
+      maxUpgrades: args.maxUpgrades,
+      balance,
+      pairedProgression: args.progressionTiers.length > 0,
+    })
+
+    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
+    const summaryText = formatMatrixSummary(result)
+
+    if (shouldWriteFiles('matrix', args.forceStdout)) {
+      const dir = args.outputDir ?? DEFAULT_OUTPUT_DIR
+      const now = new Date()
+      const pad2 = (n: number) => String(n).padStart(2, '0')
+      const timestamp = `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}-${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`
+      const matrixDir = join(dir, `${timestamp}-matrix`)
+      mkdirSync(matrixDir, { recursive: true })
+
+      // Write per-cell results into subfolders
+      for (const cellResult of result.cells) {
+        const cellDir = join(matrixDir, cellResult.label)
+        mkdirSync(cellDir, { recursive: true })
+        const cellText = formatBatchResult(cellResult.batchResult)
+        writeFileSync(join(cellDir, 'batch.txt'), cellText, 'utf-8')
+        writeFileSync(join(cellDir, 'batch.json'), JSON.stringify({
+          mode: 'matrix-cell',
+          timestamp: new Date().toISOString(),
+          cell: cellResult.cell,
+          summary: {
+            avgDepth: cellResult.avgDepth,
+            maxDepth: cellResult.maxDepth,
+            cbRate: cellResult.cbRate,
+            avgKills: cellResult.avgKills,
+            morgothKills: cellResult.morgothKills,
+            avgTurns: cellResult.avgTurns,
+            victoryCount: cellResult.victoryCount,
+          },
+          runs: cellResult.batchResult.runs,
+          deathCauses: cellResult.batchResult.deathCauses,
+        }, null, 2), 'utf-8')
+      }
+
+      // Write summary
+      writeFileSync(join(matrixDir, 'summary.txt'), summaryText, 'utf-8')
+      writeFileSync(join(matrixDir, 'summary.json'), JSON.stringify({
+        mode: 'matrix',
+        timestamp: new Date().toISOString(),
+        config: {
+          classes: result.config.classes,
+          races: result.config.races,
+          personalities: result.config.personalities,
+          upgradeTiers: result.config.upgradeTiers,
+          capabilityTiers: result.config.capabilityTiers,
+          runs: result.config.runs,
+          maxTurns: result.config.maxTurns,
+          startSeed: result.config.startSeed,
+          threads: result.config.threads,
+        },
+        varyingAxes: result.varyingAxes,
+        totalRuns: result.totalRuns,
+        totalTime: parseFloat(totalTime),
+        cells: result.cells.map(c => ({
+          cell: c.cell,
+          label: c.label,
+          avgDepth: c.avgDepth,
+          maxDepth: c.maxDepth,
+          cbRate: c.cbRate,
+          avgKills: c.avgKills,
+          morgothKills: c.morgothKills,
+          avgTurns: c.avgTurns,
+          victoryCount: c.victoryCount,
+        })),
+      }, null, 2), 'utf-8')
+
+      console.log(`\nTotal time: ${totalTime}s`)
+      console.log(`\nOutput: ${matrixDir}/`)
+      console.log(`  summary.txt + summary.json`)
+      console.log(`  ${result.cells.length} cell subfolders`)
+    } else {
+      console.log(summaryText)
+      console.log(`\nTotal time: ${totalTime}s`)
+    }
     return
   }
 
@@ -756,6 +955,9 @@ async function main(): Promise<void> {
       })
       break
     }
+  }
+  } finally {
+    await destroyPool()
   }
 }
 

@@ -21,7 +21,7 @@ All tests use this baseline unless specified:
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
 | `--seed` | 1000 | Reproducibility |
-| `--runs` | 100 | Statistical significance, ~2-3 min per class |
+| `--runs` | 100 | Statistical significance, ~1 min per class |
 | `--turns` | 50000 | Catches caster CB issues at high turn counts |
 | `--race` | human | Neutral baseline |
 | `--class` | warrior | Simplest mechanics |
@@ -47,23 +47,35 @@ pnpm diagnose batch --runs=100 --seed=1000 --class=warrior --turns=50000
 # Find problematic seeds
 pnpm diagnose find --runs=100 --seed=1000 --class=mage --turns=50000
 
-# Full baseline across all 11 classes (~16 min)
+# Full baseline across all 11 classes (~8 min)
 pnpm diagnose baseline --seed=1000 --turns=50000
 
-# Race baseline across all 11 races (~16 min)
+# Race baseline across all 11 races (~8 min)
 pnpm diagnose baseline-races --seed=1000 --turns=50000
 
-# Upgrade sensitivity test (~10 min)
+# Upgrade sensitivity test (~5 min)
 pnpm diagnose sensitivity --seed=1000 --class=warrior
 
 # Personality comparison
 pnpm diagnose compare --runs=50 --seed=1000 --class=CLASS --turns=50000
+
+# Matrix: cross-class race testing (single shared pool)
+pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns=50000
+
+# Matrix: capability progression sweep
+pnpm diagnose matrix --class=warrior --upgrades=mid --cap-tiers=none,early,mid,late,full
+
+# Matrix: paired progression (upgrade + capability at same tier)
+pnpm diagnose matrix --class=warrior --progression=none,early,mid,late,full
+
+# Matrix: all classes × 2 races
+pnpm diagnose matrix --classes=all --races=human,dwarf --runs=100 --turns=50000
 ```
 
 ### Output
 
 Most modes write to `/tmp/borglike-diagnose/` as timestamped `.txt` + `.json` pairs.
-Quick mode defaults to stdout. Use `--stdout` to force stdout for any mode.
+Matrix mode uses subfolders per cell. Quick mode defaults to stdout. Use `--stdout` to force stdout for any mode.
 
 ```bash
 # List recent results
@@ -72,13 +84,17 @@ ls -lt /tmp/borglike-diagnose/
 # Read human-friendly text
 cat /tmp/borglike-diagnose/20260206-143000-baseline-seed1000-100runs.txt
 
+# Matrix results use subfolders
+cat /tmp/borglike-diagnose/20260206-143000-matrix/summary.txt
+ls /tmp/borglike-diagnose/20260206-143000-matrix/warrior-human/
+
 # Parse JSON with jq
 jq '.result[] | {classId, avgDepth, morgothKills}' /tmp/borglike-diagnose/*baseline*.json
 jq '.result.runs[] | select(.depth >= 50)' /tmp/borglike-diagnose/*batch*.json
 jq '.config' /tmp/borglike-diagnose/*baseline*.json  # check run config
 ```
 
-**Parallel execution:** Run only 2 batch commands simultaneously (8 threads each = 16 total).
+**Thread pool:** All modes share a singleton thread pool. Use `matrix` mode instead of parallel processes for cross-class/race testing — one pool of 20 threads beats 9 processes × 8 threads each.
 
 ### Balance Flags
 
@@ -98,6 +114,17 @@ jq '.config' /tmp/borglike-diagnose/*baseline*.json  # check run config
 | `--enchant-rate=N` | 100 | Enchantment chance % |
 | `--item-rate=N` | 100 | Items per level % |
 | `--xp-rate=N` | 100 | XP gain % |
+
+### Matrix Flags
+
+| Flag | Description |
+|------|-------------|
+| `--classes=X` | Comma-separated class IDs or `all` (11 classes) |
+| `--races=X` | Comma-separated race IDs or `all` (11 races) |
+| `--personalities=X` | Comma-separated or `all` (4 personalities) |
+| `--cap-tiers=X` | Capability tiers to sweep (e.g., `none,early,mid,late,full`) |
+| `--upgrade-tiers=X` | Upgrade tiers to sweep |
+| `--progression=X` | Paired tiers: sets both upgrades AND capabilities (zipped, not crossed) |
 
 ### Upgrade Presets (`--upgrades=X`)
 
@@ -174,7 +201,11 @@ pnpm diagnose baseline-races --seed=1000 --turns=50000
 Bot capabilities are the primary unlock loop. Players need to feel progression as they purchase upgrades.
 
 ```bash
+# Single tier
 pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --upgrades=mid --capabilities=TIER --turns=50000
+
+# All tiers at once (matrix mode)
+pnpm diagnose matrix --class=warrior --upgrades=mid --cap-tiers=none,early,mid,late,full --runs=50 --turns=50000
 ```
 
 **Success Criteria:**
@@ -189,7 +220,14 @@ pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --upgrades=mid --capab
 Upgrades are the permanent progression layer. Need to validate they compound well with capabilities.
 
 ```bash
+# Single tier
 pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --upgrades=TIER --capabilities=full --turns=50000
+
+# All tiers at once (matrix mode)
+pnpm diagnose matrix --class=warrior --upgrade-tiers=none,early,mid,late,full --capabilities=full --runs=50 --turns=50000
+
+# Paired progression (upgrade + capability at same tier)
+pnpm diagnose matrix --class=warrior --progression=none,early,mid,late,full --runs=50 --turns=50000
 ```
 
 **Success Criteria:**
@@ -257,9 +295,7 @@ Re-run full class baseline after combat formula changes, monster stat/spawn chan
 
 **Quick regression check (3 most sensitive classes):**
 ```bash
-pnpm diagnose batch --runs=50 --seed=1000 --class=warrior --turns=50000
-pnpm diagnose batch --runs=50 --seed=1000 --class=mage --turns=50000
-pnpm diagnose batch --runs=50 --seed=1000 --class=necromancer --turns=50000
+pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=50000
 ```
 
 ---
@@ -487,7 +523,12 @@ Matching capability and upgrade tiers — simulates realistic player progression
 
 ## Cross-Class Race Testing
 
-*Not yet run at current commit. Next: test 11 races x 3 archetype classes (warrior, mage, ranger).*
+```bash
+# All races × 3 archetype classes (matrix mode, single pool)
+pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns=50000
+```
+
+*Not yet run at current commit.*
 
 ---
 

@@ -188,6 +188,7 @@ pnpm diagnose [mode] [options]
 | `baseline` | Full baseline across all 11 classes | `baseline` (100 runs, 50k turns per class) |
 | `baseline-races` | Full baseline across all 11 races | `baseline-races --class=warrior` |
 | `sensitivity` | Test per-upgrade impact | `sensitivity --class=warrior` |
+| `matrix` | Cartesian product of classes/races/tiers | `matrix --classes=warrior,mage --races=all` |
 
 ### Seed Syntax
 
@@ -231,16 +232,35 @@ pnpm diagnose deep 1768965560201 --map
 --races=a,b,c     Compare specific races (e.g., --races=human,dwarf,elf)
 --stdout          Force stdout output (skip file writing)
 --output=DIR      Custom output directory (default: /tmp/borglike-diagnose)
+
+Matrix Options:
+--classes=X       Comma-separated class IDs or 'all' (default: --class value)
+--races=X         Comma-separated race IDs or 'all' (in matrix mode)
+--personalities=X Comma-separated or 'all' (default: --personality value)
+--cap-tiers=X     Capability tiers to sweep (e.g., none,early,mid,late,full)
+--upgrade-tiers=X Upgrade tiers to sweep
+--progression=X   Paired tiers: sets BOTH upgrades AND capabilities (zipped, not crossed)
 ```
 
 ## File Output
 
-Most modes write results to `/tmp/borglike-diagnose/` as `.txt` + `.json` files by default. Progress bars stay on stdout; final results go to files.
+Most modes write results to `/tmp/borglike-diagnose/` as `.txt` + `.json` files by default. Progress bars stay on stdout; final results go to files. Matrix mode uses subfolders per cell.
 
 ```
-Output:
+Output (batch/baseline/etc):
   /tmp/borglike-diagnose/20260205-1430-baseline-human.txt
   /tmp/borglike-diagnose/20260205-1430-baseline-human.json
+
+Output (matrix):
+  /tmp/borglike-diagnose/20260206-1430-matrix/
+    summary.txt          # comparison table
+    summary.json         # machine-readable config + cell summaries
+    warrior-human/       # subfolder per cell (only varying dims in name)
+      batch.txt
+      batch.json
+    mage-human/
+      batch.txt
+      batch.json
 ```
 
 **Per-mode defaults:**
@@ -248,6 +268,7 @@ Output:
 | Mode | Default Output |
 |------|---------------|
 | `quick` | stdout (small, interactive) |
+| `matrix` | subfolder tree in `/tmp/borglike-diagnose/` |
 | All others | file output to `/tmp/borglike-diagnose/` |
 
 **Flags:**
@@ -321,6 +342,26 @@ pnpm diagnose baseline
 
 Output includes a markdown table ready to paste into `docs/BALANCE.md`.
 
+### Matrix Mode
+
+Run cartesian products of classes/races/tiers through a shared thread pool. Replaces running multiple parallel `batch` processes.
+
+```bash
+# Cross-class race testing (replaces 9 parallel batch commands)
+pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns=50000
+
+# Capability progression sweep
+pnpm diagnose matrix --class=warrior --upgrades=mid --cap-tiers=none,early,mid,late,full
+
+# Paired progression (upgrade + capability at same tier, zipped not crossed)
+pnpm diagnose matrix --class=warrior --progression=none,early,mid,late,full
+
+# Quick regression check
+pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=50000
+```
+
+Output: subfolder tree with `summary.txt` + per-cell `batch.txt`/`batch.json`. Use `--stdout` for console output.
+
 ## Analyzers
 
 | Name | Detects |
@@ -371,8 +412,8 @@ pnpm diagnose batch --runs=100 \
 |--------|----------|
 | `none` | No upgrades |
 | `early` | vitality 2, might 2, resilience 1 |
-| `mid` | vitality 5, might 5, resilience 3, swiftness 2, precision 2, celerity 2 |
-| `late` | vitality 8, might 8, resilience 4, swiftness 4, precision 4, celerity 4 |
+| `mid` | vitality 5, might 5, resilience 5, reflexes 4, precision 2, swiftness 2 |
+| `late` | vitality 8, might 8, resilience 7, reflexes 6, precision 4, swiftness 4 |
 | `full` | All upgrades at max level |
 
 ### Booster Presets (`--boosters=X`)
