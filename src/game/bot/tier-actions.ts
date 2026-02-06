@@ -373,11 +373,60 @@ function handleDangerTier(
     }
   }
 
-  // 3. Healing spell
+  // 3. Non-ranged casters at DANGER: mix damage with healing
+  // Priest/Paladin/Blackguard have potent damage spells but aren't routed
+  // through the prefersRanged branch. Without damage-before-heal, the aggressive
+  // healsPriority thresholds cause a heal-until-OOM spiral (zero DPS output).
+  // HP > 50%: damage first (attack while healthy enough to take a hit)
+  // HP ≤ 50%: heal first (survive, then resume attacking)
+  // Targets any visible monster (not just adjacent) so ranged spells work against
+  // monsters hitting from distance (Morgoth BRAIN_SMASH, dragon breath, etc.)
+  if (!classProfile.prefersRanged && visibleMonsters.length > 0) {
+    const hpRatio = game.character.hp / game.character.maxHp
+    if (hpRatio > 0.5) {
+      const targets = adjacentMonster ? [adjacentMonster] : visibleMonsters
+      const damageSpell = getDamageSpellAction(game, config, targets)
+      if (damageSpell) {
+        if (adjacentMonster) {
+          setKillGoal(botState, adjacentMonster, game.turn, 'Spell attack (danger)')
+        }
+        recordProgress(botState, game.turn)
+        return damageSpell
+      }
+    }
+  }
+
+  // 3b. Healing spell (fires at ≤50% HP for non-ranged casters, anytime for others)
   const healSpell = getHealingSpellAction(game, config, localDanger, classProfile.healsPriority)
   if (healSpell) {
     recordProgress(botState, game.turn)
     return healSpell
+  }
+
+  // 3c. Non-ranged casters: damage fallback when heal isn't needed (HP high enough)
+  if (!classProfile.prefersRanged && visibleMonsters.length > 0) {
+    const targets = adjacentMonster ? [adjacentMonster] : visibleMonsters
+    const damageSpell = getDamageSpellAction(game, config, targets)
+    if (damageSpell) {
+      if (adjacentMonster) {
+        setKillGoal(botState, adjacentMonster, game.turn, 'Spell attack (danger)')
+      }
+      recordProgress(botState, game.turn)
+      return damageSpell
+    }
+  }
+
+  // 3d. Non-ranged casters: mana pot if dry — sustain spell casting
+  // Without this, priest/paladin run out of MP and fall back to weak melee
+  if (!classProfile.prefersRanged && game.character.maxMp > 0) {
+    const manaRatio = game.character.mp / game.character.maxMp
+    if (manaRatio < 0.15) {
+      const mpPot = findManaPotion(game.character)
+      if (mpPot) {
+        recordProgress(botState, game.turn)
+        return { type: 'use', itemId: mpPot.id }
+      }
+    }
   }
 
   // 4. Survival consumables (healing potion, antidote)
@@ -576,6 +625,16 @@ function handleCautionTier(
     if (shadowStepAction) {
       recordProgress(botState, game.turn)
       return shadowStepAction
+    }
+  }
+
+  // 3c. Non-ranged casters: prefer damage spells over melee when adjacent
+  if (!classProfile.prefersRanged && adjacentMonster) {
+    const damageSpell = getDamageSpellAction(game, config, [adjacentMonster])
+    if (damageSpell) {
+      setKillGoal(botState, adjacentMonster, game.turn, 'Spell attack (caution)')
+      recordProgress(botState, game.turn)
+      return damageSpell
     }
   }
 

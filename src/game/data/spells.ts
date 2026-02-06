@@ -307,8 +307,8 @@ const smite_evil: SpellTemplate = {
   manaCost: 6,
   cooldown: 0,
   effectType: 'damage',
-  baseDamage: '2d6',
-  damageScaling: 2,
+  baseDamage: '3d8',
+  damageScaling: 3,
   damageType: 'holy',
   doubleVsEvil: true,
   description: 'Holy wrath smites the wicked (2x vs evil).',
@@ -360,10 +360,10 @@ const holy_word: SpellTemplate = {
   school: 'divine',
   level: 30,
   manaCost: 35,
-  cooldown: 10,
+  cooldown: 5,
   effectType: 'aoe_damage',
-  baseDamage: '3d8',
-  damageScaling: 2,
+  baseDamage: '5d8',
+  damageScaling: 3,
   damageType: 'holy',
   maxTargets: 4,
   doubleVsEvil: true,
@@ -667,9 +667,9 @@ const divine_wrath: SpellTemplate = {
   school: 'divine',
   level: 40,
   manaCost: 35,
-  cooldown: 6,
+  cooldown: 3,
   effectType: 'aoe_damage',
-  levelDamage: { base: 20, perLevel: 2 }, // 20 + level*2 = 120 at L50
+  levelDamage: { base: 30, perLevel: 3 }, // 30 + level*3 = 180 at L50
   damageType: 'holy',
   targetMode: 'los', // hits ALL visible enemies
   onlyEvil: true, // only damages evil monsters
