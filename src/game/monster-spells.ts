@@ -23,6 +23,25 @@ import { addStatusEffect, hasProtectionFrom } from './status-effects'
 import { findOpenPosition } from './dungeon'
 import { spawnMonster } from './monster-ai'
 import { getSpawnableMonsters } from './data/monsters'
+import { resolveDefense } from './combat'
+import { getKnowledgeBonuses } from './knowledge-effects'
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/** Map monster spell prefixes to element types */
+const SPELL_ELEMENT_MAP: Record<string, Element> = {
+  BR_FIRE: 'FIRE', BR_COLD: 'COLD', BR_ELEC: 'ELEC',
+  BR_ACID: 'ACID', BR_POISON: 'POISON', BR_DARK: 'DARK',
+  BO_FIRE: 'FIRE', BO_COLD: 'COLD', BO_ELEC: 'ELEC', BO_ACID: 'ACID',
+}
+
+/** Display names for elements */
+const ELEMENT_NAMES: Record<Element, string> = {
+  FIRE: 'fire', COLD: 'cold', ELEC: 'lightning',
+  ACID: 'acid', POISON: 'poison', DARK: 'darkness',
+}
 
 // ============================================================================
 // TYPES
@@ -85,12 +104,12 @@ function executeSpell(game: GameState, monster: Monster, spell: MonsterSpell): S
 
   // Breath weapons
   if (spell.startsWith('BR_')) {
-    return executeBreathWeapon(monster, character, spell)
+    return executeBreathWeapon(game, monster, character, spell)
   }
 
   // Bolt spells
   if (spell.startsWith('BO_')) {
-    return executeBoltSpell(monster, character, spell, game.character.depth)
+    return executeBoltSpell(game, monster, character, spell)
   }
 
   // Utility spells
@@ -132,24 +151,15 @@ function executeSpell(game: GameState, monster: Monster, spell: MonsterSpell): S
  * Execute a breath weapon attack
  *
  * Damage = monster HP / 3, capped by element type.
- * Applies elemental resistance.
+ * Defense resolution: resistance, PFE, knowledge (no armor — spells bypass AC).
  */
 function executeBreathWeapon(
+  game: GameState,
   monster: Monster,
   character: Character,
   spell: MonsterSpell
 ): SpellResult {
-  // Map breath spell to element
-  const elementMap: Record<string, Element> = {
-    BR_FIRE: 'FIRE',
-    BR_COLD: 'COLD',
-    BR_ELEC: 'ELEC',
-    BR_ACID: 'ACID',
-    BR_POISON: 'POISON',
-    BR_DARK: 'DARK',
-  }
-
-  const element = elementMap[spell]
+  const element = SPELL_ELEMENT_MAP[spell]
   if (!element) {
     return { success: false, damage: 0, statusInflicted: null, message: '' }
   }
@@ -164,25 +174,24 @@ function executeBreathWeapon(
     POISON: 100,
     DARK: 150,
   }
-  let damage = Math.min(baseDamage, caps[element])
+  const rawDamage = Math.min(baseDamage, caps[element])
 
-  // Apply resistance
-  damage = applyElementResistance(damage, element, character)
+  const knowledgeBonuses = getKnowledgeBonuses(
+    monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent
+  )
+  const { finalDamage } = resolveDefense(character, {
+    rawDamage,
+    element,
+    skipArmor: true,
+    attackerMonster: monster,
+    knowledgeBonuses,
+  })
 
-  const elementNames: Record<Element, string> = {
-    FIRE: 'fire',
-    COLD: 'cold',
-    ELEC: 'lightning',
-    ACID: 'acid',
-    POISON: 'poison',
-    DARK: 'darkness',
-  }
-
-  const message = `${monster.template.name} breathes ${elementNames[element]} for ${damage} damage!`
+  const message = `${monster.template.name} breathes ${ELEMENT_NAMES[element]} for ${finalDamage} damage!`
 
   return {
     success: true,
-    damage,
+    damage: finalDamage,
     statusInflicted: null,
     message,
   }
@@ -196,46 +205,38 @@ function executeBreathWeapon(
  * Execute a bolt spell
  *
  * Damage = 5d8 + depth scaling
+ * Defense resolution: resistance, PFE, knowledge (no armor — spells bypass AC).
  */
 function executeBoltSpell(
+  game: GameState,
   monster: Monster,
   character: Character,
-  spell: MonsterSpell,
-  depth: number
+  spell: MonsterSpell
 ): SpellResult {
-  // Map bolt spell to element
-  const elementMap: Record<string, Element> = {
-    BO_FIRE: 'FIRE',
-    BO_COLD: 'COLD',
-    BO_ELEC: 'ELEC',
-    BO_ACID: 'ACID',
-  }
-
-  const element = elementMap[spell]
+  const element = SPELL_ELEMENT_MAP[spell]
   if (!element) {
     return { success: false, damage: 0, statusInflicted: null, message: '' }
   }
 
   // Base damage 5d8 + depth scaling
-  let damage = rollDice('5d8') + Math.floor(depth / 2)
+  const rawDamage = rollDice('5d8') + Math.floor(character.depth / 2)
 
-  // Apply resistance
-  damage = applyElementResistance(damage, element, character)
+  const knowledgeBonuses = getKnowledgeBonuses(
+    monster.template.name, game.bestiary, game.balance.bestiaryBonusPercent
+  )
+  const { finalDamage } = resolveDefense(character, {
+    rawDamage,
+    element,
+    skipArmor: true,
+    attackerMonster: monster,
+    knowledgeBonuses,
+  })
 
-  const elementNames: Record<Element, string> = {
-    FIRE: 'fire',
-    COLD: 'frost',
-    ELEC: 'lightning',
-    ACID: 'acid',
-    POISON: 'poison',
-    DARK: 'darkness',
-  }
-
-  const message = `${monster.template.name} casts a ${elementNames[element]} bolt for ${damage} damage!`
+  const message = `${monster.template.name} casts a ${ELEMENT_NAMES[element]} bolt for ${finalDamage} damage!`
 
   return {
     success: true,
-    damage,
+    damage: finalDamage,
     statusInflicted: null,
     message,
   }
@@ -459,34 +460,3 @@ function executeBrainSmash(monster: Monster, character: Character): SpellResult 
   }
 }
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-/**
- * Apply elemental resistance to damage
- */
-function applyElementResistance(damage: number, element: Element, character: Character): number {
-  const resistMap: Record<Element, string> = {
-    FIRE: 'FIRE',
-    COLD: 'COLD',
-    ELEC: 'LIGHTNING',
-    ACID: 'ACID',
-    POISON: 'POISON',
-    DARK: 'DARK',
-  }
-
-  const resistType = resistMap[element]
-
-  // Check permanent resistance
-  const permResist = (character.resistances as Record<string, number | undefined>)[resistType] ?? 0
-
-  // Check temp resistance
-  const tempResist = character.tempResistances.find((r) => r.type === resistType)
-  const tempValue = tempResist?.value ?? 0
-
-  // Combine resistances (cap at 90%)
-  const totalResist = Math.min(90, permResist + tempValue)
-
-  return Math.floor((damage * (100 - totalResist)) / 100)
-}

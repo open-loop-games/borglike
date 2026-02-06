@@ -2,6 +2,9 @@
 
 Post-`resolveDefense()` unification audit. Issues grouped into phases by relatedness and complexity.
 
+**Phase 1:** Done (commit 404d304)
+**Phase 2:** Done
+
 ---
 
 ## Phase 1: Quick Wins

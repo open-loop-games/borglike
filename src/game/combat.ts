@@ -59,6 +59,8 @@ export interface IncomingDamage {
   element?: Element
   /** Armor penetration value (reduces effective armor) */
   penetration?: number
+  /** Skip armor reduction (for spells/breath that bypass physical armor) */
+  skipArmor?: boolean
   /** Attacking monster (needed for PFE evil/level check) */
   attackerMonster?: Monster
   /** Knowledge bonuses from bestiary (damage reduction from familiarity) */
@@ -588,8 +590,11 @@ export function resolveDefense(character: Character, incoming: IncomingDamage): 
   let damage = incoming.rawDamage
 
   // 1. Armor reduction (equipment + blessing + protection buffs)
-  const totalArmor = character.combat.armor + getStatusACBonus(character)
-  damage = applyArmorReduction(damage, totalArmor, incoming.penetration ?? 0)
+  // Skipped for spells/breath weapons which bypass physical armor
+  if (!incoming.skipArmor) {
+    const totalArmor = character.combat.armor + getStatusACBonus(character)
+    damage = applyArmorReduction(damage, totalArmor, incoming.penetration ?? 0)
+  }
 
   // 2. Elemental resistance
   let isImmune = false
