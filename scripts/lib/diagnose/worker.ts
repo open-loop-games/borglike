@@ -38,7 +38,7 @@ interface WorkerInput {
 
 // Available options for randomization
 const RACES = ['human', 'dwarf', 'elf', 'half_elf', 'hobbit', 'gnome', 'half_orc', 'half_troll', 'dunadan', 'high_elf', 'kobold']
-const CLASSES = ['warrior', 'mage', 'rogue', 'priest', 'ranger', 'paladin', 'necromancer', 'berserker', 'archmage', 'druid', 'blackguard', 'monk', 'bard']
+const CLASSES = ['warrior', 'mage', 'rogue', 'priest', 'ranger', 'paladin', 'necromancer', 'berserker', 'archmage', 'druid', 'blackguard']
 const PERSONALITIES: BotPersonality[] = ['cautious', 'aggressive', 'greedy', 'speedrunner']
 
 function pickRandom<T>(arr: T[], seed: number): T {

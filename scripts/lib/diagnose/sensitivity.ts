@@ -13,9 +13,9 @@ export const SENSITIVITY_UPGRADES = [
   'vitality',
   'might',
   'resilience',
-  'swiftness',
+  'reflexes',
   'precision',
-  'celerity',
+  'swiftness',
 ] as const
 
 /** Display names for upgrades */
@@ -23,9 +23,9 @@ const UPGRADE_NAMES: Record<string, string> = {
   vitality: 'Vitality (+HP)',
   might: 'Might (+Dmg%)',
   resilience: 'Resilience (+Armor)',
-  swiftness: 'Swiftness (+Dodge)',
+  reflexes: 'Reflexes (+Dodge)',
   precision: 'Precision (+Acc)',
-  celerity: 'Celerity (+Speed)',
+  swiftness: 'Swiftness (+Speed)',
 }
 
 export interface SensitivityConfig {

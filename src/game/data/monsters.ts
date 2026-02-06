@@ -1,7 +1,7 @@
 /**
  * Monster Data for Angband-Lite
  *
- * Extracted from Angband 4.2.6 source: /work/temp/angband/lib/gamedata/monster.txt
+ * Extracted from Angband 4.2.6 source (monster.txt)
  *
  * === SCALING ANALYSIS ===
  * Based on analysis of Angband monster.txt, here's how stats scale with depth:

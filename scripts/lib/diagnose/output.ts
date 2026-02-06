@@ -349,7 +349,7 @@ export function formatBaselineResults(
   }
 
   lines.push(`\nTotal time: ${opts.totalTime}s`)
-  lines.push(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
+  lines.push(`\nCopy/paste for BALANCE.md:`)
   lines.push('```')
   lines.push(`| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Status |`)
   lines.push('|-------|-----------|-----------|---------|-----------|-------|--------|')
@@ -389,7 +389,7 @@ export function formatBaselineRaceResults(
   }
 
   lines.push(`\nTotal time: ${opts.totalTime}s`)
-  lines.push(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
+  lines.push(`\nCopy/paste for BALANCE.md:`)
   lines.push('```')
   lines.push(`| Race | Avg Depth | Max Depth | CB Rate | Turns | Kills | Status |`)
   lines.push('|------|-----------|-----------|---------|-------|-------|--------|')
@@ -437,7 +437,7 @@ export function formatSensitivityResults(
   lines.push(`- \uD83D\uDFE1 Medium impact (5-10%): Important but not blocking`)
   lines.push(`- \uD83D\uDFE2 Low impact (<5%): Nice-to-have, can defer`)
 
-  lines.push(`\nCopy/paste for BALANCE-TEST-PLAN.md:`)
+  lines.push(`\nCopy/paste for BALANCE.md:`)
   lines.push('```')
   lines.push(`| Upgrade | Baseline | Excluded | Delta | Impact |`)
   lines.push('|---------|----------|----------|-------|--------|')

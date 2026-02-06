@@ -210,20 +210,19 @@ pnpm diagnose deep 1768965560201 --map
 --runs=N          Runs for batch/find/compare (default: 50)
 --threads=N       Worker threads (default: 8)
 --personality=P   cautious|aggressive|greedy|speedrunner
---class=ID        warrior|mage|rogue|priest|ranger|paladin|necromancer|berserker|archmage|druid|blackguard|monk|bard
+--class=ID        warrior|mage|rogue|priest|ranger|paladin|necromancer|berserker|archmage|druid|blackguard
 --race=ID         human|dwarf|elf|half_elf|hobbit|gnome|half_orc|half_troll|dunadan|high_elf|kobold
 --map             Include ASCII map (explored tiles)
 --full-map        Include full map (all tiles revealed)
 --from=N          Start turn for output (deep mode)
 --to=N            End turn for output (deep mode)
 --log-only        Only turn log, skip analyzers (deep mode)
---max-upgrades    Apply all upgrades at max level (legacy, prefer --upgrades=full)
 --upgrades=X      Upgrade preset (default: full)
                   Values: none, early, mid, late, full
 --boosters=X      Booster preset (default: class)
                   Values: none, class (primary stat + CON), or comma-separated IDs
                   IDs: str_superior, con_superior, int_superior, etc.
---exclude-upgrade=X,Y  Exclude specific upgrades when --max-upgrades (isolation testing)
+--exclude-upgrade=X,Y  Exclude specific upgrades (isolation testing)
 --capabilities=X  Bot capabilities (default: full)
                   Values: none, early, mid, late, full, or comma-separated IDs
                   IDs: town,farming,tactics,preparedness_1-3,sweep_1-3,surf_1-3,kiting_1-3,targeting_1-3,retreat_1-3
@@ -320,7 +319,7 @@ Generate baseline metrics for all 11 classes (100 runs, 50k turns each):
 pnpm diagnose baseline
 ```
 
-Output includes a markdown table ready to paste into `docs/BALANCE-TEST-PLAN.md`.
+Output includes a markdown table ready to paste into `docs/BALANCE.md`.
 
 ## Analyzers
 
@@ -385,9 +384,9 @@ pnpm diagnose batch --runs=100 \
 
 **Class defaults (--boosters=class):**
 - STR classes (warrior, berserker, blackguard): str_superior + con_superior
-- INT classes (mage, archmage, necromancer, bard): int_superior + con_superior
+- INT classes (mage, archmage, necromancer): int_superior + con_superior
 - WIS classes (priest, paladin, druid): wis_superior + con_superior
-- DEX classes (rogue, ranger, monk): dex_superior + con_superior
+- DEX classes (rogue, ranger): dex_superior + con_superior
 
 ### Balance Overrides
 

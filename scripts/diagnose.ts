@@ -387,7 +387,7 @@ EXAMPLES:
   pnpm diagnose compare --races=human,dwarf,elf,half_orc --runs=20
 
   # Run race baseline (all 11 races)
-  pnpm diagnose baseline-races --seed=1000 --max-upgrades
+  pnpm diagnose baseline-races --seed=1000
 
   # Test upgrade sensitivity
   pnpm diagnose sensitivity --seed=1000 --class=warrior
