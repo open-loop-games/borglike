@@ -17,6 +17,7 @@ import { hasAbility, getDiceAverage } from '../data/monsters'
 import { getMonsterEffectiveSpeed, hasLineOfSight } from '../monster-ai'
 import { calculateLightRadius } from '../lighting'
 import { getTile, isWalkable } from '../dungeon'
+import { getProtectionBonus } from '../combat'
 
 // ============================================================================
 // RACE RESTRICTIONS
@@ -715,8 +716,9 @@ export function getSmartDebuffAction(
   const bestDamageSpell = damageSpells.sort((a, b) => b.spell.level - a.spell.level)[0]
   const estimatedSpellDamage = bestDamageSpell ? bestDamageSpell.spell.level * 3 + 10 : 0
 
-  // Calculate armor reduction for damage estimation
-  const armorReduction = Math.min(character.combat.armor / 2, 50) // Max 50% reduction
+  // Calculate armor reduction for damage estimation (include protection buffs)
+  const effectiveArmor = character.combat.armor + getProtectionBonus(character)
+  const armorReduction = Math.min(effectiveArmor / 2, 50) // Max 50% reduction
 
   // Find monsters worth slowing: fast/hasted AND high damage AND not easily killed
   const worthSlowing = visibleMonsters.filter((m) => {
@@ -805,8 +807,9 @@ export function getTeleportOtherAction(
   const adjacentCount = countAdjacentMonsters(game, character.position)
   if (adjacentCount > 1) return null
 
-  // Calculate armor reduction for damage estimation
-  const armorReduction = Math.min(character.combat.armor / 2, 50)
+  // Calculate armor reduction for damage estimation (include protection buffs)
+  const effectiveArmorTP = character.combat.armor + getProtectionBonus(character)
+  const armorReduction = Math.min(effectiveArmorTP / 2, 50)
 
   // Find dangerous monsters worth banishing
   const dangerous = visibleMonsters.filter((m) => {

@@ -18,6 +18,7 @@ import { rollDice, getDiceAverage } from './dice'
 import { random } from './rng'
 import { addStatusEffect, applyPoison, hasProtectionFrom } from './status-effects'
 import { getRaceById } from './data/races'
+import { getProtectionBonus } from './combat'
 
 // ============================================================================
 // TYPES
@@ -116,7 +117,9 @@ function resolveSingleAttack(
   let damage = rollDice(attack.dice)
 
   // Apply armor reduction (percentage based)
-  const armorReduction = Math.min(character.combat.armor / 2, 50) // Max 50% reduction
+  // Include protection buff AC (Mage Armor, Shield, Sanctuary, Cloak of Shadows)
+  const totalArmor = character.combat.armor + getProtectionBonus(character)
+  const armorReduction = Math.min(totalArmor / 2, 50) // Max 50% reduction
   damage = Math.floor((damage * (100 - armorReduction)) / 100)
 
   // Apply elemental resistance

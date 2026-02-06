@@ -276,12 +276,25 @@ export function getStatusDamageBonus(character: Character): number {
 }
 
 /**
- * Get AC bonus from status effects (blessing)
+ * Get AC bonus from status effects (blessing + protection spells)
  * Used in attack resolution to add to defender's armor.
+ * Protection: Mage Armor (+8), Shield (+15), Sanctuary (+15), Cloak of Shadows (+12)
  */
 export function getStatusACBonus(character: Character): number {
+  let bonus = 0
   const blessing = character.statusEffects.find((e) => e.type === 'blessing')
-  return blessing?.value ?? 0
+  if (blessing) bonus += blessing.value
+  bonus += getProtectionBonus(character)
+  return bonus
+}
+
+/**
+ * Get AC bonus from protection buff only (Mage Armor, Shield, Sanctuary, Cloak of Shadows)
+ * Used by bot tactical estimation to account for active magical defenses.
+ */
+export function getProtectionBonus(character: Character): number {
+  const protection = character.statusEffects.find((e) => e.type === 'protection')
+  return protection?.value ?? 0
 }
 
 /**
