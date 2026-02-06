@@ -229,7 +229,7 @@ const turboMode: UpgradeDefinition = {
   description: '+25% game speed in turbo per level',
   category: 'qol',
   maxLevel: 4,
-  baseCost: 200,
+  baseCost: 300,
   costScaling: 2.0,
   effect: {
     type: 'percent',
@@ -246,7 +246,7 @@ const autoRestart: UpgradeDefinition = {
   description: 'Automatically start new run on death',
   category: 'qol',
   maxLevel: 1,
-  baseCost: 500,
+  baseCost: 250,
   costScaling: 1,
   effect: {
     type: 'unlock',

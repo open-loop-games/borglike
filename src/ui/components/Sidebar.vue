@@ -4,21 +4,17 @@ import { useProgressionStore } from '@/stores/progression'
 import { races } from '@game/data/races'
 import { classes } from '@game/data/classes'
 import { boosters } from '@game/data/boosters'
-import PanelFrame from './common/PanelFrame.vue'
 import UpgradeList from './meta/UpgradeList.vue'
 import UnlockList from './meta/UnlockList.vue'
 const progression = useProgressionStore()
 
 type Tab = 'stats' | 'upgrades' | 'unlocks'
-const activeTab = ref<Tab>('stats')
+const activeTab = ref<Tab>('upgrades')
 
 // Totals for unlock display
 const totalRaces = races.length
 const totalClasses = classes.length
 const totalBoosters = boosters.length
-
-// Show victories instead of max depth after first win
-const hasVictories = computed(() => progression.totalVictories > 0)
 
 // Count total bot upgrades from global capabilities
 const totalBotUpgrades = computed(() => {
@@ -31,18 +27,46 @@ const totalBotUpgrades = computed(() => {
   return count
 })
 const maxBotUpgrades = 25 // 1 toggle + 8 graded × 3 levels each
+
+// Swap max depth for times reached depth 50 after first time
+const hasReachedDepth50 = computed(() => (progression.globalStats.timesReachedDepth50 ?? 0) > 0)
+
+// Win rate
+const winRate = computed(() => {
+  const runs = progression.globalStats.totalRuns
+  if (runs === 0) return '0%'
+  const pct = (progression.totalVictories / runs) * 100
+  return pct < 10 ? `${pct.toFixed(1)}%` : `${Math.round(pct)}%`
+})
+
+// Recent run averages (from runHistory, last 100)
+const recentStats = computed(() => {
+  const history = progression.runHistory
+  if (history.length === 0) return null
+  const n = history.length
+  const avgDepth = Math.round(history.reduce((s, r) => s + r.maxDepth, 0) / n)
+  const avgKills = Math.round(history.reduce((s, r) => s + r.kills, 0) / n)
+  const avgTurns = Math.round(history.reduce((s, r) => s + (r.turns ?? 0), 0) / n)
+  return { avgDepth, avgKills, avgTurns, count: n }
+})
+
+// Nemesis: monster with most player deaths from bestiary
+const nemesis = computed(() => {
+  const entries = Object.entries(progression.bestiary)
+  let best: { name: string; deaths: number } | null = null
+  for (const [name, entry] of entries) {
+    const deaths = entry.deaths ?? 0
+    if (deaths > 0 && (!best || deaths > best.deaths)) {
+      best = { name, deaths }
+    }
+  }
+  return best
+})
 </script>
 
 <template>
   <div class="sidebar-container">
     <div class="sidebar-tabs">
-      <button
-        class="sidebar-tab"
-        :class="{ active: activeTab === 'stats' }"
-        @click="activeTab = 'stats'"
-      >
-        Stats
-      </button>
       <button
         class="sidebar-tab"
         :class="{ active: activeTab === 'upgrades' }"
@@ -57,84 +81,129 @@ const maxBotUpgrades = 25 // 1 toggle + 8 graded × 3 levels each
       >
         Unlocks
       </button>
+      <button
+        class="sidebar-tab"
+        :class="{ active: activeTab === 'stats' }"
+        @click="activeTab = 'stats'"
+      >
+        Stats
+      </button>
     </div>
 
     <div class="sidebar-content">
       <!-- Stats Tab -->
       <div v-if="activeTab === 'stats'" class="tab-content">
         <section class="section">
-          <h2>Global Statistics</h2>
-          <div class="stat-grid">
-            <PanelFrame class="stat">
+          <h2>Global</h2>
+          <div class="stat-rows">
+            <div class="stat-row">
               <span class="stat-label">Total Runs</span>
-              <span class="stat-value">{{ progression.globalStats.totalRuns }}</span>
-            </PanelFrame>
-            <!-- Show victories after first win, otherwise max depth -->
-            <PanelFrame v-if="hasVictories" class="stat">
+              <span class="stat-val">{{ progression.globalStats.totalRuns.toLocaleString() }}</span>
+            </div>
+            <div class="stat-row">
               <span class="stat-label">Victories</span>
-              <span class="stat-value victory">{{ progression.totalVictories }}</span>
-            </PanelFrame>
-            <PanelFrame v-else class="stat">
+              <span class="stat-val victory">{{ progression.totalVictories }}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Win Rate</span>
+              <span class="stat-val">{{ winRate }}</span>
+            </div>
+            <div v-if="hasReachedDepth50" class="stat-row">
+              <span class="stat-label">Depth 50 Clears</span>
+              <span class="stat-val depth">{{ progression.globalStats.timesReachedDepth50 }}</span>
+            </div>
+            <div v-else class="stat-row">
               <span class="stat-label">Max Depth</span>
-              <span class="stat-value depth">{{ progression.globalStats.maxDepthEver }}</span>
-            </PanelFrame>
-            <PanelFrame class="stat">
+              <span class="stat-val depth">{{ progression.globalStats.maxDepthEver }}</span>
+            </div>
+            <div class="stat-row">
               <span class="stat-label">Total Kills</span>
-              <span class="stat-value kills">{{
+              <span class="stat-val kills">{{
                 progression.globalStats.totalKills.toLocaleString()
               }}</span>
-            </PanelFrame>
-            <PanelFrame class="stat">
+            </div>
+            <div class="stat-row">
               <span class="stat-label">Total Gold</span>
-              <span class="stat-value gold">{{
+              <span class="stat-val gold">{{
                 progression.globalStats.totalGold.toLocaleString()
               }}</span>
-            </PanelFrame>
-            <PanelFrame class="stat">
+            </div>
+            <div class="stat-row">
               <span class="stat-label">Floors Traveled</span>
-              <span class="stat-value depth">{{
+              <span class="stat-val depth">{{
                 (progression.globalStats.totalFloorsVisited ?? 0).toLocaleString()
               }}</span>
-            </PanelFrame>
-            <PanelFrame class="stat">
+            </div>
+            <div class="stat-row">
               <span class="stat-label">Essence Earned</span>
-              <span class="stat-value essence">{{
+              <span class="stat-val essence">{{
                 progression.globalStats.totalEssence.toLocaleString()
               }}</span>
-            </PanelFrame>
+            </div>
+          </div>
+        </section>
+
+        <section v-if="recentStats" class="section">
+          <h2>Recent Runs</h2>
+          <div class="stat-rows">
+            <div class="stat-row">
+              <span class="stat-label">Avg Depth</span>
+              <span class="stat-val depth">{{ recentStats.avgDepth }}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Avg Kills</span>
+              <span class="stat-val kills">{{ recentStats.avgKills }}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Avg Turns</span>
+              <span class="stat-val">{{ recentStats.avgTurns.toLocaleString() }}</span>
+            </div>
+            <div v-if="nemesis" class="stat-row nemesis-row">
+              <span class="stat-label">Nemesis</span>
+              <span class="stat-val kills nemesis-name"
+                >{{ nemesis.name }} ({{ nemesis.deaths }})</span
+              >
+            </div>
           </div>
         </section>
 
         <section class="section">
-          <h2>Current Unlocks</h2>
-          <PanelFrame class="unlock-summary">
-            <div class="summary-row">
-              <span class="summary-label">Run Slots</span>
-              <span class="summary-value">{{ progression.unlocks.runSlots }} / 4</span>
+          <h2>Progress</h2>
+          <div class="stat-rows">
+            <div class="stat-row">
+              <span class="stat-label">Run Slots</span>
+              <span class="stat-val">{{ progression.unlocks.runSlots }} / 4</span>
             </div>
-            <div class="summary-row">
-              <span class="summary-label">Races</span>
-              <span class="summary-value"
+            <div class="stat-row">
+              <span class="stat-label">Races</span>
+              <span class="stat-val"
                 >{{ progression.availableRaces.length }} / {{ totalRaces }}</span
               >
             </div>
-            <div class="summary-row">
-              <span class="summary-label">Classes</span>
-              <span class="summary-value"
+            <div class="stat-row">
+              <span class="stat-label">Classes</span>
+              <span class="stat-val"
                 >{{ progression.availableClasses.length }} / {{ totalClasses }}</span
               >
             </div>
-            <div class="summary-row">
-              <span class="summary-label">Boosters</span>
-              <span class="summary-value"
+            <div class="stat-row">
+              <span class="stat-label">Boosters</span>
+              <span class="stat-val"
                 >{{ progression.unlocks.boosters.size }} / {{ totalBoosters }}</span
               >
             </div>
-            <div class="summary-row">
-              <span class="summary-label">Bot Upgrades</span>
-              <span class="summary-value">{{ totalBotUpgrades }} / {{ maxBotUpgrades }}</span>
+            <div class="stat-row">
+              <span class="stat-label">Bot Upgrades</span>
+              <span class="stat-val">{{ totalBotUpgrades }} / {{ maxBotUpgrades }}</span>
             </div>
-          </PanelFrame>
+            <div class="stat-row">
+              <span class="stat-label">Achievements</span>
+              <span class="stat-val"
+                >{{ progression.achievementStats.unlocked }} /
+                {{ progression.achievementStats.total }}</span
+              >
+            </div>
+          </div>
         </section>
       </div>
 
@@ -204,94 +273,77 @@ const maxBotUpgrades = 25 // 1 toggle + 8 graded × 3 levels each
 }
 
 .tab-content:not(.full-height) {
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
 }
 
 .section {
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .section h2 {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   text-transform: uppercase;
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-3);
+  color: var(--text-dim);
+  margin: 0 0 var(--space-2);
   letter-spacing: 1px;
   font-family: var(--font-mono);
 }
 
-.stat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
+.stat-rows {
+  display: flex;
+  flex-direction: column;
 }
 
-.stat {
-  padding: var(--space-3) !important;
-  text-align: center;
-}
-
-.stat-label {
-  display: block;
-  font-size: var(--text-xs);
-  color: var(--text-dim);
-  text-transform: uppercase;
-  margin-bottom: var(--space-1);
-}
-
-.stat-value {
-  display: block;
-  font-size: var(--text-xl);
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-}
-
-.stat-value.depth {
-  color: var(--purple);
-  text-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
-}
-
-.stat-value.kills {
-  color: var(--red);
-  text-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
-}
-
-.stat-value.gold {
-  color: var(--amber);
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-}
-
-.stat-value.essence {
-  color: var(--purple);
-  text-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
-}
-
-.stat-value.victory {
-  color: var(--green);
-  text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
-}
-
-.unlock-summary {
-  padding: var(--space-3) !important;
-}
-
-.summary-row {
+.stat-row {
   display: flex;
   justify-content: space-between;
-  padding: var(--space-1) 0;
+  align-items: baseline;
+  padding: 2px 0;
   font-family: var(--font-mono);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
 }
 
-.summary-row:not(:last-child) {
+.stat-row:not(:last-child) {
   border-bottom: 1px solid var(--border);
 }
 
-.summary-label {
+.stat-label {
   color: var(--text-secondary);
+  white-space: nowrap;
+  margin-right: var(--space-2);
 }
 
-.summary-value {
+.stat-val {
   color: var(--cyan);
+  text-align: right;
+}
+
+.stat-val.depth {
+  color: var(--purple);
+}
+
+.stat-val.kills {
+  color: var(--red);
+}
+
+.stat-val.gold {
+  color: var(--amber);
+}
+
+.stat-val.essence {
+  color: var(--purple);
+}
+
+.stat-val.victory {
+  color: var(--green);
+}
+
+.nemesis-row {
+  align-items: flex-start;
+}
+
+.nemesis-name {
+  word-break: break-word;
+  line-height: 1.3;
 }
 </style>
