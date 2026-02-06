@@ -202,6 +202,23 @@ const haggler: UpgradeDefinition = {
   icon: '⚖',
 }
 
+const bestiaryMastery: UpgradeDefinition = {
+  id: 'bestiary_mastery',
+  name: 'Bestiary Mastery',
+  description: '+5% bestiary bonus cap per level (base 10%)',
+  category: 'meta',
+  maxLevel: 3,
+  baseCost: 2000,
+  costScaling: 2.5,
+  effect: {
+    type: 'percent',
+    stat: 'bestiaryCap',
+    baseValue: 5,
+    perLevel: 5,
+  },
+  icon: '📖',
+}
+
 // =============================================================================
 // QOL UPGRADES
 // =============================================================================
@@ -307,6 +324,7 @@ export const upgrades: UpgradeDefinition[] = [
   goldDigger,
   fastLearner,
   haggler,
+  bestiaryMastery,
   // QoL
   autoRestart,
   turboMode,

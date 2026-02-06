@@ -7,6 +7,7 @@ import { getKnowledgeBonus } from '@game/knowledge-effects'
 interface Props {
   monster: MonsterTemplate
   entry?: BestiaryEntry
+  bestiaryCapPercent?: number
 }
 
 const props = defineProps<Props>()
@@ -30,7 +31,7 @@ const isLocked = computed(() => tier.value === 0)
 const isFullyUnlocked = computed(() => tier.value >= 4)
 
 // Knowledge bonus
-const knowledgeBonus = computed(() => getKnowledgeBonus(kills.value))
+const knowledgeBonus = computed(() => getKnowledgeBonus(kills.value, props.bestiaryCapPercent))
 
 // Progress to next tier
 const progress = computed(() => {

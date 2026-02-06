@@ -8,6 +8,7 @@ import { getKnowledgeBonus } from '@game/knowledge-effects'
 interface Props {
   monster: MonsterTemplate
   entry?: BestiaryEntry
+  bestiaryCapPercent?: number
 }
 
 const props = defineProps<Props>()
@@ -30,7 +31,8 @@ const deaths = computed(() => props.entry?.deaths ?? 0)
 const tier = computed(() => getUnlockTier(kills.value))
 
 // Knowledge bonus calculation
-const knowledgeBonus = computed(() => getKnowledgeBonus(kills.value))
+const bestiaryCapPercent = computed(() => props.bestiaryCapPercent ?? 25)
+const knowledgeBonus = computed(() => getKnowledgeBonus(kills.value, bestiaryCapPercent.value))
 const isLocked = computed(() => tier.value === 0)
 
 // Format first kill time
@@ -109,11 +111,11 @@ const nextUnlock = computed(() => {
           <span class="knowledge-value">+{{ knowledgeBonus.toFixed(1) }}%</span>
         </div>
         <div class="knowledge-bar">
-          <div class="knowledge-fill" :style="{ width: `${(knowledgeBonus / 25) * 100}%` }"></div>
+          <div class="knowledge-fill" :style="{ width: `${(knowledgeBonus / bestiaryCapPercent) * 100}%` }"></div>
         </div>
         <div class="knowledge-tiers">
           <span :class="{ active: knowledgeBonus >= 10 }">10%</span>
-          <span :class="{ active: knowledgeBonus >= 25 }">25%</span>
+          <span :class="{ active: knowledgeBonus >= bestiaryCapPercent }">{{ bestiaryCapPercent }}%</span>
         </div>
         <div class="knowledge-desc">
           Deal +{{ knowledgeBonus.toFixed(1) }}% damage, take -{{ knowledgeBonus.toFixed(1) }}%

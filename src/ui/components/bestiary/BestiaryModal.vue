@@ -11,6 +11,12 @@ const emit = defineEmits<{
   close: []
 }>()
 
+// Bestiary cap from Bestiary Mastery upgrade: 10% base + 5% per level
+const bestiaryCapPercent = computed(() => {
+  const level = progression.upgradeLevels['bestiary_mastery'] ?? 0
+  return 10 + level * 5
+})
+
 // Filter state
 const typeFilter = ref<string>('all')
 const sortBy = ref<'kills' | 'name' | 'depth'>('depth')
@@ -123,6 +129,7 @@ function closeDetail() {
           :key="monster.name"
           :monster="monster"
           :entry="progression.bestiary[monster.name]"
+          :bestiary-cap-percent="bestiaryCapPercent"
           @click="selectMonster(monster)"
         />
       </div>
@@ -135,6 +142,7 @@ function closeDetail() {
           <MonsterDetail
             :monster="selectedMonster"
             :entry="progression.bestiary[selectedMonster.name]"
+            :bestiary-cap-percent="bestiaryCapPercent"
             @close="closeDetail"
           />
         </div>

@@ -33,8 +33,8 @@ const SOFTCAP_KILLS = 100
 /** Bonus percentage at softcap */
 const SOFTCAP_BONUS = 10
 
-/** Maximum bonus percentage (hard cap) */
-const HARDCAP_BONUS = 25
+/** Default maximum bonus percentage (hard cap, with all bestiary mastery upgrades) */
+const DEFAULT_HARDCAP = 25
 
 // ============================================================================
 // FORMULA
@@ -46,26 +46,30 @@ const HARDCAP_BONUS = 25
  * Formula:
  * - 0 kills: 0%
  * - 1-100 kills: linear 1% per kill (1 kill = 1%, 100 kills = 10%)
- * - 100-10000 kills: logarithmic scaling from 10% to 25%
- * - 10000+ kills: capped at 25%
+ * - 100-10000 kills: logarithmic scaling from 10% to hardCap%
+ * - 10000+ kills: capped at hardCap%
  *
  * @param kills - Number of times this monster has been killed
- * @returns Bonus percentage (0-25)
+ * @param hardCap - Maximum bonus % (from Bestiary Mastery upgrade, default 10 base + 5/level)
+ * @returns Bonus percentage (0 to hardCap)
  */
-export function getKnowledgeBonus(kills: number): number {
+export function getKnowledgeBonus(kills: number, hardCap = DEFAULT_HARDCAP): number {
   if (kills <= 0) return 0
 
-  // Linear phase: 1% per kill up to 10% at 100 kills
+  // Linear phase: 1% per kill up to 10% at 100 kills (always available)
   if (kills <= SOFTCAP_KILLS) {
-    return kills * (SOFTCAP_BONUS / SOFTCAP_KILLS)
+    return Math.min(hardCap, kills * (SOFTCAP_BONUS / SOFTCAP_KILLS))
   }
 
-  // Logarithmic phase: 100-10000 kills scales 10% to 25%
+  // If cap is at or below softcap, no log phase needed
+  if (hardCap <= SOFTCAP_BONUS) return hardCap
+
+  // Logarithmic phase: 100-10000 kills scales 10% to hardCap%
   // log10(100) = 2, log10(10000) = 4
   // logProgress goes from 0 at 100 kills to 1 at 10000 kills
   const logProgress = (Math.log10(kills) - 2) / 2
 
-  return Math.min(HARDCAP_BONUS, SOFTCAP_BONUS + (HARDCAP_BONUS - SOFTCAP_BONUS) * logProgress)
+  return Math.min(hardCap, SOFTCAP_BONUS + (hardCap - SOFTCAP_BONUS) * logProgress)
 }
 
 // ============================================================================
@@ -78,12 +82,14 @@ export function getKnowledgeBonus(kills: number): number {
  * @param monsterName - Name of the monster (used as bestiary key)
  * @param bestiary - Bestiary data mapping monster names to kill counts
  * @param overrideBonusPercent - If >0, use this fixed bonus instead of computing from kills
+ * @param hardCap - Maximum bonus % from Bestiary Mastery upgrade (default 25)
  * @returns Combat bonuses to apply
  */
 export function getKnowledgeBonuses(
   monsterName: string,
   bestiary: Record<string, BestiaryEntry> | undefined,
-  overrideBonusPercent = 0
+  overrideBonusPercent = 0,
+  hardCap = DEFAULT_HARDCAP
 ): KnowledgeBonuses {
   // If override is set, use it directly (for testing/balance tuning)
   if (overrideBonusPercent > 0) {
@@ -102,7 +108,7 @@ export function getKnowledgeBonuses(
     return { damagePercent: 0, reductionPercent: 0 }
   }
 
-  const bonus = getKnowledgeBonus(entry.kills)
+  const bonus = getKnowledgeBonus(entry.kills, hardCap)
 
   // Same bonus applies to both damage dealt and damage reduction
   return {

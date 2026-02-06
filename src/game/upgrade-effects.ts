@@ -29,6 +29,7 @@ export interface UpgradeBonuses {
   goldMultiplier: number // Gold gain multiplier (from gold_digger)
   essenceMultiplier: number // Essence gain multiplier (from essence_boost)
   merchantDiscount: number // Merchant price discount percent (from haggler)
+  bestiaryCapPercent: number // Max bestiary knowledge bonus % (10 base + 5 per bestiary_mastery level)
 
   // QoL bonuses
   turboSpeedPercent: number // Extra turbo speed (from turbo_mode)
@@ -75,6 +76,7 @@ export function computeUpgradeBonuses(
     goldMultiplier: 1 + (getEffectValue(levels, 'gold_digger') / 100) * scale,
     essenceMultiplier: 1 + (getEffectValue(levels, 'essence_boost') / 100) * scale,
     merchantDiscount: Math.floor(getEffectValue(levels, 'haggler') * scale),
+    bestiaryCapPercent: 10 + getEffectValue(levels, 'bestiary_mastery'), // 10% base + 5% per level (not scaled by upgradePower)
 
     // QoL bonuses (not scaled - turbo speed and auto-restart are convenience features)
     turboSpeedPercent: getEffectValue(levels, 'turbo_mode'),
@@ -175,6 +177,7 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   goldMultiplier: 1,
   essenceMultiplier: 1,
   merchantDiscount: 0,
+  bestiaryCapPercent: 10,
   turboSpeedPercent: 0,
   hasAutoRestart: false,
 }

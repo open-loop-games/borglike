@@ -40,7 +40,8 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
   const knowledgeBonuses = getKnowledgeBonuses(
     monster.template.name,
     game.bestiary,
-    game.balance.bestiaryBonusPercent
+    game.balance.bestiaryBonusPercent,
+    game.upgradeBonuses?.bestiaryCapPercent
   )
 
   // Resolve multi-attack with knowledge bonuses and armor penetration
@@ -153,7 +154,8 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
   const knowledgeBonuses = getKnowledgeBonuses(
     monster.template.name,
     game.bestiary,
-    game.balance.bestiaryBonusPercent
+    game.balance.bestiaryBonusPercent,
+    game.upgradeBonuses?.bestiaryCapPercent
   )
 
   // Resolve multi-shot ranged attack with knowledge bonuses and armor penetration

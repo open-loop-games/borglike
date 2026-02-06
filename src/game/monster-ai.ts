@@ -873,7 +873,8 @@ function executeMonsterAction(
     const knowledgeBonuses = getKnowledgeBonuses(
       monster.template.name,
       game.bestiary,
-      game.balance.bestiaryBonusPercent
+      game.balance.bestiaryBonusPercent,
+      game.upgradeBonuses?.bestiaryCapPercent
     )
     const attackResult = resolveMonsterAttacks(monster, game.character, knowledgeBonuses)
 
