@@ -122,7 +122,8 @@ const filteredAchievements = computed(() => {
 // Get progress for cumulative achievements via data-driven statKey
 function getProgress(achievement: Achievement): number | undefined {
   if (!achievement.statKey) return undefined
-  return progression.globalStats[achievement.statKey]
+  const value = progression.globalStats[achievement.statKey]
+  return typeof value === 'number' ? value : undefined
 }
 
 // Stats summary

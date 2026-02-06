@@ -27,6 +27,9 @@ pnpm run knip         # Find unused exports/dependencies
 pnpm diagnose [mode]  # Bot diagnostics (deep, quick, batch, find, baseline)
 ```
 
+## Tools Available
+jq, bun
+
 ## Skills
 
 - **`/diagnose`** - Bot diagnostic toolkit for investigating behavior issues. Modes: `deep`, `quick`, `batch`, `find`, `compare`. See `.claude/skills/diagnose/`.
@@ -100,8 +103,6 @@ src/
 ## Key Constraints
 
 **Two-Layer State:** Full GameState lives in engine, Pinia stores hold extracted display metrics only. One-way flow: engine → stores → Vue.
-
-**Bot AI:** Angband-inspired with flow-based pathfinding, danger grids, goal persistence, and 11 class-specific behavior profiles. See `docs/BOT-AI-PLAN.md`.
 
 **Persistence:** IndexedDB primary, localStorage backup on beforeunload. Critical saves immediate, others debounced 500ms.
 

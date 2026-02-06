@@ -4,6 +4,40 @@
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
 
+### Full Baseline @ `aa73d55` (100 runs, 50k turns, seed=1000, max-upgrades) — Necro/Priest/Druid Buffs
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Blackguard** | 49.8 | 50 | 0% | 16235 | 569 | 10 | ✅ Endgame |
+| **Paladin** | 49.8 | 50 | 0% | 22343 | 691 | 8 | ✅ Endgame |
+| **Druid** | 49.1 | 50 | 0% | 22793 | 654 | 2 | ✅ Endgame |
+| **Priest** | 48.9 | 50 | 0% | 26788 | 801 | 2 | ✅ Endgame |
+| **Ranger** | 48.4 | 50 | 1% | 22155 | 636 | 6 | ✅ Endgame |
+| **Mage** | 48.4 | 50 | 2% | 28091 | 638 | 2 | ✅ Endgame |
+| **Berserker** | 48.2 | 50 | 0% | 14220 | 503 | 5 | ✅ Endgame |
+| **Necromancer** | 47.9 | 50 | 1% | 23766 | 656 | 6 | ✅ Endgame |
+| **Warrior** | 47.8 | 50 | 0% | 15596 | 518 | 6 | ✅ Endgame |
+| **Archmage** | 46.7 | 50 | 3% | 27220 | 602 | 3 | ✅ Endgame |
+| **Rogue** | 44.4 | 50 | 0% | 23060 | 538 | 2 | ✅ Endgame |
+
+**Summary:** Buff pass on three weakest classes (necromancer, priest, druid). Necromancer: permanent skeletons, drain scaling buff. Priest: enable damage spells (smite_evil, orb_of_draining, holy_word), buff divine scaling. Druid: add Cat Form (DPS), bear form stat tweaks, hitdie 2→4, nature spell buffs, three-form AI rewrite. **52 Morgoth kills** (10 blackguard, 8 paladin, 6 ranger, 6 necromancer, 6 warrior, 5 berserker, 3 archmage, 2 druid, 2 priest, 2 mage, 2 rogue). All CB rates ≤3%. Spread tightened: 44.4-49.8 (was 43.9-48.4).
+
+**vs Previous Full (`25c9691`):**
+
+| Class | Old | New | Delta | Notes |
+|-------|-----|-----|-------|-------|
+| Blackguard | 48.0 | 49.8 | **+1.8** | Spillover from priest damage spell fix |
+| Paladin | 48.1 | 49.8 | **+1.7** | Spillover from priest damage spell fix |
+| Druid | 43.9 | 49.1 | **+5.2** | Cat form + hitdie + spell buffs + AI rewrite |
+| Priest | 45.1 | 48.9 | **+3.8** | Damage spells + divine scaling |
+| Ranger | 47.9 | 48.4 | +0.5 | thorn_strike buff (minor, ranger uses bow) |
+| Mage | 48.4 | 48.4 | 0.0 | Unchanged |
+| Berserker | 48.2 | 48.2 | 0.0 | Unchanged |
+| Necromancer | 46.2 | 47.9 | **+1.7** | Permanent skeletons + drain scaling |
+| Warrior | 47.8 | 47.8 | 0.0 | Unchanged |
+| Archmage | 46.7 | 46.7 | 0.0 | Unchanged |
+| Rogue | 46.7 | 44.4 | -2.3 | Negative spillover from melee-caster spell fix |
+
 ### Full Baseline @ `25c9691` (100 runs, 50k turns, seed=1000, max-upgrades) — Ranger Nerf + Bow Fix
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
