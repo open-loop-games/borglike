@@ -18,7 +18,7 @@ export { runBotTick } from './tick'
 export { createBotState, resetLevelState } from './state'
 
 // Context building
-export { buildBotContext, getBotStatus, evaluateDanger } from './context'
+export { buildBotContext, getBotStatus } from './context'
 
 // ============================================================================
 // TYPES

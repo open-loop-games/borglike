@@ -8,7 +8,7 @@ import type { GameState, BotPersonality, Point, AltarState } from '../types'
 import type { BotCapabilities, BotToggles, SweepLevelRange } from '../../types/progression'
 import { FULL_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../../types/progression'
 import { getDefaultSweepLevelRange } from './types'
-import { manhattanDistance } from '../types'
+
 import type { BotContext, BotState, PersonalityConfig } from './types'
 import { getTile, countExploredTiles } from '../dungeon'
 import { getPersonalityConfig } from './personality'
@@ -319,42 +319,3 @@ export function getBotStatus(context: BotContext): string {
   return parts.join(' | ')
 }
 
-/**
- * Evaluate current danger level
- * Phase 1: Simple stub based on visible monster count
- * Phase 2: Full danger grid implementation
- */
-export function evaluateDanger(context: BotContext): number {
-  // Simple danger evaluation for Phase 1
-  // Just count visible monsters and their threat
-  let danger = 0
-
-  for (const monster of context.visibleMonsters) {
-    // Base danger from monster depth/power
-    danger += monster.template.minDepth * 10
-
-    // Extra danger if monster is awake
-    if (monster.isAwake) {
-      danger += 20
-    }
-
-    // Extra danger if monster is adjacent
-    const dist = manhattanDistance(context.game.character.position, monster.position)
-    if (dist <= 1) {
-      danger += 50
-    } else if (dist <= 3) {
-      danger += 20
-    }
-  }
-
-  // Scale by HP ratio (lower HP = higher perceived danger)
-  const hpRatio = context.game.character.hp / context.game.character.maxHp
-  if (hpRatio < 0.5) {
-    danger *= 1.5
-  }
-  if (hpRatio < 0.25) {
-    danger *= 2
-  }
-
-  return Math.floor(danger)
-}

@@ -12,7 +12,6 @@ import {
   runBotTick,
   buildBotContext,
   getBotStatus,
-  evaluateDanger,
   createBotState,
   type BotState,
 } from './bot'
@@ -212,14 +211,6 @@ export function createGameRunner(config: RunnerConfig) {
   }
 
   /**
-   * Get current danger level
-   */
-  function getDanger(): number {
-    const context = buildBotContext(game, personality)
-    return evaluateDanger(context)
-  }
-
-  /**
    * Get the current bot state (for debugging/inspection)
    */
   function getBotState(): BotState {
@@ -235,7 +226,6 @@ export function createGameRunner(config: RunnerConfig) {
     isActive,
     stop,
     getStatus,
-    getDanger,
     getBotState,
   }
 }

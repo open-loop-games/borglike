@@ -151,7 +151,6 @@ export {
 export {
   buildBotContext,
   runBotTick,
-  evaluateDanger,
   getBotStatus,
   createBotState,
   getPersonalityConfig,
