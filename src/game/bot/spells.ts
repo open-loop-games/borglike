@@ -343,15 +343,29 @@ export function getBuffSpellAction(
   if (character.mp < character.maxMp * 0.3) return null
 
   // Check if we already have active buffs
-  const existingBuffTypes = character.statusEffects.map((e) => e.type)
+  // Cast to string[] because damage_bonus/ac_bonus exist at runtime but aren't in StatusEffectType union
+  const existingBuffTypes = character.statusEffects.map((e) => e.type) as string[]
 
   // Consider casting if enemies are visible but not adjacent
   const adjacentCount = countAdjacentMonsters(game, character.position)
   if (adjacentCount > 0) {
-    // In melee - only Dark Pact is worth casting (damage boost)
-    const darkPact = buffSpells.find((entry) => entry.spell.id === 'dark_pact')
-    if (darkPact && !hasStatusEffect(character, 'berserk') && character.hp > 20) {
-      return { type: 'cast', spellId: 'dark_pact' }
+    // In melee - damage buffs worth casting mid-fight
+    if (!existingBuffTypes.includes('damage_bonus')) {
+      // Shadow Dance: powerful burst for tough fights (rogue)
+      const shadowDance = buffSpells.find((entry) => entry.spell.id === 'shadow_dance')
+      if (shadowDance) {
+        return { type: 'cast', spellId: 'shadow_dance' }
+      }
+      // Envenom: standard damage buff (rogue)
+      const envenom = buffSpells.find((entry) => entry.spell.id === 'envenom')
+      if (envenom) {
+        return { type: 'cast', spellId: 'envenom' }
+      }
+      // Dark Pact: damage buff at HP cost (necromancer/blackguard)
+      const darkPact = buffSpells.find((entry) => entry.spell.id === 'dark_pact')
+      if (darkPact && !hasStatusEffect(character, 'berserk') && character.hp > 20) {
+        return { type: 'cast', spellId: 'dark_pact' }
+      }
     }
     return null
   }
@@ -359,15 +373,31 @@ export function getBuffSpellAction(
   if (visibleMonsters.length > 0) {
     // Enemies nearby but not adjacent - good time for buffs
 
-    // Protection buffs: Shield > Mage Armor (Shield gives +15 AC, Mage Armor +8)
+    // Protection buffs: Shield > Cloak of Shadows > Mage Armor > Sanctuary
     if (!existingBuffTypes.includes('protection')) {
       const shield = buffSpells.find((entry) => entry.spell.id === 'shield')
       if (shield) {
         return { type: 'cast', spellId: 'shield' }
       }
+      const cloak = buffSpells.find((entry) => entry.spell.id === 'cloak_of_shadows')
+      if (cloak) {
+        return { type: 'cast', spellId: 'cloak_of_shadows' }
+      }
       const mageArmor = buffSpells.find((entry) => entry.spell.id === 'mage_armor')
       if (mageArmor) {
         return { type: 'cast', spellId: 'mage_armor' }
+      }
+    }
+
+    // Damage buffs: Shadow Dance > Envenom > Hunter's Mark
+    if (!existingBuffTypes.includes('damage_bonus')) {
+      const shadowDance = buffSpells.find((entry) => entry.spell.id === 'shadow_dance')
+      if (shadowDance) {
+        return { type: 'cast', spellId: 'shadow_dance' }
+      }
+      const envenom = buffSpells.find((entry) => entry.spell.id === 'envenom')
+      if (envenom) {
+        return { type: 'cast', spellId: 'envenom' }
       }
     }
 

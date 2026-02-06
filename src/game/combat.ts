@@ -332,7 +332,7 @@ function computeDeadlinessMultiplier(deadliness: number): number {
  *
  * Deadliness comes from:
  * - Weapon enchantment (to-damage): +2 deadliness per point
- * - STR bonus: +1 deadliness per point of STR above 10
+ * - STR bonus: +1 deadliness per point of STR above 10 (finesse: max(STR, DEX))
  * - Level bonus: +0.5 deadliness per level
  *
  * @param character - The character
@@ -348,7 +348,12 @@ export function calculateDeadliness(character: Character): number {
   }
 
   // STR bonus (each point above 10 = +1 deadliness)
-  const strBonus = Math.max(0, character.stats.str - 10)
+  // FINESSE: Rogues use max(STR, DEX) for melee deadliness
+  const gameClass = getClassById(character.classId)
+  const meleeStat = gameClass?.finesse
+    ? Math.max(character.stats.str, character.stats.dex)
+    : character.stats.str
+  const strBonus = Math.max(0, meleeStat - 10)
   deadliness += strBonus
 
   // Level bonus (level / 2)
@@ -546,6 +551,12 @@ function getPassiveDamageMultiplier(character: Character): number {
     mult *= 2.5
   }
 
+  // damage_bonus status effect: Envenom, Shadow Dance, Hunter's Mark, Dark Pact
+  const damageBuff = character.statusEffects.find((e) => e.type === ('damage_bonus' as never))
+  if (damageBuff) {
+    mult *= 1 + damageBuff.value / 100
+  }
+
   return mult
 }
 
@@ -626,8 +637,13 @@ export function attack(
     }
 
     // Base damage: STR/3 + weapon dice + enchantment + artifact + status bonus
+    // FINESSE: Rogues use max(STR, DEX) for melee damage
+    const meleeClass = getClassById(attacker.classId)
+    const meleeStatDmg = meleeClass?.finesse
+      ? Math.max(attacker.stats.str, attacker.stats.dex)
+      : attacker.stats.str
     baseDamage =
-      Math.floor(attacker.stats.str / 3) +
+      Math.floor(meleeStatDmg / 3) +
       weaponDamage +
       enchantBonus +
       artifactDamage +
@@ -1032,6 +1048,12 @@ export function rangedAttack(
   // Apply ranged deadliness multiplier (from bow enchantment + DEX + level)
   const deadliness = calculateRangedDeadliness(attacker)
   baseDamage = applyDeadliness(baseDamage, deadliness)
+
+  // damage_bonus status effect (Hunter's Mark, etc.)
+  const rangedDamageBuff = attacker.statusEffects.find((e) => e.type === ('damage_bonus' as never))
+  if (rangedDamageBuff) {
+    baseDamage = Math.floor(baseDamage * (1 + rangedDamageBuff.value / 100))
+  }
 
   // Apply armor reduction
   let finalDamage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration)

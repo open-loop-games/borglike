@@ -577,12 +577,12 @@ function handleCautionTier(
     }
   }
 
-  // 2. Combat buffs only for bosses/uniques when approaching
+  // 2. Combat buffs when approaching enemies
   if (visibleMonsters.length > 0 && !adjacentMonster) {
-    // Only buff for dangerous targets (uniques/bosses)
     const hasBossTarget = visibleMonsters.some(isBossOrUnique)
 
-    if (hasBossTarget) {
+    // Rogue always buffs (Envenom is core DPS), others only for bosses/uniques
+    if (hasBossTarget || game.character.classId === 'rogue') {
       const combatBuff = getCombatBuffAction(game, config, dangerResult.dangers, tacticsLevel)
       if (combatBuff) {
         recordProgress(botState, game.turn)

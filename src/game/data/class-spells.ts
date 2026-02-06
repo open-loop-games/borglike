@@ -55,16 +55,18 @@ const mageSpells: ClassSpellList = {
 }
 
 /**
- * Rogue - Limited magic (4 spells)
- * Gets utility/escape spells + Shadow Step for burst damage
+ * Rogue - Shadow assassin (5 spells)
+ * All buffs/utility — no damage spells (they waste turns vs melee)
+ * Envenom + Shadow Dance stack for massive burst windows
  */
 const rogueSpells: ClassSpellList = {
   classId: 'rogue',
   spells: [
-    { spellId: 'magic_missile', learnLevel: 3 },
-    { spellId: 'phase_door', learnLevel: 8 },
-    { spellId: 'shadow_step', learnLevel: 10 }, // Teleport to enemy + Sneak Attack buff
-    { spellId: 'frost_bolt', learnLevel: 15 },
+    { spellId: 'envenom', learnLevel: 1 }, // Opening damage buff (+25%)
+    { spellId: 'phase_door', learnLevel: 5 }, // Early escape (moved from L8)
+    { spellId: 'shadow_step', learnLevel: 10 }, // Core burst: teleport + Sneak Attack
+    { spellId: 'cloak_of_shadows', learnLevel: 18 }, // Defensive buff (+12 AC)
+    { spellId: 'shadow_dance', learnLevel: 35 }, // Endgame power spike (+50% damage)
   ],
 }
 
@@ -291,7 +293,6 @@ export function getClassPrimarySchool(
 ): 'arcane' | 'divine' | 'nature' | 'shadow' | null {
   switch (classId) {
     case 'mage':
-    case 'rogue':
     case 'archmage':
       return 'arcane'
     case 'priest':
@@ -300,6 +301,7 @@ export function getClassPrimarySchool(
     case 'druid':
     case 'ranger':
       return 'nature'
+    case 'rogue':
     case 'necromancer':
     case 'blackguard':
       return 'shadow'

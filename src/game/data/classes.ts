@@ -41,6 +41,8 @@ export interface GameClass {
   canShieldBash?: boolean
   /** COMBAT_REGEN: Percentage of melee damage dealt that heals the character (Blackguard) */
   combatLifesteal?: number
+  /** FINESSE: Uses max(STR, DEX) for melee damage and deadliness instead of just STR (Rogue) */
+  finesse?: boolean
 }
 
 // =============================================================================
@@ -121,6 +123,7 @@ const rogue: GameClass = {
   starting: true,
   description: 'Cunning opportunists who strike from the shadows.',
   botBehavior: 'Opportunistic: picks fights carefully, high crit damage, uses escape abilities',
+  finesse: true,
 }
 
 // =============================================================================

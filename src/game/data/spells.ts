@@ -612,6 +612,46 @@ const soul_rend: SpellTemplate = {
 }
 
 // ============================================================================
+// ROGUE SHADOW SPELLS
+// ============================================================================
+
+const envenom: SpellTemplate = {
+  id: 'envenom',
+  name: 'Envenom',
+  school: 'shadow',
+  level: 1,
+  manaCost: 4,
+  cooldown: 20,
+  effectType: 'buff',
+  buff: { type: 'damage_bonus', value: 25, duration: 15 },
+  description: 'Coat your blade in venom, dealing +25% damage for 15 turns.',
+}
+
+const cloak_of_shadows: SpellTemplate = {
+  id: 'cloak_of_shadows',
+  name: 'Cloak of Shadows',
+  school: 'shadow',
+  level: 18,
+  manaCost: 10,
+  cooldown: 30,
+  effectType: 'buff',
+  buff: { type: 'protection', value: 12, duration: 25 },
+  description: 'Wrap yourself in shadows, gaining +12 AC.',
+}
+
+const shadow_dance: SpellTemplate = {
+  id: 'shadow_dance',
+  name: 'Shadow Dance',
+  school: 'shadow',
+  level: 35,
+  manaCost: 20,
+  cooldown: 30,
+  effectType: 'buff',
+  buff: { type: 'damage_bonus', value: 50, duration: 10 },
+  description: 'Enter a deadly dance of blades, dealing +50% damage for 10 turns.',
+}
+
+// ============================================================================
 // LATE-GAME ARCANE SPELLS (L35-45)
 // ============================================================================
 
@@ -828,6 +868,10 @@ export const SPELLS: Record<string, SpellTemplate> = {
   dark_pact,
   soul_rend,
   summon_skeleton,
+  // Shadow (rogue)
+  envenom,
+  cloak_of_shadows,
+  shadow_dance,
   // Shadow (late-game)
   mass_drain,
   storm_of_darkness,
