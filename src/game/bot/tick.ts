@@ -37,10 +37,16 @@ import {
   getFlowCost,
   MAX_FLOW_COST,
 } from './flow'
+import type { FlowAvoidance } from './flow'
 import { selectStep } from './movement'
 import { isSamePoint } from '../types'
 import { buildBotContext } from './context'
-import { computeDangerGrid, buildAvoidSet, getDangerThreshold, getMonsterThreat } from './danger'
+import {
+  computeDangerGrid,
+  getScaledDangerThreshold,
+  getDangerThreshold,
+  getMonsterThreat,
+} from './danger'
 import {
   detectStuckLevel,
   getStuckResponse,
@@ -288,12 +294,12 @@ function computeGoalFlow(
   game: GameState,
   botState: BotState,
   goal: BotGoal,
-  avoidSet: Set<string>
+  avoidance: FlowAvoidance | null
 ): FlowGrid | null {
   if (goal.type === 'EXPLORE') {
-    return computeExploreGoalFlow(game, botState, goal, avoidSet)
+    return computeExploreGoalFlow(game, botState, goal, avoidance)
   }
-  return computeSingleTargetFlow(game, botState, goal, avoidSet)
+  return computeSingleTargetFlow(game, botState, goal, avoidance)
 }
 
 /**
@@ -306,12 +312,12 @@ function computeExploreGoalFlow(
   game: GameState,
   botState: BotState,
   _goal: BotGoal,
-  avoidSet: Set<string>
+  avoidance: FlowAvoidance | null
 ): FlowGrid | null {
   // Sweep mode: multi-target Dijkstra to all sweep frontier tiles
   if (shouldUseSweepFlow(game, botState)) {
     // Check sweep cache validity FIRST (before expensive frontier scan)
-    const seenCount = botState.seenThisVisit.size
+    const seenCount = botState.seenThisVisit.count
     const cache = botState.cachedSweepFlow
     const cacheValid =
       cache &&
@@ -338,7 +344,7 @@ function computeExploreGoalFlow(
       if (sweepFrontiers.length > 0) {
         // Compute fresh sweep flow
         const flowCosts = profile('flow.sweep', () =>
-          computeExplorationFlow(game.currentLevel, sweepFrontiers, avoidSet)
+          computeExplorationFlow(game.currentLevel, sweepFrontiers, avoidance ?? undefined)
         )
 
         // Check if sweep flow is reachable from bot's position
@@ -385,7 +391,7 @@ function computeExploreGoalFlow(
 
   // Compute fresh exploration flow
   const flowCosts = profile('flow.exploration', () =>
-    computeExplorationFlow(game.currentLevel, frontiers, avoidSet)
+    computeExplorationFlow(game.currentLevel, frontiers, avoidance ?? undefined)
   )
   botState.cachedExplorationFlow = {
     costs: flowCosts,
@@ -406,7 +412,7 @@ function computeSingleTargetFlow(
   game: GameState,
   botState: BotState,
   goal: BotGoal,
-  avoidSet: Set<string>
+  avoidance: FlowAvoidance | null
 ): FlowGrid {
   const needsRecompute = !isFlowValid(botState.cachedFlow, goal.target, game.turn)
   if (!needsRecompute && botState.cachedFlow?.costs) {
@@ -414,7 +420,7 @@ function computeSingleTargetFlow(
   }
 
   const flowCosts = profile('flow.singleTarget', () =>
-    computeFlow(game.currentLevel, goal.target!, avoidSet)
+    computeFlow(game.currentLevel, goal.target!, avoidance ?? undefined)
   )
   botState.cachedFlow = createFlowResult(goal.target!, flowCosts, game.turn)
   return flowCosts
@@ -436,7 +442,7 @@ function ensureFlowReachable(
   botState: BotState,
   goal: BotGoal,
   flowCosts: FlowGrid,
-  avoidSet: Set<string>,
+  avoidance: FlowAvoidance | null,
   caution: number
 ): FlowGrid | null {
   const pos = game.character.position
@@ -448,7 +454,7 @@ function ensureFlowReachable(
   }
 
   // No avoidance to remove - truly unreachable
-  if (avoidSet.size === 0) {
+  if (!avoidance) {
     clearUnreachableGoal(botState)
     return null
   }
@@ -614,16 +620,17 @@ function executeGoalMovement(
   const arrivalAction = getGoalArrivalAction(game, botState, goal, effectiveConfig)
   if (arrivalAction) return arrivalAction
 
-  // 3. Build avoidance (skip for FLEE)
-  const avoidSet =
+  // 3. Build avoidance config (skip for FLEE — no danger avoidance when running)
+  const avoidance: FlowAvoidance | null =
     goal.type === 'FLEE'
-      ? new Set<string>()
-      : profile('goalMovement.buildAvoidSet', () =>
-          buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character)
-        )
+      ? null
+      : {
+          grid: dangerResult.dangers,
+          threshold: getScaledDangerThreshold(dangerThreshold, game.character),
+        }
 
   // 4. Compute flow
-  const flowCosts = computeGoalFlow(game, botState, goal, avoidSet)
+  const flowCosts = computeGoalFlow(game, botState, goal, avoidance)
   if (!flowCosts) {
     return { type: 'wait' }
   }
@@ -634,7 +641,7 @@ function executeGoalMovement(
     botState,
     goal,
     flowCosts,
-    avoidSet,
+    avoidance,
     effectiveConfig.caution
   )
   if (!reachableFlow) {

@@ -19,7 +19,7 @@ import type { Point, GameState, Character } from '../types'
 import type { UpgradeBonuses } from '../upgrade-effects'
 import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { SQUISHY_CLASSES, getEffectiveCapabilities } from './types'
+import { SQUISHY_CLASSES, getEffectiveCapabilities, seenGridAdd } from './types'
 import { profile } from './profiler'
 import {
   getExplorationProgress,
@@ -220,7 +220,7 @@ export function getMorgothHuntGoal(context: BotContext): BotGoal | null {
   }
 
   const totalFloor = getLevelFloorCount(context)
-  const seenThisVisitRate = totalFloor > 0 ? botState.seenThisVisit.size / totalFloor : 0
+  const seenThisVisitRate = totalFloor > 0 ? botState.seenThisVisit.count / totalFloor : 0
 
   // Sweep the level to build seenThisVisit before triggering flip
   // This handles returning from town portal (seenThisVisit cleared) and post-flip exploration
@@ -330,7 +330,7 @@ export function recordVisibleTiles(game: GameState, botState: BotState): void {
     for (let x = 0; x < level.width; x++) {
       const tile = row[x]
       if (tile?.visible) {
-        botState.seenThisVisit.add(`${x},${y}`)
+        seenGridAdd(botState.seenThisVisit, x, y)
       }
     }
   }

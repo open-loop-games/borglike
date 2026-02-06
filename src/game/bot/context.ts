@@ -10,6 +10,7 @@ import { FULL_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../../types/progress
 import { getDefaultSweepLevelRange } from './types'
 
 import type { BotContext, BotState, PersonalityConfig } from './types'
+import { createSeenGrid } from './types'
 import { getTile, countExploredTiles } from '../dungeon'
 import { getPersonalityConfig } from './personality'
 import { getClassProfile } from './class-profiles'
@@ -68,7 +69,7 @@ function createMinimalBotState(): BotState {
     tetheredRadius: 0,
     tetheredFlipCount: 0,
     lastFlipTurn: 0,
-    seenThisVisit: new Set(),
+    seenThisVisit: createSeenGrid(80, 40),
     // Sweep exploration (casters)
     sweepMode: false,
     sweepDirection: null,

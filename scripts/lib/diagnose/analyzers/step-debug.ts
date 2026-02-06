@@ -16,11 +16,12 @@ import type {
 import type { GameState, Point, Direction } from '@game/types'
 import type { BotState } from '@bot/types'
 import { computeFlow, getFlowCost, MAX_FLOW_COST } from '@bot/flow'
+import type { FlowAvoidance } from '@bot/flow'
 import { CARDINAL_DIRECTIONS } from '@bot/types'
 import { getAdjacentPositions, getTile, isWalkable } from '@game/dungeon'
 import { getDirectionFromDelta } from '@game/types'
 import { getRecencyPenalty } from '@bot/state'
-import { computeDangerGrid, buildAvoidSet, getDangerThreshold } from '@bot/danger'
+import { computeDangerGrid, getDangerThreshold, getScaledDangerThreshold } from '@bot/danger'
 
 export interface StepDebugConfig {
   /** Only capture when oscillation detected (position revisit within N turns) */
@@ -159,8 +160,9 @@ export class StepDebugAnalyzer implements Analyzer {
     // Using cautious personality defaults: aggression=30, caution=50
     const dangerGrid = computeDangerGrid(game)
     const dangerThreshold = getDangerThreshold(30, 50)
-    const avoidSet = buildAvoidSet(dangerGrid.dangers, dangerThreshold, game.character)
-    const flowCosts = computeFlow(game.currentLevel, target, avoidSet)
+    const scaledThreshold = getScaledDangerThreshold(dangerThreshold, game.character)
+    const avoidance: FlowAvoidance = { grid: dangerGrid.dangers, threshold: scaledThreshold }
+    const flowCosts = computeFlow(game.currentLevel, target, avoidance)
     const currentCost = getFlowCost(flowCosts, pos)
 
     // Build occupied set
@@ -231,12 +233,14 @@ export class StepDebugAnalyzer implements Analyzer {
 
     // Find avoid tiles near bot position (within 3 tiles)
     const nearbyAvoid: string[] = []
-    for (const key of avoidSet) {
-      const parts = key.split(',').map(Number)
-      const ax = parts[0] ?? 0
-      const ay = parts[1] ?? 0
-      if (Math.abs(ax - pos.x) <= 3 && Math.abs(ay - pos.y) <= 3) {
-        nearbyAvoid.push(key)
+    let avoidCount = 0
+    const dGrid = dangerGrid.dangers
+    for (let ay = Math.max(0, pos.y - 3); ay <= Math.min(dGrid.data.length / dGrid.width - 1, pos.y + 3); ay++) {
+      for (let ax = Math.max(0, pos.x - 3); ax <= Math.min(dGrid.width - 1, pos.x + 3); ax++) {
+        if (dGrid.data[ay * dGrid.width + ax]! > scaledThreshold) {
+          nearbyAvoid.push(`${ax},${ay}`)
+          avoidCount++
+        }
       }
     }
 
@@ -250,7 +254,7 @@ export class StepDebugAnalyzer implements Analyzer {
       candidates,
       chosenDirection: chosen?.direction ?? null,
       recentPositions: botState.recentPositions.slice(-10).map((p) => ({ ...p })),
-      avoidCount: avoidSet.size,
+      avoidCount,
       nearbyAvoid,
     }
   }

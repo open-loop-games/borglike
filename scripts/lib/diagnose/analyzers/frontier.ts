@@ -27,8 +27,9 @@ import {
   getSweepFrontierPositions,
 } from '@bot/exploration'
 import { computeExplorationFlow, getFlowCost, isReachable } from '@bot/flow'
+import type { FlowAvoidance } from '@bot/flow'
 import { getTile, getAdjacentPositions, isWalkable } from '@game/dungeon'
-import { computeDangerGrid, buildAvoidSet, getDangerThreshold } from '@bot/danger'
+import { computeDangerGrid, buildAvoidSet, getDangerThreshold, getScaledDangerThreshold } from '@bot/danger'
 import { buildBotContext } from '@bot/context'
 
 // MAX_FLOW_COST from flow.ts (not exported, so we duplicate)
@@ -219,11 +220,15 @@ export class FrontierAnalyzer implements Analyzer {
       let flowWithAvoidReachable = false
       let flowWithAvoidCost = 255
 
-      // Compute danger grid and avoidSet (like the game does)
+      // Compute danger grid and avoidance (like the game does)
       // Use cautious personality values (aggression=30, caution=50) since that's what mage uses
       const dangerResult = computeDangerGrid(game)
       const dangerThreshold = getDangerThreshold(30, 50) // Cautious: aggression=30, caution=50 → threshold=85
       const avoidSet = buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character)
+      const avoidance: FlowAvoidance = {
+        grid: dangerResult.dangers,
+        threshold: getScaledDangerThreshold(dangerThreshold, game.character),
+      }
 
       if (frontierPositions.length > 0) {
         // Flow WITHOUT avoidance
@@ -232,7 +237,7 @@ export class FrontierAnalyzer implements Analyzer {
         flowCostAtBot = getFlowCost(flowCosts, pos)
 
         // Flow WITH avoidance
-        const flowCostsWithAvoid = computeExplorationFlow(game.currentLevel, frontierPositions, avoidSet)
+        const flowCostsWithAvoid = computeExplorationFlow(game.currentLevel, frontierPositions, avoidance)
         flowWithAvoidReachable = isReachable(flowCostsWithAvoid, pos)
         flowWithAvoidCost = getFlowCost(flowCostsWithAvoid, pos)
       }
@@ -299,7 +304,7 @@ export class FrontierAnalyzer implements Analyzer {
       let sweepFlowCost = 255
 
       if (sweepFrontiers.length > 0) {
-        const sweepFlowCosts = computeExplorationFlow(game.currentLevel, sweepFrontiers, avoidSet)
+        const sweepFlowCosts = computeExplorationFlow(game.currentLevel, sweepFrontiers, avoidance)
         sweepFlowReachable = isReachable(sweepFlowCosts, pos)
         sweepFlowCost = getFlowCost(sweepFlowCosts, pos)
       }

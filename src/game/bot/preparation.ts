@@ -952,7 +952,7 @@ export function getHuntUniqueGoal(context: BotContext): BotGoal | null {
       }
     }
   }
-  const seenRate = totalFloor > 0 ? botState.seenThisVisit.size / totalFloor : 0
+  const seenRate = totalFloor > 0 ? botState.seenThisVisit.count / totalFloor : 0
 
   if (seenRate < UNIQUE_HUNT_FLIP_THRESHOLD) {
     // Not enough of level seen this visit - let EXPLORE goal find the unique

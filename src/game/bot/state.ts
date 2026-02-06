@@ -6,7 +6,7 @@
 
 import type { Point } from '../types'
 import type { BotState, BotGoal } from './types'
-import { STEP_HISTORY_LENGTH } from './types'
+import { STEP_HISTORY_LENGTH, createSeenGrid, seenGridClear } from './types'
 
 /**
  * Create a fresh bot state for a new run
@@ -56,7 +56,7 @@ export function createBotState(): BotState {
     tetheredRadius: 0,
     tetheredFlipCount: 0,
     lastFlipTurn: 0,
-    seenThisVisit: new Set(),
+    seenThisVisit: createSeenGrid(80, 40),
     // Sweep exploration (casters)
     sweepMode: false,
     sweepDirection: null,
@@ -121,7 +121,7 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   // Item blacklist - clear on level change
   state.dangerousItemBlacklist.clear()
   // Tethered exploration - reset seen tiles for this visit
-  state.seenThisVisit.clear()
+  seenGridClear(state.seenThisVisit)
   // Performance caches - clear on level change
   state.cachedExplorationFlow = null
   state.cachedSweepFlow = null

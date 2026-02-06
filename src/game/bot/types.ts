@@ -79,6 +79,42 @@ export interface DangerGrid {
 /** @deprecated Alias for DangerGrid (was Map<string, number>) */
 export type DangerMap = DangerGrid
 
+// ============================================================================
+// SEEN GRID (typed-array replacement for Set<string> seenThisVisit)
+// ============================================================================
+
+/** Tiles seen this visit — Uint8Array indexed by y * width + x */
+export interface SeenGrid {
+  data: Uint8Array
+  width: number
+  count: number
+}
+
+/** Create a SeenGrid for the given level dimensions */
+export function createSeenGrid(width: number, height: number): SeenGrid {
+  return { data: new Uint8Array(width * height), width, count: 0 }
+}
+
+/** Check if tile has been seen this visit */
+export function seenGridHas(grid: SeenGrid, x: number, y: number): boolean {
+  return grid.data[y * grid.width + x] !== 0
+}
+
+/** Mark tile as seen this visit */
+export function seenGridAdd(grid: SeenGrid, x: number, y: number): void {
+  const idx = y * grid.width + x
+  if (grid.data[idx] === 0) {
+    grid.data[idx] = 1
+    grid.count++
+  }
+}
+
+/** Clear all seen tiles (level change / flip) */
+export function seenGridClear(grid: SeenGrid): void {
+  grid.data.fill(0)
+  grid.count = 0
+}
+
 /** Cached danger computation */
 export interface DangerResult {
   dangers: DangerGrid
@@ -233,7 +269,7 @@ export interface BotState {
   /** Turn when last level flip occurred (for minimum interval enforcement) */
   lastFlipTurn: number
   /** Tiles seen via FOV on THIS level visit - reset on level change */
-  seenThisVisit: Set<string>
+  seenThisVisit: SeenGrid
 
   // Sweep exploration state (for casters in early game)
   /** Whether bot is in sweep exploration mode (covering whole level) */

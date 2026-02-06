@@ -1,14 +1,14 @@
 # Performance Documentation
 
-## Current State (2026-02-05)
+## Current State (2026-02-06)
 
 ### Tick Budget
 
 | Mode | Target | Measured | Status |
 |------|--------|----------|--------|
-| Normal (100ms) | <50ms per tick | 0.47ms avg, 4.7ms max | ✅ OK |
-| Turbo (5-20ms) | <5ms per tick | 0.47ms avg, 4.7ms max | ✅ OK |
-| 4x concurrent | <20ms total | ~1.9ms total | ✅ OK |
+| Normal (100ms) | <50ms per tick | 0.20ms avg, 3.8ms max | ✅ OK |
+| Turbo (5-20ms) | <5ms per tick | 0.20ms avg, 3.8ms max | ✅ OK |
+| 4x concurrent | <20ms total | ~0.8ms total | ✅ OK |
 
 **Measurement:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
 
@@ -16,23 +16,19 @@
 
 | Class | Turns | Total Time | Avg/Tick | Main Cost |
 |-------|-------|------------|----------|-----------|
-| Warrior | 13.9k | 6572ms | 0.47ms | goalMovement (24%), computeDangerGrid (17%) |
-| Mage | 29.3k | 17459ms | 0.60ms | goalMovement (24%), computeDangerGrid (15%), getSweepFrontiers (5%) |
-| Druid | 5.0k* | 2163ms | 0.43ms | goalMovement (22%), computeDangerGrid (8%) |
-| Rogue | 5.0k* | 2217ms | 0.44ms | goalMovement (23%), computeDangerGrid (8%) |
+| Warrior | 15.7k | 3151ms | 0.20ms | goalMovement (37%), getFrontierPositions (16%) |
+| Mage | 26.7k | 4656ms | 0.17ms | goalMovement (37%), flow.exploration (12%), computeDangerGrid (8%) |
 
-*Druid/Rogue ran 5k turn cap for spot-check only.
+Mage per-tick is now slightly faster than warrior due to longer runs amortizing fixed costs.
 
-Mage ~27% slower per tick due to sweep mode (frontier + flow). New `computeSafetyFlow` adds ~1.5ms per call for caster flee paths (147 calls, 1.3% total).
-
-### vs Previous Baseline (2026-01-27)
+### vs Previous Baseline (2026-02-05)
 
 | Class | Old Avg/Tick | New Avg/Tick | Delta | Notes |
 |-------|-------------|-------------|-------|-------|
-| Warrior | 0.45ms | 0.47ms | +5.6% | `computeDangerGrid` +66% from 12 new D19-30 monsters |
-| Mage | 0.69ms | 0.60ms | -13% | Goal persistence improvements, better cache hit rates |
+| Warrior | 0.47ms | 0.20ms | **-53%** | FlowAvoidance + SeenGrid typed arrays |
+| Mage | 0.60ms | 0.17ms | **-75%** | flow.singleTarget 637µs→61µs (BFS avoid set elimination) |
 
-**Important:** Old baseline used legacy `--max-upgrades` flag. Current baseline uses `--upgrades=full --capabilities=full --boosters=class` (diagnose defaults). The legacy flag applies different bonuses and produces very different run behavior.
+**Key insight:** String key creation (`"x,y"`) in BFS inner loops was the dominant cost. Replacing `Set<string>.has()` with typed-array indexing (`data[y*w+x]`) eliminated it.
 
 ---
 
@@ -87,23 +83,23 @@ PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --upgrades=none --capabilities=none
 
 | Operation | File | Avg Time | Max Time | Notes |
 |-----------|------|----------|----------|-------|
-| `buildBotContext` | `context.ts` | 2.2µs | 0.37ms | Filters visible entities |
-| `computeDangerGrid` | `danger.ts` | 16µs | 0.72ms | Int16Array + FNV-1a hash (Pass 4) |
-| `selectGoal` | `goals.ts` | 23µs | 3.4ms | Priority-based selection |
-| `flow.singleTarget` | `flow.ts` | 194µs | 0.96ms | Single-target BFS (typed array) |
-| `flow.exploration` | `flow.ts` | 64µs | 0.44ms | Dijkstra frontier flow (typed array) |
-| `getFrontierPositions` | `exploration.ts` | 49µs | 1.7ms | Frontier tile detection |
-| `goalMovement` | `tick.ts` | 118µs | 4.6ms | Goal movement execution |
-| `selectActionByTier` | `tier-actions.ts` | 10µs | 0.70ms | Class-specific action selection |
-| `recordVisibleTiles` | `exploration.ts` | 11µs | 0.37ms | Visible tile tracking |
+| `buildBotContext` | `context.ts` | 2.2µs | 0.34ms | Filters visible entities |
+| `computeDangerGrid` | `danger.ts` | 17µs | 0.66ms | Int16Array + FNV-1a hash (Pass 4) |
+| `selectGoal` | `goals.ts` | 16µs | 3.0ms | Priority-based selection |
+| `flow.singleTarget` | `flow.ts` | 74µs | 0.76ms | Single-target BFS (typed array, Pass 5) |
+| `flow.exploration` | `flow.ts` | 30µs | 0.37ms | Dijkstra frontier flow (typed array) |
+| `getFrontierPositions` | `exploration.ts` | 51µs | 1.2ms | Frontier tile detection |
+| `goalMovement` | `tick.ts` | 81µs | 3.8ms | Goal movement execution (Pass 5) |
+| `selectActionByTier` | `tier-actions.ts` | 11µs | 0.54ms | Class-specific action selection |
+| `recordVisibleTiles` | `progression.ts` | 4.7µs | 0.18ms | SeenGrid typed array (Pass 5) |
 
 ### Mage-Specific Operations (50k turns, seed=1000)
 
 | Operation | File | Avg Time | Max Time | Notes |
 |-----------|------|----------|----------|-------|
-| `getSweepFrontiers` | `exploration.ts` | 155µs | 1.1ms | Sweep mode frontier calculation |
-| `flow.sweep` | `flow.ts` | 157µs | 0.67ms | Multi-target sweep Dijkstra |
-| `computeSafetyFlow` | `safety-flow.ts` | 913µs | 1.3ms | Int16Array + binary heap (Pass 4) |
+| `getSweepFrontiers` | `exploration.ts` | 15µs | 0.45ms | SeenGrid typed array (Pass 5) |
+| `flow.sweep` | `flow.ts` | 54µs | 0.24ms | Multi-target sweep Dijkstra |
+| `computeSafetyFlow` | `safety-flow.ts` | 212µs | 1.5ms | Int16Array + binary heap (Pass 4) |
 
 ### Expensive Operations (Cached)
 
@@ -142,7 +138,7 @@ interface BotState {
 | Danger | Monster positions/HP change | <1ms |
 | Frontier | New tile explored | 0.5-1ms |
 | Exploration flow | Level change, explored count | 0.5-1ms |
-| Sweep flow | seenThisVisit.size changes | 0.5-1ms |
+| Sweep flow | seenThisVisit.count changes | 0.5-1ms |
 | Safety flow | Position change, turn change | 0.4-1.3ms |
 | Tether sweep flow | Tether origin + seen count | 0.2-0.8ms |
 
@@ -237,6 +233,63 @@ pnpm diagnose baseline --seed=1000
 
 ## Optimization History
 
+### Pass 5: 2026-02-06 - FlowAvoidance + SeenGrid Typed Arrays
+
+**Problem 1:** `computeFlow` and `computeExplorationFlow` accepted `Set<string>` avoid parameter. The BFS inner loop called `avoid.has(\`${nx},${ny}\`)` — string key creation on every neighbor check, thousands of times per flow computation.
+
+**Problem 2:** `seenThisVisit` was `Set<string>` with `"x,y"` keys. Every FOV tile recorded via `.add()`, every sweep/tether check via `.has()`, and `.size` for cache invalidation — all with string allocation overhead.
+
+**Changes (flow.ts):**
+- Added `FlowAvoidance` interface: `{ grid: DangerGrid, threshold: number }`
+- BFS inner loop now uses `avoidData[ny * avoidWidth + nx] > avoidThreshold` (typed array indexing)
+- Pre-extracts `avoidData`, `avoidWidth`, `avoidThreshold` outside loop for cache locality
+
+**Changes (danger.ts):**
+- Extracted `getScaledDangerThreshold()` from `buildAvoidSet` for direct use by tick.ts
+- `buildAvoidSet` retained for diagnostic scripts only
+
+**Changes (types.ts + state.ts):**
+- Added `SeenGrid` type: `{ data: Uint8Array, width: number, count: number }`
+- Helper functions: `createSeenGrid`, `seenGridHas`, `seenGridAdd`, `seenGridClear`
+- `BotState.seenThisVisit` changed from `Set<string>` to `SeenGrid`
+
+**Changes (tick.ts):**
+- `handleGoalMovement` constructs `FlowAvoidance` directly from danger grid + scaled threshold
+- Eliminated `buildAvoidSet` call from game loop entirely
+
+**Changes (6 consumer files):**
+- `progression.ts`: `seenGridAdd` for FOV recording, `.count` for Morgoth sweep
+- `exploration.ts`: `seenGridHas` for sweep frontier detection
+- `farming.ts`: `SeenGrid` parameter in `countTilesInBounds`, `seenGridHas`/`seenGridClear`
+- `preparation.ts`: `.count` for unique hunt flip threshold
+
+**Results (Warrior, seed=1000, 50k turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total tracked | 6837ms | 3151ms | **-54%** |
+| ms/tick | 0.43ms | 0.20ms | **-53%** |
+| `goalMovement` avg | 120µs | 81µs | **-33%** |
+| `recordVisibleTiles` avg | 11µs | 4.7µs | **-57%** |
+
+**Results (Mage, seed=1000, 50k turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total tracked | 18732ms | 4656ms | **-75%** |
+| ms/tick | 0.70ms | 0.17ms | **-75%** |
+| `flow.singleTarget` avg | 637µs | 61µs | **-90%** |
+| `getSweepFrontiers` avg | 155µs | 15µs | **-90%** |
+| `flow.sweep` avg | 157µs | 54µs | **-66%** |
+
+**Key insight:** The mage's `flow.singleTarget` appeared to regress from 216µs to 637µs between baselines, but this was behavioral — the combat formula fix caused mages to spend more time at deep cavern levels (3x more walkable tiles). The `Set<string>` avoid check dominated the BFS on large levels. With typed-array avoidance, the cost is now 61µs regardless of level size.
+
+**Learnings:**
+- Same typed-array pattern from Pass 3 (FlowGrid) applied to BFS avoidance and FOV tracking
+- `Set<string>.has()` with template literal keys is the most expensive common operation in hot loops
+- Behavioral regressions (different game trajectory) can masquerade as code regressions — always test multiple seeds
+- Bimodal performance (185µs vs 637µs on same code) indicates data-dependent cost, not algorithmic regression
+
+---
+
 ### Pass 4: 2026-02-05 - DangerGrid + SafetyFlow Typed Arrays
 
 **Problem 1:** `computeDangerGrid` used `Map<string, number>` with string keys and `getAdjacentPositions()` allocations. 78µs avg, 17% of warrior total.
@@ -270,7 +323,7 @@ pnpm diagnose baseline --seed=1000
 | `computeSafetyFlow` avg | 1491µs | 913µs | **1.6x faster** |
 | `computeSafetyFlow` max | 3.8ms | 1.3ms | **2.9x lower spike** |
 
-**Note:** `goalMovement.buildAvoidSet` slightly regressed (4.5µs → 6.2µs) due to typed array → string key conversion for flow.ts `avoid` set compatibility. Net win far exceeds this.
+**Note:** `goalMovement.buildAvoidSet` slightly regressed (4.5µs → 6.2µs) due to typed array → string key conversion for flow.ts `avoid` set compatibility. Net win far exceeds this. (Fully eliminated in Pass 5 via FlowAvoidance.)
 
 **Learnings:**
 - Same typed-array pattern from Pass 3 (flow.ts) applied to danger + safety grids
@@ -280,50 +333,65 @@ pnpm diagnose baseline --seed=1000
 
 ---
 
-### Baseline: 2026-02-05 (Post Farming/Capabilities/Balance Rework)
+### Baseline: 2026-02-06 (Post FlowAvoidance + SeenGrid)
 
 **Test:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
 **Config:** upgrades=full, capabilities=full, boosters=class (diagnose defaults)
 
-**Warrior (13924 turns, natural death):**
+**Warrior (15743 turns, natural death):**
 
 | Operation | % Time | Total | Calls | Avg |
 |-----------|--------|-------|-------|-----|
-| goalMovement | 23.7% | 1554ms | 12923 | 120µs |
-| goalMovement.inner | 23.5% | 1545ms | 12901 | 120µs |
-| computeDangerGrid | 16.6% | 1091ms | 13924 | 78µs |
-| getFrontierPositions | 6.5% | 428ms | 8792 | 49µs |
-| flow.exploration | 6.9% | 455ms | 6445 | 71µs |
-| selectGoal | 4.2% | 279ms | 12901 | 22µs |
-| flow.singleTarget | 3.0% | 196ms | 875 | 224µs |
-| goal.descend | 2.7% | 179ms | 1486 | 121µs |
-| selectActionByTier | 2.6% | 171ms | 13924 | 12µs |
-| buildBotContext | 0.5% | 31ms | 13924 | 2.2µs |
+| goalMovement | 36.5% | 1197ms | 14761 | 81µs |
+| getFrontierPositions | 15.7% | 516ms | 10050 | 51µs |
+| computeDangerGrid | 8.0% | 261ms | 15743 | 17µs |
+| selectGoal | 7.2% | 234ms | 14761 | 16µs |
+| flow.exploration | 6.5% | 213ms | 7095 | 30µs |
+| selectActionByTier | 5.4% | 176ms | 15743 | 11µs |
+| goal.descend | 4.3% | 140ms | 1746 | 80µs |
+| flow.singleTarget | 2.7% | 88ms | 1194 | 74µs |
+| recordVisibleTiles | 2.2% | 73ms | 15743 | 4.7µs |
+| buildBotContext | 1.1% | 35ms | 15743 | 2.2µs |
 
 **Summary:**
-- Total tracked: 6572ms for ~13.9k turns = **0.47ms/tick avg**
-- Goal movement dominates (47% of time)
-- `computeDangerGrid` up to 17% (was 8.5%) due to 12 new D19-30 monsters
-- `selectGoal` improved 45% (22µs vs 39µs) from better goal persistence
-- Flow computation ~10% of total
+- Total tracked: 3151ms for ~15.7k turns = **0.20ms/tick avg**
+- `goalMovement` dominates at 37% but absolute cost halved (81µs vs 120µs)
+- `computeDangerGrid` dropped from 17% to 8% (typed array avoidance eliminated buildAvoidSet)
+- `recordVisibleTiles` 57% faster (SeenGrid typed array)
 
-**Mage (29277 turns, natural death):**
+**Mage (26716 turns, natural death):**
 
 | Operation | % Time | Total | Calls | Avg |
 |-----------|--------|-------|-------|-----|
-| goalMovement | 24.2% | 4230ms | 22595 | 187µs |
-| computeDangerGrid | 14.5% | 2531ms | 29277 | 86µs |
-| selectGoal | 6.5% | 1131ms | 22529 | 50µs |
-| getSweepFrontiers | 5.4% | 949ms | 6131 | 155µs |
-| flow.exploration | 3.3% | 578ms | 6198 | 93µs |
-| flow.sweep | 2.9% | 509ms | 3251 | 157µs |
-| computeSafetyFlow | 1.3% | 219ms | 147 | 1491µs |
-| flow.singleTarget | 1.8% | 315ms | 1965 | 216µs |
+| goalMovement | 36.5% | 1877ms | 20787 | 90µs |
+| flow.exploration | 11.9% | 609ms | 5951 | 102µs |
+| computeDangerGrid | 8.1% | 415ms | 26716 | 16µs |
+| getFrontierPositions | 7.3% | 375ms | 9213 | 41µs |
+| selectGoal | 6.5% | 332ms | 20787 | 16µs |
+| selectActionByTier | 5.5% | 280ms | 26716 | 11µs |
+| goal.descend | 4.1% | 208ms | 2031 | 103µs |
+| flow.sweep | 3.4% | 177ms | 3251 | 54µs |
+| flow.singleTarget | 2.1% | 107ms | 1758 | 61µs |
+| getSweepFrontiers | 1.8% | 91ms | 6131 | 15µs |
+| recordVisibleTiles | 2.3% | 118ms | 26716 | 4.4µs |
 
 **Summary:**
-- Total tracked: 17459ms for ~29.3k turns = **0.60ms/tick avg**
-- `computeSafetyFlow` is new (flee path for casters), 1.5ms avg but only 147 calls
-- Sweep overhead (frontiers + flow) = ~8.3% combined
+- Total tracked: 4656ms for ~26.7k turns = **0.17ms/tick avg**
+- `flow.singleTarget` avg dropped from 637µs to 61µs (typed-array avoidance)
+- `getSweepFrontiers` 90% faster (SeenGrid typed array replaces Set<string>)
+- Sweep overhead (frontiers + flow) = 5.2% (was 8.3%)
+
+---
+
+### Baseline: 2026-02-05 (Post Farming/Capabilities/Balance Rework, Pre-Pass 5)
+
+**Test:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
+**Config:** upgrades=full, capabilities=full, boosters=class (diagnose defaults)
+
+**Warrior:** 6572ms for ~13.9k turns = **0.47ms/tick avg**
+**Mage:** 17459ms for ~29.3k turns = **0.60ms/tick avg**
+
+See Pass 5 optimization entry for detailed before/after comparison.
 
 ---
 

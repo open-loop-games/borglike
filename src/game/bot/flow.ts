@@ -10,6 +10,7 @@
  */
 
 import type { DungeonLevel, Point, Tile } from '../types'
+import type { DangerGrid } from './types'
 import { getTile, isWalkable } from '../dungeon'
 
 // ============================================================================
@@ -38,6 +39,14 @@ export interface FlowResult {
   goal: Point
   costs: FlowGrid
   computedAt: number // Turn when computed
+}
+
+/** Danger-grid avoidance for flow computation (replaces Set<string> avoid) */
+export interface FlowAvoidance {
+  /** Danger grid (Int16Array-backed) */
+  grid: DangerGrid
+  /** Tiles with danger > threshold are avoided */
+  threshold: number
 }
 
 // ============================================================================
@@ -212,13 +221,13 @@ const DY = [-1, -1, -1, 0, 0, 1, 1, 1]
  *
  * @param level - Dungeon level to compute flow on
  * @param goal - Destination point
- * @param avoid - Set of "x,y" keys to exclude from pathing (danger/icky tiles)
+ * @param avoid - Danger grid avoidance (tiles above threshold are excluded)
  * @returns FlowGrid with costs for all reachable tiles
  */
 export function computeFlow(
   level: DungeonLevel,
   goal: Point,
-  avoid: Set<string> = new Set()
+  avoid?: FlowAvoidance
 ): FlowGrid {
   const { width, height } = level
   const grid = createFlowGrid(width, height)
@@ -228,6 +237,11 @@ export function computeFlow(
   if (!goalTile) {
     return grid
   }
+
+  // Pre-extract avoidance fields for tight loop (avoid repeated property access)
+  const avoidData = avoid?.grid.data
+  const avoidWidth = avoid?.grid.width ?? 0
+  const avoidThreshold = avoid?.threshold ?? 0
 
   // Initialize BFS from goal
   resetQueue(sharedQueue)
@@ -254,8 +268,8 @@ export function computeFlow(
       // Skip if already visited
       if (isVisited(grid, nx, ny)) continue
 
-      // Skip if in avoid set
-      if (avoid.has(`${nx},${ny}`)) continue
+      // Skip if danger exceeds threshold (typed array lookup, zero allocation)
+      if (avoidData && avoidData[ny * avoidWidth + nx]! > avoidThreshold) continue
 
       // Check if passable
       const tile = getTile(level, nx, ny)
@@ -279,13 +293,13 @@ export function computeFlow(
  *
  * @param level - Dungeon level
  * @param frontierTiles - Array of frontier tile positions (unexplored but reachable)
- * @param avoid - Set of "x,y" keys to exclude from pathing
+ * @param avoid - Danger grid avoidance (tiles above threshold are excluded)
  * @returns FlowGrid with costs to nearest frontier from any position
  */
 export function computeExplorationFlow(
   level: DungeonLevel,
   frontierTiles: Point[],
-  avoid: Set<string> = new Set()
+  avoid?: FlowAvoidance
 ): FlowGrid {
   const { width, height } = level
   const grid = createFlowGrid(width, height)
@@ -293,6 +307,11 @@ export function computeExplorationFlow(
   if (frontierTiles.length === 0) {
     return grid
   }
+
+  // Pre-extract avoidance fields for tight loop
+  const avoidData = avoid?.grid.data
+  const avoidWidth = avoid?.grid.width ?? 0
+  const avoidThreshold = avoid?.threshold ?? 0
 
   // Initialize BFS from ALL frontier tiles (cost 0)
   resetQueue(sharedQueue)
@@ -317,7 +336,7 @@ export function computeExplorationFlow(
 
       if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
       if (isVisited(grid, nx, ny)) continue
-      if (avoid.has(`${nx},${ny}`)) continue
+      if (avoidData && avoidData[ny * avoidWidth + nx]! > avoidThreshold) continue
 
       const tile = getTile(level, nx, ny)
       // For exploration flow, only expand through EXPLORED passable tiles

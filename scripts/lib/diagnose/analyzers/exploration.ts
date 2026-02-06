@@ -31,8 +31,9 @@ import {
   getSweepFrontierPositions,
 } from '@bot/exploration'
 import { computeExplorationFlow, getFlowCost, isReachable, MAX_FLOW_COST } from '@bot/flow'
+import type { FlowAvoidance } from '@bot/flow'
 import { getTile, getAdjacentPositions, isWalkable } from '@game/dungeon'
-import { computeDangerGrid, buildAvoidSet, getDangerThreshold } from '@bot/danger'
+import { computeDangerGrid, buildAvoidSet, getDangerThreshold, getScaledDangerThreshold } from '@bot/danger'
 
 // ============================================================================
 // CONFIGURATION
@@ -495,10 +496,14 @@ export class ExplorationAnalyzer implements Analyzer {
     const pos = game.character.position
     const frontierPositions = getFrontierPositions(game)
 
-    // Compute danger and avoidSet
+    // Compute danger and avoidance
     const dangerResult = computeDangerGrid(game)
     const dangerThreshold = getDangerThreshold(30, 50)
     const avoidSet = buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character)
+    const avoidance: FlowAvoidance = {
+      grid: dangerResult.dangers,
+      threshold: getScaledDangerThreshold(dangerThreshold, game.character),
+    }
 
     let flowReachable = false
     let flowCostAtBot = 255
@@ -510,7 +515,7 @@ export class ExplorationAnalyzer implements Analyzer {
       flowReachable = isReachable(flowCosts, pos)
       flowCostAtBot = getFlowCost(flowCosts, pos)
 
-      const flowCostsWithAvoid = computeExplorationFlow(game.currentLevel, frontierPositions, avoidSet)
+      const flowCostsWithAvoid = computeExplorationFlow(game.currentLevel, frontierPositions, avoidance)
       flowWithAvoidReachable = isReachable(flowCostsWithAvoid, pos)
       flowWithAvoidCost = getFlowCost(flowCostsWithAvoid, pos)
     }

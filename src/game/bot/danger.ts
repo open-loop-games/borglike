@@ -360,24 +360,25 @@ export function getTileDanger(dangers: DangerGrid, pos: Point): number {
  * Build a set of "icky" tiles that should be avoided.
  * Returns Set<string> with "x,y" keys for flow.ts compatibility.
  */
+/**
+ * Scale danger threshold by HP ratio (lower HP → more conservative avoidance).
+ * Extracted from buildAvoidSet for use with FlowAvoidance typed-array path.
+ */
+export function getScaledDangerThreshold(threshold: number, character: Character): number {
+  const hpRatio = character.hp / character.maxHp
+  if (hpRatio < 0.25) return threshold * 0.3
+  if (hpRatio < 0.5) return threshold * 0.6
+  if (hpRatio < 0.75) return threshold * 0.8
+  return threshold
+}
+
 export function buildAvoidSet(
   dangers: DangerGrid,
   threshold: number,
   character: Character
 ): Set<string> {
   const avoid = new Set<string>()
-
-  // Scale threshold by HP ratio
-  const hpRatio = character.hp / character.maxHp
-  let scaledThreshold = threshold
-
-  if (hpRatio < 0.25) {
-    scaledThreshold *= 0.3
-  } else if (hpRatio < 0.5) {
-    scaledThreshold *= 0.6
-  } else if (hpRatio < 0.75) {
-    scaledThreshold *= 0.8
-  }
+  const scaledThreshold = getScaledDangerThreshold(threshold, character)
 
   const { data, width, height } = dangers
   for (let i = 0; i < data.length; i++) {

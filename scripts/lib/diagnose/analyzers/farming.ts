@@ -21,6 +21,7 @@ import type {
 } from '../types'
 import type { GameState } from '@game/types'
 import type { BotState } from '@bot/types'
+import { seenGridHas } from '@bot/types'
 
 /** Configuration for farming analysis */
 export interface FarmingAnalyzerConfig {
@@ -109,7 +110,7 @@ export class FarmingAnalyzer implements Analyzer {
     this.currentSweepSession = null
     this.lastTetherRadius = botState.tetheredRadius
     this.lastTetherFlipCount = botState.tetheredFlipCount
-    this.lastSeenThisVisitSize = botState.seenThisVisit.size
+    this.lastSeenThisVisitSize = botState.seenThisVisit.count
     this.lastBotState = botState
   }
 
@@ -180,11 +181,11 @@ export class FarmingAnalyzer implements Analyzer {
     this.lastTetherFlipCount = botState.tetheredFlipCount
 
     // Track seenThisVisit clearing (indicates level revisit)
-    if (botState.seenThisVisit.size < this.lastSeenThisVisitSize && this.lastSeenThisVisitSize > 10) {
+    if (botState.seenThisVisit.count < this.lastSeenThisVisitSize && this.lastSeenThisVisitSize > 10) {
       // seenThisVisit was cleared (level change resets it)
       // This is expected during farming flips
     }
-    this.lastSeenThisVisitSize = botState.seenThisVisit.size
+    this.lastSeenThisVisitSize = botState.seenThisVisit.count
 
     // Accumulate time in modes
     if (this.inFarmingMode) this.totalFarmingTurns++
@@ -348,7 +349,7 @@ export class FarmingAnalyzer implements Analyzer {
 
         if (tile.type === 'floor' || tile.type === 'door_open' || tile.type === 'door_closed') {
           totalFloor++
-          if (botState.seenThisVisit.has(`${x},${y}`)) {
+          if (seenGridHas(botState.seenThisVisit, x, y)) {
             seenFloor++
           }
         }

@@ -19,6 +19,7 @@ import type {
 } from '../types'
 import type { GameState } from '@game/types'
 import type { BotState } from '@bot/types'
+import { seenGridHas } from '@bot/types'
 
 // ============================================================================
 // CONFIGURATION
@@ -394,7 +395,7 @@ export class ProgressionAnalyzer implements Analyzer {
 
         if (tile.type === 'floor' || tile.type === 'door_open' || tile.type === 'door_closed') {
           totalFloor++
-          if (botState.seenThisVisit.has(`${x},${y}`)) {
+          if (seenGridHas(botState.seenThisVisit, x, y)) {
             seenFloor++
           }
         }

@@ -11,6 +11,7 @@ declare const process: { env: Record<string, string | undefined> } | undefined
 import type { GameState, Point, DungeonLevel, Tile, Direction } from '../types'
 import { DIRECTION_VECTORS, chebyshevDistance, isMonsterAt } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
+import { seenGridHas } from './types'
 import { getTile, isWalkable, getAdjacentPositions, countExploredTiles } from '../dungeon'
 import { isTargetBlacklisted } from './state'
 
@@ -221,8 +222,7 @@ export function getSweepFrontierPositions(game: GameState, botState: BotState): 
       if (!tile) continue
 
       // Skip tiles already seen this visit
-      const key = `${x},${y}`
-      if (botState.seenThisVisit.has(key)) continue
+      if (seenGridHas(botState.seenThisVisit, x, y)) continue
 
       // Only consider explored walkable tiles (matches findSweepFrontierTiles)
       // Note: explored check ensures we only sweep to known areas, not unknown walls
@@ -255,8 +255,7 @@ function findSweepFrontierTiles(game: GameState, botState: BotState): FrontierTi
       if (!tile) continue
 
       // Skip tiles already seen this visit
-      const key = `${x},${y}`
-      if (botState.seenThisVisit.has(key)) continue
+      if (seenGridHas(botState.seenThisVisit, x, y)) continue
 
       // Only consider walkable tiles
       if (!isWalkableOrDoor(tile)) continue
@@ -265,8 +264,7 @@ function findSweepFrontierTiles(game: GameState, botState: BotState): FrontierTi
       const neighbors = getAdjacentPositions({ x, y })
       let unseenNeighbors = 0
       for (const neighbor of neighbors) {
-        const neighborKey = `${neighbor.x},${neighbor.y}`
-        if (!botState.seenThisVisit.has(neighborKey)) {
+        if (!seenGridHas(botState.seenThisVisit, neighbor.x, neighbor.y)) {
           unseenNeighbors++
         }
       }

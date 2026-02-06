@@ -13,7 +13,8 @@
 
 import type { Point, GameState, Tile, Character } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { getEffectiveCapabilities } from './types'
+import { getEffectiveCapabilities, seenGridHas, seenGridClear } from './types'
+import type { SeenGrid } from './types'
 import { MAX_DEPTH } from '../types'
 import { getTile } from '../dungeon'
 import type { FlowGrid } from './flow'
@@ -181,7 +182,7 @@ interface TileCountResult {
  */
 function countTilesInBounds(
   level: { width: number; height: number; tiles: Tile[][] },
-  seenThisVisit: Set<string>,
+  seenThisVisit: SeenGrid,
   bounds?: { origin: Point; radius: number },
   filter: (tile: Tile) => boolean = (t) => t.type !== 'wall'
 ): TileCountResult {
@@ -204,7 +205,7 @@ function countTilesInBounds(
       if (!tile || !filter(tile)) continue
 
       total++
-      if (seenThisVisit.has(`${x},${y}`)) {
+      if (seenGridHas(seenThisVisit, x, y)) {
         seen++
       }
     }
@@ -341,7 +342,7 @@ function handleSweepFlipNavigation(context: BotContext): BotGoal | null {
     if (botState.sweepFlipVisitedBlocked) {
       // Completed round trip - arrived back at target with fresh level
       exitSweepFlip(botState)
-      botState.seenThisVisit.clear()
+      seenGridClear(botState.seenThisVisit)
       return null // Fall through to normal sweep
     }
     // Haven't visited blocked yet - descend toward it
@@ -454,8 +455,7 @@ function findUnseenTileInTether(
       if (!tile || tile.type === 'wall') continue
 
       // Check if NOT seen this visit
-      const key = `${x},${y}`
-      if (botState.seenThisVisit.has(key)) continue
+      if (seenGridHas(botState.seenThisVisit, x, y)) continue
 
       // Use actual path distance from flow field
       const pathDist = getFlowCost(flowCosts, { x, y })
@@ -1131,7 +1131,7 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
       // At blockedDepth - 1: flip INTO blocked depth to trigger level regen above
       if (character.depth === botState.farmBlockedDepth - 1) {
         enterSweepFlip(botState, character.depth) // Return to this depth after flip
-        botState.seenThisVisit.clear()
+        seenGridClear(botState.seenThisVisit)
         return makeDescendGoal(
           game,
           stairs,
@@ -1142,7 +1142,7 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
       // Between farmingFloor and blockedDepth-1: descend toward blockedDepth-1
       // Or below farmingFloor: descend
       if (character.depth < botState.farmBlockedDepth - 1) {
-        botState.seenThisVisit.clear()
+        seenGridClear(botState.seenThisVisit)
         return makeDescendGoal(game, stairs, `Sweep: descending to D${character.depth + 1}`)
       }
     }
