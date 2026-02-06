@@ -215,7 +215,7 @@ function tryInflictStatus(character: Character, effect: AttackEffect): StatusEff
   }
 
   // RACIAL: Sustain abilities block stat drain
-  // sustain_dex (Elf, Half-Elf), sustain_str (Half-Troll), sustain_con (Dunadan)
+  // sustain_str (Half-Troll), sustain_con (Dunadan)
   if (effect.type === 'DRAIN') {
     const hasSustain = raceAbilityIds.some((id) =>
       ['sustain_dex', 'sustain_str', 'sustain_con'].includes(id)

@@ -129,15 +129,20 @@ const elf: Race = {
 const halfElf: Race = {
   id: 'half_elf',
   name: 'Half-Elf',
-  stats: { str: 0, int: 1, wis: -1, dex: 1, con: -1 },
+  stats: { str: 0, int: 1, wis: -1, dex: 1, con: 0 },
   hitdie: 10,
   infravision: 2,
   expPenalty: 120,
   abilities: [
     {
-      id: 'sustain_dex',
-      name: 'Sustain Dexterity',
-      description: 'Dexterity cannot be drained',
+      id: 'quick_learner',
+      name: 'Quick Learner',
+      description: '+5% XP gain from all sources',
+    },
+    {
+      id: 'elven_reflexes',
+      name: 'Elven Reflexes',
+      description: '+2 evasion',
     },
   ],
   starting: false,

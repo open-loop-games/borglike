@@ -69,7 +69,8 @@ export function collectEquipmentModifiers(character: Character): StatModifier[] 
  * - small_target: +3 evasion
  * - elven_grace: +3 evasion
  * - nimble: +5 speed
- * - swift_feet: +3 speed
+ * - swift_feet: +5 speed
+ * - elven_reflexes: +2 evasion
  * - lucky: +5% crit chance
  */
 export function collectRacialModifiers(race: Race): StatModifier[] {
@@ -100,7 +101,11 @@ export function collectRacialModifiers(race: Race): StatModifier[] {
         break
 
       case 'swift_feet':
-        modifiers.push(flatModifier('racial', 'speed', 3, 'Swift Feet'))
+        modifiers.push(flatModifier('racial', 'speed', 5, 'Swift Feet'))
+        break
+
+      case 'elven_reflexes':
+        modifiers.push(flatModifier('racial', 'evasion', 2, 'Elven Reflexes'))
         break
 
       case 'lucky':
@@ -110,7 +115,7 @@ export function collectRacialModifiers(race: Race): StatModifier[] {
       // Note: berserker (+20% damage when low HP) is handled separately in combat
       // as it's conditional on HP threshold
 
-      // Note: versatile (+10% XP) is handled in XP gain, not stats
+      // Note: XP abilities (versatile, quick_learner) are handled in actions/combat.ts
     }
   }
 

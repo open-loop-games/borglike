@@ -79,7 +79,7 @@ const mage: GameClass = {
   id: 'mage',
   name: 'Mage',
   stats: { str: -3, int: 3, wis: 0, dex: 0, con: -2 },
-  hitdie: 0, // Lowest HP
+  hitdie: 1, // Very low HP (was 0, bumped for survivability)
   maxAttacks: 4,
   primaryStat: 'int',
   titles: [

@@ -14,6 +14,7 @@ import {
   calculateLifesteal,
 } from '../combat'
 import { gainXP } from '../character'
+import { getRaceById } from '../data/races'
 import { DEFAULT_BONUSES, applyXPBonus } from '../upgrade-effects'
 import { awardMonsterGold } from '../features'
 import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
@@ -223,9 +224,13 @@ export function handleMonsterKill(game: GameState, monster: Monster): void {
   const baseXP = monster.template.experience
   let upgradedXP = applyXPBonus(baseXP, bonuses)
 
-  // RACIAL: Human "Versatile" - +10% XP gain
-  if (game.character.raceId === 'human') {
-    upgradedXP = Math.floor(upgradedXP * 1.1)
+  // RACIAL: XP bonuses from race abilities (ability-driven, not hardcoded to raceId)
+  const race = getRaceById(game.character.raceId)
+  const raceAbilityIds = race?.abilities.map((a) => a.id) ?? []
+  if (raceAbilityIds.includes('versatile')) {
+    upgradedXP = Math.floor(upgradedXP * 1.1) // +10% XP
+  } else if (raceAbilityIds.includes('quick_learner')) {
+    upgradedXP = Math.floor(upgradedXP * 1.05) // +5% XP
   }
 
   const xpToAward = Math.floor((upgradedXP * game.balance.xpRatePercent) / 100)
