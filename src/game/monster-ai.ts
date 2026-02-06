@@ -875,26 +875,18 @@ function executeMonsterAction(
       // If spell failed, fall through to melee
     }
 
-    // Resolve monster melee attacks using the new system
-    const attackResult = resolveMonsterAttacks(monster, game.character)
-
-    // Apply monster damage balance modifier
-    let totalDamage = attackResult.totalDamage
-    if (totalDamage > 0 && game.balance.monsterDamagePercent !== 100) {
-      totalDamage = Math.max(1, Math.floor((totalDamage * game.balance.monsterDamagePercent) / 100))
-    }
-
-    // Apply knowledge bonuses (bestiary damage reduction)
+    // Compute knowledge bonuses and resolve monster melee attacks
     const knowledgeBonuses = getKnowledgeBonuses(
       monster.template.name,
       game.bestiary,
       game.balance.bestiaryBonusPercent
     )
-    if (knowledgeBonuses.reductionPercent > 0 && totalDamage > 0) {
-      totalDamage = Math.max(
-        1,
-        Math.floor((totalDamage * (100 - knowledgeBonuses.reductionPercent)) / 100)
-      )
+    const attackResult = resolveMonsterAttacks(monster, game.character, knowledgeBonuses)
+
+    // Apply monster damage balance modifier
+    let totalDamage = attackResult.totalDamage
+    if (totalDamage > 0 && game.balance.monsterDamagePercent !== 100) {
+      totalDamage = Math.max(1, Math.floor((totalDamage * game.balance.monsterDamagePercent) / 100))
     }
 
     // Format and display message

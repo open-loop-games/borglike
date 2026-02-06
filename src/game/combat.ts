@@ -51,6 +51,26 @@ interface DefenderStats {
   armor: number
 }
 
+/** Incoming damage to resolve against a character's defenses */
+export interface IncomingDamage {
+  /** Raw damage before defense reductions */
+  rawDamage: number
+  /** Damage element for resistance checks. Undefined = physical (no resist check). */
+  element?: Element
+  /** Armor penetration value (reduces effective armor) */
+  penetration?: number
+  /** Attacking monster (needed for PFE evil/level check) */
+  attackerMonster?: Monster
+  /** Knowledge bonuses from bestiary (damage reduction from familiarity) */
+  knowledgeBonuses?: KnowledgeBonuses
+}
+
+/** Result of defense resolution */
+export interface DefenseResult {
+  finalDamage: number
+  pfeApplied: boolean
+}
+
 // ============================================================================
 // TYPE GUARDS
 // ============================================================================
@@ -542,6 +562,69 @@ function applyArmorReduction(damage: number, armor: number, penetration: number)
   return Math.floor((damage * (100 - reduction)) / 100)
 }
 
+/** Map monster Element to character ResistanceType (only ELEC→LIGHTNING differs) */
+function elementToResistanceType(element: Element): ResistanceType {
+  if (element === 'ELEC') return 'LIGHTNING'
+  return element as ResistanceType
+}
+
+/**
+ * Resolve defense reductions for incoming damage against a character.
+ *
+ * Applies in order:
+ * 1. Armor reduction: min(effectiveArmor/2, 50)% with penetration support
+ * 2. Elemental resistance: perm + temp, capped at 90% (100+ = immune)
+ * 3. Protection from Evil: halves damage from EVIL monsters if level check passes
+ * 4. Knowledge reduction: bestiary familiarity reduces damage taken
+ * 5. Minimum damage: max(1, damage) unless immune
+ */
+export function resolveDefense(character: Character, incoming: IncomingDamage): DefenseResult {
+  let damage = incoming.rawDamage
+
+  // 1. Armor reduction (equipment + blessing + protection buffs)
+  const totalArmor = character.combat.armor + getStatusACBonus(character)
+  damage = applyArmorReduction(damage, totalArmor, incoming.penetration ?? 0)
+
+  // 2. Elemental resistance
+  let isImmune = false
+  if (incoming.element) {
+    const resistType = elementToResistanceType(incoming.element)
+    const rawResist = getTotalResistance(character, resistType)
+    if (rawResist >= 100) {
+      isImmune = true
+      damage = 0
+    } else {
+      const cappedResist = Math.min(90, rawResist)
+      damage = Math.floor((damage * (100 - cappedResist)) / 100)
+      damage = Math.max(0, damage)
+    }
+  }
+
+  // 3. Protection from Evil
+  let pfeApplied = false
+  if (incoming.attackerMonster) {
+    const hasPFE = character.statusEffects.some((e) => e.type === 'prot_from_evil')
+    const isEvil = incoming.attackerMonster.template.flags.includes('EVIL')
+    const levelCheck = character.level >= incoming.attackerMonster.template.minDepth
+    if (hasPFE && isEvil && levelCheck) {
+      damage = Math.floor(damage * 0.5)
+      pfeApplied = true
+    }
+  }
+
+  // 4. Knowledge reduction (bestiary familiarity)
+  if (incoming.knowledgeBonuses && incoming.knowledgeBonuses.reductionPercent > 0) {
+    damage = Math.floor(damage * (1 - incoming.knowledgeBonuses.reductionPercent / 100))
+  }
+
+  // 5. Minimum damage (1 on hit, 0 if immune)
+  if (!isImmune) {
+    damage = Math.max(1, damage)
+  }
+
+  return { finalDamage: damage, pfeApplied }
+}
+
 /** Gnome "Lucky" racial: +5% crit chance */
 function getGnomeCritBonus(character: Character): number {
   return character.raceId === 'gnome' ? 5 : 0
@@ -581,25 +664,18 @@ const MISS_RESULT: AttackResult = { hit: false, damage: 0, critical: false, kill
 // ============================================================================
 
 /**
- * Resolve an attack between two entities
+ * Resolve a character's melee attack against a monster
  *
- * Hit chance: 50 + attackerAccuracy - defenderEvasion (clamped to 5-95%)
- * Damage: (attackerDamage - defenderArmor/2) * variance (minimum 1)
- * Variance: damage * (0.8 + random() * 0.4) for +/-20%
- * Critical: 5% chance for double damage
- * Resistance: If defender has resistance to the damage type, damage is reduced
- * Knowledge: Bestiary bonuses add damage when player attacks, reduce damage when monster attacks
- *
- * @param attacker - The attacking entity
- * @param defender - The defending entity
- * @param abilityType - Optional damage type for resistance calculation (e.g., 'POISON', 'FIRE')
- * @param knowledgeBonuses - Optional bestiary bonuses from monster knowledge
- * @returns AttackResult with hit, damage, critical, and killed flags
+ * Hit chance: 50 + accuracy + statusHitBonus - evasion (clamped 5-95%)
+ * Damage: weapon dice + STR/3 + enchant + artifact + statusDamageBonus
+ *   × deadliness × shield bash × brand/slay × passive multipliers
+ * Defense: applyArmorReduction(monsterArmor, penetration)
+ *   × crit multiplier × knowledge bonus
+ * Min: max(1, damage)
  */
 export function attack(
-  attacker: Character | Monster,
-  defender: Character | Monster,
-  abilityType?: ResistanceType,
+  attacker: Character,
+  defender: Monster,
   knowledgeBonuses?: KnowledgeBonuses,
   armorPenetration = 0
 ): AttackResult {
@@ -607,150 +683,86 @@ export function attack(
   const defenderStats = getDefenderStats(defender)
 
   // Apply status effect bonuses
-  let accuracyBonus = 0
-  let damageBonus = 0
-  let defenderACBonus = 0
-
-  if (isCharacter(attacker)) {
-    accuracyBonus = getStatusHitBonus(attacker)
-    damageBonus = getStatusDamageBonus(attacker)
-  }
-  if (isCharacter(defender)) {
-    defenderACBonus = getStatusACBonus(defender)
-  }
+  const accuracyBonus = getStatusHitBonus(attacker)
+  const damageBonus = getStatusDamageBonus(attacker)
 
   // Calculate hit chance and roll
   const totalAccuracy = attackerStats.accuracy + accuracyBonus
-  const totalEvasion = defenderStats.evasion + defenderACBonus
-  const hitChance = calculateHitChance(totalAccuracy, totalEvasion)
+  const hitChance = calculateHitChance(totalAccuracy, defenderStats.evasion)
 
   if (random() * 100 >= hitChance) {
     return MISS_RESULT
   }
 
-  // Calculate base damage
-  // For characters: roll weapon dice + STR/3 + enchantment
-  // For monsters: use pre-calculated damage from template
-  let baseDamage: number
+  // Roll actual weapon dice for character attacks
+  const weapon = attacker.equipment.weapon
+  const weaponDice = weapon?.template.damage
+  const weaponDamage = weaponDice ? rollDice(weaponDice) : 0
+  const enchantBonus = weapon?.enchantment ?? 0
 
-  if (isCharacter(attacker)) {
-    // Roll actual weapon dice for character attacks
-    const weapon = attacker.equipment.weapon
-    const weaponDice = weapon?.template.damage
-    const weaponDamage = weaponDice ? rollDice(weaponDice) : 0
-    const enchantBonus = weapon?.enchantment ?? 0
-
-    // Add artifact damage if present
-    let artifactDamage = 0
-    if (weapon?.artifact?.damage) {
-      artifactDamage = rollDice(weapon.artifact.damage)
-    }
-    if (weapon?.artifact?.bonuses?.toDam) {
-      artifactDamage += weapon.artifact.bonuses.toDam
-    }
-
-    // Base damage: STR/3 + weapon dice + enchantment + artifact + status bonus
-    // FINESSE: Rogues use max(STR, DEX) for melee damage
-    const meleeClass = getClassById(attacker.classId)
-    const meleeStatDmg = meleeClass?.finesse
-      ? Math.max(attacker.stats.str, attacker.stats.dex)
-      : attacker.stats.str
-    baseDamage =
-      Math.floor(meleeStatDmg / 3) +
-      weaponDamage +
-      enchantBonus +
-      artifactDamage +
-      damageBonus
-
-    // Apply deadliness multiplier
-    const deadliness = calculateDeadliness(attacker)
-    baseDamage = applyDeadliness(baseDamage, deadliness)
-
-    // SHIELD_BASH: 20% chance for +50% damage with shield
-    if (attacker.equipment.shield) {
-      const gameClass = getClassById(attacker.classId)
-      if (gameClass?.canShieldBash && random() < 0.2) {
-        baseDamage = Math.floor(baseDamage * 1.5)
-      }
-    }
-
-    // WEAPON BRANDS & SLAYS: Apply damage multipliers vs monsters
-    if (isMonster(defender)) {
-      const brandMult = calculateBrandMultiplier(attacker.equipment.weapon, defender)
-      const slayMult = calculateSlayMultiplier(attacker.equipment.weapon, defender)
-      baseDamage = Math.floor(baseDamage * Math.max(brandMult, slayMult))
-    }
-
-    // Apply passive racial/status damage multipliers
-    baseDamage = Math.floor(baseDamage * getPassiveDamageMultiplier(attacker))
-  } else {
-    // Monster attacks use pre-calculated average (actual dice rolled in monster-combat.ts)
-    baseDamage = attackerStats.damage + damageBonus
-    // Apply variance for monsters using legacy attack() path (+/- 20%)
-    const variance = 0.8 + random() * 0.4
-    baseDamage = Math.floor(baseDamage * variance)
+  // Add artifact damage if present
+  let artifactDamage = 0
+  if (weapon?.artifact?.damage) {
+    artifactDamage = rollDice(weapon.artifact.damage)
+  }
+  if (weapon?.artifact?.bonuses?.toDam) {
+    artifactDamage += weapon.artifact.bonuses.toDam
   }
 
-  // Apply armor reduction
-  let damage = applyArmorReduction(
-    baseDamage,
-    defenderStats.armor + defenderACBonus,
-    armorPenetration
+  // Base damage: STR/3 + weapon dice + enchantment + artifact + status bonus
+  // FINESSE: Rogues use max(STR, DEX) for melee damage
+  const meleeClass = getClassById(attacker.classId)
+  const meleeStatDmg = meleeClass?.finesse
+    ? Math.max(attacker.stats.str, attacker.stats.dex)
+    : attacker.stats.str
+  let baseDamage =
+    Math.floor(meleeStatDmg / 3) + weaponDamage + enchantBonus + artifactDamage + damageBonus
+
+  // Apply deadliness multiplier
+  const deadliness = calculateDeadliness(attacker)
+  baseDamage = applyDeadliness(baseDamage, deadliness)
+
+  // SHIELD_BASH: 20% chance for +50% damage with shield
+  if (attacker.equipment.shield) {
+    const gameClass = getClassById(attacker.classId)
+    if (gameClass?.canShieldBash && random() < 0.2) {
+      baseDamage = Math.floor(baseDamage * 1.5)
+    }
+  }
+
+  // WEAPON BRANDS & SLAYS: Apply damage multipliers vs monsters
+  const brandMult = calculateBrandMultiplier(attacker.equipment.weapon, defender)
+  const slayMult = calculateSlayMultiplier(attacker.equipment.weapon, defender)
+  baseDamage = Math.floor(baseDamage * Math.max(brandMult, slayMult))
+
+  // Apply passive racial/status damage multipliers
+  baseDamage = Math.floor(baseDamage * getPassiveDamageMultiplier(attacker))
+
+  // Apply monster armor reduction
+  let damage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration)
+
+  // Check for critical hit (scaled by weapon weight and level)
+  const weaponWeight = attacker.equipment.weapon?.template.weight ?? 50
+  const critResult = calculateScaledCritical(
+    weaponWeight,
+    attacker.level,
+    getGnomeCritBonus(attacker)
   )
-
-  // Check for critical hit
-  // Characters use scaled criticals based on weapon weight and level
-  // Monsters use flat 5% chance with 2x damage
-  let critical = false
-  if (isCharacter(attacker)) {
-    const weaponWeight = attacker.equipment.weapon?.template.weight ?? 50
-    const critResult = calculateScaledCritical(
-      weaponWeight,
-      attacker.level,
-      getGnomeCritBonus(attacker)
-    )
-    critical = critResult.isCritical
-    if (critical) {
-      damage *= critResult.multiplier
-    }
-  } else if (random() < 0.05) {
-    critical = true
-    damage *= 2
+  const critical = critResult.isCritical
+  if (critical) {
+    damage *= critResult.multiplier
   }
 
-  // Apply knowledge bonuses from bestiary
+  // Apply knowledge bonus from bestiary (player attacking monster: bonus damage)
   if (knowledgeBonuses) {
-    if (isCharacter(attacker) && isMonster(defender)) {
-      // Player attacking monster: bonus damage
-      damage = Math.floor(damage * (1 + knowledgeBonuses.damagePercent / 100))
-    } else if (isMonster(attacker) && isCharacter(defender)) {
-      // Monster attacking player: damage reduction
-      damage = Math.floor(damage * (1 - knowledgeBonuses.reductionPercent / 100))
-    }
+    damage = Math.floor(damage * (1 + knowledgeBonuses.damagePercent / 100))
   }
 
-  // Apply resistance if defender is a character with resistances
-  if (abilityType && isCharacter(defender)) {
-    const resist = getTotalResistance(defender, abilityType)
-    // Positive resist = damage reduction (100 = immune), negative = vulnerability
-    damage = Math.floor(damage * (1 - resist / 100))
-    damage = Math.max(0, damage) // Can't heal from resistance
-  }
-
-  // Ensure minimum damage of 1 on a hit (unless fully immune)
-  if (abilityType && isCharacter(defender)) {
-    const resist = getTotalResistance(defender, abilityType)
-    if (resist < 100) {
-      damage = Math.max(1, damage)
-    }
-    // If immune (100+), damage can be 0
-  } else {
-    damage = Math.max(1, damage)
-  }
+  // Ensure minimum damage of 1 on a hit
+  damage = Math.max(1, damage)
 
   // Check if defender would be killed
-  const defenderHp = defender.hp
-  const killed = damage >= defenderHp
+  const killed = damage >= defender.hp
 
   return {
     hit: true,
@@ -805,7 +817,7 @@ export function meleeAttack(
   armorPenetration = 0
 ): MultiAttackResult {
   return executeMultiAttack(defender, calculateAttackCount(attacker), (tempDefender) =>
-    attack(attacker, tempDefender, undefined, knowledgeBonuses, armorPenetration)
+    attack(attacker, tempDefender, knowledgeBonuses, armorPenetration)
   )
 }
 

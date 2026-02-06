@@ -5,20 +5,14 @@
  * Each monster can have 1-4 attacks per round with various effects.
  */
 
-import type {
-  Monster,
-  Character,
-  MonsterAttack,
-  AttackEffect,
-  Element,
-  StatusEffectType,
-} from './types'
+import type { Monster, Character, MonsterAttack, AttackEffect, StatusEffectType } from './types'
 import { STATUS_DURATIONS } from './types'
 import { rollDice, getDiceAverage } from './dice'
 import { random } from './rng'
 import { addStatusEffect, applyPoison, hasProtectionFrom } from './status-effects'
 import { getRaceById } from './data/races'
-import { getProtectionBonus } from './combat'
+import { resolveDefense } from './combat'
+import type { KnowledgeBonuses } from './knowledge-effects'
 
 // ============================================================================
 // TYPES
@@ -58,7 +52,11 @@ export interface MonsterAttackResult {
  * @param character - The defending character
  * @returns Combined result of all attacks
  */
-export function resolveMonsterAttacks(monster: Monster, character: Character): MonsterAttackResult {
+export function resolveMonsterAttacks(
+  monster: Monster,
+  character: Character,
+  knowledgeBonuses?: KnowledgeBonuses
+): MonsterAttackResult {
   const template = monster.template
   const attacks = template.attacks
 
@@ -72,7 +70,7 @@ export function resolveMonsterAttacks(monster: Monster, character: Character): M
   const statusEffectsInflicted: Array<StatusEffectType | 'poison'> = []
 
   for (const attack of attacks) {
-    const result = resolveSingleAttack(monster, character, attack)
+    const result = resolveSingleAttack(monster, character, attack, knowledgeBonuses)
     hits.push(result)
 
     if (result.hit) {
@@ -97,7 +95,8 @@ export function resolveMonsterAttacks(monster: Monster, character: Character): M
 function resolveSingleAttack(
   monster: Monster,
   character: Character,
-  attack: MonsterAttack
+  attack: MonsterAttack,
+  knowledgeBonuses?: KnowledgeBonuses
 ): AttackHitResult {
   // Roll to hit
   const hitChance = calculateHitChance(monster, character)
@@ -114,30 +113,17 @@ function resolveSingleAttack(
   }
 
   // Roll damage
-  let damage = rollDice(attack.dice)
+  const rawDamage = rollDice(attack.dice)
 
-  // Apply armor reduction (percentage based)
-  // Include protection buff AC (Mage Armor, Shield, Sanctuary, Cloak of Shadows)
-  const totalArmor = character.combat.armor + getProtectionBonus(character)
-  const armorReduction = Math.min(totalArmor / 2, 50) // Max 50% reduction
-  damage = Math.floor((damage * (100 - armorReduction)) / 100)
-
-  // Apply elemental resistance
-  if (attack.effect.type === 'ELEMENTAL') {
-    damage = applyElementalResistance(damage, attack.effect.element, character)
-  }
-
-  // Apply Protection from Evil (halves damage from EVIL monsters)
-  // Requires: player has buff, monster is EVIL, player level >= monster depth
-  const hasPFE = character.statusEffects.some((e) => e.type === 'prot_from_evil')
-  const isEvil = monster.template.flags.includes('EVIL')
-  const levelCheck = character.level >= monster.template.minDepth
-  if (hasPFE && isEvil && levelCheck) {
-    damage = Math.floor(damage * 0.5)
-  }
-
-  // Ensure minimum 1 damage on hit
-  damage = Math.max(1, damage)
+  // Resolve defense (armor, resistance, PFE, knowledge, min damage)
+  const element = attack.effect.type === 'ELEMENTAL' ? attack.effect.element : undefined
+  const { finalDamage } = resolveDefense(character, {
+    rawDamage,
+    element,
+    attackerMonster: monster,
+    knowledgeBonuses,
+  })
+  const damage = finalDamage
 
   // Try to inflict status effect
   let statusInflicted: StatusEffectType | 'poison' | null = null
@@ -194,41 +180,6 @@ function calculateHitChance(monster: Monster, character: Character): number {
 // ============================================================================
 // ELEMENTAL RESISTANCE
 // ============================================================================
-
-/**
- * Apply elemental resistance to damage
- *
- * @param damage - Base damage
- * @param element - Element type
- * @param character - Character with resistances
- * @returns Reduced damage
- */
-function applyElementalResistance(damage: number, element: Element, character: Character): number {
-  // Map element to resistance type
-  const resistMap: Record<Element, string> = {
-    FIRE: 'FIRE',
-    COLD: 'COLD',
-    ELEC: 'LIGHTNING',
-    ACID: 'ACID',
-    POISON: 'POISON',
-    DARK: 'DARK',
-  }
-
-  const resistType = resistMap[element]
-
-  // Check permanent resistance
-  const permResist = (character.resistances as Record<string, number | undefined>)[resistType] ?? 0
-
-  // Check temp resistance
-  const tempResist = character.tempResistances.find((r) => r.type === resistType)
-  const tempValue = tempResist?.value ?? 0
-
-  // Combine resistances (cap at 90%)
-  const totalResist = Math.min(90, permResist + tempValue)
-
-  // Apply resistance
-  return Math.floor((damage * (100 - totalResist)) / 100)
-}
 
 // ============================================================================
 // STATUS EFFECTS
