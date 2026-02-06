@@ -519,6 +519,7 @@ export interface MinionTemplate {
   damage: number
   speed: number // Energy cost per action (100 = normal)
   permanent: boolean
+  maxCount: number // Max alive at once (1 for wolf/bear, 2 for skeleton)
   duration?: number // Turns for temporary summons
 }
 
@@ -531,6 +532,7 @@ export const MINION_TEMPLATES: Record<MinionType, MinionTemplate> = {
     damage: 6,
     speed: 110, // Fast
     permanent: true,
+    maxCount: 1,
   },
   skeleton: {
     type: 'skeleton',
@@ -538,8 +540,8 @@ export const MINION_TEMPLATES: Record<MinionType, MinionTemplate> = {
     maxHp: 20,
     damage: 4,
     speed: 100,
-    permanent: false,
-    duration: 100, // 100 turns
+    permanent: true,
+    maxCount: 2,
   },
   bear: {
     type: 'bear',
@@ -548,6 +550,7 @@ export const MINION_TEMPLATES: Record<MinionType, MinionTemplate> = {
     damage: 12,
     speed: 90, // Slower but tanky
     permanent: true,
+    maxCount: 1,
   },
 }
 

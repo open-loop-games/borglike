@@ -526,7 +526,7 @@ const drain_life: SpellTemplate = {
   cooldown: 0,
   effectType: 'lifedrain',
   baseDamage: '1d6',
-  damageScaling: 1,
+  damageScaling: 2,
   damageType: 'dark',
   drainPercent: 50,
   description: 'Steal life force from your enemy.',

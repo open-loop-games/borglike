@@ -1322,32 +1322,21 @@ function summonMinion(game: GameState, minionType: MinionType): ActionResult {
         ? template.maxHp + game.character.level * 3
         : template.maxHp
 
-  // For permanent pets (wolf), check if one already exists
-  if (template.permanent) {
-    const existingPet = game.minions.find((m) => m.type === minionType)
-    if (existingPet && existingPet.hp > 0) {
-      // Update maxHp in case character leveled up, then heal to full
-      existingPet.maxHp = scaledMaxHp
-      const oldHp = existingPet.hp
-      existingPet.hp = existingPet.maxHp
-      const healed = existingPet.hp - oldHp
-      return {
-        success: true,
-        message: `Your ${template.name} is restored to full health! (+${healed} HP)`,
-      }
-    }
-  }
+  // Check existing minions of this type
+  const existing = game.minions.filter((m) => m.type === minionType && m.hp > 0)
 
-  // For temporary summons, check limit (max 2)
-  if (!template.permanent) {
-    const existingSummons = game.minions.filter((m) => !MINION_TEMPLATES[m.type].permanent)
-    if (existingSummons.length >= 2) {
-      // Replace oldest summon
-      const oldest = existingSummons[0]
-      if (oldest) {
-        const idx = game.minions.indexOf(oldest)
-        if (idx >= 0) game.minions.splice(idx, 1)
-      }
+  if (existing.length >= template.maxCount) {
+    // At cap — heal the most damaged one instead of spawning
+    const mostDamaged = existing.reduce((a, b) =>
+      (a.hp / a.maxHp) < (b.hp / b.maxHp) ? a : b
+    )
+    mostDamaged.maxHp = scaledMaxHp
+    const oldHp = mostDamaged.hp
+    mostDamaged.hp = mostDamaged.maxHp
+    const healed = mostDamaged.hp - oldHp
+    return {
+      success: true,
+      message: `Your ${template.name} is restored to full health! (+${healed} HP)`,
     }
   }
 

@@ -6,7 +6,7 @@
  */
 
 import type { GameState, GameAction, Monster, Character, Point } from '../types'
-import { MINION_TEMPLATES, chebyshevDistance } from '../types'
+import { chebyshevDistance } from '../types'
 import type { PersonalityConfig, DangerMap } from './types'
 import type { SpellTemplate } from '../data/spells'
 import { getAvailableSpells, getNearestVisibleMonster, selectAOETargets } from '../spell-resolution'
@@ -1034,7 +1034,7 @@ export function getRootShotAction(game: GameState, adjacentMonster: Monster): Ga
 export function getSummonSpellAction(
   game: GameState,
   _config: PersonalityConfig,
-  visibleMonsters: Monster[]
+  _visibleMonsters: Monster[]
 ): GameAction | null {
   const character = game.character
 
@@ -1067,24 +1067,19 @@ export function getSummonSpellAction(
     }
   }
 
-  // For temporary summons (skeleton): summon proactively when we have mana
-  // Necromancer should always try to have a skeleton out
+  // For permanent pets (skeleton): maintain up to 2
   const skeletonSpell = summonSpells.find((entry) => entry.spell.id === 'summon_skeleton')
   if (skeletonSpell) {
-    // Count non-permanent summons
-    const tempSummons = existingMinions.filter((m) => !MINION_TEMPLATES[m.type].permanent)
-
-    // Summon if we have no summons and decent mana
-    if (tempSummons.length === 0 && character.mp >= character.maxMp * 0.4) {
+    const skeletons = existingMinions.filter((m) => m.type === 'skeleton')
+    if (skeletons.length < 2) {
+      // Missing skeleton(s) — resummon
       return { type: 'cast', spellId: 'summon_skeleton' }
     }
-
-    // Summon second skeleton if enemies are visible and we have good mana
-    if (
-      tempSummons.length < 2 &&
-      visibleMonsters.length > 0 &&
-      character.mp >= character.maxMp * 0.5
-    ) {
+    // Both alive — heal the most damaged if below 50%
+    const mostDamaged = skeletons.reduce((a, b) =>
+      (a.hp / a.maxHp) < (b.hp / b.maxHp) ? a : b
+    )
+    if (mostDamaged.hp < mostDamaged.maxHp * 0.5 && character.mp >= character.maxMp * 0.3) {
       return { type: 'cast', spellId: 'summon_skeleton' }
     }
   }
