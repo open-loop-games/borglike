@@ -1,16 +1,14 @@
 /**
  * Druid Shapeshift Bot AI
  *
- * Implements the battle-healer pattern for druid:
- * - Bear Form: Tanking melee combat
- * - Raven Form: Escape mechanism (replaces teleport spells)
- * - Base Form: Gap-closing spellcasting
+ * Three-form system: Cat (DPS), Bear (tank), Raven (escape).
  *
  * Combat Pattern:
- * 1. See enemy at distance -> Cast entangle (slow) + damage spells
- * 2. Enemy reaches melee -> Enter Bear Form
- * 3. In Bear -> melee + thorn_strike + heal as needed
- * 4. If overwhelmed -> Raven Form -> outrun -> heal -> return
+ * 1. Approach in base form → volcanic_eruption + ice_storm + lightning_storm
+ * 2. Enemy closes → Cat Form (DPS: +40% melee, speed 115, thorn_strike filler)
+ * 3. HP < 40% → Bear Form (tank: +20 armor, CON+3, natures_balm heal)
+ * 4. HP > 60% → back to Cat
+ * 5. HP < 25% → Raven escape → heal → exit → base form → repeat
  */
 
 import type { GameState, GameAction, Monster } from '../types'
@@ -21,6 +19,7 @@ import { getLocalDanger } from './danger'
 import { getHealingSpellAction, getDamageSpellAction, getDebuffSpellAction } from './spells'
 import { countAdjacentMonsters, findClosestMonster } from './combat'
 import { canTransform } from '../actions/shapeshift'
+import { findManaPotion } from './items'
 
 // ============================================================================
 // CONSTANTS
@@ -35,11 +34,17 @@ const RAVEN_EXIT_HP_THRESHOLD = 0.5
 /** Enter Raven if this many adjacent enemies */
 const RAVEN_ESCAPE_ADJACENT = 3
 
-/** Enter Bear when enemy within this distance */
-const BEAR_ENGAGE_DISTANCE = 2
+/** HP threshold below which bear form is defensive (switch from cat) */
+const BEAR_DEFENSIVE_HP = 0.4
 
 /** Mana buffer required for Bear (10 form + 5 for emergency heal) */
 const BEAR_MANA_BUFFER = 15
+
+/** Mana buffer required for Cat (10 form cost) */
+const CAT_MANA_BUFFER = 10
+
+/** HP threshold above which Cat Form is safe to use */
+const CAT_HP_THRESHOLD = 0.5
 
 // ============================================================================
 // QUERIES
@@ -60,6 +65,11 @@ export function isInRavenForm(character: { activeFormId: string | null }): boole
   return character.activeFormId === 'raven_form'
 }
 
+/** Check if character is in Cat Form */
+export function isInCatForm(character: { activeFormId: string | null }): boolean {
+  return character.activeFormId === 'cat_form'
+}
+
 /** Check if character is in any shapeshift form */
 export function isInAnyForm(character: { activeFormId: string | null }): boolean {
   return character.activeFormId !== null
@@ -75,6 +85,11 @@ export function canEnterRavenForm(game: GameState): boolean {
   return canTransform(game, 'raven_form')
 }
 
+/** Check if Cat Form is available (level ≥ 20 + mana) */
+export function canEnterCatForm(game: GameState): boolean {
+  return canTransform(game, 'cat_form')
+}
+
 // ============================================================================
 // DECISION LOGIC
 // ============================================================================
@@ -83,13 +98,12 @@ export function canEnterRavenForm(game: GameState): boolean {
  * Should the druid enter Bear Form?
  *
  * Enter Bear when:
- * - Adjacent enemy (melee range)
- * - OR enemy approaching within 2 tiles
- * - AND have mana buffer for post-entry healing
+ * - (HP < 40% AND adjacent enemy) — defensive switch (including from cat form)
+ * - OR 3+ adjacent enemies (surrounded, need tank)
  */
 export function shouldEnterBearForm(
   game: GameState,
-  visibleMonsters: Monster[],
+  _visibleMonsters: Monster[],
   adjacentCount: number
 ): boolean {
   const character = game.character
@@ -103,18 +117,50 @@ export function shouldEnterBearForm(
   // Need mana buffer for healing after entering
   if (character.mp < BEAR_MANA_BUFFER) return false
 
-  // Enter if adjacent enemy
-  if (adjacentCount > 0) return true
+  const hpRatio = character.hp / character.maxHp
 
-  // Enter if enemy within engage distance (2 tiles) and approaching
-  if (visibleMonsters.length > 0) {
-    const closest = findClosestMonster(visibleMonsters, character.position)
-    if (closest && closest.distance <= BEAR_ENGAGE_DISTANCE && closest.monster.isAwake) {
-      return true
-    }
-  }
+  // Defensive switch: hurt + adjacent (works from cat form too)
+  if (hpRatio < BEAR_DEFENSIVE_HP && adjacentCount > 0) return true
+
+  // Surrounded: need tank mode
+  if (adjacentCount >= 3) return true
 
   return false
+}
+
+/**
+ * Should the druid enter Cat Form?
+ *
+ * Enter Cat when:
+ * - 1-2 adjacent enemies (not surrounded)
+ * - HP > 50% (healthy enough for glass cannon)
+ * - Level ≥ 20 (cat form requirement)
+ * - Enough mana
+ */
+export function shouldEnterCatForm(
+  game: GameState,
+  _visibleMonsters: Monster[],
+  adjacentCount: number
+): boolean {
+  const character = game.character
+
+  // Already in Cat Form
+  if (isInCatForm(character)) return false
+
+  // Can't enter Cat Form
+  if (!canEnterCatForm(game)) return false
+
+  // Need mana buffer
+  if (character.mp < CAT_MANA_BUFFER) return false
+
+  // Only enter cat with 1-2 adjacent (not surrounded)
+  if (adjacentCount < 1 || adjacentCount > 2) return false
+
+  // Must be healthy enough — cat has -5 armor
+  const hpRatio = character.hp / character.maxHp
+  if (hpRatio <= CAT_HP_THRESHOLD) return false
+
+  return true
 }
 
 /**
@@ -157,11 +203,9 @@ export function shouldEnterRavenForm(
 /**
  * Should the druid exit current form?
  *
- * Bear Form exit when:
- * - No adjacent enemies AND closest > 5 tiles (gap to exploit)
- *
- * Raven Form exit when:
- * - HP > 50% AND no adjacent enemies (recovered and safe)
+ * Bear Form exit: No adjacent AND closest > 5 tiles
+ * Cat Form exit: No adjacent AND closest > 3 tiles (tighter — cat is fast)
+ * Raven Form exit: HP > 50% AND no adjacent enemies
  */
 export function shouldExitCurrentForm(
   game: GameState,
@@ -174,17 +218,20 @@ export function shouldExitCurrentForm(
   if (!isInAnyForm(character)) return false
 
   if (isInBearForm(character)) {
-    // Exit Bear when no adjacent and gap to exploit
     if (adjacentCount > 0) return false
-
     if (visibleMonsters.length === 0) return true
-
     const closest = findClosestMonster(visibleMonsters, character.position)
     return closest !== null && closest.distance > 5
   }
 
+  if (isInCatForm(character)) {
+    if (adjacentCount > 0) return false
+    if (visibleMonsters.length === 0) return true
+    const closest = findClosestMonster(visibleMonsters, character.position)
+    return closest !== null && closest.distance > 3
+  }
+
   if (isInRavenForm(character)) {
-    // Exit Raven when recovered and no adjacent
     const hpRatio = character.hp / character.maxHp
     return hpRatio >= RAVEN_EXIT_HP_THRESHOLD && adjacentCount === 0
   }
@@ -198,7 +245,7 @@ export function shouldExitCurrentForm(
 
 /**
  * Get shapeshift action if form change is needed.
- * Priority: Raven (emergency) > Bear (engage) > Exit (disengage)
+ * Priority: Raven (emergency) > Bear (defensive) > Cat (DPS) > Exit (disengage)
  */
 export function getShapeshiftAction(
   game: GameState,
@@ -213,14 +260,18 @@ export function getShapeshiftAction(
     return { type: 'shapeshift', formId: 'raven_form' }
   }
 
-  // Priority 2: Engage via Bear
+  // Priority 2: Defensive switch to Bear (hurt + adjacent, or surrounded)
   if (shouldEnterBearForm(game, visibleMonsters, adjacentCount)) {
     return { type: 'shapeshift', formId: 'bear_form' }
   }
 
-  // Priority 3: Exit form if safe/recovered
+  // Priority 3: DPS via Cat (healthy + 1-2 adjacent)
+  if (shouldEnterCatForm(game, visibleMonsters, adjacentCount)) {
+    return { type: 'shapeshift', formId: 'cat_form' }
+  }
+
+  // Priority 4: Exit form if safe/recovered
   if (shouldExitCurrentForm(game, visibleMonsters, adjacentCount)) {
-    // Exit current form by "shifting" to it again (toggle off)
     return { type: 'shapeshift', formId: game.character.activeFormId! }
   }
 
@@ -251,6 +302,10 @@ export function getDruidTierAction(
   }
 
   // Form-specific combat behavior
+  if (isInCatForm(character)) {
+    return getCatFormCombatAction(game, botState, adjacentMonster)
+  }
+
   if (isInBearForm(character)) {
     return getBearFormCombatAction(game, context, botState, localDanger, tier, adjacentMonster)
   }
@@ -259,12 +314,37 @@ export function getDruidTierAction(
     return getRavenFormAction(game, context, botState, localDanger, tier)
   }
 
-  // Base form: Gap-closing behavior
+  // Base form: Full spellcasting + mana management
   return getBaseFormAction(game, context, botState, localDanger, tier, adjacentMonster)
 }
 
 /**
- * Bear Form combat: melee-focused with heal support
+ * Cat Form combat: pure DPS, no healing (shift to bear to heal)
+ */
+function getCatFormCombatAction(
+  game: GameState,
+  botState: BotState,
+  adjacentMonster: Monster | null
+): GameAction | null {
+  if (!adjacentMonster) return null
+
+  const character = game.character
+
+  // Thorn Strike for extra damage
+  const available = getAvailableSpells(character, game.turn)
+  const thornStrike = available.find((e) => e.canCast && e.spell.id === 'thorn_strike')
+  if (thornStrike) {
+    recordProgress(botState, game.turn)
+    return { type: 'cast', spellId: 'thorn_strike', targetId: adjacentMonster.id }
+  }
+
+  // Melee attack (+40% melee damage from cat form)
+  recordProgress(botState, game.turn)
+  return { type: 'attack', targetId: adjacentMonster.id }
+}
+
+/**
+ * Bear Form combat: tank with damage-before-heal when healthy
  */
 function getBearFormCombatAction(
   game: GameState,
@@ -276,9 +356,22 @@ function getBearFormCombatAction(
 ): GameAction | null {
   const { config } = context
   const character = game.character
+  const hpRatio = character.hp / character.maxHp
 
-  // Priority 1: Heal if needed (Bear has good armor, can sustain while healing)
   if (tier === 'CRITICAL' || tier === 'DANGER') {
+    if (hpRatio > 0.5 && adjacentMonster) {
+      // Damage first when healthy enough: thorn_strike → melee → heal fallback
+      const available = getAvailableSpells(character, game.turn)
+      const thornStrike = available.find((e) => e.canCast && e.spell.id === 'thorn_strike')
+      if (thornStrike) {
+        recordProgress(botState, game.turn)
+        return { type: 'cast', spellId: 'thorn_strike', targetId: adjacentMonster.id }
+      }
+      recordProgress(botState, game.turn)
+      return { type: 'attack', targetId: adjacentMonster.id }
+    }
+
+    // HP ≤ 50%: heal first
     const healAction = getHealingSpellAction(game, config, localDanger, true)
     if (healAction) {
       recordProgress(botState, game.turn)
@@ -286,7 +379,7 @@ function getBearFormCombatAction(
     }
   }
 
-  // Priority 2: Thorn Strike for extra damage (if adjacent and spell available)
+  // Thorn Strike for extra damage (if adjacent and spell available)
   if (adjacentMonster) {
     const available = getAvailableSpells(character, game.turn)
     const thornStrike = available.find((e) => e.canCast && e.spell.id === 'thorn_strike')
@@ -296,7 +389,7 @@ function getBearFormCombatAction(
     }
   }
 
-  // Priority 3: Melee attack (Bear Form has +20% melee damage)
+  // Melee attack
   if (adjacentMonster) {
     recordProgress(botState, game.turn)
     return { type: 'attack', targetId: adjacentMonster.id }
@@ -304,7 +397,6 @@ function getBearFormCombatAction(
 
   // No adjacent - proactive healing in CAUTION/SAFE
   if (tier === 'CAUTION' || tier === 'SAFE') {
-    const hpRatio = character.hp / character.maxHp
     if (hpRatio < 0.7) {
       const healAction = getHealingSpellAction(game, config, localDanger, true)
       if (healAction) {
@@ -342,7 +434,7 @@ function getRavenFormAction(
 }
 
 /**
- * Base Form: Gap-closing with spells, then engage
+ * Base Form: Full spellcasting, damage-before-heal when healthy, mana management
  */
 function getBaseFormAction(
   game: GameState,
@@ -354,26 +446,45 @@ function getBaseFormAction(
 ): GameAction | null {
   const { config, visibleMonsters } = context
   const character = game.character
+  const hpRatio = character.hp / character.maxHp
 
-  // Priority 1: Heal if in danger
   if (tier === 'CRITICAL' || tier === 'DANGER') {
+    if (hpRatio > 0.5 && visibleMonsters.length > 0) {
+      // Damage first when healthy: all spells available (including at adjacent targets)
+      const damageAction = getDamageSpellAction(game, config, visibleMonsters)
+      if (damageAction) {
+        recordProgress(botState, game.turn)
+        return damageAction
+      }
+    }
+
+    // Heal when hurt
     const healAction = getHealingSpellAction(game, config, localDanger, true)
     if (healAction) {
       recordProgress(botState, game.turn)
       return healAction
     }
+
+    // Damage fallback (if heal not needed or unavailable)
+    if (visibleMonsters.length > 0) {
+      const damageAction = getDamageSpellAction(game, config, visibleMonsters)
+      if (damageAction) {
+        recordProgress(botState, game.turn)
+        return damageAction
+      }
+    }
   }
 
-  // Gap-closing phase: Cast spells at distant enemies
-  if (visibleMonsters.length > 0 && !adjacentMonster) {
-    // Entangle to slow approaching enemies
+  // Cast damage spells at visible enemies (any range, including adjacent)
+  if (visibleMonsters.length > 0) {
+    // Debuff to slow approaching enemies
     const debuffAction = getDebuffSpellAction(game, config, visibleMonsters)
     if (debuffAction) {
       recordProgress(botState, game.turn)
       return debuffAction
     }
 
-    // Damage spells while closing
+    // Damage spells at any target
     const damageAction = getDamageSpellAction(game, config, visibleMonsters)
     if (damageAction) {
       recordProgress(botState, game.turn)
@@ -381,7 +492,7 @@ function getBaseFormAction(
     }
   }
 
-  // If adjacent in base form and can't enter Bear, use thorn_strike
+  // If adjacent in base form and can't shift, use thorn_strike
   if (adjacentMonster) {
     const available = getAvailableSpells(character, game.turn)
     const thornStrike = available.find((e) => e.canCast && e.spell.id === 'thorn_strike')
@@ -391,9 +502,18 @@ function getBaseFormAction(
     }
   }
 
+  // Mana potion if MP < 15%
+  const manaRatio = character.maxMp > 0 ? character.mp / character.maxMp : 1
+  if (manaRatio < 0.15) {
+    const manaPotion = findManaPotion(character)
+    if (manaPotion) {
+      recordProgress(botState, game.turn)
+      return { type: 'use', itemId: manaPotion.id }
+    }
+  }
+
   // Proactive healing when safe
   if ((tier === 'CAUTION' || tier === 'SAFE') && !adjacentMonster) {
-    const hpRatio = character.hp / character.maxHp
     if (hpRatio < 0.6) {
       const healAction = getHealingSpellAction(game, config, localDanger, true)
       if (healAction) {

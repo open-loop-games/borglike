@@ -394,8 +394,8 @@ const natures_balm: SpellTemplate = {
   manaCost: 5,
   cooldown: 0,
   effectType: 'heal',
-  baseHeal: '1d8',
-  healScaling: 1,
+  baseHeal: '2d8',
+  healScaling: 2,
   curesPoison: true,
   description: 'Natural healing cures poison and restores HP.',
 }
@@ -408,8 +408,8 @@ const thorn_strike: SpellTemplate = {
   manaCost: 6,
   cooldown: 0,
   effectType: 'damage',
-  baseDamage: '2d6',
-  damageScaling: 1,
+  baseDamage: '3d6',
+  damageScaling: 2,
   damageType: 'nature',
   description: 'A barrage of thorns pierces your enemy.',
 }
@@ -700,9 +700,9 @@ const ice_storm: SpellTemplate = {
   school: 'nature',
   level: 35,
   manaCost: 30,
-  cooldown: 5,
+  cooldown: 4,
   effectType: 'aoe_damage',
-  levelDamage: { base: 15, perLevel: 1 }, // 15 + level = 65 at L50
+  levelDamage: { base: 20, perLevel: 2 }, // 20 + level*2 = 120 at L50
   damageType: 'cold',
   targetMode: 'los', // hits ALL visible enemies
   debuff: { type: 'slow', value: 50, duration: 5 }, // slows all targets
@@ -715,9 +715,9 @@ const volcanic_eruption: SpellTemplate = {
   school: 'nature',
   level: 42,
   manaCost: 40,
-  cooldown: 8,
+  cooldown: 5,
   effectType: 'aoe_damage',
-  levelDamage: { base: 25, perLevel: 2 }, // 25 + level*2 = 125 at L50
+  levelDamage: { base: 30, perLevel: 2 }, // 30 + level*2 = 130 at L50
   damageType: 'fire',
   maxTargets: 6,
   description: 'The earth erupts in fire, scorching all nearby foes.',

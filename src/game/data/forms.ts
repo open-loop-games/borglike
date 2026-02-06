@@ -70,11 +70,11 @@ const bearForm: ShapeformTemplate = {
   duration: 0, // Toggle
   statMods: {
     strMod: 4,
-    armorMod: 10,
-    speedMod: -10,
+    conMod: 3,
+    armorMod: 20,
     meleeDamageMod: 20, // +20% melee damage
   },
-  description: 'Transform into a powerful bear, gaining strength and armor but losing speed.',
+  description: 'Transform into a powerful bear, gaining strength, constitution and heavy armor.',
 }
 
 /**
@@ -96,6 +96,29 @@ const ravenForm: ShapeformTemplate = {
     evasionMod: 15,
   },
   description: 'Transform into a swift raven, gaining speed and evasion.',
+}
+
+/**
+ * Cat Form - Druid's melee DPS form
+ *
+ * Increases DEX, speed, evasion, and melee damage at the cost of armor.
+ * Best for fast, aggressive melee when not surrounded.
+ */
+const catForm: ShapeformTemplate = {
+  id: 'cat_form',
+  name: 'Cat Form',
+  classId: 'druid',
+  minLevel: 20,
+  manaCost: 10,
+  duration: 0, // Toggle
+  statMods: {
+    dexMod: 5,
+    speedMod: 15,
+    evasionMod: 10,
+    meleeDamageMod: 40, // +40% melee damage
+    armorMod: -5,
+  },
+  description: 'Transform into a swift cat, gaining speed and devastating melee attacks.',
 }
 
 /**
@@ -123,7 +146,7 @@ const shadowForm: ShapeformTemplate = {
 // FORM REGISTRY
 // ============================================================================
 
-export const SHAPEFORMS: ShapeformTemplate[] = [bearForm, ravenForm, shadowForm]
+export const SHAPEFORMS: ShapeformTemplate[] = [bearForm, ravenForm, catForm, shadowForm]
 
 /**
  * Get a shapeform by ID

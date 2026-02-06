@@ -303,7 +303,7 @@ const druid: GameClass = {
   id: 'druid',
   name: 'Druid',
   stats: { str: -2, int: 0, wis: 3, dex: -2, con: 0 },
-  hitdie: 2,
+  hitdie: 4,
   maxAttacks: 4,
   primaryStat: 'wis',
   titles: [
