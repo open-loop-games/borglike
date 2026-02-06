@@ -627,8 +627,6 @@ function getStartingWeaponForClass(classId: string): string {
     // Dex-based classes - dagger
     case 'rogue':
     case 'ranger':
-    case 'monk':
-    case 'bard':
     case 'artificer':
       return 'Dagger'
     default:
@@ -662,16 +660,14 @@ function getStartingArmorForClass(classId: string): string {
     // Light fighters - soft leather
     case 'rogue':
     case 'ranger':
-    case 'bard':
     case 'artificer':
       return 'Soft Leather Armour'
-    // Casters, monks, and nature classes - robe
+    // Casters and nature classes - robe
     case 'mage':
     case 'necromancer':
     case 'archmage':
     case 'priest':
     case 'druid':
-    case 'monk':
       return 'Robe'
     default:
       return 'Robe'

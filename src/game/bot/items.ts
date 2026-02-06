@@ -101,8 +101,6 @@ const WEAPON_CLASS_AFFINITY: Record<
 
   // Skill classes
   rogue: { staff: 0.4, weapon: 1.0 },
-  monk: { staff: 0.8, weapon: 0.8 },
-  bard: { staff: 1.5, weapon: 0.8 },
 }
 
 // ============================================================================

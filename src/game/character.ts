@@ -642,7 +642,7 @@ export function calculateAttackCount(character: Character): number {
   if (!gameClass) return 1
 
   // Class base bonus: melee classes start with more attacks
-  // Warrior/Berserker/Monk: +1, others: 0
+  // Warrior/Berserker: +1, others: 0
   const classBonus = gameClass.maxAttacks >= 6 ? 1 : 0
 
   // STR bonus: +1 attack per 3 STR above 12

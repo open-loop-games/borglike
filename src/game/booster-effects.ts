@@ -206,8 +206,6 @@ export const CLASS_BOOSTER_PRESETS: Record<string, [string, string]> = {
   mage: ['int_superior', 'con_superior'],
   archmage: ['int_superior', 'con_superior'],
   necromancer: ['int_superior', 'con_superior'],
-  bard: ['int_superior', 'con_superior'],
-
   // WIS classes
   priest: ['wis_superior', 'con_superior'],
   paladin: ['wis_superior', 'con_superior'],
@@ -216,7 +214,6 @@ export const CLASS_BOOSTER_PRESETS: Record<string, [string, string]> = {
   // DEX classes
   rogue: ['dex_superior', 'con_superior'],
   ranger: ['dex_superior', 'con_superior'],
-  monk: ['dex_superior', 'con_superior'],
 }
 
 /**

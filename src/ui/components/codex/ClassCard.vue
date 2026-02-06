@@ -34,8 +34,6 @@ const classSymbols: Record<string, string> = {
   archmage: '\u2728', // Sparkles
   druid: '\uD83C\uDF3F', // Herb (🌿)
   blackguard: '\u26AB', // Black circle
-  monk: '\uD83D\uDC4A', // Fist (👊)
-  bard: '\uD83C\uDFB5', // Musical note (🎵)
 }
 
 // Get display symbol

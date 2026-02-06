@@ -414,8 +414,6 @@ export function getClassTier(classId: string): ClassTier {
     case 'druid':
     case 'ranger':
     case 'rogue':
-    case 'monk':
-    case 'bard':
     default:
       return 'MEDIUM'
   }

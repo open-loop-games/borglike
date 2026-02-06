@@ -168,30 +168,6 @@ const blackguard: ClassBehaviorProfile = {
   engageDistance: 1,
 }
 
-const monk: ClassBehaviorProfile = {
-  classId: 'monk',
-  prefersMelee: true,
-  prefersRanged: false,
-  neverRetreats: false,
-  usesTeleport: false,
-  healsPriority: false,
-  aggressionMod: 10,
-  cautionMod: 5,
-  engageDistance: 1,
-}
-
-const bard: ClassBehaviorProfile = {
-  classId: 'bard',
-  prefersMelee: false,
-  prefersRanged: false,
-  neverRetreats: false,
-  usesTeleport: false,
-  healsPriority: false,
-  aggressionMod: 0,
-  cautionMod: 5,
-  engageDistance: 2,
-}
-
 // Default profile for unknown classes
 const defaultProfile: ClassBehaviorProfile = {
   classId: 'default',
@@ -221,8 +197,6 @@ const PROFILES: Record<string, ClassBehaviorProfile> = {
   archmage,
   druid,
   blackguard,
-  monk,
-  bard,
 }
 
 /**
