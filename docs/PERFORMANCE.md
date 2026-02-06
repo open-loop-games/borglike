@@ -16,10 +16,10 @@
 
 | Class | Turns | Total Time | Avg/Tick | Main Cost |
 |-------|-------|------------|----------|-----------|
-| Warrior | 13.9k | 6572ms | 0.47ms | handleFallback (24%), computeDangerGrid (17%) |
-| Mage | 29.3k | 17459ms | 0.60ms | handleFallback (24%), computeDangerGrid (15%), getSweepFrontiers (5%) |
-| Druid | 5.0k* | 2163ms | 0.43ms | handleFallback (22%), computeDangerGrid (8%) |
-| Rogue | 5.0k* | 2217ms | 0.44ms | handleFallback (23%), computeDangerGrid (8%) |
+| Warrior | 13.9k | 6572ms | 0.47ms | goalMovement (24%), computeDangerGrid (17%) |
+| Mage | 29.3k | 17459ms | 0.60ms | goalMovement (24%), computeDangerGrid (15%), getSweepFrontiers (5%) |
+| Druid | 5.0k* | 2163ms | 0.43ms | goalMovement (22%), computeDangerGrid (8%) |
+| Rogue | 5.0k* | 2217ms | 0.44ms | goalMovement (23%), computeDangerGrid (8%) |
 
 *Druid/Rogue ran 5k turn cap for spot-check only.
 
@@ -93,7 +93,7 @@ PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --upgrades=none --capabilities=none
 | `flow.singleTarget` | `flow.ts` | 194µs | 0.96ms | Single-target BFS (typed array) |
 | `flow.exploration` | `flow.ts` | 64µs | 0.44ms | Dijkstra frontier flow (typed array) |
 | `getFrontierPositions` | `exploration.ts` | 49µs | 1.7ms | Frontier tile detection |
-| `handleFallback` | `tick.ts` | 118µs | 4.6ms | Goal movement execution |
+| `goalMovement` | `tick.ts` | 118µs | 4.6ms | Goal movement execution |
 | `selectActionByTier` | `tier-actions.ts` | 10µs | 0.70ms | Class-specific action selection |
 | `recordVisibleTiles` | `exploration.ts` | 11µs | 0.37ms | Visible tile tracking |
 
@@ -270,7 +270,7 @@ pnpm diagnose baseline --seed=1000
 | `computeSafetyFlow` avg | 1491µs | 913µs | **1.6x faster** |
 | `computeSafetyFlow` max | 3.8ms | 1.3ms | **2.9x lower spike** |
 
-**Note:** `fallback.buildAvoidSet` slightly regressed (4.5µs → 6.2µs) due to typed array → string key conversion for flow.ts `avoid` set compatibility. Net win far exceeds this.
+**Note:** `goalMovement.buildAvoidSet` slightly regressed (4.5µs → 6.2µs) due to typed array → string key conversion for flow.ts `avoid` set compatibility. Net win far exceeds this.
 
 **Learnings:**
 - Same typed-array pattern from Pass 3 (flow.ts) applied to danger + safety grids
@@ -289,8 +289,8 @@ pnpm diagnose baseline --seed=1000
 
 | Operation | % Time | Total | Calls | Avg |
 |-----------|--------|-------|-------|-----|
-| handleFallback | 23.7% | 1554ms | 12923 | 120µs |
-| fallback.goalMovement | 23.5% | 1545ms | 12901 | 120µs |
+| goalMovement | 23.7% | 1554ms | 12923 | 120µs |
+| goalMovement.inner | 23.5% | 1545ms | 12901 | 120µs |
 | computeDangerGrid | 16.6% | 1091ms | 13924 | 78µs |
 | getFrontierPositions | 6.5% | 428ms | 8792 | 49µs |
 | flow.exploration | 6.9% | 455ms | 6445 | 71µs |
@@ -302,7 +302,7 @@ pnpm diagnose baseline --seed=1000
 
 **Summary:**
 - Total tracked: 6572ms for ~13.9k turns = **0.47ms/tick avg**
-- Fallback path dominates (47% of time)
+- Goal movement dominates (47% of time)
 - `computeDangerGrid` up to 17% (was 8.5%) due to 12 new D19-30 monsters
 - `selectGoal` improved 45% (22µs vs 39µs) from better goal persistence
 - Flow computation ~10% of total
@@ -311,7 +311,7 @@ pnpm diagnose baseline --seed=1000
 
 | Operation | % Time | Total | Calls | Avg |
 |-----------|--------|-------|-------|-----|
-| handleFallback | 24.2% | 4230ms | 22595 | 187µs |
+| goalMovement | 24.2% | 4230ms | 22595 | 187µs |
 | computeDangerGrid | 14.5% | 2531ms | 29277 | 86µs |
 | selectGoal | 6.5% | 1131ms | 22529 | 50µs |
 | getSweepFrontiers | 5.4% | 949ms | 6131 | 155µs |
@@ -333,8 +333,8 @@ pnpm diagnose baseline --seed=1000
 
 | Operation | % Time | Total | Calls | Avg |
 |-----------|--------|-------|-------|-----|
-| handleFallback | 23.7% | 593ms | 4367 | 136µs |
-| fallback.goalMovement | 23.5% | 588ms | 4358 | 135µs |
+| goalMovement | 23.7% | 593ms | 4367 | 136µs |
+| goalMovement.inner | 23.5% | 588ms | 4358 | 135µs |
 | computeDangerGrid | 8.5% | 214ms | 4510 | 47µs |
 | selectGoal | 6.8% | 169ms | 4358 | 39µs |
 | goal.descend | 5.4% | 136ms | 571 | 237µs |
@@ -345,7 +345,7 @@ pnpm diagnose baseline --seed=1000
 
 **Summary:**
 - Total tracked: 2502ms for ~4500 turns = **0.55ms/tick avg**
-- Fallback path dominates (47% of time)
+- Goal movement dominates (47% of time)
 - Flow computation now ~10% of total (was ~17%)
 - Context building very efficient (2.6µs)
 

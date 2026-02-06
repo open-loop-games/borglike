@@ -184,39 +184,22 @@ export function runBotTick(
     return action
   }
 
-  // Fallback: stuck recovery and movement
-  return profile('handleFallback', () => handleFallback(game, context, botState, dangerResult))
-}
-
-// ============================================================================
-// FALLBACK HANDLING
-// ============================================================================
-
-/**
- * Handle stuck recovery and goal-based movement
- */
-function handleFallback(
-  game: GameState,
-  context: BotContext,
-  botState: BotState,
-  dangerResult: DangerResult
-): GameAction {
-  // Stuck recovery (skip in town)
+  // Stuck recovery (dungeon only)
   if (game.character.depth > 0) {
-    const stuckAction = profile('fallback.stuckRecovery', () =>
+    const stuckAction = profile('stuckRecovery', () =>
       handleStuckRecovery(game, context, botState)
     )
     if (stuckAction) return stuckAction
   }
 
-  // Goal selection and movement
-  return profile('fallback.goalMovement', () =>
-    handleGoalMovement(game, context, botState, dangerResult)
+  // Goal-based movement (explore/descend/town/farm)
+  return profile('goalMovement', () =>
+    executeGoalMovement(game, context, botState, dangerResult)
   )
 }
 
 // ============================================================================
-// HELPER FUNCTIONS (from original tick.ts)
+// HELPER FUNCTIONS
 // ============================================================================
 
 function updateKnownStairs(game: GameState, botState: BotState): void {
@@ -273,7 +256,7 @@ function handleStuckRecovery(
 }
 
 // ============================================================================
-// FALLBACK MOVEMENT - QUERIES
+// GOAL MOVEMENT - QUERIES
 // ============================================================================
 
 /**
@@ -293,7 +276,7 @@ function shouldUseSweepFlow(_game: GameState, botState: BotState): boolean {
 }
 
 // ============================================================================
-// FALLBACK MOVEMENT - FLOW COMPUTATION
+// GOAL MOVEMENT - FLOW COMPUTATION
 // ============================================================================
 
 /**
@@ -512,7 +495,7 @@ function clearUnreachableGoal(botState: BotState): void {
 }
 
 // ============================================================================
-// FALLBACK MOVEMENT - ACTION GETTERS
+// GOAL MOVEMENT - ACTION GETTERS
 // ============================================================================
 
 /**
@@ -531,7 +514,7 @@ function getGoalArrivalAction(
 
   recordProgress(botState, game.turn)
   updateTownState(botState, goal, game)
-  return profile('fallback.executeGoal', () => executeGoalAction(goal, game, botState, config))
+  return profile('goalMovement.executeGoal', () => executeGoalAction(goal, game, botState, config))
 }
 
 /**
@@ -605,10 +588,10 @@ function getKillApproachAction(
 }
 
 // ============================================================================
-// FALLBACK MOVEMENT - ORCHESTRATION
+// GOAL MOVEMENT - ORCHESTRATION
 // ============================================================================
 
-function handleGoalMovement(
+function executeGoalMovement(
   game: GameState,
   context: BotContext,
   botState: BotState,
@@ -635,7 +618,7 @@ function handleGoalMovement(
   const avoidSet =
     goal.type === 'FLEE'
       ? new Set<string>()
-      : profile('fallback.buildAvoidSet', () =>
+      : profile('goalMovement.buildAvoidSet', () =>
           buildAvoidSet(dangerResult.dangers, dangerThreshold, game.character)
         )
 
@@ -663,7 +646,7 @@ function handleGoalMovement(
   if (killAction) return killAction
 
   // 7. Step toward goal
-  const direction = profile('fallback.selectStep', () => selectStep(game, botState, reachableFlow))
+  const direction = profile('goalMovement.selectStep', () => selectStep(game, botState, reachableFlow))
   recordPosition(botState, pos)
 
   // Record progress for productive goals (not FLEE/RECOVER)
