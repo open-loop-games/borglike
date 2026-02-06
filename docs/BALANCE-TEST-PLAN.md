@@ -1,8 +1,42 @@
 # Balance Test Plan
 
-## Current State (2026-02-05)
+## Current State (2026-02-06)
 
 > **Note:** Update commit hash with `git rev-parse --short HEAD` after each baseline run.
+
+### Full Baseline @ `f284269` (100 runs, 50k turns, seed=1000, max-upgrades) — Rogue Revamp + Combat Fixes
+
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
+|-------|-----------|-----------|---------|-----------|-------|---------|--------|
+| **Paladin** | 49.8 | 50 | 0% | 22086 | 680 | 7 | ✅ Endgame |
+| **Rogue** | 49.2 | 50 | 0% | 22905 | 633 | 11 | ✅ Endgame |
+| **Druid** | 49.0 | 50 | 0% | 22433 | 644 | 3 | ✅ Endgame |
+| **Priest** | 49.0 | 50 | 0% | 26669 | 830 | 3 | ✅ Endgame |
+| **Berserker** | 48.2 | 50 | 0% | 14330 | 504 | 13 | ✅ Endgame |
+| **Warrior** | 48.2 | 50 | 0% | 16201 | 522 | 4 | ✅ Endgame |
+| **Blackguard** | 48.1 | 50 | 0% | 15633 | 537 | 9 | ✅ Endgame |
+| **Necromancer** | 47.9 | 50 | 3% | 23652 | 652 | 3 | ✅ Endgame |
+| **Ranger** | 47.9 | 50 | 0% | 22909 | 633 | 8 | ✅ Endgame |
+| **Mage** | 47.6 | 50 | 2% | 27501 | 621 | 2 | ✅ Endgame |
+| **Archmage** | 46.5 | 50 | 2% | 27013 | 600 | 3 | ✅ Endgame |
+
+**Summary:** Rogue revamp (finesse passive, shadow spells, damage_bonus fix), bard/monk removal (13→11 classes), combat formula unification (resolveDefense, protection buff fix, armor estimation fix), BFS/FOV perf (typed arrays). **66 Morgoth kills** (13 berserker, 11 rogue, 9 blackguard, 8 ranger, 7 paladin, 4 warrior, 3 druid, 3 priest, 3 necromancer, 3 archmage, 2 mage). All CB rates ≤3%. Spread tightened: 46.5-49.8 (was 44.4-49.8).
+
+**vs Previous Full (`aa73d55`):**
+
+| Class | Old | New | Delta | Notes |
+|-------|-----|-----|-------|-------|
+| Paladin | 49.8 | 49.8 | 0.0 | Unchanged |
+| Rogue | 44.4 | 49.2 | **+4.8** | Finesse passive + shadow spells + damage_bonus fix |
+| Druid | 49.1 | 49.0 | -0.1 | Noise |
+| Priest | 48.9 | 49.0 | +0.1 | Noise |
+| Berserker | 48.2 | 48.2 | 0.0 | Unchanged |
+| Warrior | 47.8 | 48.2 | +0.4 | Combat formula fixes (protection buff, armor) |
+| Blackguard | 49.8 | 48.1 | **-1.7** | Possible spillover from combat unification |
+| Necromancer | 47.9 | 47.9 | 0.0 | Unchanged |
+| Ranger | 48.4 | 47.9 | -0.5 | Noise |
+| Mage | 48.4 | 47.6 | -0.8 | Slight dip |
+| Archmage | 46.7 | 46.5 | -0.2 | Noise |
 
 ### Full Baseline @ `aa73d55` (100 runs, 50k turns, seed=1000, max-upgrades) — Necro/Priest/Druid Buffs
 
@@ -565,7 +599,7 @@ pnpm diagnose batch --runs=100 --seed=1000 --class=CLASS --max-upgrades --turns=
 
 **Full baseline (all 11 classes):**
 ```bash
-pnpm diagnose baseline --seed=1000 --turns=50000 --max-upgrades  # ~16 min
+pnpm diagnose baseline --seed=1000 --turns=50000 --max-upgrades  # ~10 min
 ```
 
 **Parallel execution:** Run only 2 batch commands simultaneously (8 threads each = 16 total).
@@ -587,7 +621,7 @@ pnpm diagnose batch --runs=100 --seed=1000 --class=warrior --max-upgrades --turn
 # Find problematic seeds
 pnpm diagnose find --runs=100 --seed=1000 --class=mage --turns=50000 > /tmp/[name].txt 2>&1
 
-# Full baseline across all 11 classes (100 runs, 50k turns, max-upgrades)
+# Full baseline across all 9 classes (100 runs, 50k turns, max-upgrades)
 # ~16 min runtime
 pnpm diagnose baseline --seed=1000 --turns=50000 --max-upgrades > /tmp/[name].txt 2>&1
 
