@@ -72,8 +72,9 @@ const botUpgradeItems = computed(() => {
     effect: { type: 'unlock' as const, baseValue: 0, perLevel: 1 },
   })
 
-  // Graded chains: one card per field
+  // Graded chains: one card per field (sweep/surf require farming)
   for (const chain of gradedChains) {
+    if ((chain.field === 'sweep' || chain.field === 'surf') && !farmingUnlocked) continue
     const currentLevel = caps[chain.field]
     const next = getNextGradedUpgrade(chain.field, caps)
     const nextId = next?.id

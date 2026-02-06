@@ -308,8 +308,8 @@ export const upgrades: UpgradeDefinition[] = [
   fastLearner,
   haggler,
   // QoL
-  turboMode,
   autoRestart,
+  turboMode,
   runSlot2,
   runSlot3,
   runSlot4,
