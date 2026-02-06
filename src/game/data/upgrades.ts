@@ -34,8 +34,8 @@ const vitality: UpgradeDefinition = {
   description: '+15 HP and +1% max HP per level',
   category: 'stats',
   maxLevel: 10,
-  baseCost: 50,
-  costScaling: 1.5,
+  baseCost: 100,
+  costScaling: 1.8,
   effect: {
     type: 'flat',
     stat: 'maxHp',
@@ -51,8 +51,8 @@ const might: UpgradeDefinition = {
   description: '+2% all damage per level',
   category: 'stats',
   maxLevel: 10,
-  baseCost: 75,
-  costScaling: 1.5,
+  baseCost: 100,
+  costScaling: 2.0,
   effect: {
     type: 'percent',
     stat: 'damage',
@@ -79,14 +79,14 @@ const resilience: UpgradeDefinition = {
   icon: '◆',
 }
 
-const swiftness: UpgradeDefinition = {
-  id: 'swiftness',
-  name: 'Swiftness',
+const reflexes: UpgradeDefinition = {
+  id: 'reflexes',
+  name: 'Reflexes',
   description: '+2 evasion and +1% dodge per level',
   category: 'stats',
   maxLevel: 10,
-  baseCost: 150,
-  costScaling: 2.0,
+  baseCost: 100,
+  costScaling: 1.8,
   effect: {
     type: 'percent',
     stat: 'dodge',
@@ -103,7 +103,7 @@ const precision: UpgradeDefinition = {
   category: 'stats',
   maxLevel: 5,
   baseCost: 100,
-  costScaling: 1.6,
+  costScaling: 2.5,
   effect: {
     type: 'flat',
     stat: 'accuracy',
@@ -113,14 +113,14 @@ const precision: UpgradeDefinition = {
   icon: '◎',
 }
 
-const celerity: UpgradeDefinition = {
-  id: 'celerity',
-  name: 'Celerity',
+const swiftness: UpgradeDefinition = {
+  id: 'swiftness',
+  name: 'Swiftness',
   description: '+2 speed per level',
   category: 'stats',
   maxLevel: 5,
-  baseCost: 125,
-  costScaling: 1.8,
+  baseCost: 100,
+  costScaling: 2.5,
   effect: {
     type: 'flat',
     stat: 'speed',
@@ -141,7 +141,7 @@ const essenceBoost: UpgradeDefinition = {
   category: 'meta',
   maxLevel: 10,
   baseCost: 100,
-  costScaling: 1.6,
+  costScaling: 1.8,
   effect: {
     type: 'percent',
     stat: 'essenceGain',
@@ -157,8 +157,8 @@ const goldDigger: UpgradeDefinition = {
   description: '+15% gold found per level',
   category: 'meta',
   maxLevel: 5,
-  baseCost: 75,
-  costScaling: 1.5,
+  baseCost: 150,
+  costScaling: 2.0,
   effect: {
     type: 'percent',
     stat: 'goldGain',
@@ -174,8 +174,8 @@ const fastLearner: UpgradeDefinition = {
   description: '+5% XP gain per level',
   category: 'meta',
   maxLevel: 10,
-  baseCost: 80,
-  costScaling: 1.4,
+  baseCost: 100,
+  costScaling: 2.0,
   effect: {
     type: 'percent',
     stat: 'xpGain',
@@ -192,7 +192,7 @@ const haggler: UpgradeDefinition = {
   category: 'meta',
   maxLevel: 5,
   baseCost: 100,
-  costScaling: 1.5,
+  costScaling: 2.0,
   effect: {
     type: 'percent',
     stat: 'merchantPrices',
@@ -316,9 +316,9 @@ export const upgrades: UpgradeDefinition[] = [
   vitality,
   might,
   resilience,
-  swiftness,
+  reflexes,
   precision,
-  celerity,
+  swiftness,
   // Meta
   essenceBoost,
   goldDigger,

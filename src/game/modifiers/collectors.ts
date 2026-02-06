@@ -157,11 +157,11 @@ export function collectUpgradeModifiers(bonuses: UpgradeBonuses): StatModifier[]
 
   // dodgePercent is named poorly - it's actually flat evasion bonus
   if (bonuses.dodgePercent > 0) {
-    modifiers.push(flatModifier('upgrade', 'evasion', bonuses.dodgePercent, 'Swiftness'))
+    modifiers.push(flatModifier('upgrade', 'evasion', bonuses.dodgePercent, 'Reflexes'))
   }
 
   if (bonuses.speedBonus > 0) {
-    modifiers.push(flatModifier('upgrade', 'speed', bonuses.speedBonus, 'Celerity'))
+    modifiers.push(flatModifier('upgrade', 'speed', bonuses.speedBonus, 'Swiftness'))
   }
 
   // Damage percent applies to both melee and ranged

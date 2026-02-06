@@ -43,7 +43,7 @@ const weaponPlus1: BoosterDefinition = {
   description: 'Starting weapon +1 enchantment',
   category: 'equipment',
   icon: '/',
-  unlockCost: 300,
+  unlockCost: 500,
   effect: { type: 'equipment_bonus', slot: 'weapon', value: 1 },
 }
 
@@ -53,7 +53,7 @@ const weaponPlus2: BoosterDefinition = {
   description: 'Starting weapon +2 enchantment',
   category: 'equipment',
   icon: '⚔',
-  unlockCost: 1500,
+  unlockCost: 3000,
   requires: 'weapon_plus_1',
   effect: { type: 'equipment_bonus', slot: 'weapon', value: 2 },
 }
@@ -64,7 +64,7 @@ const armorPlus1: BoosterDefinition = {
   description: 'Starting armor +1 enchantment',
   category: 'equipment',
   icon: '[',
-  unlockCost: 300,
+  unlockCost: 500,
   effect: { type: 'equipment_bonus', slot: 'armor', value: 1 },
 }
 
@@ -74,7 +74,7 @@ const armorPlus2: BoosterDefinition = {
   description: 'Starting armor +2 enchantment',
   category: 'equipment',
   icon: '◆',
-  unlockCost: 1500,
+  unlockCost: 3000,
   requires: 'armor_plus_1',
   effect: { type: 'equipment_bonus', slot: 'armor', value: 2 },
 }
@@ -85,7 +85,7 @@ const gearPlus1: BoosterDefinition = {
   description: 'Starting weapon & armor +1 enchantment',
   category: 'equipment',
   icon: '*',
-  unlockCost: 500,
+  unlockCost: 1000,
   requires: ['weapon_plus_1', 'armor_plus_1'],
   effect: { type: 'equipment_bonus', slot: 'both', value: 1 },
 }
@@ -96,7 +96,7 @@ const gearPlus2: BoosterDefinition = {
   description: 'Starting weapon & armor +2 enchantment',
   category: 'equipment',
   icon: '★',
-  unlockCost: 2500,
+  unlockCost: 6000,
   requires: ['weapon_plus_2', 'armor_plus_2'],
   effect: { type: 'equipment_bonus', slot: 'both', value: 2 },
 }
@@ -122,7 +122,7 @@ const strGreater: BoosterDefinition = {
   description: '+2 STR',
   category: 'stats',
   icon: '♠',
-  unlockCost: 600,
+  unlockCost: 1200,
   requires: 'str_minor',
   effect: { type: 'stat_bonus', stat: 'str', value: 2 },
 }
@@ -133,7 +133,7 @@ const strSuperior: BoosterDefinition = {
   description: '+3 STR',
   category: 'stats',
   icon: '♠',
-  unlockCost: 1600,
+  unlockCost: 6000,
   requires: 'str_greater',
   effect: { type: 'stat_bonus', stat: 'str', value: 3 },
 }
@@ -155,7 +155,7 @@ const dexGreater: BoosterDefinition = {
   description: '+2 DEX',
   category: 'stats',
   icon: '»',
-  unlockCost: 600,
+  unlockCost: 1200,
   requires: 'dex_minor',
   effect: { type: 'stat_bonus', stat: 'dex', value: 2 },
 }
@@ -166,7 +166,7 @@ const dexSuperior: BoosterDefinition = {
   description: '+3 DEX',
   category: 'stats',
   icon: '»',
-  unlockCost: 1600,
+  unlockCost: 6000,
   requires: 'dex_greater',
   effect: { type: 'stat_bonus', stat: 'dex', value: 3 },
 }
@@ -188,7 +188,7 @@ const conGreater: BoosterDefinition = {
   description: '+2 CON',
   category: 'stats',
   icon: '♥',
-  unlockCost: 600,
+  unlockCost: 1200,
   requires: 'con_minor',
   effect: { type: 'stat_bonus', stat: 'con', value: 2 },
 }
@@ -199,7 +199,7 @@ const conSuperior: BoosterDefinition = {
   description: '+3 CON',
   category: 'stats',
   icon: '♥',
-  unlockCost: 1600,
+  unlockCost: 6000,
   requires: 'con_greater',
   effect: { type: 'stat_bonus', stat: 'con', value: 3 },
 }
@@ -221,7 +221,7 @@ const intGreater: BoosterDefinition = {
   description: '+2 INT',
   category: 'stats',
   icon: '◎',
-  unlockCost: 600,
+  unlockCost: 1200,
   requires: 'int_minor',
   effect: { type: 'stat_bonus', stat: 'int', value: 2 },
 }
@@ -232,7 +232,7 @@ const intSuperior: BoosterDefinition = {
   description: '+3 INT',
   category: 'stats',
   icon: '◎',
-  unlockCost: 1600,
+  unlockCost: 6000,
   requires: 'int_greater',
   effect: { type: 'stat_bonus', stat: 'int', value: 3 },
 }
@@ -254,7 +254,7 @@ const wisGreater: BoosterDefinition = {
   description: '+2 WIS',
   category: 'stats',
   icon: '☆',
-  unlockCost: 600,
+  unlockCost: 1200,
   requires: 'wis_minor',
   effect: { type: 'stat_bonus', stat: 'wis', value: 2 },
 }
@@ -265,7 +265,7 @@ const wisSuperior: BoosterDefinition = {
   description: '+3 WIS',
   category: 'stats',
   icon: '☆',
-  unlockCost: 1600,
+  unlockCost: 6000,
   requires: 'wis_greater',
   effect: { type: 'stat_bonus', stat: 'wis', value: 3 },
 }
@@ -280,7 +280,7 @@ const adrenalineRush: BoosterDefinition = {
   description: '+10% damage when below 20% HP',
   category: 'special',
   icon: '!',
-  unlockCost: 400,
+  unlockCost: 800,
   effect: { type: 'special', effect: 'adrenaline_rush', value: 10 },
 }
 
@@ -290,7 +290,7 @@ const treasureHunter: BoosterDefinition = {
   description: '+15% gold this run',
   category: 'special',
   icon: '$',
-  unlockCost: 600,
+  unlockCost: 1200,
   effect: { type: 'multiplier', stat: 'gold', percent: 15 },
 }
 
@@ -300,7 +300,7 @@ const quickStudy: BoosterDefinition = {
   description: '+15% XP this run',
   category: 'special',
   icon: '★',
-  unlockCost: 600,
+  unlockCost: 1200,
   effect: { type: 'multiplier', stat: 'xp', percent: 15 },
 }
 
@@ -310,7 +310,7 @@ const secondWind: BoosterDefinition = {
   description: 'Auto-heal 20% once when critical',
   category: 'special',
   icon: '✚',
-  unlockCost: 1200,
+  unlockCost: 2400,
   effect: { type: 'special', effect: 'second_wind', value: 20 },
 }
 
@@ -320,7 +320,7 @@ const essenceMagnet: BoosterDefinition = {
   description: '+15% essence gain this run',
   category: 'special',
   icon: '◇',
-  unlockCost: 500,
+  unlockCost: 1000,
   effect: { type: 'multiplier', stat: 'essence', percent: 15 },
 }
 

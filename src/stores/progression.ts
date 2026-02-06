@@ -280,7 +280,7 @@ export const useProgressionStore = defineStore('progression', () => {
     const essence = currency.value.essence
     const ctx = unlockContext.value
     return locked.map((race) => {
-      const cost = race.prestige ? 5000 : 500
+      const cost = race.prestige ? 10000 : 1000
       // Non-prestige races always meet condition, prestige races need checkCondition
       const meetsCondition = !race.prestige || !race.checkCondition || race.checkCondition(ctx)
       return {
@@ -298,7 +298,7 @@ export const useProgressionStore = defineStore('progression', () => {
     const essence = currency.value.essence
     const ctx = unlockContext.value
     return locked.map((cls) => {
-      const cost = cls.prestige ? 5000 : 500
+      const cost = cls.prestige ? 10000 : 1000
       // Non-prestige classes always meet condition, prestige classes need checkCondition
       const meetsCondition = !cls.prestige || !cls.checkCondition || cls.checkCondition(ctx)
       return {

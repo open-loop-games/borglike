@@ -146,7 +146,7 @@ export function createCharacter(config: {
   baseArmor += bonuses.armorBonus // Apply resilience upgrade
 
   let baseEvasion = Math.floor(stats.dex / 2)
-  // Apply swiftness upgrade (dodge percent adds to evasion)
+  // Apply reflexes upgrade (dodge percent adds to evasion)
   baseEvasion += bonuses.dodgePercent
 
   let baseMeleeDamage = Math.floor(stats.str / 3)

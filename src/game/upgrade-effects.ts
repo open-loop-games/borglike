@@ -19,10 +19,10 @@ export interface UpgradeBonuses {
   damagePercent: number // Damage multiplier percent (from might)
   armorBonus: number // Flat armor bonus (from resilience)
   armorPercent: number // Percent armor bonus (from resilience, 1% per level)
-  dodgePercent: number // Flat evasion bonus (from swiftness, despite name)
-  dodgeChancePercent: number // Dodge chance vs monsters (from swiftness, 1% per level)
+  dodgePercent: number // Flat evasion bonus (from reflexes, despite name)
+  dodgeChancePercent: number // Dodge chance vs monsters (from reflexes, 1% per level)
   accuracyBonus: number // Flat accuracy bonus (from precision)
-  speedBonus: number // Flat speed bonus (from celerity)
+  speedBonus: number // Flat speed bonus (from swiftness)
 
   // Meta bonuses (multipliers)
   xpMultiplier: number // XP gain multiplier (from fast_learner)
@@ -66,10 +66,10 @@ export function computeUpgradeBonuses(
     damagePercent: Math.floor(getEffectValue(levels, 'might') * scale),
     armorBonus: Math.floor(getEffectValue(levels, 'resilience') * scale),
     armorPercent: Math.floor((levels['resilience'] || 0) * 1 * scale), // 1% per resilience level
-    dodgePercent: Math.floor(getEffectValue(levels, 'swiftness') * scale),
-    dodgeChancePercent: Math.floor((levels['swiftness'] || 0) * 1 * scale), // 1% per swiftness level
+    dodgePercent: Math.floor(getEffectValue(levels, 'reflexes') * scale),
+    dodgeChancePercent: Math.floor((levels['reflexes'] || 0) * 1 * scale), // 1% per swiftness level
     accuracyBonus: Math.floor(getEffectValue(levels, 'precision') * scale),
-    speedBonus: Math.floor(getEffectValue(levels, 'celerity') * scale),
+    speedBonus: Math.floor(getEffectValue(levels, 'swiftness') * scale),
 
     // Meta bonuses (scaled, but multiplier base of 1 is preserved)
     xpMultiplier: 1 + (getEffectValue(levels, 'fast_learner') / 100) * scale,
@@ -116,17 +116,17 @@ export const UPGRADE_PRESETS: Record<string, UpgradeLevels> = {
     vitality: 5,
     might: 5,
     resilience: 5,
-    swiftness: 4,
+    reflexes: 4,
     precision: 2,
-    celerity: 2,
+    swiftness: 2,
   },
   late: {
     vitality: 8,
     might: 8,
     resilience: 7,
-    swiftness: 6,
+    reflexes: 6,
     precision: 4,
-    celerity: 4,
+    swiftness: 4,
   },
   // 'full' is handled specially via computeMaxUpgradeBonuses()
 }
