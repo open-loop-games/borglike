@@ -4,6 +4,9 @@ import { useProgressionStore } from '@/stores/progression'
 import { races } from '@game/data/races'
 import { classes } from '@game/data/classes'
 import { boosters } from '@game/data/boosters'
+import { monsters } from '@game/data/monsters'
+import { ALL_ITEMS } from '@game/data/items'
+import { ARTIFACTS } from '@game/data/artifacts'
 import UpgradeList from './meta/UpgradeList.vue'
 import UnlockList from './meta/UnlockList.vue'
 const progression = useProgressionStore()
@@ -15,6 +18,9 @@ const activeTab = ref<Tab>('upgrades')
 const totalRaces = races.length
 const totalClasses = classes.length
 const totalBoosters = boosters.length
+const totalMonsters = monsters.length
+const totalItems = ALL_ITEMS.length
+const totalArtifacts = ARTIFACTS.length
 
 // Count total bot upgrades from global capabilities
 const totalBotUpgrades = computed(() => {
@@ -195,6 +201,24 @@ const nemesis = computed(() => {
             <div class="stat-row">
               <span class="stat-label">Bot Upgrades</span>
               <span class="stat-val">{{ totalBotUpgrades }} / {{ maxBotUpgrades }}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Bestiary</span>
+              <span class="stat-val"
+                >{{ progression.bestiaryStats.discovered }} / {{ totalMonsters }}</span
+              >
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Items</span>
+              <span class="stat-val"
+                >{{ progression.armoryStats.discovered }} / {{ totalItems }}</span
+              >
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Artifacts</span>
+              <span class="stat-val"
+                >{{ progression.armoryStats.artifacts }} / {{ totalArtifacts }}</span
+              >
             </div>
             <div class="stat-row">
               <span class="stat-label">Achievements</span>
