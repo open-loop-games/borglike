@@ -9,6 +9,7 @@ import { useRunsStore, type DisplayItem, type EquipSlot } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore } from '@/stores/settings'
 import { useFeedStore } from '@/stores/feed'
+import { useEngineStateStore } from '@/stores/engine-state'
 import {
   computeUpgradeBonuses,
   computeBoosterBonuses,
@@ -22,7 +23,15 @@ import {
   type BotState,
 } from '@/game'
 import { randomInt } from '@game/rng'
-import { handleRunCompletion } from '@/core/run-completion-service'
+import { handleRunCompletionSync } from '@/core/run-completion-service'
+import {
+  runFullCatchUp,
+  skipCatchUp as skipCatchUpEngine,
+  isCatchUpActive,
+  SMALL_GAP_MS,
+  MAX_CATCHUP_MS,
+  type CatchUpSlot,
+} from '@/engine/catch-up'
 import type { RunConfig } from '@/types'
 import type { MinionType } from '@/game'
 
@@ -38,6 +47,10 @@ const instances = new Map<string, GameInstance>()
 
 // Track pending auto-restart timeouts by slot (to cancel on manual stop)
 const autoRestartTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
+
+// Background / pause tracking
+let lastTickTime = performance.now()
+let hiddenAt: number | null = null
 
 // Map race/class display names to IDs
 const RACE_IDS: Record<string, string> = {
@@ -257,8 +270,11 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     runData.state = 'running'
   }
 
-  // Start the game loop
-  startGameLoop(runId)
+  // Start the game loop (unless paused or catching up)
+  const engineState = useEngineStateStore()
+  if (!engineState.isPaused && !isCatchUpActive()) {
+    startGameLoop(runId)
+  }
 
   return runId
 }
@@ -702,6 +718,7 @@ function startGameLoop(runId: string): void {
   if (!instance) return
 
   const tick = () => {
+    const now = performance.now()
     const runs = useRunsStore()
     const run = runs.getRun(runId)
 
@@ -722,8 +739,21 @@ function startGameLoop(runId: string): void {
         clearInterval(instance.intervalId)
       }
       instance.intervalId = window.setInterval(tick, newTickRate) as unknown as number
+      lastTickTime = now
       return
     }
+
+    // Small-gap inline catch-up: if elapsed > threshold but no full catch-up active,
+    // batch extra steps to compensate for brief throttling
+    const elapsed = now - lastTickTime
+    if (elapsed > instance.tickRate * 3 && !isCatchUpActive() && elapsed < SMALL_GAP_MS) {
+      const missedTicks = Math.min(50, Math.floor(elapsed / instance.tickRate) - 1)
+      for (let i = 0; i < missedTicks; i++) {
+        if (!instance.runner.isActive()) break
+        instance.runner.step()
+      }
+    }
+    lastTickTime = now
 
     // Run one game step
     if (!instance.runner.isActive()) {
@@ -751,12 +781,12 @@ function startGameLoop(runId: string): void {
 }
 
 /**
- * Handle game end
+ * Handle game end (sync path) -- does everything except awaiting IndexedDB save.
+ * Returns the deferred save promise for the caller to flush later.
  */
-async function handleGameEnd(
+function handleGameEndSync(
   runId: string,
   result: RunResult,
-  _config: RunConfig,
   slot: number
 ): Promise<void> {
   const runs = useRunsStore()
@@ -768,11 +798,7 @@ async function handleGameEnd(
   // Clear feed tracking for this run
   feed.clearRunTracking(runId)
 
-  // Use the run-completion-service to handle all run end logic
-  // This includes: converting to RunStats, calculating essence, recording the run,
-  // adding essence to currency, and checking milestone unlocks
-  // AWAIT to ensure persistence completes before continuing
-  const completion = await handleRunCompletion(result)
+  const { completion, savePromise } = handleRunCompletionSync(result)
 
   // Store the completion result for the UI (RunSummary component)
   const run = runs.getRun(runId)
@@ -780,11 +806,28 @@ async function handleGameEnd(
     runs.setRunStats(runId, completion.runStats)
   }
 
-  // Stop the instance
+  // Stop the instance (clears interval, removes from map)
   stopRun(runId)
 
-  // Check auto-restart (uses saved slot config)
-  checkAutoRestart(slot)
+  // Check auto-restart (uses saved slot config) -- only during normal play, not catch-up
+  if (!isCatchUpActive()) {
+    checkAutoRestart(slot)
+  }
+
+  return savePromise
+}
+
+/**
+ * Handle game end (awaits persistence)
+ */
+async function handleGameEnd(
+  runId: string,
+  result: RunResult,
+  _config: RunConfig,
+  slot: number
+): Promise<void> {
+  const savePromise = handleGameEndSync(runId, result, slot)
+  await savePromise
 }
 
 /**
@@ -848,4 +891,241 @@ export function isSlotActive(slot: number): boolean {
   const runs = useRunsStore()
   const run = runs.getRunBySlot(slot)
   return run !== undefined && run.state !== 'dead'
+}
+
+// ============================================================================
+// PAUSE SYSTEM
+// ============================================================================
+
+/** Clear all intervals without removing instances */
+function clearAllIntervals(): void {
+  for (const instance of instances.values()) {
+    if (instance.intervalId) {
+      clearInterval(instance.intervalId)
+      instance.intervalId = null
+    }
+  }
+}
+
+/** Restart intervals for all active instances */
+function restartAllIntervals(): void {
+  for (const [runId] of instances) {
+    const instance = instances.get(runId)
+    if (instance && !instance.intervalId) {
+      startGameLoop(runId)
+    }
+  }
+}
+
+export function pauseAllInstances(): void {
+  const engineState = useEngineStateStore()
+  clearAllIntervals()
+  engineState.setPaused(true)
+}
+
+export function resumeAllInstances(): void {
+  const engineState = useEngineStateStore()
+  engineState.setPaused(false)
+  lastTickTime = performance.now()
+  restartAllIntervals()
+}
+
+export function togglePause(): void {
+  const engineState = useEngineStateStore()
+  if (engineState.isPaused) {
+    resumeAllInstances()
+  } else {
+    pauseAllInstances()
+  }
+}
+
+export { skipCatchUpEngine as skipCatchUp }
+
+// ============================================================================
+// CATCH-UP: create a run during catch-up (no game loop started)
+// ============================================================================
+
+/**
+ * Create a new run for catch-up -- same as startRun but skips startGameLoop().
+ * Returns the runner's step function or null if the slot can't be started.
+ */
+function createRunForCatchUp(
+  slot: number
+): { runId: string; runner: ReturnType<typeof createGameRunner> } | null {
+  const runs = useRunsStore()
+  const progression = useProgressionStore()
+  const settings = useSettingsStore()
+
+  if (slot >= progression.maxRunSlots) return null
+
+  const existingRun = runs.getRunBySlot(slot)
+  if (existingRun && existingRun.state !== 'dead') return null
+  if (existingRun) runs.removeRun(existingRun.id)
+
+  const slotConfig = progression.getSlotConfig(slot)
+  const raceName = slotConfig.race || 'Human'
+  const className = slotConfig.class || 'Warrior'
+  const personality: BotPersonality =
+    (slotConfig.personality as BotPersonality) || settings.settings.defaultPersonality
+
+  // Set boosters from slot config
+  progression.setActiveBooster(0, slotConfig.boosters[0])
+  progression.setActiveBooster(1, slotConfig.boosters[1])
+
+  const runConfig: RunConfig = { race: raceName, class: className, personality }
+  const runId = runs.createRun(slot, runConfig)
+
+  const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
+  const boosterIds = progression.getActiveBoosterIds()
+  const boosterBonuses = computeBoosterBonuses(boosterIds)
+  const bestiary = progression.bestiary
+  const maxDepthEver = progression.globalStats.maxDepthEver
+  const globalCaps = progression.botCapabilities
+  const activeSweep = Math.min(slotConfig.activeSweepLevel ?? globalCaps.sweep, globalCaps.sweep)
+  const activeSurf = Math.min(slotConfig.activeSurfLevel ?? globalCaps.surf, globalCaps.surf)
+  const effectiveCapabilities = { ...globalCaps, sweep: activeSweep, surf: activeSurf }
+
+  const runner = createGameRunner({
+    raceId: RACE_IDS[raceName] || 'human',
+    classId: CLASS_IDS[className] || 'warrior',
+    botPersonality: personality,
+    upgradeBonuses: bonuses,
+    boosterBonuses,
+    boosterIds,
+    bestiary,
+    maxDepthEver,
+    maxTurns: 0,
+    botCapabilities: effectiveCapabilities,
+    botToggles: slotConfig.toggles,
+  })
+
+  const instance: GameInstance = { runId, slot, runner, intervalId: null, tickRate: 100 }
+  instances.set(runId, instance)
+
+  const game = runner.getState()
+  const botState = runner.getBotState()
+  updateRunFromGame(runId, game, botState)
+  renderGameToGrid(runId, game)
+
+  const runData = runs.getRun(runId)
+  if (runData) runData.state = 'running'
+
+  return { runId, runner }
+}
+
+// ============================================================================
+// VISIBILITY CHANGE: detect background gaps and trigger catch-up
+// ============================================================================
+
+function handleVisibilityChange(): void {
+  if (document.hidden) {
+    hiddenAt = performance.now()
+    return
+  }
+
+  // Tab became visible
+  if (hiddenAt === null) return
+  const now = performance.now()
+  const gapMs = Math.min(now - hiddenAt, MAX_CATCHUP_MS)
+  hiddenAt = null
+
+  // Nothing to catch up if no instances exist
+  if (instances.size === 0) return
+
+  const engineState = useEngineStateStore()
+  if (engineState.isPaused) return
+  if (isCatchUpActive()) return
+
+  if (gapMs < SMALL_GAP_MS) {
+    // Small gap -- inline catch-up handled by tick() automatically
+    lastTickTime = now
+    return
+  }
+
+  // Large gap -- full catch-up with overlay
+  void startLargeCatchUp(gapMs)
+}
+
+async function startLargeCatchUp(gapMs: number): Promise<void> {
+  const progression = useProgressionStore()
+  const settings = useSettingsStore()
+  const deferredSaves: Promise<void>[] = []
+
+  // Pause all intervals during catch-up
+  clearAllIntervals()
+
+  // Build slot descriptors
+  const slots: CatchUpSlot[] = []
+  for (const instance of instances.values()) {
+    const slot = instance.slot
+    let currentRunner = instance.runner
+    let currentRunId = instance.runId
+
+    slots.push({
+      slot,
+      tickRate: instance.tickRate,
+      step: () => {
+        if (!currentRunner.isActive()) return false
+        currentRunner.step()
+        return true
+      },
+      onDeath: () => {
+        // Handle death synchronously, collect save promise
+        const result = currentRunner.getResult()
+        const runs = useRunsStore()
+        const run = runs.getRun(currentRunId)
+        if (run) {
+          const saveP = handleGameEndSync(currentRunId, result, slot)
+          deferredSaves.push(saveP)
+        }
+
+        // Check auto-restart
+        const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
+        if (!bonuses.hasAutoRestart || !settings.settings.autoRestart) return null
+
+        const newRun = createRunForCatchUp(slot)
+        if (!newRun) return null
+
+        currentRunner = newRun.runner
+        currentRunId = newRun.runId
+
+        // Update the instance map reference
+        const inst = instances.get(newRun.runId)
+        if (inst) inst.tickRate = instance.tickRate
+
+        return () => {
+          if (!currentRunner.isActive()) return false
+          currentRunner.step()
+          return true
+        }
+      },
+    })
+  }
+
+  await runFullCatchUp(gapMs, slots, (catchUpSaves) => {
+    deferredSaves.push(...catchUpSaves)
+  })
+
+  // Final UI update for all active instances
+  for (const inst of instances.values()) {
+    const game = inst.runner.getState()
+    const botState = inst.runner.getBotState()
+    updateRunFromGame(inst.runId, game, botState)
+    renderGameToGrid(inst.runId, game)
+  }
+
+  // Flush deferred saves
+  await Promise.allSettled(deferredSaves)
+
+  const engineState = useEngineStateStore()
+  engineState.endCatchUp()
+  lastTickTime = performance.now()
+
+  // Restart all intervals
+  restartAllIntervals()
+}
+
+// Register visibility listener
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 }

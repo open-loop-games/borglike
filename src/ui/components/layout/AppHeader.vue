@@ -2,9 +2,12 @@
 import { ref, watch, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore } from '@/stores/settings'
+import { useEngineStateStore } from '@/stores/engine-state'
+import { togglePause } from '@/engine/instance-manager'
 
 const progression = useProgressionStore()
 const settings = useSettingsStore()
+const engineState = useEngineStateStore()
 
 // Auto-restart state
 const hasAutoRestartUpgrade = computed(() => progression.getUpgradeLevel('auto_restart') > 0)
@@ -61,6 +64,16 @@ const emit = defineEmits<{
     </div>
 
     <div class="header-right">
+      <button
+        class="pause-toggle"
+        :class="{ active: engineState.isPaused }"
+        :disabled="engineState.isCatchingUp"
+        :title="engineState.isPaused ? 'Resume (P)' : 'Pause (P)'"
+        @click="togglePause()"
+      >
+        <span class="toggle-icon">{{ engineState.isPaused ? '▶' : '⏸' }}</span>
+        <span class="toggle-label">{{ engineState.isPaused ? 'Play' : 'Pause' }}</span>
+      </button>
       <button
         class="auto-run-toggle"
         :class="{
@@ -229,6 +242,37 @@ const emit = defineEmits<{
 }
 
 .auto-run-toggle.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pause-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pause-toggle:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+.pause-toggle.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.pause-toggle:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }

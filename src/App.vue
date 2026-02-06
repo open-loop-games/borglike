@@ -11,6 +11,8 @@ import ItemArmoryModal from './ui/components/armory/ItemArmoryModal.vue'
 import CodexModal from './ui/components/codex/CodexModal.vue'
 import AchievementsModal from './ui/components/achievements/AchievementsModal.vue'
 import HelpModal from './ui/components/help/HelpModal.vue'
+import CatchUpOverlay from './ui/components/overlay/CatchUpOverlay.vue'
+import { useEngineStateStore } from './stores/engine-state'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
 import { useGameTitle } from './ui/composables/use-game-title'
@@ -22,6 +24,7 @@ const isLoaded = ref(false)
 // They register lifecycle hooks that need the active component instance
 useKeyboard()
 useGameTitle()
+const engineState = useEngineStateStore()
 
 // Initialize persistence on mount
 onMounted(async () => {
@@ -187,6 +190,11 @@ function handleCloseHelp() {
           <HelpModal @close="handleCloseHelp" />
         </div>
       </div>
+    </Teleport>
+
+    <!-- Catch-Up Overlay -->
+    <Teleport to="body">
+      <CatchUpOverlay v-if="engineState.isCatchingUp" />
     </Teleport>
   </div>
 </template>

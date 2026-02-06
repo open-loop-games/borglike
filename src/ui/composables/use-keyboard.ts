@@ -1,6 +1,8 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
+import { useEngineStateStore } from '@/stores/engine-state'
+import { togglePause } from '@/engine/instance-manager'
 
 /**
  * Keyboard shortcuts for game management:
@@ -12,6 +14,7 @@ import { useProgressionStore } from '@/stores/progression'
 export function useKeyboard() {
   const runs = useRunsStore()
   const progression = useProgressionStore()
+  const engineState = useEngineStateStore()
 
   function handleKeyDown(event: KeyboardEvent) {
     // Ignore if typing in an input
@@ -60,6 +63,15 @@ export function useKeyboard() {
     if (key === 'g' || key === 'G') {
       if (runs.focusedSlot !== null) {
         runs.clearFocus()
+        event.preventDefault()
+      }
+      return
+    }
+
+    // P: Toggle pause
+    if (key === 'p' || key === 'P') {
+      if (!engineState.isCatchingUp) {
+        togglePause()
         event.preventDefault()
       }
       return

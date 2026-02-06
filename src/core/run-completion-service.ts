@@ -37,16 +37,18 @@ export interface RunCompletionResult {
 // MAIN FUNCTION
 // ============================================================================
 
+/** Result of the sync path: completion data + deferred save promise */
+export interface SyncCompletionResult {
+  completion: RunCompletionResult
+  savePromise: Promise<void>
+}
+
 /**
- * Handle the completion of a game run
- *
- * Converts the game engine's RunResult into store-compatible data,
- * calculates rewards, updates progression, and returns a summary.
- *
- * @param result - The RunResult from game-runner
- * @returns RunCompletionResult with earned rewards and stats
+ * Synchronous path for run completion -- does everything except awaiting the IndexedDB save.
+ * Returns the completion result and a deferred save promise the caller can await later.
+ * Used during catch-up to avoid awaiting in a tight loop.
  */
-export async function handleRunCompletion(result: RunResult): Promise<RunCompletionResult> {
+export function handleRunCompletionSync(result: RunResult): SyncCompletionResult {
   const progression = useProgressionStore()
   const isVictory = result.reason === 'victory'
 
@@ -67,12 +69,10 @@ export async function handleRunCompletion(result: RunResult): Promise<RunComplet
   // Record the run in history (memory)
   progression.recordRun(runStats, isVictory)
 
-  // Persist run to IndexedDB - AWAIT to ensure run is saved before progression
-  try {
-    await saveRun(runStats)
-  } catch (err) {
+  // Fire IndexedDB save but don't await -- caller decides when to flush
+  const savePromise = saveRun(runStats).catch((err) => {
     console.error('[RunCompletion] Failed to save run:', err)
-  }
+  })
 
   // Record monster kills to bestiary
   if (result.game.stats.monsterKills) {
@@ -102,12 +102,20 @@ export async function handleRunCompletion(result: RunResult): Promise<RunComplet
   const newAchievements = checkAchievements(result, progression)
 
   return {
-    runStats,
-    essenceEarned,
-    isVictory,
-    newUnlocks,
-    newAchievements,
+    completion: { runStats, essenceEarned, isVictory, newUnlocks, newAchievements },
+    savePromise,
   }
+}
+
+/**
+ * Handle the completion of a game run (awaits persistence).
+ *
+ * Wraps handleRunCompletionSync and awaits the IndexedDB save.
+ */
+export async function handleRunCompletion(result: RunResult): Promise<RunCompletionResult> {
+  const { completion, savePromise } = handleRunCompletionSync(result)
+  await savePromise
+  return completion
 }
 
 // ============================================================================
