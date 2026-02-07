@@ -1,5 +1,13 @@
 # TODO
 
+## Balance
+- [x] Nerf S-tier classes — spread compressed 3.3→2.4 depth, no more S-tier (`548a393`)
+  - Paladin: 80% healPotency + removed shield bash (49.9→49.0)
+  - Druid: WIS +3→+2 (49.2→48.8)
+  - Blackguard: lifesteal 10%→8% (49.1→48.5)
+  - Ranger: FAST_SHOT cap 6→5, root shot slow 50%→40% (48.9→48.6)
+- [ ] Re-run sensitivity after S-tier nerfs (paladin/ranger should now show meaningful sensitivity)
+
 ## Future Features
 - [ ] Challenge Modifiers (run-based risk/reward)
   - Voluntary handicaps applied per-slot before a run starts, multiplicative essence bonus
@@ -30,9 +38,31 @@
   - Pairs well with prestige — unlock new dungeon variants as late-game content
   - Each slot can run a different dungeon, encouraging diverse team compositions
 
-- [ ] Optional tile graphics (RLTiles)
-  - Public domain tileset, attribution required: http://rltiles.sf.net
-  - Toggle in settings (ASCII vs tiles)
-  - Scope: player, monsters, terrain, items
-  - 32x32 tiles - decide viewport scaling approach
-  - Tile mapping strategy for 52+ monsters
+- [ ] Optional tile graphics
+  - **Tilesets (pick one or offer choice):**
+    - DCSS Tiles — CC0 (public domain), 32x32, 6000+ tiles, best coverage + quality
+      - https://github.com/crawl/tiles / https://opengameart.org/content/dungeon-crawl-32x32-tiles
+      - Refined evolution of RLTiles, more consistent art style
+      - Need to curate ~200 tiles and build spritesheet
+    - RLTiles — public domain, 32x32, ~1200 tiles, GitHub mirror has pre-built spritesheet+JSON
+      - https://github.com/statico/rltiles (`rltiles-2d.png` + `rltiles-2d.json`)
+      - Fastest to prototype (spritesheet ready), inconsistent art (many artists)
+    - David Gervais — CC-BY 3.0, 32x32, literally made for Angband
+      - Best monster-name match for our 91 monsters, needs extraction from Angband repo
+    - DawnLike — CC-BY 4.0, 16x16, 1000+ tiles, very consistent pixel art (one artist)
+      - Smaller tiles = more viewport, but less detail. Requires easter egg attribution.
+  - **Integration approach:**
+    - Expand `GridCell { char, color }` → add optional `tileId?: string`
+    - `instance-manager.ts` already has entity context (MonsterTemplate, TileType, etc.) — emit tileId there
+    - `DungeonGridCanvas.vue` render(): branch on setting — `drawImage()` vs `fillText()`
+    - Settings toggle: ASCII / Tiles (default ASCII)
+    - Spritesheet loaded as `HTMLImageElement`, tile map as `Record<string, [x, y]>`
+  - **Viewport scaling (the hard problem):**
+    - 80×24 at 32px = 2560×768 — way too wide, especially with 4 panels
+    - Each panel is ~640px wide → fits ~20 cells at 32px, vs 80 in ASCII
+    - Options: reduce viewport in tile mode (30×20), use 16px tiles (40×24), or user zoom slider
+    - 16px tiles are probably the sweet spot for 4-panel layout
+  - **Tile mapping for 91 monsters:**
+    - Key by monster template name (unique) not char+color (ambiguous edge cases)
+    - Fallback: render ASCII char if no tile mapping exists (incremental adoption)
+    - DCSS/RLTiles cover all standard Angband monster types — mapping is manual but one-time
