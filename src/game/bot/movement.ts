@@ -11,23 +11,25 @@ import { getDirectionFromDelta, isAdjacent } from '../types'
 // Re-export for convenience
 export { isAdjacent }
 import type { BotState } from './types'
-import { CARDINAL_DIRECTIONS } from './types'
 import type { FlowGrid } from './flow'
-import { getFlowCost, MAX_FLOW_COST } from './flow'
+import { MAX_FLOW_COST } from './flow'
 import { getRecencyPenalty } from './state'
 
-/** Step candidate with scoring info */
-interface StepCandidate {
-  pos: Point
-  direction: Direction
-  flowCost: number
-  isCardinal: boolean
-  visitPenalty: number
-  totalScore: number
-}
+// Direction offsets for 8-way adjacency (same order as DX/DY in exploration.ts)
+const DX = [-1, 0, 1, -1, 1, -1, 0, 1]
+const DY = [-1, -1, -1, 0, 0, 1, 1, 1]
+
+/** Pre-computed direction for each DX/DY index */
+const DIR_FROM_INDEX: Direction[] = ['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se']
+
+/** Whether each direction index is cardinal (n/s/e/w) */
+const IS_CARDINAL = [false, true, false, true, true, false, true, false]
 
 /**
  * Select the best step toward goal using flow costs
+ *
+ * Uses inlined DX/DY + passability bitmap instead of getAdjacentPositions + getTile.
+ * Tracks best candidate inline instead of allocating StepCandidate objects + sorting.
  *
  * @param game - Current game state
  * @param botState - Bot's persistent state (for history)
@@ -36,92 +38,69 @@ interface StepCandidate {
  */
 export function selectStep(game: GameState, botState: BotState, flowCosts: FlowGrid): Direction {
   const pos = game.character.position
-  const currentCost = getFlowCost(flowCosts, pos)
+  const { width, height } = flowCosts
+  const flowData = flowCosts.data
+  const currentCost = flowData[pos.y * width + pos.x]!
 
   // If we're at the goal (cost 0), don't move
   if (currentCost === 0) {
     return 'wait'
   }
 
-  // Get all adjacent positions
-  const adjacent = getAdjacentPositions(pos)
-  const candidates: StepCandidate[] = []
+  const level = game.currentLevel
+  const passable = level.passable
   const monsters = game.monsters
 
-  for (const adj of adjacent) {
-    // Skip if out of bounds or not walkable
-    const tile = getTile(game.currentLevel, adj.x, adj.y)
-    if (!tile) continue
+  let bestDirection: Direction = 'wait'
+  let bestScore = Infinity
 
-    // Allow closed doors (we'll bump to open them)
-    const canEnter = isWalkable(tile) || tile.type === 'door_closed'
-    if (!canEnter) continue
+  for (let i = 0; i < 8; i++) {
+    const nx = pos.x + DX[i]!
+    const ny = pos.y + DY[i]!
 
-    // Skip if occupied by monster (inline check, avoids Set<string> allocation)
+    // Bounds check
+    if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+
+    // Passability check (bitmap — includes walkable tiles + closed doors)
+    const nIdx = ny * width + nx
+    if (!passable[nIdx]) continue
+
+    // Flow cost (unreachable = skip)
+    const flowCost = flowData[nIdx]!
+    if (flowCost >= MAX_FLOW_COST) continue
+
+    // Skip if occupied by monster (inline linear scan)
     let isOccupied = false
     for (let mi = 0; mi < monsters.length; mi++) {
       const m = monsters[mi]!
-      if (m.position.x === adj.x && m.position.y === adj.y) {
+      if (m.position.x === nx && m.position.y === ny) {
         isOccupied = true
         break
       }
     }
     if (isOccupied) continue
 
-    // Get direction
-    const dx = adj.x - pos.x
-    const dy = adj.y - pos.y
-    const direction = getDirectionFromDelta(dx, dy)
-    if (!direction) continue
-
-    // Get flow cost
-    const flowCost = getFlowCost(flowCosts, adj)
-
-    // Skip if unreachable
-    if (flowCost >= MAX_FLOW_COST) continue
-    // Prefer moving toward goal, but allow sideways movement if no better option
-    // (sideways = same cost, will be penalized in scoring)
-
-    // Check if cardinal direction
-    const isCardinal = CARDINAL_DIRECTIONS.includes(direction)
-
-    // Calculate visit penalty (higher = more recently visited)
-    // Uses recency-weighted penalty to strongly discourage oscillation
-    const visitPenalty = getRecencyPenalty(botState, adj)
-
-    // Calculate total score (lower is better)
-    // Primary: flow cost (distance to goal)
-    // Penalty for not improving: +50 for same cost, +100 for worse
-    // Secondary: cardinal preference (-5 bonus)
-    // Tertiary: avoid recently visited (+10 per visit)
+    // Progress penalty
     let progressPenalty = 0
     if (flowCost > currentCost) {
-      progressPenalty = 100 // Moving away from goal - bad
+      progressPenalty = 100 // Moving away from goal
     } else if (flowCost === currentCost) {
-      progressPenalty = 50 // Sideways movement - acceptable but not preferred
+      progressPenalty = 50 // Sideways movement
     }
-    const totalScore = flowCost + progressPenalty + (isCardinal ? -5 : 0) + visitPenalty
 
-    candidates.push({
-      pos: adj,
-      direction,
-      flowCost,
-      isCardinal,
-      visitPenalty,
-      totalScore,
-    })
+    // Recency penalty (anti-oscillation)
+    const visitPenalty = getRecencyPenalty(botState, { x: nx, y: ny })
+
+    // Total score (lower is better)
+    const totalScore = flowCost + progressPenalty + (IS_CARDINAL[i] ? -5 : 0) + visitPenalty
+
+    if (totalScore < bestScore) {
+      bestScore = totalScore
+      bestDirection = DIR_FROM_INDEX[i]!
+    }
   }
 
-  // No valid moves? Wait
-  if (candidates.length === 0) {
-    return 'wait'
-  }
-
-  // Sort by total score (ascending - lower is better)
-  candidates.sort((a, b) => a.totalScore - b.totalScore)
-
-  // Return best candidate's direction
-  return candidates[0]!.direction
+  return bestDirection
 }
 
 /**

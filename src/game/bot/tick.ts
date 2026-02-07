@@ -197,7 +197,7 @@ export function runBotTick(
   botState.cachedDanger = dangerResult
 
   // Calculate immediate danger tier (adjacent threats only)
-  const immediateTier = calculateImmediateTier(game)
+  const immediateTier = profile('calculateImmediateTier', () => calculateImmediateTier(game))
 
   // Urgency-gated action selection
   const action = profile('selectActionByTier', () =>

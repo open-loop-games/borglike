@@ -118,14 +118,12 @@ export function computeDangerGrid(game: GameState): DangerResult {
         const dist = Math.max(Math.abs(x - mx), dy)
         if (dist > 4) continue
         const tileDanger = Math.floor(threat * DANGER_MULTIPLIERS[dist]!)
-        data[rowOffset + x]! += tileDanger
+        const idx = rowOffset + x
+        const newVal = data[idx]! + tileDanger
+        data[idx] = newVal
+        if (newVal > maxDanger) maxDanger = newVal
       }
     }
-  }
-
-  // Find max danger
-  for (let i = 0; i < data.length; i++) {
-    if (data[i]! > maxDanger) maxDanger = data[i]!
   }
 
   // Add status effect danger to character's position

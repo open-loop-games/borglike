@@ -6,9 +6,9 @@
 
 | Mode | Target | Measured | Status |
 |------|--------|----------|--------|
-| Normal (100ms) | <50ms per tick | 0.14ms avg, 3.6ms max | ✅ OK |
-| Turbo (5-20ms) | <5ms per tick | 0.14ms avg, 3.6ms max | ✅ OK |
-| 4x concurrent | <20ms total | ~0.56ms total | ✅ OK |
+| Normal (100ms) | <50ms per tick | 0.13ms avg, 3.1ms max | ✅ OK |
+| Turbo (5-20ms) | <5ms per tick | 0.13ms avg, 3.1ms max | ✅ OK |
+| 4x concurrent | <20ms total | ~0.52ms total | ✅ OK |
 
 **Measurement:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
 
@@ -16,19 +16,19 @@
 
 | Class | Turns | Total Time | Avg/Tick | Main Cost |
 |-------|-------|------------|----------|-----------|
-| Warrior | 15.0k | 2096ms | 0.14ms | goalMovement (32%), computeDangerGrid (13%), getFrontierPositions (11%) |
-| Mage | 25.6k | 3398ms | 0.13ms | goalMovement (32%), computeDangerGrid (11%), selectGoal (9%) |
+| Warrior | 15.0k | 1983ms | 0.13ms | goalMovement (32%), selectGoal (11%), getFrontierPositions (11%) |
+| Mage | 25.6k | 3321ms | 0.13ms | goalMovement (33%), selectGoal (9%), computeDangerGrid (7%) |
 
-### vs Previous Baseline (Pass 6)
+### vs Previous Baseline (Pass 7)
 
 | Class | Old Avg/Tick | New Avg/Tick | Delta | Notes |
 |-------|-------------|-------------|-------|-------|
-| Warrior | 0.15ms | 0.14ms | **-7%** | Explored bitmap + dequeue elimination |
-| Mage | 0.14ms | 0.13ms | **-7%** | Explored bitmap eliminates getTile in BFS + frontier loops |
+| Warrior | 0.14ms | 0.13ms | **-5%** | maxDanger fold + selectStep inline DX/DY + bitmap |
+| Mage | 0.13ms | 0.13ms | **-2%** | computeDangerGrid -39%, selectStep -59% |
 
-**Key optimizations:** `explored: Uint8Array` bitmap on `DungeonLevel` eliminates `getTile()` calls from exploration BFS and frontier detection inner loops. Module-level `popX/popY/popCost` in flow.ts BFS eliminates `{ x, y, cost }` object allocation per dequeue (~1000-4000 per flow computation).
+**Key optimizations:** Folded maxDanger tracking into monster danger loop (eliminates separate O(w*h) max scan). Rewrote `selectStep()` with inlined DX/DY + `level.passable[]` bitmap + inline best-tracking (replaces `getAdjacentPositions` + `getTile`/`isWalkable` + StepCandidate objects + sort).
 
-**Per-operation (warrior, seed=1000):** `goalMovement` 48µs (-13%), `getFrontierPositions` 23µs (-32%), `getSweepFrontiers` 11µs (-21%)
+**Per-operation (warrior, seed=1000):** `computeDangerGrid` 12.8µs (-33%), `goalMovement` 45.2µs (-6%), `selectStep` 0.7µs (-59%)
 
 ---
 
@@ -83,23 +83,24 @@ PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --upgrades=none --capabilities=none
 
 | Operation | File | Avg Time | Max Time | Notes |
 |-----------|------|----------|----------|-------|
-| `buildBotContext` | `context.ts` | 2.3µs | 0.31ms | Filters visible entities |
-| `computeDangerGrid` | `danger.ts` | 19µs | 0.74ms | Int16Array + FNV-1a hash (Pass 4) |
-| `selectGoal` | `goals.ts` | 16µs | 2.9ms | Priority-based selection |
-| `flow.singleTarget` | `flow.ts` | 55µs | 0.69ms | Single-target BFS (bitmap + pop vars, Pass 7) |
-| `flow.exploration` | `flow.ts` | 16µs | 0.23ms | Dijkstra frontier flow (explored bitmap, Pass 7) |
-| `getFrontierPositions` | `exploration.ts` | 23µs | 0.66ms | Frontier detection (explored bitmap, Pass 7) |
-| `goalMovement` | `tick.ts` | 48µs | 3.6ms | Goal movement execution (Pass 7) |
-| `selectActionByTier` | `tier-actions.ts` | 8µs | 0.78ms | Class-specific action selection |
-| `recordVisibleTiles` | `progression.ts` | 5.1µs | 0.29ms | SeenGrid typed array (Pass 5) |
+| `buildBotContext` | `context.ts` | 2.2µs | 0.45ms | Filters visible entities |
+| `computeDangerGrid` | `danger.ts` | 12.8µs | 0.63ms | Int16Array + FNV-1a hash + inline maxDanger (Pass 8) |
+| `selectGoal` | `goals.ts` | 15µs | 2.4ms | Priority-based selection |
+| `flow.singleTarget` | `flow.ts` | 54µs | 0.48ms | Single-target BFS (bitmap + pop vars, Pass 7) |
+| `flow.exploration` | `flow.ts` | 16µs | 0.19ms | Dijkstra frontier flow (explored bitmap, Pass 7) |
+| `getFrontierPositions` | `exploration.ts` | 22µs | 0.47ms | Frontier detection (explored bitmap, Pass 7) |
+| `goalMovement` | `tick.ts` | 45µs | 3.1ms | Goal movement execution (Pass 8) |
+| `selectStep` | `movement.ts` | 0.7µs | 0.12ms | Inlined DX/DY + passable bitmap (Pass 8) |
+| `selectActionByTier` | `tier-actions.ts` | 7µs | 0.74ms | Class-specific action selection |
+| `recordVisibleTiles` | `progression.ts` | 4.6µs | 0.11ms | SeenGrid typed array (Pass 5) |
 
 ### Mage-Specific Operations (50k turns, seed=1000)
 
 | Operation | File | Avg Time | Max Time | Notes |
 |-----------|------|----------|----------|-------|
-| `getSweepFrontiers` | `exploration.ts` | 11µs | 1.3ms | Explored bitmap (Pass 7) |
-| `flow.sweep` | `flow.ts` | 39µs | 3.5ms | Multi-target sweep Dijkstra (pop vars, Pass 7) |
-| `computeSafetyFlow` | `safety-flow.ts` | 1099µs | 1.6ms | Int16Array + binary heap + bitmap (Pass 6) |
+| `getSweepFrontiers` | `exploration.ts` | 11µs | 0.47ms | Explored bitmap (Pass 7) |
+| `flow.sweep` | `flow.ts` | 39µs | 0.29ms | Multi-target sweep Dijkstra (pop vars, Pass 7) |
+| `computeSafetyFlow` | `safety-flow.ts` | 963µs | 1.5ms | Int16Array + binary heap + bitmap (Pass 6) |
 
 ### Expensive Operations (Cached)
 
@@ -165,10 +166,10 @@ function hashMonsterState(monsters: Monster[]): number {
 
 ## Known Bottlenecks
 
-### 1. computeDangerGrid (Resolved — Pass 4)
+### 1. computeDangerGrid (Resolved — Pass 4, Pass 8)
 
 **Symptom:** Was 78µs avg, 17% of warrior total
-**Status:** ✅ Resolved. Int16Array grid + FNV-1a numeric hash → 16µs avg (4.5x faster)
+**Status:** ✅ Resolved. Int16Array grid + FNV-1a numeric hash (Pass 4) → 16µs. Inline maxDanger fold (Pass 8) → 13µs (6x faster total)
 
 ### 2. computeSafetyFlow (Resolved — Pass 4)
 
@@ -232,6 +233,66 @@ pnpm diagnose baseline --seed=1000
 ---
 
 ## Optimization History
+
+### Pass 8: 2026-02-07 - Danger maxDanger Fold + selectStep Inline
+
+**Problem 1:** `computeDangerGrid` computed the `maxDanger` value via a separate O(width×height) scan after the per-monster danger application loop. The same data was already being written in the monster loop — tracking the max inline eliminates the second pass.
+
+**Problem 2:** `selectStep()` in movement.ts still used `getAdjacentPositions(pos)` (8-element Point[] allocation), `getTile()` + `isWalkable()` (string comparisons), StepCandidate object allocation per neighbor, and `candidates.sort()` (comparator allocation). All avoidable with inlined DX/DY + `level.passable[]` bitmap + inline best-tracking.
+
+**Changes (danger.ts):**
+- Folded `maxDanger` tracking into the per-monster danger application loop
+- Instead of applying danger to all tiles then scanning for max, now tracks `newVal` after each `data[idx] += tileDanger` and compares against running `maxDanger`
+- Eliminated separate `for (let i = 0; i < data.length; i++)` max-finding loop
+
+**Changes (movement.ts):**
+- Replaced `getAdjacentPositions(pos)` with module-level `DX/DY` arrays (8-way, inlined iteration)
+- Replaced `getTile()` + `isWalkable()` + door check with `level.passable[nIdx]` bitmap lookup
+- Replaced StepCandidate object allocation + sort with inline best-tracking (`bestScore`/`bestDirection`)
+- Added pre-computed lookup tables: `DIR_FROM_INDEX` (direction per DX/DY index), `IS_CARDINAL` (cardinal bonus)
+- Access `flowCosts.data` directly instead of `getFlowCost()` wrapper
+- Removed imports: `getFlowCost`, `CARDINAL_DIRECTIONS`, `getAdjacentPositions`, `getTile`, `isWalkable`
+
+**Results (Warrior, seed=1000, 50k turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total tracked | 2096ms | 1983ms | **-5%** |
+| ms/tick | 0.14ms | 0.13ms | **-5%** |
+| Turns survived | 15.0k | 15.0k | Same |
+
+**Results (Mage, seed=1000, 50k turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total tracked | 3398ms | 3321ms | **-2%** |
+| ms/tick | 0.13ms | 0.13ms | **-2%** |
+| Turns survived | 25.6k | 25.6k | Same |
+
+**Per-operation improvements (warrior):**
+| Operation | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `computeDangerGrid` | 19µs | 12.8µs | **-33%** |
+| `goalMovement` | 48µs | 45.2µs | **-6%** |
+| `selectStep` | ~1.7µs | 0.7µs | **-59%** |
+
+**Per-operation improvements (mage):**
+| Operation | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `computeDangerGrid` | 15µs | 9.2µs | **-39%** |
+| `goalMovement` | 51µs | 50.3µs | **-1%** |
+| `selectStep` | ~1.7µs | 0.7µs | **-59%** |
+
+**Also investigated but not viable:**
+- **Flow grid pooling:** Callers retain `FlowGrid` references in caches (`cachedFlow`, `cachedExplorationFlow`, `cachedSweepFlow`), so a shared pool would be overwritten. Not viable without restructuring the cache ownership model.
+- **goal.override overhead:** Warrior showed 3.2% (5.3µs) but sub-profiling revealed ~65% was profiler overhead from 4 `performance.now()` calls per tick. Actual work ~2µs. Not an optimization target.
+- **calculateImmediateTier:** 0.8µs — trivially fast, not worth optimizing.
+
+**Learnings:**
+- Folding a max/min scan into an existing write loop is always worth checking — eliminates a full pass for free
+- At 0.13ms/tick, we're deep in diminishing returns; individual operations under 2µs are dominated by profiler overhead
+- `performance.now()` costs ~0.3µs per call — wrapping sub-microsecond functions inflates reported time by 60%+
+- Remaining micro-opts (Point allocation in `getRecencyPenalty`, monster linear scan Set) are sub-1% impact
+
+---
 
 ### Pass 7: 2026-02-07 - Explored Bitmap + Dequeue Elimination
 
@@ -464,6 +525,58 @@ pnpm diagnose baseline --seed=1000
 - Binary heap eliminates the worst algorithmic issue (sort-inside-loop)
 - Integer scaling (×5) avoids float precision issues while preserving exact ratios
 - Pre-allocated module-level structures (BFS buffer, heap arrays) avoid per-call allocation
+
+---
+
+### Baseline: 2026-02-07 (Post Danger maxDanger Fold + selectStep Inline)
+
+**Test:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
+**Config:** upgrades=full, capabilities=full, boosters=class (diagnose defaults)
+
+**Warrior (14955 turns, natural death):**
+
+| Operation | % Time | Total | Calls | Avg |
+|-----------|--------|-------|-------|-----|
+| goalMovement | 32.0% | 634ms | 14009 | 45µs |
+| getFrontierPositions | 10.7% | 212ms | 9606 | 22µs |
+| selectGoal | 10.6% | 210ms | 14009 | 15µs |
+| computeDangerGrid | 9.6% | 191ms | 14955 | 13µs |
+| flow.exploration | 6.3% | 124ms | 7912 | 16µs |
+| selectActionByTier | 5.4% | 107ms | 14955 | 7µs |
+| goal.descend | 4.3% | 86ms | 1699 | 51µs |
+| recordVisibleTiles | 3.5% | 69ms | 14955 | 5µs |
+| goal.override | 3.2% | 64ms | 12061 | 5µs |
+| flow.singleTarget | 2.5% | 50ms | 924 | 54µs |
+| buildBotContext | 1.7% | 33ms | 14955 | 2µs |
+
+**Summary:**
+- Total tracked: 1983ms for ~15.0k turns = **0.13ms/tick avg**
+- `computeDangerGrid` 9.6% (was 13.3%) — inline maxDanger fold eliminates O(w*h) max scan
+- `goalMovement` 32% (stable) — selectStep 59% faster but small absolute impact (0.7µs)
+- `goalMovement.selectStep` 0.7µs — inlined DX/DY + passable bitmap + inline best-tracking
+
+**Mage (25569 turns, natural death):**
+
+| Operation | % Time | Total | Calls | Avg |
+|-----------|--------|-------|-------|-----|
+| goalMovement | 32.5% | 1080ms | 21471 | 50µs |
+| selectGoal | 9.3% | 309ms | 21471 | 14µs |
+| computeDangerGrid | 7.1% | 235ms | 25569 | 9µs |
+| goal.descend | 5.8% | 193ms | 2112 | 91µs |
+| flow.exploration | 5.7% | 191ms | 6703 | 28µs |
+| flow.sweep | 5.5% | 182ms | 4735 | 39µs |
+| selectActionByTier | 5.0% | 166ms | 25569 | 7µs |
+| getFrontierPositions | 4.9% | 163ms | 9499 | 17µs |
+| recordVisibleTiles | 3.5% | 115ms | 25569 | 5µs |
+| getSweepFrontiers | 2.5% | 82ms | 7481 | 11µs |
+| flow.singleTarget | 2.7% | 88ms | 1462 | 60µs |
+| buildBotContext | 1.5% | 50ms | 25569 | 2µs |
+
+**Summary:**
+- Total tracked: 3321ms for ~25.6k turns = **0.13ms/tick avg**
+- `computeDangerGrid` 7.1% (was 10.9%) — maxDanger fold saves 39% per call
+- `goalMovement.selectStep` 0.7µs — same improvement as warrior
+- Sweep overhead (frontiers + flow) = 8.0% — stable
 
 ---
 
