@@ -51,7 +51,8 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     game.character,
     monster,
     knowledgeBonuses,
-    game.balance.armorPenetration
+    game.balance.armorPenetration,
+    game.upgradeBonuses?.armorPenPercent ?? 0
   )
 
   // Adrenaline Rush: +damage% when below 20% HP
@@ -166,7 +167,8 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
     monster,
     distance,
     knowledgeBonuses,
-    game.balance.armorPenetration
+    game.balance.armorPenetration,
+    game.upgradeBonuses?.armorPenPercent ?? 0
   )
 
   // Adrenaline Rush: +damage% when below 20% HP

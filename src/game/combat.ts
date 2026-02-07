@@ -555,8 +555,14 @@ function calculateHitChance(accuracy: number, evasion: number): number {
  * Apply armor reduction to damage
  * Percentage-based: each point of armor = 0.5% reduction, max 50%
  */
-function applyArmorReduction(damage: number, armor: number, penetration: number): number {
-  const effectiveArmor = Math.max(0, armor - penetration)
+function applyArmorReduction(
+  damage: number,
+  armor: number,
+  penetration: number,
+  penPercent = 0
+): number {
+  const afterPercent = armor * (1 - penPercent / 100)
+  const effectiveArmor = Math.max(0, afterPercent - penetration)
   const reduction = Math.min(effectiveArmor / 2, 50)
   return Math.floor((damage * (100 - reduction)) / 100)
 }
@@ -688,7 +694,8 @@ export function attack(
   attacker: Character,
   defender: Monster,
   knowledgeBonuses?: KnowledgeBonuses,
-  armorPenetration = 0
+  armorPenetration = 0,
+  armorPenPercent = 0
 ): AttackResult {
   const attackerStats = getAttackerStats(attacker)
   const defenderStats = getDefenderStats(defender)
@@ -750,7 +757,7 @@ export function attack(
   baseDamage = Math.floor(baseDamage * getPassiveDamageMultiplier(attacker))
 
   // Apply monster armor reduction
-  let damage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration)
+  let damage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration, armorPenPercent)
 
   // Check for critical hit (scaled by weapon weight and level)
   const weaponWeight = attacker.equipment.weapon?.template.weight ?? 50
@@ -825,10 +832,11 @@ export function meleeAttack(
   attacker: Character,
   defender: Monster,
   knowledgeBonuses?: KnowledgeBonuses,
-  armorPenetration = 0
+  armorPenetration = 0,
+  armorPenPercent = 0
 ): MultiAttackResult {
   return executeMultiAttack(defender, calculateAttackCount(attacker), (tempDefender) =>
-    attack(attacker, tempDefender, knowledgeBonuses, armorPenetration)
+    attack(attacker, tempDefender, knowledgeBonuses, armorPenetration, armorPenPercent)
   )
 }
 
@@ -1033,7 +1041,8 @@ export function rangedAttack(
   defender: Monster,
   distance: number,
   knowledgeBonuses?: KnowledgeBonuses,
-  armorPenetration = 0
+  armorPenetration = 0,
+  armorPenPercent = 0
 ): AttackResult {
   // Get ranged accuracy
   let accuracy = attacker.combat.rangedAccuracy
@@ -1092,7 +1101,7 @@ export function rangedAttack(
   }
 
   // Apply armor reduction
-  let finalDamage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration)
+  let finalDamage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration, armorPenPercent)
 
   // Check for critical hit using scaled system (bow weight + level)
   const bowWeight = attacker.equipment.bow?.template.weight ?? 30
@@ -1148,10 +1157,11 @@ export function multiRangedAttack(
   defender: Monster,
   distance: number,
   knowledgeBonuses?: KnowledgeBonuses,
-  armorPenetration = 0
+  armorPenetration = 0,
+  armorPenPercent = 0
 ): MultiAttackResult {
   return executeMultiAttack(defender, calculateRangedAttackCount(attacker), (tempDefender) =>
-    rangedAttack(attacker, tempDefender, distance, knowledgeBonuses, armorPenetration)
+    rangedAttack(attacker, tempDefender, distance, knowledgeBonuses, armorPenetration, armorPenPercent)
   )
 }
 

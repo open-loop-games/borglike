@@ -132,10 +132,10 @@ export function collectRacialModifiers(race: Race): StatModifier[] {
  * Maps UpgradeBonuses fields to stat modifiers:
  * - maxHpBonus: flat maxHp
  * - armorBonus: flat armor
- * - accuracyBonus: flat accuracy and rangedAccuracy
  * - dodgePercent: flat evasion (despite name, it's applied as flat)
  * - speedBonus: flat speed
  * - damagePercent: percent meleeDamage and rangedDamage
+ * Note: armorPenPercent is applied in combat, not as a stat modifier
  */
 export function collectUpgradeModifiers(bonuses: UpgradeBonuses): StatModifier[] {
   const modifiers: StatModifier[] = []
@@ -152,12 +152,6 @@ export function collectUpgradeModifiers(bonuses: UpgradeBonuses): StatModifier[]
   }
   if (bonuses.armorPercent > 0) {
     modifiers.push(percentModifier('upgrade', 'armor', bonuses.armorPercent, 'Resilience'))
-  }
-
-  if (bonuses.accuracyBonus > 0) {
-    modifiers.push(flatModifier('upgrade', 'accuracy', bonuses.accuracyBonus, 'Precision'))
-    // Also applies to ranged accuracy (parity fix)
-    modifiers.push(flatModifier('upgrade', 'rangedAccuracy', bonuses.accuracyBonus, 'Precision'))
   }
 
   // dodgePercent is named poorly - it's actually flat evasion bonus

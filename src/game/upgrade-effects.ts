@@ -21,7 +21,7 @@ export interface UpgradeBonuses {
   armorPercent: number // Percent armor bonus (from resilience, 1% per level)
   dodgePercent: number // Flat evasion bonus (from reflexes, despite name)
   dodgeChancePercent: number // Dodge chance vs monsters (from reflexes, 1% per level)
-  accuracyBonus: number // Flat accuracy bonus (from precision)
+  armorPenPercent: number // % of target armor ignored (from precision)
   speedBonus: number // Flat speed bonus (from swiftness)
 
   // Meta bonuses (multipliers)
@@ -69,7 +69,7 @@ export function computeUpgradeBonuses(
     armorPercent: Math.floor((levels['resilience'] || 0) * 1 * scale), // 1% per resilience level
     dodgePercent: Math.floor(getEffectValue(levels, 'reflexes') * scale),
     dodgeChancePercent: Math.floor((levels['reflexes'] || 0) * 1 * scale), // 1% per swiftness level
-    accuracyBonus: Math.floor(getEffectValue(levels, 'precision') * scale),
+    armorPenPercent: Math.floor(getEffectValue(levels, 'precision') * scale),
     speedBonus: Math.floor(getEffectValue(levels, 'swiftness') * scale),
 
     // Meta bonuses (scaled, but multiplier base of 1 is preserved)
@@ -175,7 +175,7 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   armorPercent: 0,
   dodgePercent: 0,
   dodgeChancePercent: 0,
-  accuracyBonus: 0,
+  armorPenPercent: 0,
   speedBonus: 0,
   xpMultiplier: 1,
   goldMultiplier: 1,
