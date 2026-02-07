@@ -12,7 +12,12 @@
  */
 
 import type { GameState, GameAction, BotPersonality } from '../types'
-import type { BotCapabilities, BotToggles, SweepLevelRange, SurfLevelRange } from '@/types/progression'
+import type {
+  BotCapabilities,
+  BotToggles,
+  SweepLevelRange,
+  SurfLevelRange,
+} from '@/types/progression'
 import { getTile, countExploredTiles } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 
@@ -570,8 +575,7 @@ function getKillApproachAction(
 
     // Adjacent - try to kite away (requires kiting L2+ for active repositioning)
     if (shouldAvoidMelee(classProfile, distance) && capabilities.kiting >= 2) {
-      const optimalRange =
-        capabilities.kiting >= 3 ? (classProfile.engageDistance || 3) : 3
+      const optimalRange = capabilities.kiting >= 3 ? classProfile.engageDistance || 3 : 3
       const kiteDir = findKitePosition(game, targetMonster, optimalRange)
       if (kiteDir) {
         recordProgress(botState, game.turn)

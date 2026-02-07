@@ -523,8 +523,7 @@ export const useProgressionStore = defineStore('progression', () => {
       const validClass =
         saved.class === 'Random' || unlocks.value.classes.has(saved.class) ? saved.class : 'Random'
       const effectiveClassId = validClass === 'Random' ? 'warrior' : validClass.toLowerCase()
-      const sweepLevelRange =
-        saved.sweepLevelRange ?? getDefaultSweepLevelRange(effectiveClassId)
+      const sweepLevelRange = saved.sweepLevelRange ?? getDefaultSweepLevelRange(effectiveClassId)
       const surfLevelRange = saved.surfLevelRange ?? { start: 0, end: 0 }
       // Active levels default to max unlocked from global capabilities
       const activeSweepLevel = saved.activeSweepLevel ?? botCapabilities.value.sweep

@@ -109,7 +109,12 @@ const personalities = [
 // Custom personality — unlocked sliders based on bot upgrade levels
 const unlockedSliders = computed(() => {
   const caps = progression.botCapabilities
-  return (Object.entries(SLIDER_UPGRADE_GATES) as [keyof PersonalityConfig, { field: string; level: number }][])
+  return (
+    Object.entries(SLIDER_UPGRADE_GATES) as [
+      keyof PersonalityConfig,
+      { field: string; level: number },
+    ][]
+  )
     .filter(([, gate]) => {
       const capValue = caps[gate.field as keyof typeof caps]
       return typeof capValue === 'number' && capValue >= gate.level
@@ -119,9 +124,7 @@ const unlockedSliders = computed(() => {
 
 const hasAnySlider = computed(() => unlockedSliders.value.length > 0)
 
-const allSliderKeys = computed(() =>
-  Object.keys(PARAMETER_INFO) as (keyof PersonalityConfig)[]
-)
+const allSliderKeys = computed(() => Object.keys(PARAMETER_INFO) as (keyof PersonalityConfig)[])
 
 function isSliderUnlocked(key: keyof PersonalityConfig): boolean {
   return unlockedSliders.value.includes(key)
@@ -151,9 +154,7 @@ function seedFromPreset(id: Personality) {
 }
 
 const personalitySummary = computed(() =>
-  selectedPersonality.value === 'custom'
-    ? summarizePersonality(customPersonality.value)
-    : ''
+  selectedPersonality.value === 'custom' ? summarizePersonality(customPersonality.value) : ''
 )
 
 // Config performance from run history
@@ -361,9 +362,7 @@ function handleCancel() {
             <div class="details-desc">Randomly picks from the pool each run.</div>
             <div class="pool-list">
               <span class="pool-label">Pool:</span>
-              <span v-for="name in randomPoolClasses" :key="name" class="pool-tag">{{
-                name
-              }}</span>
+              <span v-for="name in randomPoolClasses" :key="name" class="pool-tag">{{ name }}</span>
             </div>
           </div>
           <!-- Class Description -->
@@ -681,7 +680,12 @@ function handleCancel() {
             </div>
             <!-- No controls message -->
             <div
-              v-if="!globalCaps.farming && globalCaps.sweep === 0 && globalCaps.surf === 0 && globalCaps.preparedness < 2"
+              v-if="
+                !globalCaps.farming &&
+                globalCaps.sweep === 0 &&
+                globalCaps.surf === 0 &&
+                globalCaps.preparedness < 2
+              "
               class="no-controls"
             >
               Purchase bot upgrades in Upgrades → Bot

@@ -482,8 +482,8 @@ function generateArmoryInventory(shopTier: number): Item[] {
   const progressionTier = shopTier
 
   // Determine tier range based on Town Stock upgrade
-  const minTier = 1                    // Always stock T1
-  const maxTier = progressionTier + 1  // T1, T1-T2, or T1-T3
+  const minTier = 1 // Always stock T1
+  const maxTier = progressionTier + 1 // T1, T1-T2, or T1-T3
 
   // Filter for armor-type items in tier range
   const armorTypes: ItemTemplate['slot'][] = ['body', 'shield', 'helm', 'gloves', 'boots']
@@ -520,8 +520,8 @@ function generateWeaponShopInventory(shopTier: number): Item[] {
   const progressionTier = shopTier
 
   // Determine tier range based on Town Stock upgrade
-  const minTier = 1                    // Always stock T1
-  const maxTier = progressionTier + 1  // T1, T1-T2, or T1-T3
+  const minTier = 1 // Always stock T1
+  const maxTier = progressionTier + 1 // T1, T1-T2, or T1-T3
 
   // Filter for weapon-type items in tier range
   const weaponTypes: ItemTemplate['slot'][] = ['weapon', 'bow']

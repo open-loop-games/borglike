@@ -75,11 +75,7 @@ watch(
         ref="tickerRef"
         class="completion-ticker"
       >
-        <div
-          v-for="(c, i) in engineState.catchUpCompletions"
-          :key="i"
-          class="ticker-entry"
-        >
+        <div v-for="(c, i) in engineState.catchUpCompletions" :key="i" class="ticker-entry">
           <span class="ticker-slot" :style="{ color: SLOT_COLORS[c.slot] }">{{ c.slot + 1 }}</span>
           <span class="ticker-build">{{ c.race }} {{ c.class }}</span>
           <span class="ticker-depth">D{{ c.depth }}</span>

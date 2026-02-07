@@ -211,7 +211,8 @@ const nemesis = computed(() => {
             <div class="stat-row">
               <span class="stat-label">Items</span>
               <span class="stat-val"
-                >{{ progression.armoryStats.discovered - progression.armoryStats.artifacts }} / {{ totalItems }}</span
+                >{{ progression.armoryStats.discovered - progression.armoryStats.artifacts }} /
+                {{ totalItems }}</span
               >
             </div>
             <div class="stat-row">

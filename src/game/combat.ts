@@ -713,7 +713,12 @@ export function attack(
   baseDamage = Math.floor(baseDamage * getPassiveDamageMultiplier(attacker))
 
   // Apply monster armor reduction
-  let damage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration, armorPenPercent)
+  let damage = applyArmorReduction(
+    baseDamage,
+    defenderStats.armor,
+    armorPenetration,
+    armorPenPercent
+  )
 
   // Check for critical hit (scaled by weapon weight and level)
   const weaponWeight = attacker.equipment.weapon?.template.weight ?? 50
@@ -1040,11 +1045,7 @@ export function rangedAttack(
 
   // Base damage: DEX/3 + (bow dice × multiplier) + enchantment + artifact + berserk bonus
   let baseDamage =
-    Math.floor(attacker.stats.dex / 3) +
-    bowDamage +
-    enchantBonus +
-    artifactDamage +
-    berserkDamage
+    Math.floor(attacker.stats.dex / 3) + bowDamage + enchantBonus + artifactDamage + berserkDamage
 
   // Apply ranged deadliness multiplier (from bow enchantment + DEX + level)
   const deadliness = calculateRangedDeadliness(attacker)
@@ -1057,7 +1058,12 @@ export function rangedAttack(
   }
 
   // Apply armor reduction
-  let finalDamage = applyArmorReduction(baseDamage, defenderStats.armor, armorPenetration, armorPenPercent)
+  let finalDamage = applyArmorReduction(
+    baseDamage,
+    defenderStats.armor,
+    armorPenetration,
+    armorPenPercent
+  )
 
   // Check for critical hit using scaled system (bow weight + level)
   const bowWeight = attacker.equipment.bow?.template.weight ?? 30
@@ -1117,7 +1123,14 @@ export function multiRangedAttack(
   armorPenPercent = 0
 ): MultiAttackResult {
   return executeMultiAttack(defender, calculateRangedAttackCount(attacker), (tempDefender) =>
-    rangedAttack(attacker, tempDefender, distance, knowledgeBonuses, armorPenetration, armorPenPercent)
+    rangedAttack(
+      attacker,
+      tempDefender,
+      distance,
+      knowledgeBonuses,
+      armorPenetration,
+      armorPenPercent
+    )
   )
 }
 

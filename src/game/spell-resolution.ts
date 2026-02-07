@@ -27,12 +27,7 @@ import { getSpellIdsForLevel } from './data/class-spells'
 import { applyDamage, calculateSpellDeadliness, applyDeadliness } from './combat'
 import { handleMonsterKill } from './actions/combat'
 import { getTile, findOpenPosition, isWalkable } from './dungeon'
-import {
-  addStatusEffect,
-  addTempResistance,
-  clearPoison,
-  isPoisoned,
-} from './status-effects'
+import { addStatusEffect, addTempResistance, clearPoison, isPoisoned } from './status-effects'
 import { recalculateAllStats } from './modifiers'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 import { incrementStat } from './stats-helpers'

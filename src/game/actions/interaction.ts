@@ -85,9 +85,11 @@ export function handleCast(game: GameState, spellId: string, targetId?: string):
       : result.healed
         ? ['healing']
         : ['buff']
+    // Spell damage is routine combat spam like melee (importance 2)
+    // Heals/buffs are less frequent and more noteworthy (importance 3)
     addTaggedMessage(game, result.message, messageType, {
       tags,
-      importance: 3,
+      importance: result.damage ? 2 : 3,
     })
   }
 
