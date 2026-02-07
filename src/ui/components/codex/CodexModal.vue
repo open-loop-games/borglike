@@ -281,7 +281,7 @@ function switchTab(tab: 'races' | 'classes') {
   border-radius: var(--radius-xl);
   display: flex;
   flex-direction: column;
-  max-height: 80vh;
+  height: 80vh;
   position: relative;
   overflow: hidden;
 }

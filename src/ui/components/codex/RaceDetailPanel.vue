@@ -164,6 +164,7 @@ const stats = computed(() => [
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   min-width: 280px;
   max-width: 320px;
 }
@@ -210,12 +211,12 @@ const stats = computed(() => [
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-4);
+  padding: var(--space-3);
 }
 
 .race-hero {
   text-align: center;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .race-name {
@@ -230,8 +231,8 @@ const stats = computed(() => [
 
 .locked-section {
   text-align: center;
-  margin-bottom: var(--space-4);
-  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
   background: var(--highlight);
   border-radius: var(--radius-lg);
   border: 1px dashed var(--border);
@@ -255,7 +256,7 @@ const stats = computed(() => [
 }
 
 .description-section {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .description-text {
@@ -263,7 +264,7 @@ const stats = computed(() => [
   font-size: var(--text-base);
   color: var(--text-secondary);
   font-style: italic;
-  line-height: 1.5;
+  line-height: 1.4;
   text-align: center;
 }
 
@@ -271,11 +272,11 @@ const stats = computed(() => [
 .properties-section,
 .abilities-section,
 .history-section {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 h4 {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-1);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;

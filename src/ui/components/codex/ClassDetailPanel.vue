@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { GameClass } from '@game/data/classes'
+import { getClassSpellList, getClassPrimarySchool } from '@game/data/class-spells'
+import { getSpellById } from '@game/data/spells'
+import CollapsibleSection from '@/ui/components/common/CollapsibleSection.vue'
 
 interface Props {
   gameClass: GameClass
@@ -13,6 +16,10 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
 }>()
+
+// Collapsible state
+const spellsExpanded = ref(true)
+const abilitiesExpanded = ref(true)
 
 // Category badge
 const category = computed(() => {
@@ -69,30 +76,78 @@ const primaryStatName = computed(() => {
   return names[props.gameClass.primaryStat] ?? props.gameClass.primaryStat
 })
 
-// Selected titles to show (first, middle, last)
-const displayTitles = computed(() => {
-  const titles = props.gameClass.titles
-  if (titles.length <= 3) return titles.map((t, i) => ({ level: (i + 1) * 5, title: t }))
-  return [
-    { level: 5, title: titles[0] },
-    { level: 25, title: titles[4] },
-    { level: 50, title: titles[9] },
-  ]
+// Spell school color mapping
+const schoolColors: Record<string, string> = {
+  arcane: 'var(--purple)',
+  divine: 'var(--gold)',
+  nature: 'var(--green)',
+  shadow: 'var(--violet)',
+}
+
+// Class spell list with resolved spell data
+const classSpells = computed(() => {
+  const list = getClassSpellList(props.gameClass.id)
+  if (!list) return []
+  return list.spells
+    .map((entry) => {
+      const spell = getSpellById(entry.spellId)
+      if (!spell) return null
+      return {
+        id: spell.id,
+        name: spell.name,
+        school: spell.school,
+        learnLevel: entry.learnLevel,
+        manaCost: spell.manaCost,
+        color: schoolColors[spell.school] ?? 'var(--text-dim)',
+      }
+    })
+    .filter((s) => s !== null)
 })
 
-// Special abilities from class flags
+// Magic school label
+const schoolLabels: Record<string, string> = {
+  arcane: 'Arcane Caster',
+  divine: 'Divine Caster',
+  nature: 'Nature Caster',
+  shadow: 'Shadow Caster',
+}
+
+const magicSchool = computed(() => {
+  const school = getClassPrimarySchool(props.gameClass.id)
+  if (!school) return null
+  return {
+    label: schoolLabels[school] ?? school,
+    school,
+    color: schoolColors[school] ?? 'var(--text-dim)',
+  }
+})
+
+// Special abilities from class flags + magic school
 const specialAbilities = computed(() => {
-  const abilities: { name: string; description: string }[] = []
+  const abilities: { name: string; description: string; color?: string }[] = []
+  if (magicSchool.value) {
+    abilities.push({
+      name: magicSchool.value.label,
+      description: `${classSpells.value.length} spells from the ${magicSchool.value.school} school`,
+      color: magicSchool.value.color,
+    })
+  }
   if (props.gameClass.canShieldBash) {
     abilities.push({
       name: 'Shield Bash',
-      description: 'Can perform shield bash attacks when shield equipped',
+      description: 'Bonus damage when shield equipped',
     })
   }
   if (props.gameClass.combatLifesteal) {
     abilities.push({
       name: 'Combat Lifesteal',
       description: `Heals ${props.gameClass.combatLifesteal}% of melee damage dealt`,
+    })
+  }
+  if (props.gameClass.finesse) {
+    abilities.push({
+      name: 'Finesse',
+      description: 'Uses the better of STR or DEX for melee damage',
     })
   }
   return abilities
@@ -175,26 +230,47 @@ const specialAbilities = computed(() => {
         </div>
       </div>
 
-      <!-- Special abilities -->
+      <!-- Abilities (collapsible) -->
       <div v-if="specialAbilities.length > 0" class="abilities-section">
-        <h4>Special Abilities</h4>
-        <div class="ability-list">
-          <div v-for="ability in specialAbilities" :key="ability.name" class="ability-item">
-            <div class="ability-name">{{ ability.name }}</div>
-            <div class="ability-description">{{ ability.description }}</div>
+        <CollapsibleSection
+          title="Abilities"
+          :badge="specialAbilities.length"
+          :expanded="abilitiesExpanded"
+          @toggle="abilitiesExpanded = !abilitiesExpanded"
+        >
+          <div class="ability-list">
+            <div
+              v-for="ability in specialAbilities"
+              :key="ability.name"
+              class="ability-item"
+              :style="ability.color ? { borderLeftColor: ability.color } : {}"
+            >
+              <div class="ability-name">{{ ability.name }}</div>
+              <div class="ability-description">{{ ability.description }}</div>
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
       </div>
 
-      <!-- Titles progression -->
-      <div class="titles-section">
-        <h4>Titles</h4>
-        <div class="title-list">
-          <div v-for="item in displayTitles" :key="item.level" class="title-item">
-            <span class="title-level">Lv {{ item.level }}</span>
-            <span class="title-name">{{ item.title }}</span>
+      <!-- Spells (collapsible) -->
+      <div v-if="classSpells.length > 0" class="spells-section">
+        <CollapsibleSection
+          title="Spells"
+          :badge="classSpells.length"
+          :expanded="spellsExpanded"
+          @toggle="spellsExpanded = !spellsExpanded"
+        >
+          <div class="spell-list">
+            <div v-for="spell in classSpells" :key="spell.id" class="spell-row">
+              <span class="spell-dot" :style="{ background: spell.color }"></span>
+              <span class="spell-name">{{ spell.name }}</span>
+              <span class="spell-meta">
+                <span class="spell-level">L{{ spell.learnLevel }}</span>
+                <span class="spell-mana">{{ spell.manaCost }}mp</span>
+              </span>
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
       </div>
 
       <!-- Bot behavior -->
@@ -224,6 +300,7 @@ const specialAbilities = computed(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   min-width: 280px;
   max-width: 320px;
 }
@@ -270,12 +347,12 @@ const specialAbilities = computed(() => {
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-4);
+  padding: var(--space-3);
 }
 
 .class-hero {
   text-align: center;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .class-name {
@@ -319,8 +396,8 @@ const specialAbilities = computed(() => {
 
 .locked-section {
   text-align: center;
-  margin-bottom: var(--space-4);
-  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
   background: var(--highlight);
   border-radius: var(--radius-lg);
   border: 1px dashed var(--border);
@@ -344,7 +421,7 @@ const specialAbilities = computed(() => {
 }
 
 .description-section {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .description-text {
@@ -352,21 +429,21 @@ const specialAbilities = computed(() => {
   font-size: var(--text-base);
   color: var(--text-secondary);
   font-style: italic;
-  line-height: 1.5;
+  line-height: 1.4;
   text-align: center;
 }
 
 .stats-section,
 .properties-section,
 .abilities-section,
-.titles-section,
+.spells-section,
 .behavior-section,
 .history-section {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 h4 {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-1);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -485,31 +562,54 @@ h4 {
   color: var(--text-secondary);
 }
 
-.title-list {
+.spell-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
 }
 
-.title-item {
+.spell-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-}
-
-.title-level {
-  color: var(--text-dim);
-  font-family: var(--font-mono);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-sm);
   font-size: var(--text-sm);
-  min-width: 40px;
 }
 
-.title-name {
+.spell-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.spell-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.spell-name {
+  flex: 1;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spell-meta {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.spell-level {
+  color: var(--text-dim);
+}
+
+.spell-mana {
+  color: var(--cyan);
 }
 
 .behavior-text {
