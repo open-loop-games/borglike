@@ -186,16 +186,20 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     runs.removeRun(existingRun.id)
   }
 
-  // Get available races/classes from progression
+  // Get available races/classes from progression (random pool)
   const availableRaces = progression.availableRaces
   const availableClasses = progression.availableClasses
 
-  // Create run config with defaults
+  // Create run config with defaults — resolve 'Random' to actual pick from pool
   const settings = useSettingsStore()
   const raceName =
-    config?.race || availableRaces[randomInt(0, availableRaces.length - 1)] || 'Human'
+    !config?.race || config.race === 'Random'
+      ? availableRaces[randomInt(0, availableRaces.length - 1)] || 'Human'
+      : config.race
   const className =
-    config?.class || availableClasses[randomInt(0, availableClasses.length - 1)] || 'Warrior'
+    !config?.class || config.class === 'Random'
+      ? availableClasses[randomInt(0, availableClasses.length - 1)] || 'Warrior'
+      : config.class
   const personality: BotPersonality =
     (config?.personality as BotPersonality) || settings.settings.defaultPersonality
 
@@ -971,8 +975,16 @@ function createRunForCatchUp(
   if (existingRun) runs.removeRun(existingRun.id)
 
   const slotConfig = progression.getSlotConfig(slot)
-  const raceName = slotConfig.race || 'Human'
-  const className = slotConfig.class || 'Warrior'
+  const availRaces = progression.availableRaces
+  const availClasses = progression.availableClasses
+  const raceName =
+    !slotConfig.race || slotConfig.race === 'Random'
+      ? availRaces[randomInt(0, availRaces.length - 1)] || 'Human'
+      : slotConfig.race
+  const className =
+    !slotConfig.class || slotConfig.class === 'Random'
+      ? availClasses[randomInt(0, availClasses.length - 1)] || 'Warrior'
+      : slotConfig.class
   const personality: BotPersonality =
     (slotConfig.personality as BotPersonality) || settings.settings.defaultPersonality
 

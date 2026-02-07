@@ -41,9 +41,13 @@ onMounted(() => {
   progression.setActiveBooster(1, savedConfig.boosters[1])
 })
 
-// Available options
-const availableRaces = computed(() => progression.availableRaces)
-const availableClasses = computed(() => progression.availableClasses)
+// Available options: chooseable (purchased) races/classes for explicit selection
+const chooseableRaces = computed(() => progression.chooseableRaces)
+const chooseableClasses = computed(() => progression.chooseableClasses)
+
+// Random pool for display when Random is selected
+const randomPoolRaces = computed(() => progression.availableRaces)
+const randomPoolClasses = computed(() => progression.availableClasses)
 
 // Selected race/class details for description panels
 const selectedRaceData = computed((): Race | undefined => {
@@ -181,7 +185,14 @@ function handleCancel() {
           <h3>Race</h3>
           <div class="option-grid">
             <button
-              v-for="race in availableRaces"
+              class="option-btn random-btn"
+              :class="{ active: selectedRace === 'Random' }"
+              @click="selectedRace = 'Random'"
+            >
+              ? Random
+            </button>
+            <button
+              v-for="race in chooseableRaces"
               :key="race"
               class="option-btn"
               :class="{ active: selectedRace === race }"
@@ -190,8 +201,16 @@ function handleCancel() {
               {{ race }}
             </button>
           </div>
+          <!-- Random Pool Info -->
+          <div v-if="selectedRace === 'Random'" class="selection-details">
+            <div class="details-desc">Randomly picks from the pool each run.</div>
+            <div class="pool-list">
+              <span class="pool-label">Pool:</span>
+              <span v-for="name in randomPoolRaces" :key="name" class="pool-tag">{{ name }}</span>
+            </div>
+          </div>
           <!-- Race Description -->
-          <div v-if="selectedRaceData" class="selection-details">
+          <div v-else-if="selectedRaceData" class="selection-details">
             <div class="details-stats">
               <span :class="formatStatClass(selectedRaceData.stats.str)"
                 >STR {{ formatStat(selectedRaceData.stats.str) }}</span
@@ -232,7 +251,14 @@ function handleCancel() {
           <h3>Class</h3>
           <div class="option-grid">
             <button
-              v-for="cls in availableClasses"
+              class="option-btn random-btn"
+              :class="{ active: selectedClass === 'Random' }"
+              @click="selectedClass = 'Random'"
+            >
+              ? Random
+            </button>
+            <button
+              v-for="cls in chooseableClasses"
               :key="cls"
               class="option-btn"
               :class="{ active: selectedClass === cls }"
@@ -241,8 +267,18 @@ function handleCancel() {
               {{ cls }}
             </button>
           </div>
+          <!-- Random Pool Info -->
+          <div v-if="selectedClass === 'Random'" class="selection-details">
+            <div class="details-desc">Randomly picks from the pool each run.</div>
+            <div class="pool-list">
+              <span class="pool-label">Pool:</span>
+              <span v-for="name in randomPoolClasses" :key="name" class="pool-tag">{{
+                name
+              }}</span>
+            </div>
+          </div>
           <!-- Class Description -->
-          <div v-if="selectedClassData" class="selection-details">
+          <div v-else-if="selectedClassData" class="selection-details">
             <div class="details-stats">
               <span :class="formatStatClass(selectedClassData.stats.str)"
                 >STR {{ formatStat(selectedClassData.stats.str) }}</span
@@ -547,6 +583,34 @@ function handleCancel() {
   border-color: var(--indigo);
   color: var(--indigo);
   text-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+.option-btn.random-btn {
+  font-style: italic;
+}
+
+.pool-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.pool-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+
+.pool-tag {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 2px var(--space-2);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
 }
 
 /* Selection Details */

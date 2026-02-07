@@ -151,7 +151,8 @@ const priest: GameClass = {
   ],
   usesMagic: true,
   starting: false,
-  unlockCondition: 'Use 100 healing potions total',
+  unlockCondition: 'Reach depth 25',
+  checkCondition: (ctx) => ctx.globalStats.maxDepthEver >= 25,
   description: 'Holy servants who heal wounds and smite evil.',
   botBehavior: 'Sustain: prioritizes healing, slow but steady, excels against undead/evil',
 }
@@ -177,7 +178,8 @@ const ranger: GameClass = {
   ],
   usesMagic: true, // Nature magic
   starting: false,
-  unlockCondition: 'Kill 200 monsters with ranged attacks',
+  unlockCondition: 'Kill 300 monsters total',
+  checkCondition: (ctx) => ctx.globalStats.totalKills >= 300,
   description: 'Wilderness experts who excel at ranged combat and tracking.',
   botBehavior: 'Kiting: maintains distance, uses bow/ranged primarily, safe but slower',
 }
@@ -204,6 +206,10 @@ const paladin: GameClass = {
   usesMagic: true, // Divine combat magic
   starting: false,
   unlockCondition: 'Win a run with both Warrior and Priest',
+  checkCondition: (ctx) => {
+    const wins = ctx.globalStats.victoriesPerClass ?? {}
+    return (wins['warrior'] ?? 0) >= 1 && (wins['priest'] ?? 0) >= 1
+  },
   description: 'Holy warriors who combine martial prowess with divine power.',
   botBehavior: 'Adaptive: switches between melee and healing, balanced approach',
   canShieldBash: true,
@@ -323,7 +329,8 @@ const druid: GameClass = {
   ],
   usesMagic: true, // Nature magic
   starting: false,
-  unlockCondition: 'Reach depth 30 with Ranger',
+  unlockCondition: 'Reach depth 30',
+  checkCondition: (ctx) => ctx.globalStats.maxDepthEver >= 30,
   description: 'Shapeshifters who command the forces of nature.',
   botBehavior: 'Versatile: shapeshifts based on situation, nature spells, animal charm',
 }
@@ -350,6 +357,7 @@ const blackguard: GameClass = {
   usesMagic: true, // Dark combat magic
   starting: false,
   unlockCondition: 'Kill 1000 monsters total',
+  checkCondition: (ctx) => ctx.globalStats.totalKills >= 1000,
   description: 'Dark knights who regenerate health through combat.',
   botBehavior: 'Bloodthirsty: aggressive melee, heals by dealing damage, fears nothing',
   combatLifesteal: 10, // Heals 10% of melee damage dealt

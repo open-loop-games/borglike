@@ -107,10 +107,16 @@ function handleCollapse() {
 function handleRestart(slot: number) {
   const run = runs.getRunBySlot(slot)
   if (run) {
-    // Remove the dead run and start a new one with same config
-    const config = run.config
     runs.removeRun(run.id)
-    startRun(slot, config)
+    // Use saved slot config (preserves 'Random') instead of resolved run config
+    const slotConfig = progression.getSlotConfig(slot)
+    progression.setActiveBooster(0, slotConfig.boosters[0])
+    progression.setActiveBooster(1, slotConfig.boosters[1])
+    startRun(slot, {
+      race: slotConfig.race,
+      class: slotConfig.class,
+      personality: slotConfig.personality,
+    })
   }
 }
 

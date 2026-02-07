@@ -147,6 +147,10 @@ const halfElf: Race = {
   ],
   starting: false,
   unlockCondition: 'Win a run with both Human and Elf',
+  checkCondition: (ctx) => {
+    const wins = ctx.globalStats.victoriesPerRace ?? {}
+    return (wins['Human'] ?? 0) >= 1 && (wins['Elf'] ?? 0) >= 1
+  },
   description: 'Combining human adaptability with elven grace.',
 }
 
@@ -176,6 +180,7 @@ const hobbit: Race = {
   ],
   starting: false,
   unlockCondition: 'Reach depth 20',
+  checkCondition: (ctx) => ctx.globalStats.maxDepthEver >= 20,
   description: 'Small but nimble, hobbits are natural survivors with hearty appetites.',
 }
 
@@ -204,7 +209,8 @@ const gnome: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Use 100 scrolls/wands total',
+  unlockCondition: 'Complete 50 runs',
+  checkCondition: (ctx) => ctx.globalStats.totalRuns >= 50,
   description: 'Quick and fortunate, gnomes rely on luck and agility to survive.',
 }
 
@@ -229,6 +235,7 @@ const halfOrc: Race = {
   ],
   starting: false,
   unlockCondition: 'Kill 500 monsters total',
+  checkCondition: (ctx) => ctx.globalStats.totalKills >= 500,
   description: 'Fierce warriors who grow stronger when wounded.',
 }
 
@@ -253,6 +260,11 @@ const halfTroll: Race = {
   ],
   starting: false,
   unlockCondition: 'Kill a unique monster',
+  checkCondition: (ctx) => {
+    return Object.entries(ctx.bestiary).some(
+      ([name, entry]) => entry.kills > 0 && name.includes(',')
+    )
+  },
   description: 'Massive and slow, but nearly impossible to kill.',
 }
 
@@ -272,6 +284,7 @@ const dunadan: Race = {
   ],
   starting: false,
   unlockCondition: 'Win a run with Human',
+  checkCondition: (ctx) => (ctx.globalStats.victoriesPerRace?.['Human'] ?? 0) >= 1,
   description: 'Descendants of ancient kings, gifted in all aspects.',
 }
 
@@ -296,6 +309,7 @@ const highElf: Race = {
   ],
   starting: false,
   unlockCondition: 'Win a run with Elf',
+  checkCondition: (ctx) => (ctx.globalStats.victoriesPerRace?.['Elf'] ?? 0) >= 1,
   description: 'Noble and powerful, the eldest of the elven kindred.',
 }
 
@@ -320,6 +334,7 @@ const kobold: Race = {
   ],
   starting: false,
   unlockCondition: 'Die 50 times',
+  checkCondition: (ctx) => ctx.globalStats.totalDeaths >= 50,
   description: 'Scrappy survivors who have learned from countless deaths.',
 }
 

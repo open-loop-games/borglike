@@ -26,10 +26,10 @@ import {
 } from '@game/data/bot-upgrades'
 import { achievements, getAchievementById } from '@game/data/achievements'
 import {
-  unlockableRaces,
-  prestigeRaces,
-  unlockableClasses,
-  prestigeClasses,
+  startingRaces,
+  startingClasses,
+  races,
+  classes,
   upgrades,
   getUpgradeById,
   calculateUpgradeCost,
@@ -63,10 +63,10 @@ export const useProgressionStore = defineStore('progression', () => {
   // Upgrade levels
   const upgradeLevels = ref<UpgradeState>({})
 
-  // Unlocks
+  // Unlocks (purchased races/classes — starting ones NOT pre-populated)
   const unlocks = ref<UnlockState>({
-    races: new Set(['Human', 'Dwarf', 'Elf']),
-    classes: new Set(['Warrior', 'Mage', 'Rogue']),
+    races: new Set(),
+    classes: new Set(),
     runSlots: 1,
     upgrades: new Set(),
     boosters: new Set(),
@@ -85,14 +85,13 @@ export const useProgressionStore = defineStore('progression', () => {
 
   // Default slot config factory
   function createDefaultSlotConfig(): SlotConfig {
-    const classId = (availableClasses.value[0] || 'Warrior').toLowerCase()
     return {
-      race: availableRaces.value[0] || 'Human',
-      class: availableClasses.value[0] || 'Warrior',
+      race: 'Random',
+      class: 'Random',
       personality: 'cautious',
       boosters: [null, null],
       toggles: { ...DEFAULT_BOT_TOGGLES },
-      sweepLevelRange: getDefaultSweepLevelRange(classId),
+      sweepLevelRange: getDefaultSweepLevelRange('warrior'),
     }
   }
 
@@ -183,9 +182,26 @@ export const useProgressionStore = defineStore('progression', () => {
 
   const hasNewAchievements = computed(() => achievementState.value.newUnlocks.size > 0)
 
-  // Computed
-  const availableRaces = computed(() => Array.from(unlocks.value.races))
-  const availableClasses = computed(() => Array.from(unlocks.value.classes))
+  // Random pool = starting races/classes + purchased non-starting races/classes
+  const availableRaces = computed(() => {
+    const pool = startingRaces.map((r) => r.name)
+    for (const name of unlocks.value.races) {
+      if (!pool.includes(name)) pool.push(name)
+    }
+    return pool
+  })
+  const availableClasses = computed(() => {
+    const pool = startingClasses.map((c) => c.name)
+    for (const name of unlocks.value.classes) {
+      if (!pool.includes(name)) pool.push(name)
+    }
+    return pool
+  })
+
+  // Chooseable = only purchased (what shows up as explicit selection buttons)
+  const chooseableRaces = computed(() => Array.from(unlocks.value.races))
+  const chooseableClasses = computed(() => Array.from(unlocks.value.classes))
+
   const maxRunSlots = computed(() => unlocks.value.runSlots)
 
   // Prestige computed
@@ -274,39 +290,39 @@ export const useProgressionStore = defineStore('progression', () => {
     bestiary: bestiary.value,
   }))
 
-  // Race/class unlock info (includes canAfford and meetsCondition for prestige)
+  // Race/class unlock info — ALL races (starting, unlockable, prestige)
   const raceUnlocks = computed(() => {
-    const locked = [...unlockableRaces, ...prestigeRaces]
     const essence = currency.value.essence
     const ctx = unlockContext.value
-    return locked.map((race) => {
-      const cost = race.prestige ? 10000 : 1000
-      // Non-prestige races always meet condition, prestige races need checkCondition
-      const meetsCondition = !race.prestige || !race.checkCondition || race.checkCondition(ctx)
+    const pool = availableRaces.value
+    return races.map((race) => {
+      const cost = race.starting ? 200 : race.prestige ? 10000 : 1000
+      const meetsCondition = race.starting || !race.checkCondition || race.checkCondition(ctx)
       return {
         ...race,
         isUnlocked: unlocks.value.races.has(race.name),
         cost,
         canAfford: essence >= cost,
         meetsCondition,
+        inRandomPool: pool.includes(race.name),
       }
     })
   })
 
   const classUnlocks = computed(() => {
-    const locked = [...unlockableClasses, ...prestigeClasses]
     const essence = currency.value.essence
     const ctx = unlockContext.value
-    return locked.map((cls) => {
-      const cost = cls.prestige ? 10000 : 1000
-      // Non-prestige classes always meet condition, prestige classes need checkCondition
-      const meetsCondition = !cls.prestige || !cls.checkCondition || cls.checkCondition(ctx)
+    const pool = availableClasses.value
+    return classes.map((cls) => {
+      const cost = cls.starting ? 200 : cls.prestige ? 10000 : 1000
+      const meetsCondition = cls.starting || !cls.checkCondition || cls.checkCondition(ctx)
       return {
         ...cls,
         isUnlocked: unlocks.value.classes.has(cls.name),
         cost,
         canAfford: essence >= cost,
         meetsCondition,
+        inRandomPool: pool.includes(cls.name),
       }
     })
   })
@@ -490,21 +506,22 @@ export const useProgressionStore = defineStore('progression', () => {
   function getSlotConfig(slot: number): SlotConfig {
     const saved = slotConfigs.value[slot]
     if (saved) {
-      // Validate saved config - fallback if race/class no longer unlocked
+      // Validate saved config - 'Random' always valid, explicit picks must be purchased
       const toggles = saved.toggles ?? { ...DEFAULT_BOT_TOGGLES }
-      // Migration: old saves without sweepLevelRange get class-based defaults
-      const effectiveClass = unlocks.value.classes.has(saved.class)
-        ? saved.class
-        : availableClasses.value[0] || 'Warrior'
+      const validRace =
+        saved.race === 'Random' || unlocks.value.races.has(saved.race) ? saved.race : 'Random'
+      const validClass =
+        saved.class === 'Random' || unlocks.value.classes.has(saved.class) ? saved.class : 'Random'
+      const effectiveClassId = validClass === 'Random' ? 'warrior' : validClass.toLowerCase()
       const sweepLevelRange =
-        saved.sweepLevelRange ?? getDefaultSweepLevelRange(effectiveClass.toLowerCase())
+        saved.sweepLevelRange ?? getDefaultSweepLevelRange(effectiveClassId)
       // Active levels default to max unlocked from global capabilities
       const activeSweepLevel = saved.activeSweepLevel ?? botCapabilities.value.sweep
       const activeSurfLevel = saved.activeSurfLevel ?? botCapabilities.value.surf
 
       return {
-        race: unlocks.value.races.has(saved.race) ? saved.race : availableRaces.value[0] || 'Human',
-        class: effectiveClass,
+        race: validRace,
+        class: validClass,
         personality: saved.personality,
         boosters: [
           saved.boosters[0] && unlocks.value.boosters.has(saved.boosters[0])
@@ -971,6 +988,8 @@ export const useProgressionStore = defineStore('progression', () => {
     // Computed
     availableRaces,
     availableClasses,
+    chooseableRaces,
+    chooseableClasses,
     maxRunSlots,
     allUpgrades,
     upgradesByCategory,

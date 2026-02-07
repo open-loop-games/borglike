@@ -27,11 +27,11 @@ const props = defineProps<{
   botBehavior?: string
 }>()
 
-// Can only unlock if: not already unlocked, can afford, and meets condition (if prestige)
+// Can only unlock if: not already unlocked, can afford, and meets condition
 const canUnlock = computed(() => {
   if (props.isUnlocked) return false
   if (!props.canAfford) return false
-  if (props.prestige && props.meetsCondition === false) return false
+  if (props.meetsCondition === false) return false
   return true
 })
 
@@ -84,7 +84,7 @@ function handleUnlock() {
       'can-afford': canUnlock,
       'cannot-afford': !isUnlocked && !canUnlock,
       'is-prestige': prestige,
-      'condition-not-met': prestige && !isUnlocked && meetsCondition === false,
+      'condition-not-met': !isUnlocked && meetsCondition === false,
     }"
     @click="handleUnlock"
     @mouseenter="handleMouseEnter"
@@ -92,7 +92,7 @@ function handleUnlock() {
   >
     <div class="unlock-badge">
       <span v-if="isUnlocked" class="badge-icon unlocked">✓</span>
-      <span v-else-if="prestige && meetsCondition === false" class="badge-icon locked">🔒</span>
+      <span v-else-if="meetsCondition === false" class="badge-icon locked">🔒</span>
       <span v-else-if="prestige" class="badge-icon prestige">★</span>
       <span v-else class="badge-icon locked">●</span>
     </div>
@@ -104,7 +104,7 @@ function handleUnlock() {
       </div>
       <div class="unlock-desc">{{ description }}</div>
       <div
-        v-if="prestige && !isUnlocked && meetsCondition === false && unlockCondition"
+        v-if="!isUnlocked && meetsCondition === false && unlockCondition"
         class="unlock-condition"
       >
         {{ unlockCondition }}

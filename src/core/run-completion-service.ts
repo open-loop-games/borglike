@@ -97,8 +97,7 @@ export function handleRunCompletionSync(result: RunResult): SyncCompletionResult
   // Add essence to currency
   progression.addEssence(essenceEarned)
 
-  // Check for and apply any milestone unlocks
-  const newUnlocks = checkMilestoneUnlocks(result, progression)
+  const newUnlocks = { races: [] as string[], classes: [] as string[] }
 
   // Check for and award any achievements
   const newAchievements = checkAchievements(result, progression)
@@ -262,98 +261,6 @@ function extractKillerMonsterInfo(deathCause?: string): KillerMonsterSnapshot | 
     level: template.minDepth ?? 1,
     hp: template.hp,
   }
-}
-
-// ============================================================================
-// MILESTONE UNLOCKS
-// ============================================================================
-
-/** Milestone definitions for automatic unlocks */
-interface Milestone {
-  condition: (result: RunResult, progression: ReturnType<typeof useProgressionStore>) => boolean
-  unlock: {
-    type: 'race' | 'class'
-    id: string
-  }
-}
-
-const MILESTONES: Milestone[] = [
-  // Reach depth 10 → unlock Ranger
-  {
-    condition: (r) => r.maxDepth >= 10,
-    unlock: { type: 'class', id: 'Ranger' },
-  },
-  // Reach depth 15 → unlock Rogue
-  {
-    condition: (r) => r.maxDepth >= 15,
-    unlock: { type: 'class', id: 'Rogue' },
-  },
-  // Reach depth 20 → unlock Mage
-  {
-    condition: (r) => r.maxDepth >= 20,
-    unlock: { type: 'class', id: 'Mage' },
-  },
-  // Reach depth 25 → unlock Priest
-  {
-    condition: (r) => r.maxDepth >= 25,
-    unlock: { type: 'class', id: 'Priest' },
-  },
-  // Reach depth 30 → unlock Paladin
-  {
-    condition: (r) => r.maxDepth >= 30,
-    unlock: { type: 'class', id: 'Paladin' },
-  },
-  // Get 100 kills in one run → unlock Dwarf
-  {
-    condition: (r) => r.kills >= 100,
-    unlock: { type: 'race', id: 'Dwarf' },
-  },
-  // Get 50 kills in one run → unlock Elf
-  {
-    condition: (r) => r.kills >= 50,
-    unlock: { type: 'race', id: 'Elf' },
-  },
-  // Victory → unlock Half-Orc and Necromancer
-  {
-    condition: (r) => r.reason === 'victory',
-    unlock: { type: 'race', id: 'Half-Orc' },
-  },
-  {
-    condition: (r) => r.reason === 'victory',
-    unlock: { type: 'class', id: 'Necromancer' },
-  },
-]
-
-/**
- * Check and apply any milestone-based unlocks
- */
-function checkMilestoneUnlocks(
-  result: RunResult,
-  progression: ReturnType<typeof useProgressionStore>
-): { races: string[]; classes: string[] } {
-  const newRaces: string[] = []
-  const newClasses: string[] = []
-
-  for (const milestone of MILESTONES) {
-    if (milestone.condition(result, progression)) {
-      const { type, id } = milestone.unlock
-
-      if (type === 'race') {
-        // Check if already unlocked
-        if (!progression.unlocks.races.has(id)) {
-          progression.unlockRace(id, 0) // Free unlock from milestone
-          newRaces.push(id)
-        }
-      } else {
-        if (!progression.unlocks.classes.has(id)) {
-          progression.unlockClass(id, 0) // Free unlock from milestone
-          newClasses.push(id)
-        }
-      }
-    }
-  }
-
-  return { races: newRaces, classes: newClasses }
 }
 
 // ============================================================================

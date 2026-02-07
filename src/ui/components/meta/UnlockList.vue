@@ -28,20 +28,20 @@ const boosterCategories = computed(() => {
 
 const unlockedCount = computed(() => {
   if (activeTab.value === 'races') {
-    return progression.availableRaces.length
+    return progression.raceUnlocks.filter((r) => r.isUnlocked).length
   }
   if (activeTab.value === 'classes') {
-    return progression.availableClasses.length
+    return progression.classUnlocks.filter((c) => c.isUnlocked).length
   }
   return progression.unlockedBoosters.length
 })
 
 const totalCount = computed(() => {
   if (activeTab.value === 'races') {
-    return progression.raceUnlocks.length + 3 // +3 for starting races
+    return progression.raceUnlocks.length
   }
   if (activeTab.value === 'classes') {
-    return progression.classUnlocks.length + 3 // +3 for starting classes
+    return progression.classUnlocks.length
   }
   return progression.allBoosters.length
 })
