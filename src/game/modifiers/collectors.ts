@@ -267,6 +267,11 @@ export function collectStatusModifiers(character: Character): StatModifier[] {
         modifiers.push(flatModifier('status', 'armor', effect.value, 'Blessing'))
         break
 
+      case 'protection':
+        // Mage Armor (+8), Shield (+15), Sanctuary (+15), Cloak of Shadows (+12)
+        modifiers.push(flatModifier('status', 'armor', effect.value, 'Protection'))
+        break
+
       case 'drained':
         // THE BIG FIX: Drained now actually reduces stats!
         // Value is percentage reduction (typically 20)
@@ -278,8 +283,8 @@ export function collectStatusModifiers(character: Character): StatModifier[] {
         modifiers.push(percentModifier('status', 'wis', -effect.value, 'Drained'))
         break
 
-      // Note: berserk damage bonus is handled in combat (getStatusDamageBonus)
-      // as it applies to actual damage dealt, not base stat
+      // Note: berserk damage bonus is handled inline in attack/rangedAttack
+      // as it applies to actual dice-based damage, not the average-based stat
 
       // Note: Binary effects like paralyzed, confused, blind, terrified
       // don't modify stats - they change behavior

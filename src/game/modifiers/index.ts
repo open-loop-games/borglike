@@ -154,9 +154,9 @@ export function toStats(effective: EffectiveStats): Stats {
  * @param character - The character to update (mutated in place)
  */
 export function recalculateAllStats(character: Character): void {
-  // Get effective stats without status effects for the "base" combat stats
-  // Status effects are applied dynamically in combat calculations
-  const effective = getEffectiveStats(character, { includeStatusEffects: false })
+  // Get effective stats with all modifiers including status effects
+  // Status effects are baked into character.combat so combat code can use them directly
+  const effective = getEffectiveStats(character, { includeStatusEffects: true })
 
   // Update combat stats
   character.combat = toCombatStats(effective)

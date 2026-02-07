@@ -128,38 +128,19 @@ export function createCharacter(config: {
   // Calculate hitdie (minimum 1)
   const hitdie = calculateHitdie(race.hitdie, gameClass.hitdie)
 
-  // Calculate initial HP: hitdie * (1 + CON/20) * baseHpFraction for level 1
+  // Initial HP/MP/combat are base values only — upgrade bonuses are applied
+  // by recalculateCombatStats() after construction via the modifier system.
   const conBonus = 1 + stats.con / 20
-  let maxHp = Math.floor(hitdie * conBonus * baseHpFraction)
-
-  // Apply vitality upgrade bonus (flat HP, then percent)
-  maxHp += bonuses.maxHpBonus
-  if (bonuses.maxHpPercent > 0) {
-    maxHp = Math.floor(maxHp * (1 + bonuses.maxHpPercent / 100))
-  }
-
-  // Calculate initial MP: (INT + WIS) / 4 if class uses magic, else 0
+  const maxHp = Math.floor(hitdie * conBonus * baseHpFraction)
   const maxMp = gameClass.usesMagic ? Math.floor((stats.int + stats.wis) / 4) : 0
-
-  // Initial combat stats
-  let baseArmor = Math.floor(stats.dex / 4)
-  baseArmor += bonuses.armorBonus // Apply resilience upgrade
-
-  let baseEvasion = Math.floor(stats.dex / 2)
-  // Apply reflexes upgrade (dodge percent adds to evasion)
-  baseEvasion += bonuses.dodgePercent
-
-  let baseMeleeDamage = Math.floor(stats.str / 3)
-  // Apply might upgrade (damage percent)
-  baseMeleeDamage = Math.floor(baseMeleeDamage * (1 + bonuses.damagePercent / 100))
 
   const combat: CombatStats = {
     maxHp,
     maxMp,
-    armor: baseArmor,
+    armor: Math.floor(stats.dex / 4),
     accuracy: 50 + stats.dex + 1, // level 1
-    evasion: baseEvasion,
-    meleeDamage: baseMeleeDamage,
+    evasion: Math.floor(stats.dex / 2),
+    meleeDamage: Math.floor(stats.str / 3),
     rangedDamage: Math.floor(stats.dex / 3), // DEX-based, no bow yet
     rangedAccuracy: 50 + stats.dex + 1, // level 1
     speed: 100,
@@ -232,6 +213,12 @@ export function createCharacter(config: {
     racialAbilityLastUse: 0,
   }
 
+  // Apply upgrade bonuses, racial modifiers, etc. via the modifier system
+  recalculateCombatStats(character)
+  // Start at full HP/MP after modifier-adjusted maximums
+  character.hp = character.maxHp
+  character.mp = character.maxMp
+
   return character
 }
 
@@ -290,7 +277,7 @@ function calculateResistancesFromRace(race: Race): Resistances {
  * @returns Computed Stats including all equipment modifiers
  */
 export function calculateStats(character: Character): Stats {
-  const effective = getEffectiveStats(character, { includeStatusEffects: false })
+  const effective = getEffectiveStats(character, { includeStatusEffects: true })
   return toStats(effective)
 }
 
@@ -392,7 +379,7 @@ function parseResistanceAbility(ability: string): { type: ResistanceType; value:
  * @returns Computed CombatStats
  */
 export function calculateCombatStats(character: Character): CombatStats {
-  const effective = getEffectiveStats(character, { includeStatusEffects: false })
+  const effective = getEffectiveStats(character, { includeStatusEffects: true })
   return toCombatStats(effective)
 }
 
@@ -460,33 +447,23 @@ function applyLevelUp(character: Character, levelupHpPercent = 100): void {
 
   // Stat gains: +1 to primary stat every 5 levels
   if (character.level % 5 === 0) {
-    const primaryStat = gameClass.primaryStat
-    character.baseStats[primaryStat]++
-    character.stats[primaryStat]++
+    character.baseStats[gameClass.primaryStat]++
   }
 
-  // Recalculate combat stats
-  const newCombat = calculateCombatStats(character)
-
-  // HP gain per level: hitdie + CON modifier
+  // Calculate HP gain BEFORE recalc (use current CON, not temporarily-debuffed CON)
   const race = getRaceById(character.raceId)
+  let hpGain = 1
   if (race) {
     const hitdie = calculateHitdie(race.hitdie, gameClass.hitdie)
-    const conMod = getConModifier(character.stats.con)
-    const baseHpGain = hitdie + conMod
-    const hpGain = Math.max(1, Math.floor((baseHpGain * levelupHpPercent) / 100))
-
-    // Heal the HP gained (don't lose current HP on level up)
-    character.hp = Math.min(character.hp + hpGain, newCombat.maxHp)
+    const conMod = getConModifier(character.baseStats.con)
+    hpGain = Math.max(1, Math.floor(((hitdie + conMod) * levelupHpPercent) / 100))
   }
 
-  // Update max values
-  character.maxHp = newCombat.maxHp
-  character.maxMp = newCombat.maxMp
-  character.combat = newCombat
+  // Recalculate all stats (includes status effects, equipment, upgrades)
+  recalculateCombatStats(character)
 
-  // Recalculate stats with equipment
-  character.stats = calculateStats(character)
+  // Heal the HP gained (additive, capped at new maxHp)
+  character.hp = Math.min(character.hp + hpGain, character.maxHp)
 
   // Learn new spells at this level
   const newSpells = getNewSpellsAtLevel(character.classId, character.level)
@@ -565,16 +542,9 @@ export function equipItem(
   // Equip the new item
   character.equipment[slot] = item
 
-  // Recalculate stats, combat, and resistances
-  character.stats = calculateStats(character)
-  character.combat = calculateCombatStats(character)
+  // Recalculate stats, combat (including status effects), and resistances
+  recalculateCombatStats(character)
   character.resistances = calculateResistances(character)
-
-  // Update max HP/MP (but don't reduce current values below 1)
-  character.maxHp = character.combat.maxHp
-  character.maxMp = character.combat.maxMp
-  character.hp = Math.min(character.hp, character.maxHp)
-  character.mp = Math.min(character.mp, character.maxMp)
 
   return { success: true, unequipped }
 }
@@ -599,16 +569,9 @@ export function unequipItem(character: Character, slot: EquipSlot): Item | null 
   // Add to inventory
   character.inventory.push(item)
 
-  // Recalculate stats, combat, and resistances
-  character.stats = calculateStats(character)
-  character.combat = calculateCombatStats(character)
+  // Recalculate stats, combat (including status effects), and resistances
+  recalculateCombatStats(character)
   character.resistances = calculateResistances(character)
-
-  // Update max HP/MP (but don't reduce current values below 1)
-  character.maxHp = character.combat.maxHp
-  character.maxMp = character.combat.maxMp
-  character.hp = Math.min(character.hp, character.maxHp)
-  character.mp = Math.min(character.mp, character.maxMp)
 
   return item
 }

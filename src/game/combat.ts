@@ -270,51 +270,10 @@ export function getDefenderStats(entity: Character | Monster): DefenderStats {
   }
 }
 
-// ============================================================================
-// STATUS EFFECT BONUSES (for combat resolution)
-// Note: These are used in attack/rangedAttack to add status bonuses to combat.
-// For stat display/calculation, use getEffectiveStats() from @game/modifiers.
-// ============================================================================
-
-/**
- * Get hit bonus from status effects (heroism, blessing)
- * Used in attack resolution to add to accuracy checks.
- */
-export function getStatusHitBonus(character: Character): number {
-  let bonus = 0
-  for (const e of character.statusEffects) {
-    if (e.type === 'heroism' || e.type === 'blessing') bonus += e.value
-  }
-  return bonus
-}
-
-/**
- * Get damage bonus from status effects (berserk)
- * Applied as flat bonus during attack resolution.
- */
-export function getStatusDamageBonus(character: Character): number {
-  const berserk = character.statusEffects.find((e) => e.type === 'berserk')
-  return berserk ? Math.floor(berserk.value * 0.5) : 0
-}
-
-/**
- * Get AC bonus from status effects (blessing + protection spells)
- * Used in attack resolution to add to defender's armor.
- * Protection: Mage Armor (+8), Shield (+15), Sanctuary (+15), Cloak of Shadows (+12)
- */
-export function getStatusACBonus(character: Character): number {
-  let bonus = 0
-  const blessing = character.statusEffects.find((e) => e.type === 'blessing')
-  if (blessing) bonus += blessing.value
-  bonus += getProtectionBonus(character)
-  return bonus
-}
-
-/** Get AC bonus from protection buff only (Mage Armor, Shield, Sanctuary, Cloak of Shadows) */
-function getProtectionBonus(character: Character): number {
-  const protection = character.statusEffects.find((e) => e.type === 'protection')
-  return protection?.value ?? 0
-}
+// Status effect bonuses (accuracy, armor, speed, etc.) are now baked into
+// character.combat via the modifier system in @game/modifiers/collectors.ts.
+// Berserk damage is the exception: applied inline in attack/rangedAttack
+// since it adds to actual dice-based damage, not the average-based stat.
 
 /**
  * Get total resistance including temporary resistances
@@ -569,11 +528,10 @@ function applyArmorReduction(
 
 /**
  * Estimate damage after character's armor reduction for bot tactical decisions.
- * Mirrors the real applyArmorReduction formula with full AC (equipment + blessing + protection).
+ * character.combat.armor already includes status effect bonuses (blessing, protection).
  */
 export function estimateDamageAfterArmor(rawDamage: number, character: Character): number {
-  const totalArmor = character.combat.armor + getStatusACBonus(character)
-  return Math.max(1, applyArmorReduction(rawDamage, totalArmor, 0))
+  return Math.max(1, applyArmorReduction(rawDamage, character.combat.armor, 0))
 }
 
 /** Map monster Element to character ResistanceType (only ELEC→LIGHTNING differs) */
@@ -595,11 +553,10 @@ function elementToResistanceType(element: Element): ResistanceType {
 export function resolveDefense(character: Character, incoming: IncomingDamage): DefenseResult {
   let damage = incoming.rawDamage
 
-  // 1. Armor reduction (equipment + blessing + protection buffs)
+  // 1. Armor reduction (already includes status effect bonuses)
   // Skipped for spells/breath weapons which bypass physical armor
   if (!incoming.skipArmor) {
-    const totalArmor = character.combat.armor + getStatusACBonus(character)
-    damage = applyArmorReduction(damage, totalArmor, incoming.penetration ?? 0)
+    damage = applyArmorReduction(damage, character.combat.armor, incoming.penetration ?? 0)
   }
 
   // 2. Elemental resistance
@@ -683,8 +640,8 @@ const MISS_RESULT: AttackResult = { hit: false, damage: 0, critical: false, kill
 /**
  * Resolve a character's melee attack against a monster
  *
- * Hit chance: 50 + accuracy + statusHitBonus - evasion (clamped 5-95%)
- * Damage: weapon dice + STR/3 + enchant + artifact + statusDamageBonus
+ * Hit chance: accuracy (includes status bonuses) - evasion (clamped 5-95%)
+ * Damage: weapon dice + STR/3 + enchant + artifact + berserk
  *   × deadliness × shield bash × brand/slay × passive multipliers
  * Defense: applyArmorReduction(monsterArmor, penetration)
  *   × crit multiplier × knowledge bonus
@@ -700,13 +657,12 @@ export function attack(
   const attackerStats = getAttackerStats(attacker)
   const defenderStats = getDefenderStats(defender)
 
-  // Apply status effect bonuses
-  const accuracyBonus = getStatusHitBonus(attacker)
-  const damageBonus = getStatusDamageBonus(attacker)
+  // Berserk damage bonus: applied to actual dice-based damage, not the average-based stat
+  const berserk = attacker.statusEffects.find((e) => e.type === 'berserk')
+  const berserkDamage = berserk ? Math.floor(berserk.value * 0.5) : 0
 
-  // Calculate hit chance and roll
-  const totalAccuracy = attackerStats.accuracy + accuracyBonus
-  const hitChance = calculateHitChance(totalAccuracy, defenderStats.evasion)
+  // Accuracy already includes status effect bonuses (heroism, blessing) via modifier system
+  const hitChance = calculateHitChance(attackerStats.accuracy, defenderStats.evasion)
 
   if (random() * 100 >= hitChance) {
     return MISS_RESULT
@@ -727,14 +683,14 @@ export function attack(
     artifactDamage += weapon.artifact.bonuses.toDam
   }
 
-  // Base damage: STR/3 + weapon dice + enchantment + artifact + status bonus
+  // Base damage: STR/3 + weapon dice + enchantment + artifact + berserk bonus
   // FINESSE: Rogues use max(STR, DEX) for melee damage
   const meleeClass = getClassById(attacker.classId)
   const meleeStatDmg = meleeClass?.finesse
     ? Math.max(attacker.stats.str, attacker.stats.dex)
     : attacker.stats.str
   let baseDamage =
-    Math.floor(meleeStatDmg / 3) + weaponDamage + enchantBonus + artifactDamage + damageBonus
+    Math.floor(meleeStatDmg / 3) + weaponDamage + enchantBonus + artifactDamage + berserkDamage
 
   // Apply deadliness multiplier
   const deadliness = calculateDeadliness(attacker)
@@ -1044,12 +1000,12 @@ export function rangedAttack(
   armorPenetration = 0,
   armorPenPercent = 0
 ): AttackResult {
-  // Get ranged accuracy
+  // Ranged accuracy already includes status effect bonuses via modifier system
   let accuracy = attacker.combat.rangedAccuracy
 
-  // Apply status effect bonuses to accuracy
-  accuracy += getStatusHitBonus(attacker)
-  const statusDamageBonus = getStatusDamageBonus(attacker)
+  // Berserk damage bonus: applied to actual dice-based damage, not the average-based stat
+  const berserk = attacker.statusEffects.find((e) => e.type === 'berserk')
+  const berserkDamage = berserk ? Math.floor(berserk.value * 0.5) : 0
 
   // Distance penalty: -5% hit chance per tile beyond 2
   const distancePenalty = Math.max(0, distance - 2) * 5
@@ -1082,13 +1038,13 @@ export function rangedAttack(
     artifactDamage += bow.artifact.bonuses.toDam
   }
 
-  // Base damage: DEX/3 + (bow dice × multiplier) + enchantment + artifact + status bonus
+  // Base damage: DEX/3 + (bow dice × multiplier) + enchantment + artifact + berserk bonus
   let baseDamage =
     Math.floor(attacker.stats.dex / 3) +
     bowDamage +
     enchantBonus +
     artifactDamage +
-    statusDamageBonus
+    berserkDamage
 
   // Apply ranged deadliness multiplier (from bow enchantment + DEX + level)
   const deadliness = calculateRangedDeadliness(attacker)

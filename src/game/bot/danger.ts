@@ -18,7 +18,6 @@ import {
 } from './items'
 import { getEffectiveDamage, countAdjacentMonsters } from './combat'
 import { getMonsterAverageDamage } from '../monster-combat'
-import { getStatusACBonus } from '../combat'
 
 // Re-export types for convenience
 export type { DangerGrid, DangerMap, DangerResult, DangerTier }
@@ -330,8 +329,8 @@ export function getMonsterThreat(
   threat *= Math.min(turnsToKill / 2, 3) // Cap at 3x for very tanky monsters
 
   // Apply character's armor reduction to perceived threat (mirrors real formula)
-  const totalArmor = character.combat.armor + getStatusACBonus(character)
-  const armorReductionPct = Math.min(totalArmor / 2, 50)
+  // character.combat.armor already includes status effect bonuses (blessing, protection)
+  const armorReductionPct = Math.min(character.combat.armor / 2, 50)
   threat *= (100 - armorReductionPct) / 100
 
   // Protection from Evil: halves threat from EVIL monsters

@@ -28,7 +28,7 @@ import { selectGoldPile, rollGoldValue, getDefaultGoldDrop, rollMonsterGold } fr
 import { getTrapById } from './data/traps'
 import type { MonsterTemplate } from './data/monsters'
 import { DEFAULT_BONUSES } from './upgrade-effects'
-import { clearPoison, isPoisoned, applyPoison } from './status-effects'
+import { addStatusEffect, clearPoison, isPoisoned, applyPoison } from './status-effects'
 import { incrementStat, checkCloseCall } from './stats-helpers'
 
 // ============================================================================
@@ -107,8 +107,7 @@ export function useFountain(game: GameState): boolean {
     case 'buff': {
       // Apply blessing status effect
       const duration = 20 + Math.floor(template.power / 2)
-      char.statusEffects = char.statusEffects.filter((e) => e.type !== 'blessing')
-      char.statusEffects.push({
+      addStatusEffect(char, {
         type: 'blessing',
         turnsRemaining: duration,
         value: Math.floor(template.power / 4),
@@ -816,8 +815,7 @@ export function triggerTrap(game: GameState, position: Point): boolean {
       incrementStat(game.stats.statusEffectsSuffered, 'stun', 1)
 
       // Apply stun (1-2 turns)
-      char.statusEffects = char.statusEffects.filter((e) => e.type !== 'stun')
-      char.statusEffects.push({
+      addStatusEffect(char, {
         type: 'stun',
         turnsRemaining: randomInt(1, 2),
         value: 0,

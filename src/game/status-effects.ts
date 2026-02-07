@@ -14,6 +14,7 @@ import type {
   MessageTag,
   MessageImportance,
 } from './types'
+import { recalculateAllStats } from './modifiers'
 
 // ============================================================================
 // STATUS PROTECTIONS (from equipment abilities)
@@ -109,6 +110,7 @@ export function hasEquipmentAbility(character: Character, abilityName: string): 
 export function addStatusEffect(character: Character, effect: StatusEffect): void {
   character.statusEffects = character.statusEffects.filter((e) => e.type !== effect.type)
   character.statusEffects.push(effect)
+  recalculateAllStats(character)
 }
 
 /**
@@ -116,6 +118,7 @@ export function addStatusEffect(character: Character, effect: StatusEffect): voi
  */
 export function removeStatusEffect(character: Character, type: StatusEffect['type']): void {
   character.statusEffects = character.statusEffects.filter((e) => e.type !== type)
+  recalculateAllStats(character)
 }
 
 /**
@@ -150,6 +153,11 @@ export function tickStatusEffects(character: Character): StatusEffect['type'][] 
     }
     return true
   })
+
+  // Recalculate stats if any stat-affecting effects expired
+  if (expired.length > 0) {
+    recalculateAllStats(character)
+  }
 
   return expired
 }
@@ -351,6 +359,7 @@ export function removeStatusEffectIfPresent(
 ): boolean {
   const had = character.statusEffects.some((e) => e.type === type)
   character.statusEffects = character.statusEffects.filter((e) => e.type !== type)
+  if (had) recalculateAllStats(character)
   return had
 }
 
@@ -369,6 +378,7 @@ export function removeAllDebuffs(character: Character): StatusEffect['type'][] {
     return true
   })
 
+  if (removed.length > 0) recalculateAllStats(character)
   return removed
 }
 
