@@ -9,7 +9,7 @@ import type { Monster, Character, MonsterAttack, AttackEffect, StatusEffectType 
 import { STATUS_DURATIONS } from './types'
 import { rollDice, getDiceAverage } from './dice'
 import { random } from './rng'
-import { addStatusEffect, applyPoison, hasProtectionFrom } from './status-effects'
+import { addStatusEffect, applyPoison, hasProtectionFrom, hasEquipmentAbility } from './status-effects'
 import { getRaceById } from './data/races'
 import { resolveDefense } from './combat'
 import type { KnowledgeBonuses } from './knowledge-effects'
@@ -214,13 +214,15 @@ function tryInflictStatus(character: Character, effect: AttackEffect): StatusEff
     return null
   }
 
-  // RACIAL: Sustain abilities block stat drain
-  // sustain_str (Half-Troll), sustain_con (Dunadan)
+  // Sustain abilities block stat drain (racial or equipment)
   if (effect.type === 'DRAIN') {
-    const hasSustain = raceAbilityIds.some((id) =>
+    const hasRacialSustain = raceAbilityIds.some((id) =>
       ['sustain_dex', 'sustain_str', 'sustain_con'].includes(id)
     )
-    if (hasSustain) {
+    const hasEquipSustain = ['Sustain STR', 'Sustain DEX', 'Sustain CON', 'Sustain WIS'].some(
+      (s) => hasEquipmentAbility(character, s),
+    )
+    if (hasRacialSustain || hasEquipSustain) {
       return null
     }
   }

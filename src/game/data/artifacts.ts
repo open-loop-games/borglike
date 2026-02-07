@@ -74,11 +74,10 @@ export const ARTIFACTS: ArtifactTemplate[] = [
     weight: 130,
     bonuses: {
       DEX: 2,
-      STEALTH: 2,
       toHit: 12,
       toDam: 12,
     },
-    abilities: ['Slay Troll x3', 'Slay Orc x3', 'Feather Fall'],
+    abilities: ['Slay Troll x3', 'Slay Orc x3'],
     description:
       'The "Singing Blade", whose wearer can slay Orcs and Trolls in the hidden and secret places of the earth.',
   },
@@ -130,7 +129,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
     damage: '3d6',
     weight: 150,
     bonuses: {
-      STEALTH: 2,
       SPEED: 2,
       toHit: 16,
       toDam: 12,
@@ -183,7 +181,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Slay Orc x3',
       'Brand Fire',
       'Resist Fire',
-      'Resist Nether',
       'Hold Life',
       'Activation: Probing',
     ],
@@ -199,7 +196,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
     damage: '2d5',
     weight: 150,
     bonuses: {
-      SEARCH: 1,
       LIGHT: 1,
       toHit: 10,
       toDam: 15,
@@ -211,8 +207,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Brand Fire',
       'Resist Fire',
       'Resist Light',
-      'Blessed',
-      'Slow Digestion',
     ],
     description:
       'This fiery, shining blade, mate to Orcrist, earned its sobriquet "Beater" from dying orcs who dared to behold hidden Gondolin.',
@@ -239,10 +233,8 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Slay Undead x3',
       'Brand Fire',
       'Resist Fire',
-      'Resist Disenchantment',
       'Free Action',
       'Protection from Fear',
-      'Blessed',
       'Sustain STR',
       'Sustain DEX',
       'Activation: Fire Ball (72 damage)',
@@ -261,7 +253,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
     bonuses: {
       INT: 2,
       WIS: 2,
-      SEARCH: 2,
       toAC: 10,
     },
     abilities: ['Protection from Blindness', 'Protection from Confusion', 'Activation: Detect All'],
@@ -280,7 +271,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       SPEED: 3,
       toAC: 25,
     },
-    abilities: ['Resist Acid', 'Resist Shards', 'Free Action'],
+    abilities: ['Resist Acid', 'Free Action'],
     description:
       'An amazingly light tunic and skirt sewn with thick, overlapping scales of hardened leather. Those who wear it move with agility and assurance.',
   },
@@ -312,8 +303,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Resist Light',
       'Free Action',
       'Protection from Fear',
-      'Blessed',
-      'Slow Digestion',
       'Regeneration',
       'Activation: Cold Ball (100 damage)',
     ],
@@ -332,7 +321,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       SPEED: 15,
       toAC: 20,
     },
-    abilities: ['Resist Nexus', 'Activation: Haste Self'],
+    abilities: ['Activation: Haste Self'],
     description:
       "This wondrous pair of leather boots once sped Feanor, creator of the Silmarils and the mightiest of the Eldar, to fulfill his hero's challenge.",
   },
@@ -346,7 +335,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
     weight: 120,
     bonuses: {
       WIS: 4,
-      TUNNEL: 8,
       toHit: 19,
       toDam: 21,
       toAC: 5,
@@ -361,7 +349,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Resist Lightning',
       'Resist Fire',
       'Resist Cold',
-      'Resist Nexus',
       'Free Action',
       'Protection from Fear',
     ],
@@ -380,7 +367,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       STR: 4,
       DEX: 2,
       CON: 4,
-      STEALTH: -1,
       toAC: 20,
     },
     abilities: [

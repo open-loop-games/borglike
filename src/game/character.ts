@@ -22,7 +22,7 @@ import { DEFAULT_BONUSES } from './upgrade-effects'
 import type { BoosterBonuses } from './booster-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { getSpellIdsForLevel, getNewSpellsAtLevel } from './data/class-spells'
-import { addStatusEffect, hasStatusEffect } from './status-effects'
+import { addStatusEffect, hasStatusEffect, hasEquipmentAbility } from './status-effects'
 import { getEffectiveStats, toStats, toCombatStats, recalculateAllStats } from './modifiers'
 
 // ============================================================================
@@ -329,6 +329,11 @@ export function calculateResistances(character: Character): Resistances {
     }
   }
 
+  // Equipment Hold Life grants DRAIN resistance (same as racial hold_life)
+  if (hasEquipmentAbility(character, 'Hold Life')) {
+    resistances.DRAIN = Math.max(resistances.DRAIN ?? 0, 75)
+  }
+
   return resistances
 }
 
@@ -364,8 +369,7 @@ function parseResistanceAbility(ability: string): { type: ResistanceType; value:
     Poison: 'POISON',
     Light: 'LIGHT',
     Dark: 'DARK',
-    // Additional elements that don't have ResistanceType equivalents are skipped
-    // (Shards, Nexus, Nether, Disenchantment - could be added later)
+    // Unrecognized elements are skipped
   }
 
   const type = elementMap[element]
@@ -651,8 +655,16 @@ export function calculateAttackCount(character: Character): number {
   // Level bonus: +1 attack per 3 levels
   const levelBonus = Math.floor(character.level / 3)
 
+  // Equipment BLOWS bonus (e.g. Sting +2)
+  let blowsBonus = 0
+  for (const item of Object.values(character.equipment)) {
+    if (!item) continue
+    blowsBonus += item.artifact?.bonuses?.BLOWS ?? 0
+    blowsBonus += item.template.bonuses?.BLOWS ?? 0
+  }
+
   // Total attacks: base 1 + bonuses, capped at class max
-  const totalAttacks = 1 + classBonus + strBonus + levelBonus
+  const totalAttacks = 1 + classBonus + strBonus + levelBonus + blowsBonus
 
   return Math.min(totalAttacks, gameClass.maxAttacks)
 }
