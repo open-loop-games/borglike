@@ -23,6 +23,7 @@ import { calculateLightRadius } from './lighting'
 import { randomInt, random } from './rng'
 import { rollDice } from './dice'
 import { getSpellById, getSchoolStat, type SpellTemplate } from './data/spells'
+import { getClassById } from './data/classes'
 import { getSpellIdsForLevel } from './data/class-spells'
 import { applyDamage, calculateSpellDeadliness, applyDeadliness } from './combat'
 import { handleMonsterKill } from './actions/combat'
@@ -863,7 +864,12 @@ function castHealSpell(game: GameState, spell: SpellTemplate): ActionResult {
     actualHeal = game.character.hp - oldHp
   } else {
     // Standard healing with spell power calculation
-    const healAmount = calculateSpellPower(game.character, spell, true)
+    let healAmount = calculateSpellPower(game.character, spell, true)
+    // Apply class heal potency modifier (e.g. Paladin heals for 80%)
+    const gameClass = getClassById(game.character.classId)
+    if (gameClass?.healPotency) {
+      healAmount = Math.floor(healAmount * gameClass.healPotency)
+    }
     game.character.hp = Math.min(game.character.hp + healAmount, game.character.maxHp)
     actualHeal = game.character.hp - oldHp
   }

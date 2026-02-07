@@ -41,6 +41,8 @@ export interface GameClass {
   canShieldBash?: boolean
   /** COMBAT_REGEN: Percentage of melee damage dealt that heals the character (Blackguard) */
   combatLifesteal?: number
+  /** Spell healing potency modifier (1.0 = full, 0.8 = 80%). Hybrid classes heal for less. */
+  healPotency?: number
   /** FINESSE: Uses max(STR, DEX) for melee damage and deadliness instead of just STR (Rogue) */
   finesse?: boolean
 }
@@ -212,7 +214,7 @@ const paladin: GameClass = {
   },
   description: 'Holy warriors who combine martial prowess with divine power.',
   botBehavior: 'Adaptive: switches between melee and healing, balanced approach',
-  canShieldBash: true,
+  healPotency: 0.8, // Hybrid warrior-caster heals for 80%
 }
 
 // =============================================================================
@@ -311,7 +313,7 @@ const archmage: GameClass = {
 const druid: GameClass = {
   id: 'druid',
   name: 'Druid',
-  stats: { str: -2, int: 0, wis: 3, dex: -2, con: 0 },
+  stats: { str: -2, int: 0, wis: 2, dex: -2, con: 0 },
   hitdie: 4,
   maxAttacks: 4,
   primaryStat: 'wis',
@@ -360,7 +362,7 @@ const blackguard: GameClass = {
   checkCondition: (ctx) => ctx.globalStats.totalKills >= 10000,
   description: 'Dark knights who regenerate health through combat.',
   botBehavior: 'Bloodthirsty: aggressive melee, heals by dealing damage, fears nothing',
-  combatLifesteal: 10, // Heals 10% of melee damage dealt
+  combatLifesteal: 8, // Heals 8% of melee damage dealt
 }
 
 // =============================================================================

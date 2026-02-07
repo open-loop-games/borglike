@@ -452,7 +452,7 @@ const root_shot: SpellTemplate = {
   baseDamage: '1d4',
   damageScaling: 0,
   damageType: 'nature',
-  debuff: { type: 'slow', value: 50, duration: 3 }, // 50% slow
+  debuff: { type: 'slow', value: 40, duration: 3 }, // 40% slow
   description: 'An arrow wrapped in vines roots your target in place.',
 }
 
