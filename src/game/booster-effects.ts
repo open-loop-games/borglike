@@ -184,6 +184,15 @@ function applySpecialEffect(bonuses: BoosterBonuses, effect: string, value?: num
     case 'adrenaline_rush':
       bonuses.adrenalineRushPercent = value ?? 25
       break
+    case 'cheat_stats': {
+      const bonus = value ?? 10
+      bonuses.strBonus += bonus
+      bonuses.dexBonus += bonus
+      bonuses.conBonus += bonus
+      bonuses.intBonus += bonus
+      bonuses.wisBonus += bonus
+      break
+    }
   }
 }
 

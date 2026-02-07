@@ -61,6 +61,14 @@ const emit = defineEmits<{
         <span class="essence-value">{{ progression.currency.essence.toLocaleString() }}</span>
         <span class="essence-label">Essence</span>
       </div>
+      <button
+        v-if="settings.settings.cheatMode"
+        class="cheat-btn"
+        title="Cheat: +100 Essence"
+        @click="progression.addEssence(100)"
+      >
+        +100
+      </button>
     </div>
 
     <div class="header-right">
@@ -203,6 +211,23 @@ const emit = defineEmits<{
   font-size: var(--text-sm);
   color: var(--text-secondary);
   text-transform: uppercase;
+}
+
+.cheat-btn {
+  padding: var(--space-1) var(--space-3);
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid var(--amber);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: bold;
+  color: var(--amber);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cheat-btn:hover {
+  background: rgba(245, 158, 11, 0.3);
 }
 
 .header-right {

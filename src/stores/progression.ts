@@ -39,6 +39,7 @@ import {
   boosters,
   getBoosterById,
   canUnlockBooster as checkBoosterPrereqs,
+  cheatBooster,
 } from '@game/data/boosters'
 import {
   essenceFromDeath,
@@ -48,6 +49,7 @@ import {
   essenceForNextPrestige,
 } from '@core/formulas'
 import { saveImmediately, saveManualBackup } from './persistence'
+import { useSettingsStore } from './settings'
 
 export interface UpgradeState {
   [upgradeId: string]: number // Current level of each upgrade
@@ -382,7 +384,15 @@ export const useProgressionStore = defineStore('progression', () => {
 
   const allBoosters = computed(() => boosterData.value.all)
   const boostersByCategory = computed(() => boosterData.value.byCategory)
-  const unlockedBoosters = computed(() => boosters.filter((b) => unlocks.value.boosters.has(b.id)))
+  const unlockedBoosters = computed(() => {
+    const unlocked = boosters.filter((b) => unlocks.value.boosters.has(b.id))
+    // Include cheat booster when cheat mode is enabled
+    const settingsStore = useSettingsStore()
+    if (settingsStore.settings.cheatMode) {
+      unlocked.push(cheatBooster)
+    }
+    return unlocked
+  })
   const availableBoosters = computed(() =>
     unlockedBoosters.value.filter(
       (b) => b.id !== activeLoadout.value.boosters[0] && b.id !== activeLoadout.value.boosters[1]

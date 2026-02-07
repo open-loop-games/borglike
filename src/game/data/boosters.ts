@@ -325,6 +325,22 @@ const essenceMagnet: BoosterDefinition = {
 }
 
 // ============================================================================
+// CHEAT BOOSTERS (only available when cheat mode is enabled)
+// ============================================================================
+
+const cheatBooster: BoosterDefinition = {
+  id: 'cheat_booster',
+  name: 'Cheat: +10 All Stats',
+  description: '+10 to STR, DEX, CON, INT, WIS',
+  category: 'special',
+  icon: '⚡',
+  unlockCost: 0,
+  effect: { type: 'special', effect: 'cheat_stats', value: 10 },
+}
+
+export { cheatBooster }
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -374,6 +390,7 @@ export const boostersByCategory = {
  * Get a booster definition by ID
  */
 export function getBoosterById(id: string): BoosterDefinition | undefined {
+  if (id === cheatBooster.id) return cheatBooster
   return boosters.find((b) => b.id === id)
 }
 

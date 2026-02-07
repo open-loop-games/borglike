@@ -27,7 +27,7 @@ export interface GameSettings {
 
   // Advanced
   showFPS: boolean
-  debugMode: boolean
+  cheatMode: boolean
 }
 
 /** Panel collapse states for the expanded run view */
@@ -67,7 +67,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   musicEnabled: false,
   volume: 0.7,
   showFPS: false,
-  debugMode: false,
+  cheatMode: false,
 }
 
 export const useSettingsStore = defineStore('settings', () => {

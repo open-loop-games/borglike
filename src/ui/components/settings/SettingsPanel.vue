@@ -238,16 +238,16 @@ function cancelReset() {
 
           <div class="setting-row">
             <div class="setting-info">
-              <span class="setting-label">Debug Mode</span>
-              <span class="setting-desc">Show debug information</span>
+              <span class="setting-label">Cheat Mode</span>
+              <span class="setting-desc">Enable cheat tools (free essence, stat boosters)</span>
             </div>
             <label class="toggle">
               <input
                 type="checkbox"
-                :checked="settingsStore.settings.debugMode"
+                :checked="settingsStore.settings.cheatMode"
                 @change="
                   settingsStore.updateSetting(
-                    'debugMode',
+                    'cheatMode',
                     ($event.target as HTMLInputElement).checked
                   )
                 "
