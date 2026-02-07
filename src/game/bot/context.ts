@@ -84,6 +84,9 @@ function createMinimalBotState(): BotState {
     sweepFlipActive: false,
     sweepFlipTargetDepth: null,
     sweepFlipVisitedBlocked: false,
+    // Kite duration tracking
+    kiteTargetId: null,
+    kiteTargetStartTurn: 0,
     // Unique hunt level flip
     huntingUniqueBlocker: null,
     uniqueHuntFlipDepth: null,

@@ -161,8 +161,7 @@ function handleCriticalTier(
     if (adjacentMonster && effective.kiting >= 2) {
       const optimalRange = effective.kiting >= 3 ? classProfile.engageDistance || 3 : 3
       const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
-      if (kiteDir) {
-        setKiteGoal(context, adjacentMonster, kiteDir)
+      if (kiteDir && setKiteGoal(context, adjacentMonster, kiteDir)) {
         recordProgress(botState, game.turn)
         return { type: 'move', direction: kiteDir }
       }
@@ -310,8 +309,7 @@ function handleDangerTier(
       if (capabilities.kiting >= 2) {
         const optimalRange = capabilities.kiting >= 3 ? classProfile.engageDistance || 3 : 3
         const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
-        if (kiteDir) {
-          setKiteGoal(context, adjacentMonster, kiteDir)
+        if (kiteDir && setKiteGoal(context, adjacentMonster, kiteDir)) {
           recordProgress(botState, game.turn)
           return { type: 'move', direction: kiteDir }
         }
@@ -551,8 +549,7 @@ function handleCautionTier(
         if (capabilities.kiting >= 2) {
           const optimalRange = capabilities.kiting >= 3 ? classProfile.engageDistance || 3 : 3
           const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
-          if (kiteDir) {
-            setKiteGoal(context, adjacentMonster, kiteDir)
+          if (kiteDir && setKiteGoal(context, adjacentMonster, kiteDir)) {
             recordProgress(botState, game.turn)
             return { type: 'move', direction: kiteDir }
           }
@@ -958,13 +955,27 @@ function setKillGoal(
 /**
  * Set a KITE goal when tier-actions trigger kiting movement.
  * Prevents the goal system from overriding the kite with DESCEND/EXPLORE next tick.
+ * Returns false if kite duration exceeded (caller should NOT kite).
  */
+const MAX_KITE_DURATION = 100
+
 function setKiteGoal(
   context: BotContext,
   monster: { id: string; position: { x: number; y: number }; template: { name: string } },
   kiteDir: Direction
-): void {
+): boolean {
   const { game, botState } = context
+
+  // Track how long we've been kiting the same target.
+  // If exceeded, refuse the kite so goal movement can trigger the ascend escape valve.
+  if (botState.kiteTargetId !== monster.id) {
+    botState.kiteTargetId = monster.id
+    botState.kiteTargetStartTurn = game.turn
+  }
+  if (game.turn - botState.kiteTargetStartTurn > MAX_KITE_DURATION) {
+    return false
+  }
+
   const pos = game.character.position
   const dx =
     kiteDir === 'e' || kiteDir === 'ne' || kiteDir === 'se'
@@ -985,4 +996,5 @@ function setKiteGoal(
     reason: `Kiting away from ${monster.template.name}`,
     startTurn: game.turn,
   })
+  return true
 }

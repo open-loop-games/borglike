@@ -309,29 +309,30 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 
 ## Baselines
 
-### Class Baseline @ `62bddb9` (100 runs, 50k turns, seed=1000, upgrades=full)
+### Class Baseline @ `c193064+kite` (100 runs, 50k turns, seed=1000, upgrades=full)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
-| **Paladin** | 49.7 | 50 | 0% | 22388 | 686 | 8 | ✅ Endgame |
-| **Priest** | 48.4 | 50 | 0% | 25468 | 782 | 1 | ✅ Endgame |
-| **Druid** | 48.2 | 50 | 0% | 22828 | 633 | 0 | ✅ Endgame |
-| **Mage** | 47.7 | 50 | 1% | 28113 | 631 | 2 | ✅ Endgame |
-| **Necromancer** | 47.7 | 50 | 2% | 23784 | 651 | 3 | ✅ Endgame |
-| **Ranger** | 47.1 | 50 | 0% | 21521 | 606 | 1 | ✅ Endgame |
-| **Blackguard** | 46.9 | 50 | 0% | 15143 | 515 | 2 | ✅ Endgame |
-| **Rogue** | 46.4 | 50 | 0% | 21402 | 577 | 1 | ✅ Endgame |
-| **Berserker** | 45.7 | 50 | 0% | 14063 | 466 | 1 | ✅ Endgame |
-| **Archmage** | 45.4 | 50 | 4% | 25714 | 579 | 0 | ✅ Endgame |
-| **Warrior** | 44.1 | 50 | 0% | 14909 | 454 | 1 | ✅ Endgame |
+| **Paladin** | 49.9 | 50 | 0% | 22899 | 686 | 9 | ✅ Endgame |
+| **Druid** | 49.2 | 50 | 0% | 22792 | 648 | 1 | ✅ Endgame |
+| **Blackguard** | 49.1 | 50 | 0% | 15545 | 535 | 11 | ✅ Endgame |
+| **Ranger** | 48.9 | 50 | 0% | 21775 | 633 | 9 | ✅ Endgame |
+| **Priest** | 48.8 | 50 | 0% | 25742 | 797 | 2 | ✅ Endgame |
+| **Mage** | 48.4 | 50 | 1% | 28793 | 639 | 2 | ✅ Endgame |
+| **Rogue** | 48.2 | 50 | 0% | 21763 | 600 | 1 | ✅ Endgame |
+| **Necromancer** | 48.0 | 50 | 3% | 24187 | 653 | 7 | ✅ Endgame |
+| **Warrior** | 47.6 | 50 | 0% | 15587 | 500 | 3 | ✅ Endgame |
+| **Berserker** | 47.4 | 50 | 0% | 14284 | 488 | 8 | ✅ Endgame |
+| **Archmage** | 46.6 | 50 | 3% | 27612 | 601 | 3 | ✅ Endgame |
 
-**Summary:** All 11 classes endgame-viable. **20 Morgoth kills** (8 paladin, 3 necromancer, 2 blackguard, 2 mage, 1 each priest/ranger/rogue/berserker/warrior). CB rates: archmage 4%, necromancer 2%, mage 1%, all others 0%. Spread: 44.1-49.7 (5.6 depth). Runtime: 367s.
+**Summary:** All 11 classes endgame-viable. **54 Morgoth kills** (11 blackguard, 9 paladin, 9 ranger, 8 berserker, 7 necromancer, 3 warrior, 3 archmage, 2 mage, 2 priest, 1 druid, 1 rogue). CB rates: archmage 3%, necromancer 3%, mage 1%, all others 0%. Spread: 46.6-49.9 (3.3 depth). Runtime: 339s.
 
 **Tiers:**
-- **S:** Paladin (49.7) — dominant, 8 Morgoth kills
-- **A:** Priest (48.4), Druid (48.2), Mage (47.7), Necromancer (47.7)
-- **B:** Ranger (47.1), Blackguard (46.9), Rogue (46.4)
-- **C:** Berserker (45.7), Archmage (45.4), Warrior (44.1)
+- **S:** Paladin (49.9), Druid (49.2), Blackguard (49.1)
+- **A:** Ranger (48.9), Priest (48.8), Mage (48.4), Rogue (48.2), Necromancer (48.0)
+- **B:** Warrior (47.6), Berserker (47.4), Archmage (46.6)
+
+**Changes from `62bddb9`:** Kite oscillation fix boosted ranger (+1.8, 1→9 Morgoth). Bow/caster target differentiation in getKiteGoal — bow users target bot position (prevents approach oscillation), casters target monster position (allows melee on resistant monsters). Kite duration tracking (100-turn limit) in both combat.ts and tier-actions with ascend escape valve. Tier-actions kite duration was the key fix — without it, tier-actions short-circuited the goal system, preventing the combat.ts escape valve from firing. Archmage CB dropped from 10%→3%, mage 2%→1%.
 
 ---
 

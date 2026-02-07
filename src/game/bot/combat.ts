@@ -788,7 +788,7 @@ function getOptimalRange(kitingLevel: number, classEngageDistance: number): numb
  * Gated by kiting capability level - L0 disables kiting entirely.
  */
 export function getKiteGoal(context: BotContext): BotGoal | null {
-  const { game, classProfile, visibleMonsters } = context
+  const { game, botState, classProfile, visibleMonsters } = context
   const character = game.character
   const pos = character.position
 
@@ -815,6 +815,32 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
   const closestMonster = closest.monster
   const closestDist = closest.distance
 
+  // Track how long we've been kiting the same target (persists across goal re-evaluations).
+  // Give up after MAX_KITE_DURATION turns to prevent infinite kiting of unkillable monsters.
+  const MAX_KITE_DURATION = 100
+  const primaryTarget = closestMonster.id
+  if (botState.kiteTargetId !== primaryTarget) {
+    botState.kiteTargetId = primaryTarget
+    botState.kiteTargetStartTurn = game.turn
+  }
+  const kiteDuration = game.turn - botState.kiteTargetStartTurn
+  if (kiteDuration > MAX_KITE_DURATION) {
+    botState.kiteTargetId = null // Reset so we can kite again on a new level
+    // Escape valve: ascend to get away from unkillable monster
+    const stairsUp = botState.knownStairsUp ?? game.currentLevel.stairsUp
+    if (stairsUp && game.character.depth > 1) {
+      return {
+        type: 'ASCEND_TO_FARM',
+        target: stairsUp,
+        targetId: null,
+        reason: `Abandoning unkillable ${closestMonster.template.name} — ascending`,
+        startTurn: game.turn,
+      }
+    }
+    // No stairs up known or at depth 1 — just release the KITE goal
+    return null
+  }
+
   // L1: Ranged stance — attack at range, but NO repositioning (zero CB risk)
   // Only Case 3 (at range → attack). If too close, let melee handle it.
   if (kitingLevel === 1) {
@@ -823,10 +849,19 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
     // Attack from current position if in range
     const target = findBestRangedTarget(game, visibleMonsters)
     if (target) {
+      // Bow users: already kiting this target from range — release so bot can explore/descend
+      if (
+        hasBow &&
+        botState.currentGoal?.type === 'KITE' &&
+        botState.currentGoal.targetId === target.id
+      ) {
+        return null
+      }
       if (hasBow ? canRangedAttack(character, target.position) : true) {
         return {
           type: 'KITE',
-          target: pos,
+          // Bow: stay in place (prevents oscillation). Caster: approach to melee if needed.
+          target: hasBow ? pos : target.position,
           targetId: target.id,
           reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${target.template.name} at range`,
           startTurn: game.turn,
@@ -876,11 +911,20 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
 
     // Can't kite away - if not adjacent, attack from current position
     if (closestDist >= 2) {
+      // Bow users: already kiting this target — release so bot can explore/descend
+      if (
+        hasBow &&
+        botState.currentGoal?.type === 'KITE' &&
+        botState.currentGoal.targetId === closestMonster.id
+      ) {
+        return null
+      }
       // For bow users, check canRangedAttack; for casters, any visible target is valid
       if (hasBow ? canRangedAttack(character, closestMonster.position) : true) {
         return {
           type: 'KITE',
-          target: pos,
+          // Bow: stay in place. Caster: approach to melee if needed.
+          target: hasBow ? pos : closestMonster.position,
           targetId: closestMonster.id,
           reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${closestMonster.template.name} (can't kite)`,
           startTurn: game.turn,
@@ -896,11 +940,20 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
   // Find best target (might be different from closest)
   const target = findBestRangedTarget(game, visibleMonsters)
   if (target) {
+    // Bow users: already kiting this target from range — release so bot can explore/descend
+    if (
+      hasBow &&
+      botState.currentGoal?.type === 'KITE' &&
+      botState.currentGoal.targetId === target.id
+    ) {
+      return null
+    }
     // For bow users, verify line of sight; for casters, any visible target works
     if (hasBow ? canRangedAttack(character, target.position) : true) {
       return {
         type: 'KITE',
-        target: pos,
+        // Bow: stay in place (prevents oscillation). Caster: approach to melee if needed.
+        target: hasBow ? pos : target.position,
         targetId: target.id,
         reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${target.template.name} at range`,
         startTurn: game.turn,

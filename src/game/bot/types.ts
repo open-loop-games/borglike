@@ -324,6 +324,12 @@ export interface BotState {
   /** Cached floor tile count for current level (non-wall tiles) */
   cachedLevelFloorCount: number
 
+  // Kite duration tracking (prevent infinite kiting of unkillable monsters)
+  /** Monster ID we've been kiting (persists across goal re-evaluations) */
+  kiteTargetId: string | null
+  /** Turn when we started kiting this specific target */
+  kiteTargetStartTurn: number
+
   // Danger retreat state (cautious personality)
   /** DESCEND blocked by danger, cautious bot should retreat (ascend) instead of bullrush */
   dangerBlockedDescent: boolean

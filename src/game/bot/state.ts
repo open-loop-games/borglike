@@ -66,6 +66,9 @@ export function createBotState(): BotState {
     sweepFlipActive: false,
     sweepFlipTargetDepth: null,
     sweepFlipVisitedBlocked: false,
+    // Kite duration tracking
+    kiteTargetId: null,
+    kiteTargetStartTurn: 0,
     // Unique hunt level flip
     huntingUniqueBlocker: null,
     uniqueHuntFlipDepth: null,
@@ -104,6 +107,8 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   state.cachedSafetyFlow = null
   state.twitchCounter = 0
   state.lastProgressTurn = turn
+  state.kiteTargetId = null
+  state.kiteTargetStartTurn = 0
   // Town tracking - reset when entering any level
   state.isInTown = newDepth === 0
   state.townEntryTurn = newDepth === 0 ? turn : 0
