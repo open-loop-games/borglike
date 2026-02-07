@@ -23,6 +23,7 @@ import {
   type BotState,
 } from '@/game'
 import { randomInt } from '@game/rng'
+import { getRaceById, getClassById } from '@game/data'
 import { handleRunCompletionSync } from '@/core/run-completion-service'
 import {
   runFullCatchUp,
@@ -805,8 +806,19 @@ function handleGameEndSync(runId: string, result: RunResult, slot: number): Prom
   // Stop the instance (clears interval, removes from map)
   stopRun(runId)
 
-  // Check auto-restart (uses saved slot config) -- only during normal play, not catch-up
-  if (!isCatchUpActive()) {
+  // Record completion for catch-up overlay ticker
+  if (isCatchUpActive()) {
+    const engineState = useEngineStateStore()
+    const char = result.game.character
+    engineState.recordCompletion({
+      slot,
+      race: getRaceById(char.raceId)?.name ?? char.raceId,
+      class: getClassById(char.classId)?.name ?? char.classId,
+      depth: result.maxDepth,
+      essence: completion.essenceEarned,
+      victory: completion.isVictory,
+    })
+  } else {
     checkAutoRestart(slot)
   }
 

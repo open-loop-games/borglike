@@ -9,11 +9,21 @@ export interface SlotCatchUpProgress {
   deathsDuringCatchUp: number
 }
 
+export interface CatchUpCompletion {
+  slot: number
+  race: string
+  class: string
+  depth: number
+  essence: number
+  victory: boolean
+}
+
 export const useEngineStateStore = defineStore('engine-state', () => {
   const isPaused = ref(false)
   const isCatchingUp = ref(false)
   const catchUpProgress = ref<SlotCatchUpProgress[]>([])
   const catchUpTargetMs = ref(0)
+  const catchUpCompletions = ref<CatchUpCompletion[]>([])
 
   const overallProgress = computed(() => {
     const entries = catchUpProgress.value
@@ -53,6 +63,10 @@ export const useEngineStateStore = defineStore('engine-state', () => {
     if (entry) entry.deathsDuringCatchUp++
   }
 
+  function recordCompletion(completion: CatchUpCompletion) {
+    catchUpCompletions.value.push(completion)
+  }
+
   function markSlotDone(slot: number) {
     const entry = catchUpProgress.value.find((e) => e.slot === slot)
     if (entry) {
@@ -65,6 +79,7 @@ export const useEngineStateStore = defineStore('engine-state', () => {
     isCatchingUp.value = false
     catchUpProgress.value = []
     catchUpTargetMs.value = 0
+    catchUpCompletions.value = []
   }
 
   return {
@@ -72,11 +87,13 @@ export const useEngineStateStore = defineStore('engine-state', () => {
     isCatchingUp,
     catchUpProgress,
     catchUpTargetMs,
+    catchUpCompletions,
     overallProgress,
     setPaused,
     startCatchUp,
     updateSlotProgress,
     recordSlotDeath,
+    recordCompletion,
     markSlotDone,
     endCatchUp,
   }

@@ -1,14 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useEngineStateStore } from '@/stores/engine-state'
 import { skipCatchUp } from '@/engine/instance-manager'
 
 const engineState = useEngineStateStore()
+const tickerRef = ref<HTMLElement | null>(null)
 
 const SLOT_COLORS = ['var(--cyan)', 'var(--green)', 'var(--amber)', 'var(--purple)']
 
 const targetSeconds = computed(() => Math.round(engineState.catchUpTargetMs / 1000))
 const overallPercent = computed(() => Math.round(engineState.overallProgress * 100))
+
+// Auto-scroll ticker to bottom when new completions arrive
+watch(
+  () => engineState.catchUpCompletions.length,
+  async () => {
+    await nextTick()
+    if (tickerRef.value) {
+      tickerRef.value.scrollTop = tickerRef.value.scrollHeight
+    }
+  }
+)
 </script>
 
 <template>
@@ -57,6 +69,23 @@ const overallPercent = computed(() => Math.round(engineState.overallProgress * 1
       <div class="catchup-info">Simulating {{ targetSeconds }}s of game time...</div>
 
       <button class="skip-btn" @click="skipCatchUp()">Skip</button>
+
+      <div
+        v-if="engineState.catchUpCompletions.length > 0"
+        ref="tickerRef"
+        class="completion-ticker"
+      >
+        <div
+          v-for="(c, i) in engineState.catchUpCompletions"
+          :key="i"
+          class="ticker-entry"
+        >
+          <span class="ticker-slot" :style="{ color: SLOT_COLORS[c.slot] }">{{ c.slot + 1 }}</span>
+          <span class="ticker-build">{{ c.race }} {{ c.class }}</span>
+          <span class="ticker-depth">D{{ c.depth }}</span>
+          <span class="ticker-essence">+{{ c.essence }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -193,5 +222,45 @@ const overallPercent = computed(() => Math.round(engineState.overallProgress * 1
   background: var(--border);
   color: var(--text-primary);
   border-color: var(--indigo);
+}
+
+.completion-ticker {
+  width: 100%;
+  max-height: 160px;
+  overflow-y: auto;
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.ticker-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-dim);
+  padding: 1px 0;
+}
+
+.ticker-slot {
+  min-width: 12px;
+  font-weight: bold;
+}
+
+.ticker-build {
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+.ticker-depth {
+  color: var(--text-dim);
+}
+
+.ticker-essence {
+  color: var(--purple);
+  min-width: 40px;
+  text-align: right;
 }
 </style>
