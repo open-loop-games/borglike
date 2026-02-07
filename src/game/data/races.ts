@@ -7,7 +7,7 @@
  */
 
 import type { UnlockContext } from '@/types/progression'
-import { getDragonNames } from './monsters'
+import { getDragonNames, getUniques } from './monsters'
 
 /** Starting race IDs for prestige unlock validation */
 const STARTING_RACE_IDS = ['human', 'dwarf', 'elf']
@@ -261,9 +261,10 @@ const halfTroll: Race = {
   starting: false,
   unlockCondition: 'Kill 250 unique monsters',
   checkCondition: (ctx) => {
-    const uniqueKills = Object.entries(ctx.bestiary).filter(
-      ([name, entry]) => entry.kills > 0 && name.includes(',')
-    ).length
+    const uniqueNames = new Set(getUniques().map((m) => m.name))
+    const uniqueKills = Object.entries(ctx.bestiary)
+      .filter(([name]) => uniqueNames.has(name))
+      .reduce((sum, [, entry]) => sum + entry.kills, 0)
     return uniqueKills >= 250
   },
   description: 'Massive and slow, but nearly impossible to kill.',
