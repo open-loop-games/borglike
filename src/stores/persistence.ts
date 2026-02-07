@@ -19,106 +19,15 @@ import type {
   SlotConfig,
   BotCapabilities,
 } from '@/types/progression'
-import { FULL_BOT_CAPABILITIES } from '@/types/progression'
 import { startingRaces } from '@game/data/races'
 import { startingClasses } from '@game/data/classes'
 
 // ============================================================================
-// VERSIONING & MIGRATIONS
+// VERSIONING
 // ============================================================================
 
-/** Current save data version - bump when adding migrations */
-const CURRENT_SAVE_VERSION = 3
-
-/** Migration function type */
-type MigrationFn = (data: ProgressionData) => ProgressionData
-
-/**
- * Migration registry - keyed by TARGET version
- * Each migration transforms data from (version - 1) to version
- */
-const migrations: Record<number, MigrationFn> = {
-  // Version 2: Adds compression support marker (no structural changes)
-  2: (data) => data,
-
-  // Version 3: Move bot capabilities from per-slot to global
-  // Take max across all slot configs for each field, OR for booleans
-  3: (data) => {
-    const merged: BotCapabilities = { ...FULL_BOT_CAPABILITIES }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const slots = (data.slotConfigs ?? []) as any[]
-
-    // Check if any slot actually has capabilities data
-    const hasAnyCapabilities = slots.some((s) => s && s.capabilities)
-
-    if (hasAnyCapabilities) {
-      // Start from zeros and take max across slots
-      merged.farming = false
-      merged.tactics = 0
-      merged.town = 0
-      merged.preparedness = 0
-      merged.sweep = 0
-      merged.surf = 0
-      merged.kiting = 0
-      merged.targeting = 0
-      merged.retreat = 0
-
-      for (const slot of slots) {
-        if (!slot?.capabilities) continue
-        const caps = slot.capabilities as Record<string, unknown>
-        // Boolean: OR
-        if (caps.farming) merged.farming = true
-        // Numeric: max (handle legacy boolean tactics)
-        const tactics =
-          typeof caps.tactics === 'boolean' ? (caps.tactics ? 3 : 0) : Number(caps.tactics ?? 0)
-        merged.tactics = Math.max(merged.tactics, tactics)
-        merged.town = Math.max(merged.town, Number(caps.town ?? 0))
-        merged.preparedness = Math.max(merged.preparedness, Number(caps.preparedness ?? 0))
-        merged.sweep = Math.max(merged.sweep, Number(caps.sweep ?? 0))
-        merged.surf = Math.max(merged.surf, Number(caps.surf ?? 0))
-        merged.kiting = Math.max(merged.kiting, Number(caps.kiting ?? 0))
-        merged.targeting = Math.max(merged.targeting, Number(caps.targeting ?? 0))
-        merged.retreat = Math.max(merged.retreat, Number(caps.retreat ?? 0))
-      }
-    }
-    // else: no capabilities on any slot → use FULL_BOT_CAPABILITIES (reward existing players)
-
-    data.botCapabilities = merged
-
-    // Strip capabilities from slot configs
-    for (const slot of slots) {
-      if (slot) delete slot.capabilities
-    }
-
-    return data
-  },
-}
-
-/**
- * Run all pending version migrations sequentially
- */
-function runVersionMigrations(data: ProgressionData): ProgressionData {
-  let current = data
-  let version = data.version ?? 1
-
-  while (version < CURRENT_SAVE_VERSION) {
-    const nextVersion = version + 1
-    const migration = migrations[nextVersion]
-
-    if (migration) {
-      console.info(`[Persistence] Running migration v${version} -> v${nextVersion}`)
-      current = migration(current)
-      current.version = nextVersion
-    } else {
-      // No migration defined, just bump version
-      current.version = nextVersion
-    }
-
-    version = nextVersion
-  }
-
-  return current
-}
+/** Current save format version — matches package.json, bump on breaking changes */
+const SAVE_VERSION = '0.1.0'
 
 // ============================================================================
 // VALIDATION
@@ -173,9 +82,9 @@ function validateProgressionData(data: ProgressionData): ValidationResult {
   checkForNaN(data, '', errors)
 
   // Validate required fields
-  if (data.version === undefined) {
+  if (!data.version) {
     errors.push({ path: 'version', message: 'Missing version', severity: 'warning' })
-    data.version = 1
+    data.version = SAVE_VERSION
     repaired = true
   }
 
@@ -307,7 +216,7 @@ interface SerializedRunLoadout {
 
 /** Full progression data for storage */
 interface ProgressionData {
-  version: number
+  version: string
   currency: Currency
   unlocks: SerializedUnlockState
   globalStats: GlobalStats
@@ -544,7 +453,7 @@ function serializeProgression(): ProgressionData {
   }
 
   return {
-    version: CURRENT_SAVE_VERSION,
+    version: SAVE_VERSION,
     currency: { essence: progression.currency.essence, artifacts: progression.currency.artifacts },
     unlocks: serializeUnlocks(progression.unlocks),
     globalStats: { ...progression.globalStats },
@@ -712,6 +621,13 @@ export async function loadProgression(): Promise<boolean> {
     return false
   }
 
+  // Version mismatch — no migrations, just warn
+  if (data.version !== SAVE_VERSION) {
+    console.warn(
+      `[Persistence] Save version mismatch: found ${data.version}, expected ${SAVE_VERSION}. Loading anyway.`
+    )
+  }
+
   // Validate save data
   const validation = validateProgressionData(data)
   if (!validation.valid) {
@@ -723,17 +639,9 @@ export async function loadProgression(): Promise<boolean> {
       '[Persistence] Save data was repaired:',
       validation.errors.filter((e) => e.severity === 'warning')
     )
-  }
-
-  // Run version migrations if needed
-  const originalVersion = data.version ?? 1
-  data = runVersionMigrations(data)
-
-  // Save migrated/repaired data back if changed
-  if (data.version !== originalVersion || validation.repaired) {
+    // Save repaired data back
     const plainData = JSON.parse(JSON.stringify(data)) as ProgressionData
     await database.put('progression', plainData, 'main')
-    console.info(`[Persistence] Saved migrated data (v${originalVersion} -> v${data.version})`)
   }
 
   restoreProgressionFromData(data)
@@ -984,7 +892,7 @@ export async function exportDataAsJSON(): Promise<string> {
   const runs = await loadRunHistory()
 
   const exportData = {
-    version: 3,
+    version: SAVE_VERSION,
     exportedAt: Date.now(),
     progression: {
       currency: { ...progression.currency },
@@ -1015,15 +923,27 @@ export async function exportDataAsJSON(): Promise<string> {
 }
 
 /**
- * Import game data from string (supports both v1 raw JSON and v2 compressed formats)
+ * Import game data from compressed export string
  *
- * @param input - The exported data string
+ * @param input - The exported data string (BORGLIKE_V2_ compressed format)
  * @returns true if import was successful
  */
 export async function importDataFromJSON(input: string): Promise<boolean> {
   try {
-    let data: {
-      version: number
+    if (!input.startsWith(EXPORT_MAGIC_V2)) {
+      console.error('[Persistence] Unrecognized export format')
+      return false
+    }
+
+    const compressed = input.slice(EXPORT_MAGIC_V2.length)
+    const json = LZString.decompressFromBase64(compressed)
+    if (!json) {
+      console.error('[Persistence] Failed to decompress import data')
+      return false
+    }
+
+    const data: {
+      version: string
       exportedAt?: number
       progression: {
         currency: Currency
@@ -1045,38 +965,18 @@ export async function importDataFromJSON(input: string): Promise<boolean> {
         winHistory?: RunStats[]
       }
       runHistory?: RunStats[]
-    }
+    } = JSON.parse(json)
 
-    // Detect format and decode
-    if (input.startsWith(EXPORT_MAGIC_V2)) {
-      // V2 compressed format
-      const compressed = input.slice(EXPORT_MAGIC_V2.length)
-      const json = LZString.decompressFromBase64(compressed)
-      if (!json) {
-        console.error('[Persistence] Failed to decompress import data')
-        return false
-      }
-      data = JSON.parse(json)
-      console.info('[Persistence] Importing v2 compressed format')
-    } else if (input.startsWith('{')) {
-      // V1 raw JSON format (backward compatible)
-      data = JSON.parse(input)
-      console.info('[Persistence] Importing v1 raw JSON format')
-    } else {
-      console.error('[Persistence] Unrecognized export format')
-      return false
-    }
-
-    // Validate export version (support v1, v2, v3)
-    if (data.version !== 1 && data.version !== 2 && data.version !== 3) {
-      console.error('[Persistence] Unsupported export version:', data.version)
-      return false
+    if (data.version !== SAVE_VERSION) {
+      console.warn(
+        `[Persistence] Import version mismatch: ${data.version} vs ${SAVE_VERSION}. Importing anyway.`
+      )
     }
 
     // Convert export format to ProgressionData format
     const prog = data.progression
-    let progressionData: ProgressionData = {
-      version: 1, // Will be migrated up
+    const progressionData: ProgressionData = {
+      version: SAVE_VERSION,
       currency: prog.currency,
       unlocks: prog.unlocks,
       globalStats: prog.globalStats,
@@ -1102,9 +1002,6 @@ export async function importDataFromJSON(input: string): Promise<boolean> {
       console.error('[Persistence] Import validation failed:', validation.errors)
       return false
     }
-
-    // Run migrations to bring up to current version
-    progressionData = runVersionMigrations(progressionData)
 
     restoreProgressionFromData(progressionData)
     await saveProgression()
@@ -1237,10 +1134,7 @@ export async function restoreFromBackup(slot: BackupSlotId): Promise<boolean> {
     return false
   }
 
-  // Run migrations if needed
-  const migratedData = runVersionMigrations(backup.data)
-
-  restoreProgressionFromData(migratedData)
+  restoreProgressionFromData(backup.data)
   await saveProgression()
 
   console.info(
