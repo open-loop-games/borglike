@@ -776,7 +776,13 @@ function isLikelyDeadEnd(
   for (let i = 0; i < 8; i++) {
     const nx = entryPoint.x + DX[i]!
     const ny = entryPoint.y + DY[i]!
-    if (nx >= 0 && nx < level.width && ny >= 0 && ny < level.height && level.passable[ny * level.width + nx]) {
+    if (
+      nx >= 0 &&
+      nx < level.width &&
+      ny >= 0 &&
+      ny < level.height &&
+      level.passable[ny * level.width + nx]
+    ) {
       walkableCount++
     }
   }

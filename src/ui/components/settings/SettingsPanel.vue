@@ -89,7 +89,9 @@ function cancelReset() {
 <template>
   <div class="settings-panel">
     <header class="settings-header">
-      <h2>Settings <span class="version-tag">v{{ appVersion }}</span></h2>
+      <h2>
+        Settings <span class="version-tag">v{{ appVersion }}</span>
+      </h2>
       <button class="close-btn" @click="emit('close')">✕</button>
     </header>
 

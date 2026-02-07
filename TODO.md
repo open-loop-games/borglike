@@ -1,12 +1,7 @@
 # TODO
 
 ## Balance
-- [x] Nerf S-tier classes — spread compressed 3.3→2.4 depth, no more S-tier (`548a393`)
-  - Paladin: 80% healPotency + removed shield bash (49.9→49.0)
-  - Druid: WIS +3→+2 (49.2→48.8)
-  - Blackguard: lifesteal 10%→8% (49.1→48.5)
-  - Ranger: FAST_SHOT cap 6→5, root shot slow 50%→40% (48.9→48.6)
-- [ ] Re-run sensitivity after S-tier nerfs (paladin/ranger should now show meaningful sensitivity)
+
 
 ## Future Features
 - [ ] Challenge Modifiers (run-based risk/reward)

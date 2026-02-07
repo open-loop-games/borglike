@@ -33,6 +33,7 @@ export default tseslint.config(
         clearInterval: 'readonly',
         requestAnimationFrame: 'readonly',
         cancelAnimationFrame: 'readonly',
+        __APP_VERSION__: 'readonly',
       },
     },
     rules: {
@@ -75,6 +76,8 @@ export default tseslint.config(
         Blob: 'readonly',
         URL: 'readonly',
         FileReader: 'readonly',
+        // Vite injected
+        __APP_VERSION__: 'readonly',
         // DOM types
         HTMLCanvasElement: 'readonly',
         HTMLDivElement: 'readonly',

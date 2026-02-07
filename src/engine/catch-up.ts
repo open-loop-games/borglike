@@ -202,10 +202,10 @@ export async function runFullCatchUp(
   const msPerTick = prof.totalTickCount > 0 ? prof.totalComputeMs / prof.totalTickCount : 0
   console.log(
     `[catch-up] wall=${wallMs.toFixed(0)}ms compute=${prof.totalComputeMs.toFixed(0)}ms ` +
-    `yield=${yieldMs.toFixed(0)}ms (${((yieldMs / wallMs) * 100).toFixed(0)}%) | ` +
-    `ticks=${prof.totalTickCount} ms/tick=${msPerTick.toFixed(3)} | ` +
-    `batches=${prof.batchCount} peakBatch=${prof.peakBatchSize} maxBatchMs=${prof.maxBatchMs.toFixed(1)} | ` +
-    `deaths=${prof.deathCount} deathMs=${prof.deathMs.toFixed(0)}`
+      `yield=${yieldMs.toFixed(0)}ms (${((yieldMs / wallMs) * 100).toFixed(0)}%) | ` +
+      `ticks=${prof.totalTickCount} ms/tick=${msPerTick.toFixed(3)} | ` +
+      `batches=${prof.batchCount} peakBatch=${prof.peakBatchSize} maxBatchMs=${prof.maxBatchMs.toFixed(1)} | ` +
+      `deaths=${prof.deathCount} deathMs=${prof.deathMs.toFixed(0)}`
   )
 
   catchUpActive = false

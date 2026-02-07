@@ -125,7 +125,10 @@ export function selectGoal(
 
   // Check if current goal is still valid and high priority
   const currentGoal = botState.currentGoal
-  if (currentGoal && profile('goal.isValid', () => isGoalStillValid(currentGoal, context, botState))) {
+  if (
+    currentGoal &&
+    profile('goal.isValid', () => isGoalStillValid(currentGoal, context, botState))
+  ) {
     // Check if we should keep the current goal
     const currentPriority = GOAL_PRIORITY[currentGoal.type]
     const turnsSinceGoalStart = turn - currentGoal.startTurn
@@ -146,13 +149,9 @@ export function selectGoal(
 
     if (turnsSinceGoalStart < reevalInterval) {
       // Check for higher priority override
-      const overrideGoal = profile('goal.override', () => checkHighPriorityOverride(
-        context,
-        botState,
-        dangers,
-        dangerThreshold,
-        currentPriority
-      ))
+      const overrideGoal = profile('goal.override', () =>
+        checkHighPriorityOverride(context, botState, dangers, dangerThreshold, currentPriority)
+      )
       if (overrideGoal) {
         return overrideGoal
       }

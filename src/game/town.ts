@@ -28,7 +28,14 @@ import {
   TOWN_SHOP_POSITIONS,
   type TownShopId,
 } from './data/town'
-import { getTile, setTile, setAllTilesVisible, computeFOV, buildPassabilityBitmap, buildExploredBitmap } from './dungeon'
+import {
+  getTile,
+  setTile,
+  setAllTilesVisible,
+  computeFOV,
+  buildPassabilityBitmap,
+  buildExploredBitmap,
+} from './dungeon'
 import { calculateLightRadius } from './lighting'
 import { initializeMerchant, initializeFeaturesFromVault } from './features'
 import { spawnMonstersForLevel } from './monster-ai'

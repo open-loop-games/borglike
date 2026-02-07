@@ -615,7 +615,7 @@ export async function saveAllRuns(runs: RunStats[]): Promise<void> {
  */
 export async function loadProgression(): Promise<boolean> {
   const database = await initDB()
-  let data = await database.get('progression', 'main')
+  const data = await database.get('progression', 'main')
 
   if (!data) {
     return false
