@@ -57,6 +57,7 @@ import {
   formatBaselineResults,
   formatBaselineRaceResults,
   formatSensitivityResults,
+  formatMultiSensitivityResults,
   formatFindResults,
   destroyPool,
   runMatrix,
@@ -376,7 +377,7 @@ MODES:
   compare         Compare behavior across all personalities
   baseline        Run full baseline across all 11 classes (100 runs, 50k turns)
   baseline-races  Run full baseline across all 11 races (100 runs, 50k turns)
-  sensitivity     Test per-upgrade impact on performance
+  sensitivity     Test per-upgrade impact on performance (supports --classes)
   matrix          Run cartesian product of classes/races/tiers (shared pool)
   help            Show this help message
 
@@ -455,8 +456,11 @@ EXAMPLES:
   # Run race baseline (all 11 races)
   pnpm diagnose baseline-races --seed=1000
 
-  # Test upgrade sensitivity
+  # Test upgrade sensitivity (single class)
   pnpm diagnose sensitivity --seed=1000 --class=warrior
+
+  # Test upgrade sensitivity (all classes, single pool)
+  pnpm diagnose sensitivity --classes=all --seed=1000
 
   # Test with mid-game capabilities
   pnpm diagnose batch --runs=50 --capabilities=mid --class=warrior
@@ -644,22 +648,69 @@ async function main(): Promise<void> {
 
   // Handle sensitivity mode
   if (args.mode === 'sensitivity') {
-    const startTime = Date.now()
+    // Resolve classes: --classes=X for multi, --class=X for single, default warrior
+    const sensitivityClasses = args.matrixClasses.length > 0
+      ? args.matrixClasses
+      : [args.classId]
+
+    // Sensitivity defaults to 20 threads, unless user explicitly set
+    const sensitivityThreads = args.userSetThreads ? args.threads : 20
+
     const result = await runSensitivityTest({
       runs: args.runs !== 50 ? args.runs : undefined,
       turns: args.turns !== 20000 ? args.turns : undefined,
       seed: args.seed,
-      threads: args.threads !== 8 ? args.threads : undefined,
-      classId: args.classId,
+      threads: sensitivityThreads,
+      classes: sensitivityClasses,
       raceId: args.race,
       personality: args.personality,
     })
-    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
-    const text = formatSensitivityResults(result, { classId: args.classId, totalTime })
-    outputResult(args, 'sensitivity', text, result, {
-      classId: args.classId,
-      race: args.race,
-    })
+
+    const text = formatMultiSensitivityResults(result)
+
+    if (shouldWriteFiles('sensitivity', args.forceStdout)) {
+      const dir = args.outputDir ?? DEFAULT_OUTPUT_DIR
+
+      // Write per-class files
+      for (const classResult of result.results) {
+        const classText = formatSensitivityResults(classResult, {
+          totalTime: result.totalTime.toFixed(1),
+        })
+        const baseName = generateFileName({ mode: 'sensitivity', classId: classResult.classId })
+        writeOutputFiles({
+          dir,
+          baseName,
+          text: classText,
+          json: {
+            mode: 'sensitivity',
+            timestamp: new Date().toISOString(),
+            config: { ...buildConfigSnapshot(args), classId: classResult.classId },
+            result: classResult,
+          },
+        })
+      }
+
+      // Write combined summary if multi-class
+      if (result.results.length > 1) {
+        const summaryName = generateFileName({ mode: 'sensitivity', classId: 'all' })
+        writeOutputFiles({
+          dir,
+          baseName: summaryName,
+          text,
+          json: {
+            mode: 'sensitivity-multi',
+            timestamp: new Date().toISOString(),
+            config: buildConfigSnapshot(args),
+            result,
+          },
+        })
+      }
+
+      console.log(`\nTotal time: ${result.totalTime.toFixed(1)}s`)
+      console.log(`Output: ${dir}/`)
+    } else {
+      console.log(text)
+    }
     return
   }
 

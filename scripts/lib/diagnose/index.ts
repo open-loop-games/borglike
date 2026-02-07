@@ -27,7 +27,7 @@ export type { MatrixConfig, MatrixCell, MatrixCellResult, MatrixResult, MatrixAx
 
 // Sensitivity testing
 export { runSensitivityTest, SENSITIVITY_UPGRADES } from './sensitivity'
-export type { SensitivityConfig, SensitivityResult, UpgradeImpact } from './sensitivity'
+export type { SensitivityConfig, SensitivityResult, MultiSensitivityResult, UpgradeImpact } from './sensitivity'
 
 // Types
 export type {
@@ -115,6 +115,7 @@ export {
   formatBaselineResults,
   formatBaselineRaceResults,
   formatSensitivityResults,
+  formatMultiSensitivityResults,
   formatFindResults,
 } from './output'
 export type { TurnLogOptions } from './output'

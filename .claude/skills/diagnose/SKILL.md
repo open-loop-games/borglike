@@ -187,7 +187,7 @@ pnpm diagnose [mode] [options]
 | `compare` | Compare across personalities | `compare --runs=20 --seed=1000` |
 | `baseline` | Full baseline across all 11 classes | `baseline` (100 runs, 50k turns per class) |
 | `baseline-races` | Full baseline across all 11 races | `baseline-races --class=warrior` |
-| `sensitivity` | Test per-upgrade impact | `sensitivity --class=warrior` |
+| `sensitivity` | Test per-upgrade impact | `sensitivity --class=warrior` or `sensitivity --classes=all` |
 | `matrix` | Cartesian product of classes/races/tiers | `matrix --classes=warrior,mage --races=all` |
 
 ### Seed Syntax
@@ -361,6 +361,25 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 ```
 
 Output: subfolder tree with `summary.txt` + per-cell `batch.txt`/`batch.json`. Use `--stdout` for console output.
+
+### Sensitivity Mode
+
+Test per-upgrade impact on performance. Runs baseline (all upgrades maxed), then excludes each upgrade one at a time to measure its contribution.
+
+```bash
+# Single class
+pnpm diagnose sensitivity --seed=1000 --class=warrior
+
+# All classes in one pool (~8 min, 20 threads default)
+pnpm diagnose sensitivity --classes=all --seed=1000
+
+# Specific classes
+pnpm diagnose sensitivity --classes=warrior,mage,rogue --seed=1000
+```
+
+Multi-class runs use pool-based parallelism (same as matrix mode) — all work items across all classes are submitted to a single thread pool. Output includes per-class tables and a cross-class summary showing each upgrade's impact across all tested classes.
+
+Output: per-class `.txt`/`.json` files + combined summary for multi-class runs. Uses `--classes` flag (same as matrix mode).
 
 ## Analyzers
 

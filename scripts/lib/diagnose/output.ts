@@ -13,7 +13,8 @@ import type {
 } from './types'
 import type { TurnLogEntry } from './runner'
 import type { BaselineResult, BaselineRaceResult } from './baseline'
-import type { SensitivityResult } from './sensitivity'
+import type { SensitivityResult, MultiSensitivityResult } from './sensitivity'
+import { SENSITIVITY_UPGRADES } from './sensitivity'
 
 // ============================================================================
 // FORMATTING HELPERS
@@ -412,7 +413,7 @@ export function formatBaselineRaceResults(
 /** Format sensitivity test results as text table */
 export function formatSensitivityResults(
   result: SensitivityResult,
-  opts: { classId: string; totalTime: string }
+  opts: { totalTime: string }
 ): string {
   const lines: string[] = []
 
@@ -449,6 +450,73 @@ export function formatSensitivityResults(
     )
   }
   lines.push('```')
+
+  return lines.join('\n')
+}
+
+// ============================================================================
+// MULTI-CLASS SENSITIVITY OUTPUT
+// ============================================================================
+
+/** Format multi-class sensitivity results with per-class tables and cross-class summary */
+export function formatMultiSensitivityResults(result: MultiSensitivityResult): string {
+  const lines: string[] = []
+  const totalTime = result.totalTime.toFixed(1)
+
+  // Per-class tables
+  for (const classResult of result.results) {
+    lines.push(formatSensitivityResults(classResult, { totalTime }))
+  }
+
+  // Cross-class summary (only if multiple classes)
+  if (result.results.length > 1) {
+    lines.push(`\n${'='.repeat(60)}`)
+    lines.push('CROSS-CLASS SENSITIVITY SUMMARY')
+    lines.push('='.repeat(60))
+
+    const classNames = result.results.map(r => r.classId.charAt(0).toUpperCase() + r.classId.slice(1))
+
+    // Header: | Upgrade | Class1 | Class2 | ... |
+    lines.push(`\n| Upgrade | ${classNames.join(' | ')} |`)
+    lines.push(`|---------|${classNames.map(n => '-'.repeat(n.length + 2)).join('|')}|`)
+
+    // One row per upgrade (in canonical order, not sorted by impact)
+    for (const upgradeId of SENSITIVITY_UPGRADES) {
+      const cells = result.results.map(classResult => {
+        const impact = classResult.impacts.find(i => i.upgradeId === upgradeId)
+        if (!impact) return '?'
+        const val = impact.percentImpact
+        return val >= 0 ? `+${val.toFixed(1)}%` : `${val.toFixed(1)}%`
+      })
+
+      const upgradeName = result.results[0]!.impacts.find(i => i.upgradeId === upgradeId)?.upgradeName ?? upgradeId
+      lines.push(`| ${upgradeName.padEnd(18)} | ${cells.map((c, i) => c.padStart(classNames[i]!.length)).join(' | ')} |`)
+    }
+
+    // Baseline row
+    const baselines = result.results.map((r, i) => r.baselineAvgDepth.toFixed(1).padStart(classNames[i]!.length))
+    lines.push(`| ${'**Baseline**'.padEnd(18)} | ${baselines.join(' | ')} |`)
+
+    lines.push(`\nTotal time: ${totalTime}s`)
+
+    // Copy/paste section
+    lines.push(`\nCopy/paste for BALANCE.md:`)
+    lines.push('```')
+    lines.push(`| Upgrade | ${classNames.join(' | ')} |`)
+    lines.push(`|---------|${classNames.map(n => '-'.repeat(n.length + 2)).join('|')}|`)
+    for (const upgradeId of SENSITIVITY_UPGRADES) {
+      const cells = result.results.map(classResult => {
+        const impact = classResult.impacts.find(i => i.upgradeId === upgradeId)
+        if (!impact) return '?'
+        const val = impact.percentImpact
+        return val >= 0 ? `+${val.toFixed(1)}%` : `${val.toFixed(1)}%`
+      })
+      const upgradeName = result.results[0]!.impacts.find(i => i.upgradeId === upgradeId)?.upgradeName ?? upgradeId
+      lines.push(`| ${upgradeName} | ${cells.join(' | ')} |`)
+    }
+    lines.push(`| **Baseline** | ${result.results.map(r => r.baselineAvgDepth.toFixed(1)).join(' | ')} |`)
+    lines.push('```')
+  }
 
   return lines.join('\n')
 }

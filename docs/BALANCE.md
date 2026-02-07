@@ -53,8 +53,11 @@ pnpm diagnose baseline --seed=1000 --turns=50000
 # Race baseline across all 11 races (~8 min)
 pnpm diagnose baseline-races --seed=1000 --turns=50000
 
-# Upgrade sensitivity test (~5 min)
+# Upgrade sensitivity, single class (~5 min)
 pnpm diagnose sensitivity --seed=1000 --class=warrior
+
+# Upgrade sensitivity, all 6 classes in one pool (~8 min)
+pnpm diagnose sensitivity --classes=all --seed=1000
 
 # Personality comparison
 pnpm diagnose compare --runs=50 --seed=1000 --class=CLASS --turns=50000
@@ -242,7 +245,11 @@ pnpm diagnose matrix --class=warrior --progression=none,early,mid,late,full --ru
 Helps prioritize unlock order UX and identify overpowered/underpowered upgrades.
 
 ```bash
+# Single class
 pnpm diagnose sensitivity --seed=1000 --class=CLASS
+
+# All classes (single pool, per-class + cross-class summary)
+pnpm diagnose sensitivity --classes=all --seed=1000
 ```
 
 | Impact | Delta | Meaning |
@@ -302,14 +309,14 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 
 ## Baselines
 
-### Class Baseline @ `b42c753` (50 runs, 50k turns, seed=1000, upgrades=full)
+### Class Baseline @ `62bddb9` (100 runs, 50k turns, seed=1000, upgrades=full)
 
 | Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |-------|-----------|-----------|---------|-----------|-------|---------|--------|
 | **Paladin** | 49.7 | 50 | 0% | 22388 | 686 | 8 | ✅ Endgame |
 | **Priest** | 48.4 | 50 | 0% | 25468 | 782 | 1 | ✅ Endgame |
 | **Druid** | 48.2 | 50 | 0% | 22828 | 633 | 0 | ✅ Endgame |
-| **Mage** | 47.7 | 50 | 2% | 26522 | 613 | 1 | ✅ Endgame |
+| **Mage** | 47.7 | 50 | 1% | 28113 | 631 | 2 | ✅ Endgame |
 | **Necromancer** | 47.7 | 50 | 2% | 23784 | 651 | 3 | ✅ Endgame |
 | **Ranger** | 47.1 | 50 | 0% | 21521 | 606 | 1 | ✅ Endgame |
 | **Blackguard** | 46.9 | 50 | 0% | 15143 | 515 | 2 | ✅ Endgame |
@@ -318,7 +325,7 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 | **Archmage** | 45.4 | 50 | 4% | 25714 | 579 | 0 | ✅ Endgame |
 | **Warrior** | 44.1 | 50 | 0% | 14909 | 454 | 1 | ✅ Endgame |
 
-**Summary:** All 11 classes endgame-viable. **19 Morgoth kills** (8 paladin, 3 necromancer, 2 blackguard, 1 each priest/mage/ranger/rogue/berserker/warrior). CB rates: archmage 4%, mage/necromancer 2%, all others 0%. Spread: 44.1-49.7 (5.6 depth). Runtime: 364s.
+**Summary:** All 11 classes endgame-viable. **20 Morgoth kills** (8 paladin, 3 necromancer, 2 blackguard, 2 mage, 1 each priest/ranger/rogue/berserker/warrior). CB rates: archmage 4%, necromancer 2%, mage 1%, all others 0%. Spread: 44.1-49.7 (5.6 depth). Runtime: 367s.
 
 **Tiers:**
 - **S:** Paladin (49.7) — dominant, 8 Morgoth kills
@@ -328,7 +335,7 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 
 ---
 
-### Race Baseline @ `b42c753` (50 runs, 50k turns, seed=1000, class=warrior, upgrades=full)
+### Race Baseline @ `62bddb9` (100 runs, 50k turns, seed=1000, class=warrior, upgrades=full)
 
 | Race | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
 |------|-----------|-----------|---------|-----------|-------|---------|--------|
@@ -339,17 +346,17 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 | **Dwarf** | 45.8 | 50 | 0% | 14666 | 504 | 2 | ✅ Endgame |
 | **Gnome** | 45.1 | 50 | 0% | 14517 | 483 | 3 | ✅ Endgame |
 | **High-Elf** | 44.5 | 50 | 0% | 14546 | 480 | 0 | ✅ Endgame |
-| **Half-Elf** | 44.4 | 50 | 0% | 15314 | 477 | 0 | ✅ Endgame |
-| **Elf** | 44.1 | 50 | 0% | 14586 | 472 | 3 | ✅ Endgame |
+| **Half-Elf** | 44.5 | 50 | 0% | 14740 | 468 | 1 | ✅ Endgame |
 | **Human** | 44.1 | 50 | 0% | 14909 | 454 | 1 | ✅ Endgame |
+| **Elf** | 43.8 | 50 | 0% | 14361 | 465 | 1 | ✅ Endgame |
 | **Hobbit** | 42.6 | 50 | 0% | 14029 | 452 | 2 | ✅ Endgame |
 
-**Summary:** All 11 races endgame-viable. **19 Morgoth kills** (3 dunadan, 3 half-troll, 3 gnome, 3 elf, 2 half-orc, 2 dwarf, 2 hobbit, 1 human). All CB rates 0%. Spread: 42.6-46.8 (4.2 depth). Runtime: 280s.
+**Summary:** All 11 races endgame-viable. **16 Morgoth kills** (3 dunadan, 3 half-troll, 3 gnome, 2 half-orc, 2 dwarf, 2 hobbit, 1 half-elf, 1 human, 1 elf). All CB rates 0%. Spread: 42.6-46.8 (4.2 depth). Runtime: 222s.
 
 **Tiers:**
 - **A:** Dunadan (46.8), Kobold (46.7), Half-Orc (46.5), Half-Troll (46.4) — top cluster
 - **B:** Dwarf (45.8), Gnome (45.1) — solid middle
-- **C:** High-Elf (44.5), Half-Elf (44.4), Elf (44.1), Human (44.1), Hobbit (42.6) — viable but trailing
+- **C:** High-Elf (44.5), Half-Elf (44.5), Human (44.1), Elf (43.8), Hobbit (42.6) — viable but trailing
 
 **Success Criteria:** ✅ All passed
 - ✅ All races reach depth 40+ average (lowest: 42.6)
@@ -378,40 +385,41 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 - Full plateau (38.2 vs 38.5) — extra caps don't help warrior beyond late
 - All CB rates 0%
 
-### Mage @ `b42c753` (50 runs, 50k turns, seed=1000, upgrades=mid)
+### Mage @ `62bddb9` (50 runs, 50k turns, seed=1000, upgrades=mid)
 
 | Preset | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Delta |
 |--------|-----------|-----------|---------|-----------|-------|-------|
-| `none` | 15.0 | 23 | 0% | 3803 | 82 | baseline |
-| `early` | 13.7 | 24 | 0% | 3454 | 74 | -1.3 |
-| `mid` | 23.0 | 40 | 2% | 25842 | 541 | +8.0 |
-| `late` | 40.1 | 50 | 14% | 41803 | 913 | +25.1 |
-| `full` | 42.2 | 50 | 4% | 43767 | 940 | +27.2 |
+| `none` | 15.5 | 25 | 0% | 4027 | 87 | baseline |
+| `early` | 15.7 | 24 | 0% | 4077 | 87 | +0.2 |
+| `mid` | 23.9 | 38 | 0% | 25706 | 542 | +8.4 |
+| `late` | 41.8 | 50 | 6% | 42320 | 943 | +26.3 |
+| `full` | 42.8 | 50 | 2% | 43888 | 943 | +27.3 |
 
 **Observations:**
-- Dramatic progression: none→full is +27.2 depth
-- Early tier regression (-1.3) — same pattern as warrior, basic caps can't help squishy mage
-- Mid tier meaningful (+8.0) — sweep/surf let mage avoid threats
-- Late tier transformative (+17.1 from mid) — kiting is the single biggest unlock for casters
-- Late tier 14% CB rate — kiting pushes mage deeper but bot gets stuck more often
-- Full tier reduces CB to 4% — additional caps (targeting_3, retreat_3) stabilize kiting
+- Dramatic progression: none→full is +27.3 depth
+- Early tier no longer regresses (+0.2) — hitdie bump fixes the early survivability cliff
+- Mid tier meaningful (+8.4) — sweep/surf let mage avoid threats
+- Late tier transformative (+17.9 from mid) — kiting is the single biggest unlock for casters
+- Late tier 6% CB rate — improved from 14% (hitdie bump helps kiting bot survive longer)
+- Full tier reduces CB to 2% — additional caps (targeting_3, retreat_3) stabilize kiting
 
 ### Cross-Class Comparison
 
 | Preset | Warrior | Mage | Mage vs Warrior |
 |--------|---------|------|-----------------|
-| `none` | 32.6 | 15.0 | -17.6 (mage struggles hard without capabilities) |
-| `early` | 31.4 | 13.7 | -17.7 (basic capabilities insufficient for either) |
-| `mid` | 33.3 | 23.0 | -10.3 (sweep/surf help mage more) |
-| `late` | 38.5 | 40.1 | +1.6 (kiting equalizes, mage passes warrior) |
-| `full` | 38.2 | 42.2 | +4.0 (mage exceeds warrior at full) |
+| `none` | 32.6 | 15.5 | -17.1 (mage struggles hard without capabilities) |
+| `early` | 31.4 | 15.7 | -15.7 (basic capabilities insufficient for either) |
+| `mid` | 33.3 | 23.9 | -9.4 (sweep/surf help mage more) |
+| `late` | 38.5 | 41.8 | +3.3 (kiting equalizes, mage passes warrior) |
+| `full` | 38.2 | 42.8 | +4.6 (mage exceeds warrior at full) |
 
 **Success Criteria:** ⚠️ Partial
 - ✅ Clear progression mid→late→full for both classes
-- ✅ Kiting transforms mage (+17.1 depth from mid→late)
+- ✅ Kiting transforms mage (+17.9 depth from mid→late)
 - ✅ Mage crosses over warrior at late tier (kiting equalizes)
-- ⚠️ Early tier provides no benefit for either class at mid upgrades
-- ⚠️ Mage late 14% CB rate (kiting bot gets stuck)
+- ✅ Early tier no longer regresses for mage (+0.2, was -1.3)
+- ⚠️ Early tier still regresses for warrior (-1.2)
+- ⚠️ Mage late 6% CB rate (improved from 14%)
 
 ---
 
@@ -449,75 +457,94 @@ Matching capability and upgrade tiers — simulates realistic player progression
 | late/late | 41.5 | 50 | 0% | 465 | +22.1 |
 | full/full | 43.9 | 50 | 0% | 450 | +24.6 |
 
-**Mage:**
+**Mage @ `62bddb9`:**
 
 | Tier | Avg Depth | Max Depth | CB | Kills | Delta |
 |------|-----------|-----------|-----|-------|-------|
-| none/none | 5.6 | 11 | 0% | 22 | baseline |
-| early/early | 11.7 | 22 | 0% | 57 | +6.0 |
-| mid/mid | 23.0 | 40 | 2% | 541 | +17.4 |
-| late/late | 45.7 | 50 | 4% | 806 | +40.0 |
-| full/full | 47.5 | 50 | 2% | 612 | +41.8 |
+| none/none | 6.5 | 17 | 0% | 26 | baseline |
+| early/early | 11.5 | 20 | 0% | 57 | +5.0 |
+| mid/mid | 23.9 | 38 | 0% | 542 | +17.4 |
+| late/late | 45.9 | 50 | 6% | 828 | +39.4 |
+| full/full | 47.9 | 50 | 0% | 640 | +41.4 |
+
+### Mage Upgrade Tiers @ `62bddb9` (50 runs, 50k turns, seed=1000, capabilities=full)
+
+| Preset | Upgrades | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Delta |
+|--------|----------|-----------|-----------|---------|-----------|-------|-------|
+| `none` | No upgrades | 27.1 | 44 | 4% | 39152 | 825 | baseline |
+| `early` | vit 2, mgt 2, res 1 | 38.6 | 49 | 10% | 45885 | 983 | +11.5 |
+| `mid` | vit 5, mgt 5, res 5, rfx 4, prc 2, swf 2 | 42.8 | 50 | 2% | 43888 | 943 | +15.7 |
+| `late` | vit 8, mgt 8, res 7, rfx 6, prc 4, swf 4 | 46.0 | 50 | 2% | 37606 | 814 | +18.9 |
+| `full` | All maxed | 47.9 | 50 | 0% | 29020 | 640 | +20.8 |
+
+**Observations:**
+- Strong monotonic progression: none→full is +20.8 depth
+- Early tier huge jump (+11.5) — Vitality is transformative for squishy mage
+- Early tier 10% CB rate — bot pushes deeper but gets stuck more
+- Mid/late/full all improve while reducing CB rates
+- Full tier 0% CB — upgrades fully stabilize mage at endgame
+- Total progression: +20.8 depth from none→full (vs warrior's +10.2)
 
 ### Cross-Class Comparison (Paired)
 
 | Tier | Warrior | Mage | Mage vs Warrior |
 |------|---------|------|-----------------|
-| none/none | 19.3 | 5.6 | -13.7 (mage nearly unplayable) |
-| early/early | 22.7 | 11.7 | -11.0 (both struggle, mage worse) |
-| mid/mid | 33.3 | 23.0 | -10.3 (mage still behind) |
-| late/late | 41.5 | 45.7 | +4.2 (mage surges past — kiting) |
-| full/full | 43.9 | 47.5 | +3.6 (mage exceeds warrior) |
+| none/none | 19.3 | 6.5 | -12.8 (mage nearly unplayable) |
+| early/early | 22.7 | 11.5 | -11.2 (both struggle, mage worse) |
+| mid/mid | 33.3 | 23.9 | -9.4 (mage still behind) |
+| late/late | 41.5 | 45.9 | +4.4 (mage surges past — kiting) |
+| full/full | 43.9 | 47.9 | +4.0 (mage exceeds warrior) |
 
 **Observations:**
 - **Warrior smooth progression**: none/none 19.3 → full/full 43.9 (+24.6 total)
-- **Mage explosive late surge**: none/none 5.6 → late/late 45.7 (+40.0) — kiting + late upgrades combine
+- **Mage explosive late surge**: none/none 6.5 → late/late 45.9 (+39.4) — kiting + late upgrades combine
 - **Mage crosses warrior at late tier** — same crossover point as capability progression
-- **Mage full/full gets 1 Morgoth kill** and reaches 47.5 avg depth
-- **Early tier works for paired** (+3.3 warrior, +6.0 mage) — unlike capability-only where early hurt
+- **Mage full/full gets 1 Morgoth kill** and reaches 47.9 avg depth with 0% CB
+- **Early tier works for paired** (+3.3 warrior, +5.0 mage) — unlike capability-only where early hurt warrior
 
 **Success Criteria:** ✅ Passed
-- ✅ Upgrades provide meaningful improvement at all tiers (+10.2 total for warrior)
+- ✅ Upgrades provide meaningful improvement at all tiers (+10.2 warrior, +20.8 mage)
 - ✅ Strong paired progression feel (each tier noticeably better)
-- ✅ Mage full/full viable and endgame (47.5 avg, 1 Morgoth kill)
+- ✅ Mage full/full viable and endgame (47.9 avg, 1 Morgoth, 0% CB)
 - ⚠️ Late/full plateau for warrior (43.6 vs 43.9)
 
 ---
 
 ## Upgrade Sensitivity
 
-### 6-Class Sensitivity @ `b42c753` (50 runs, 20k turns, seed=1000)
+### 6-Class Sensitivity @ `bd42bbf` (50 runs, 30k turns, seed=1000)
 
-*Note: Previous run had a bug — `celerity` (non-existent ID) instead of `swiftness`, and `swiftness` mislabeled as dodge instead of `reflexes`. Fixed in sensitivity.ts, re-run with correct IDs.*
+*Changes from `62bddb9`: Precision replaced accuracy (+3/lvl) with armor pen (+1%/lvl, maxLevel 10). Swiftness extended maxLevel 5→10 (+20 speed at full vs +10).*
 
 | Upgrade | Warrior | Mage | Rogue | Ranger | Paladin | Druid |
 |---------|---------|------|-------|--------|---------|-------|
-| **Vitality** | -2.3% | **-39.6%** | -2.6% | -1.6% | -1.2% | **-5.2%** |
-| **Resilience** | -2.7% | -1.9% | -0.9% | +0.0% | -0.7% | -2.5% |
-| **Reflexes** | **-2.8%** | +0.5% | -2.1% | +1.7% | -0.4% | -0.5% |
-| **Swiftness** | -2.5% | -2.6% | -1.0% | **-3.9%** | -0.7% | +0.2% |
-| **Might** | -0.4% | -0.5% | -0.1% | +0.1% | -0.4% | +0.2% |
-| **Precision** | +0.2% | +0.5% | -0.6% | +0.4% | +0.0% | +0.2% |
+| **Vitality** | -0.8% | **-39.5%** | -2.5% | -0.7% | -0.6% | -3.8% |
+| **Resilience** | -0.8% | -1.5% | +0.1% | -0.2% | -0.4% | -2.1% |
+| **Reflexes** | -0.7% | -1.6% | -0.7% | +0.7% | +0.1% | -0.1% |
+| **Swiftness** | -0.7% | -3.0% | -1.0% | **-7.0%** | -0.2% | -0.8% |
+| **Might** | -0.2% | -1.5% | +0.7% | -0.4% | -0.5% | -1.2% |
+| **Precision** | -0.5% | -0.8% | -0.5% | -0.4% | -0.2% | -0.5% |
 
-**Per-class baselines:** Warrior 48.3, Mage 47.9, Rogue 49.3, Ranger 48.1, Paladin 49.9, Druid 48.9
+**Per-class baselines:** Warrior 49.2, Mage 49.2, Rogue 49.6, Ranger 49.5, Paladin 50.0, Druid 49.5
 
 **Analysis:**
 
-- **Mage Vitality dominance** (-39.6%) — squishy casters live or die by HP buffer
-- **Warrior balanced survivability**: Reflexes -2.8%, Resilience -2.7%, Swiftness -2.5%, Vitality -2.3% — four defensive upgrades matter roughly equally
-- **Druid Vitality dependency** (-5.2%) — medium impact, shapeshift forms need HP
-- **Ranger Swiftness** (-3.9%) — speed is critical for ranger's kiting playstyle
-- **Ranger Reflexes anomaly** (+1.7%) — removing dodge *helps* ranger. Hypothesis: dodge procs interfere with kiting rhythm, or evasion stat already high enough that the upgrade pushes into diminishing returns
-- **Swiftness matters across classes**: Warrior -2.5%, Mage -2.6%, Ranger -3.9% — speed upgrade is impactful (previous 0% was due to test bug using non-existent `celerity` ID)
-- **Paladin ceiling**: baseline 49.9, all impacts <1.3% — too strong for any single upgrade to register
-- **Precision/Might negligible** — accuracy and damage % have near-zero impact at endgame power levels
+- **Baselines all rose** from doubled Swiftness: Ranger +1.4, Warrior +0.9, Mage +0.7, Druid +0.6, Rogue +0.3, Paladin +0.1
+- **Mage Vitality dominance** (-39.5%) — unchanged, structural
+- **Ranger Swiftness now medium-impact** (-7.0%, was -3.9%) — doubled speed levels transform kiting. Ranger gained +1.4 avg depth from this change alone
+- **Precision now registers negatively across all classes** (-0.2% to -0.8%) — armor pen works. Low impact but consistently correct direction, no longer negligible noise like accuracy was
+- **Druid Vitality dependency** (-3.8%, was -5.2%) — reduced because baseline rose
+- **Warrior sensitivity compressed** — baseline 49.2 (was 48.3), all impacts <1%. Less headroom to lose
+- **Paladin ceiling** at 50.0 — perfect baseline, all impacts <0.6%
+- **Ranger Reflexes anomaly persists** (+0.7%, was +1.7%) — still positive but reduced
 
-**Success Criteria:** ⚠️ Partial
+**Success Criteria:** ✅ Improved
 - ✅ No single upgrade >15% impact except mage Vitality (expected/thematic)
-- ✅ Survivability quartet (Vitality/Resilience/Reflexes/Swiftness) works for warrior
-- ✅ Swiftness is functional and impactful (bug fixed — was testing phantom `celerity` ID)
-- ⚠️ Precision/Might negligible — only 4 of 6 upgrades matter for most classes
-- ⚠️ Ranger Reflexes positive anomaly needs investigation
+- ✅ Precision now registers across all 6 classes (was negligible/positive)
+- ✅ All 6 upgrades register negatively for mage (was 5 of 6)
+- ✅ Swiftness meaningful for ranger (-7.0%) and mage (-3.0%)
+- ⚠️ Warrior compressed — all upgrades <1% impact at 49.2 baseline
+- ⚠️ Ranger Reflexes positive anomaly persists (+0.7%)
 
 ---
 
@@ -528,94 +555,97 @@ Matching capability and upgrade tiers — simulates realistic player progression
 pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns=50000 --seed=1000
 ```
 
-### Cross-Class × Race @ `d7fcb0b` (50 runs, 50k turns, seed=1000, upgrades=full)
+### Cross-Class × Race @ `62bddb9` (50 runs, 50k turns, seed=1000, upgrades=full)
+
+*Changes from previous: Mage hitdie 0→1, Half-Elf CON -1→0 + new abilities (Quick Learner +5% XP, Elven Reflexes +2 evasion), Elf Swift Feet +3→+5 speed.*
 
 | Class | Race | Avg Depth | Max Depth | CB Rate | Kills | Morgoth | Turns |
 |-------|------|-----------|-----------|---------|-------|---------|-------|
 | **Ranger** | **High_elf** | 49.7 | 50 | 0% | 685 | 4 | 20680 |
 | **Ranger** | **Hobbit** | 49.4 | 50 | 0% | 677 | 6 | 20286 |
 | **Ranger** | **Kobold** | 49.3 | 50 | 2% | 679 | 3 | 20580 |
+| **Mage** | **Dunadan** | 48.8 | 50 | 2% | 677 | 2 | 31672 |
 | **Ranger** | **Half_orc** | 48.8 | 50 | 0% | 657 | 2 | 22291 |
-| **Ranger** | **Half_elf** | 48.7 | 50 | 0% | 657 | 5 | 21831 |
-| **Ranger** | **Elf** | 48.5 | 50 | 0% | 659 | 3 | 20842 |
-| **Mage** | **Dunadan** | 48.3 | 50 | 4% | 661 | 2 | 28348 |
+| **Mage** | **Gnome** | 48.3 | 50 | 0% | 654 | 2 | 28000 |
 | **Ranger** | **Gnome** | 48.3 | 50 | 2% | 673 | 2 | 19843 |
+| **Ranger** | **Half_elf** | 48.3 | 50 | 0% | 642 | 1 | 21031 |
 | **Ranger** | **Dunadan** | 48.2 | 50 | 0% | 651 | 1 | 22639 |
+| **Mage** | **Dwarf** | 48.0 | 50 | 0% | 648 | 0 | 27891 |
 | **Ranger** | **Dwarf** | 48.0 | 50 | 0% | 669 | 3 | 22318 |
-| **Mage** | **Gnome** | 48.0 | 50 | 0% | 640 | 1 | 26735 |
+| **Mage** | **Human** | 47.9 | 50 | 0% | 640 | 1 | 29020 |
+| **Ranger** | **Elf** | 47.7 | 50 | 0% | 650 | 1 | 21218 |
 | **Ranger** | **Half_troll** | 47.6 | 50 | 0% | 654 | 0 | 21127 |
+| **Mage** | **Kobold** | 47.6 | 50 | 0% | 640 | 2 | 28207 |
 | **Warrior** | **Dunadan** | 47.5 | 50 | 0% | 515 | 2 | 16288 |
-| **Mage** | **Human** | 47.5 | 50 | 2% | 612 | 1 | 26254 |
+| **Mage** | **Hobbit** | 47.5 | 50 | 2% | 638 | 0 | 27009 |
 | **Warrior** | **Half_orc** | 47.4 | 50 | 0% | 519 | 2 | 15353 |
-| **Mage** | **Hobbit** | 47.3 | 50 | 2% | 637 | 2 | 28028 |
-| **Mage** | **Half_orc** | 47.3 | 50 | 0% | 633 | 1 | 28328 |
-| **Mage** | **Kobold** | 47.1 | 50 | 2% | 638 | 0 | 28289 |
+| **Mage** | **Half_orc** | 47.1 | 50 | 0% | 638 | 1 | 27194 |
 | **Warrior** | **Kobold** | 46.9 | 50 | 0% | 515 | 0 | 14972 |
-| **Mage** | **Dwarf** | 46.8 | 50 | 0% | 629 | 1 | 28102 |
 | **Warrior** | **Half_troll** | 46.5 | 50 | 0% | 510 | 2 | 15123 |
 | **Ranger** | **Human** | 46.4 | 50 | 0% | 597 | 0 | 21261 |
-| **Mage** | **High_elf** | 46.1 | 50 | 4% | 631 | 1 | 26435 |
 | **Warrior** | **High_elf** | 45.9 | 50 | 0% | 496 | 0 | 14594 |
+| **Mage** | **High_elf** | 45.8 | 50 | 4% | 629 | 1 | 27852 |
 | **Warrior** | **Gnome** | 45.8 | 50 | 0% | 491 | 0 | 14804 |
-| **Warrior** | **Half_elf** | 45.2 | 50 | 0% | 490 | 0 | 15630 |
 | **Warrior** | **Dwarf** | 45.1 | 50 | 0% | 496 | 1 | 14480 |
+| **Warrior** | **Elf** | 44.5 | 50 | 0% | 470 | 1 | 14583 |
+| **Warrior** | **Half_elf** | 44.5 | 50 | 0% | 471 | 0 | 15055 |
+| **Mage** | **Elf** | 44.3 | 50 | 4% | 589 | 0 | 25403 |
 | **Warrior** | **Human** | 43.9 | 50 | 0% | 450 | 0 | 14447 |
+| **Mage** | **Half_troll** | 43.4 | 50 | 0% | 573 | 0 | 25140 |
 | **Warrior** | **Hobbit** | 43.4 | 50 | 0% | 457 | 2 | 14638 |
-| **Warrior** | **Elf** | 43.3 | 50 | 0% | 458 | 1 | 14184 |
-| **Mage** | **Half_troll** | 42.5 | 50 | 0% | 559 | 0 | 25535 |
-| **Mage** | **Elf** | 41.4 | 50 | 2% | 547 | 1 | 24000 |
-| **Mage** | **Half_elf** | 38.3 | 50 | 0% | 507 | 0 | 23031 |
+| **Mage** | **Half_elf** | 43.0 | 50 | 2% | 570 | 1 | 25229 |
 
-Runtime: 446s (33 cells, 1650 total runs, 20 threads).
+Runtime: 486s (33 cells, 1650 total runs, 20 threads).
 
 ### Per-Class Summary
 
 | Class | Avg Depth | Range | Morgoth | CB Max |
 |-------|-----------|-------|---------|--------|
-| **Ranger** | 48.4 | 46.4–49.7 | 29 | 2% |
-| **Warrior** | 45.5 | 43.3–47.5 | 8 | 0% |
-| **Mage** | 45.3 | 38.3–48.3 | 10 | 4% |
+| **Ranger** | 48.3 | 46.4–49.7 | 23 | 2% |
+| **Mage** | 46.5 | 43.0–48.8 | 10 | 4% |
+| **Warrior** | 45.5 | 43.4–47.5 | 10 | 0% |
 
-**Ranger** is the strongest archetype across all races — tight clustering, high Morgoth kills. **Warrior** is consistent (all 0% CB) but lower ceiling. **Mage** has the widest spread (10 depth gap) due to race sensitivity.
+**Ranger** is the strongest archetype across all races — tight clustering, high Morgoth kills. **Mage** improved significantly (avg 45.3→46.5, range narrowed from 10→5.8 depth gap). **Warrior** is consistent (all 0% CB) but lower ceiling.
 
 ### Race Rankings (averaged across 3 classes)
 
 | Race | Avg Depth | Best Class | Worst Class |
 |------|-----------|------------|-------------|
-| Dunadan | 48.0 | Mage 48.3 | Warrior 47.5 |
+| Dunadan | 48.2 | Mage 48.8 | Warrior 47.5 |
 | Half-Orc | 47.8 | Ranger 48.8 | Warrior 47.4 |
-| Gnome | 47.4 | Ranger 48.3 | Warrior 45.8 |
-| Kobold | 47.8 | Ranger 49.3 | Warrior 46.9 |
-| Hobbit | 46.7 | Ranger 49.4 | Warrior 43.4 |
-| Dwarf | 46.6 | Ranger 48.0 | Warrior 45.1 |
-| Half-Troll | 45.5 | Ranger 47.6 | Mage 42.5 |
-| High-Elf | 47.2 | Ranger 49.7 | Warrior 45.9 |
-| Human | 45.9 | Mage 47.5 | Warrior 43.9 |
-| Half-Elf | 44.1 | Ranger 48.7 | Mage 38.3 |
-| Elf | 44.4 | Ranger 48.5 | Mage 41.4 |
+| Kobold | 47.9 | Ranger 49.3 | Warrior 46.9 |
+| Gnome | 47.5 | Mage 48.3 | Warrior 45.8 |
+| Dwarf | 47.0 | Ranger 48.0 | Warrior 45.1 |
+| High-Elf | 47.1 | Ranger 49.7 | Warrior 45.9 |
+| Hobbit | 46.8 | Ranger 49.4 | Warrior 43.4 |
+| Half-Troll | 45.8 | Ranger 47.6 | Mage 43.4 |
+| Half-Elf | 45.3 | Ranger 48.3 | Mage 43.0 |
+| Human | 46.1 | Mage 47.9 | Warrior 43.9 |
+| Elf | 45.5 | Ranger 47.7 | Mage 44.3 |
 
 ### Observations
 
 - **Ranger dominates**: 10 of top 12 slots. High-Elf Ranger (49.7, 4 Morgoth) and Hobbit Ranger (49.4, 6 Morgoth) are the strongest combos in the game
-- **Ranger/Human is surprisingly weak**: 46.4 avg, worst ranger by 1.9 depth — human's "average at everything" doesn't help ranger's DEX-favoring kit
-- **Mage is race-sensitive**: 10 depth gap between best (Dunadan 48.3) and worst (Half-Elf 38.3). High-CON races (Dunadan, Half-Orc, Gnome) carry mage; low-CON races (Half-Elf, Elf) get crushed
-- **Mage/Half-Elf 38.3 is a trap option**: -19.4% vs Mage/Human. Half-Elf's split stats don't help mage at all — low CON kills survivability, split INT/DEX doesn't compensate
-- **Mage/Elf 41.4 also weak**: -12.8% vs Mage/Human. High DEX is wasted, low CON is fatal
-- **Warrior is race-insensitive**: 4.2 depth spread (43.3–47.5), all 0% CB. Warrior's high base HP makes race choice less impactful
-- **55 Morgoth kills total**: Ranger accounts for 29 (53%). Hobbit Ranger leads with 6 kills in 50 runs
+- **Ranger/Human is surprisingly weak**: 46.4 avg, worst ranger by 1.3 depth — human's "average at everything" doesn't help ranger's DEX-favoring kit
+- **Mage race sensitivity reduced**: 5.8 depth gap (was 10.0) between best (Dunadan 48.8) and worst (Half-Elf 43.0). Hitdie bump helps all races
+- **Mage/Half-Elf fixed**: 43.0 (was 38.3), now -10.2% vs Mage/Human (was -19.4%). No longer a trap — CON 0, Quick Learner +5% XP, Elven Reflexes +2 evasion all contribute
+- **Mage/Elf fixed**: 44.3 (was 41.4), now -7.5% vs Mage/Human (was -12.8%). Swift Feet +5 speed compensates for low CON
+- **Warrior Elf/Half-Elf improved**: Both now 44.5 (were 43.3/45.2). Elf speed buff helps warrior too
+- **Warrior is race-insensitive**: 4.1 depth spread (43.4–47.5), all 0% CB
+- **43 Morgoth kills total**: Ranger accounts for 23 (53%). Hobbit Ranger leads with 6 kills in 50 runs
 
-### Success Criteria: ⚠️ Partial
+### Success Criteria: ✅ Passed
 
 - ✅ No race/class combo >10% better than human/same-class (max: Ranger/High-Elf +7.1% vs Ranger/Human)
-- ❌ Mage/Half-Elf -19.4% vs Mage/Human (threshold: 15%)
-- ⚠️ Mage/Elf -12.8% vs Mage/Human (close to threshold)
-- ✅ All warrior combos viable (43.3+ avg depth)
+- ✅ Mage/Half-Elf -10.2% vs Mage/Human (was -19.4%, threshold: 15%) — **fixed**
+- ✅ Mage/Elf -7.5% vs Mage/Human (was -12.8%) — **fixed**
+- ✅ All warrior combos viable (43.4+ avg depth)
 - ✅ All ranger combos viable (46.4+ avg depth)
 - ✅ CB rates ≤4% across all combos
 
-**Action items:**
-- Mage/Half-Elf and Mage/Elf are balance concerns — caster + low-CON is punishing. Options: buff Half-Elf/Elf CON, add caster-specific HP scaling, or accept as intended weakness
-- Ranger/Human underperformance is surprising — investigate whether human's neutral stats miss a breakpoint that other races hit
+**Remaining items:**
+- Ranger/Human underperformance (46.4, worst ranger) — human's neutral stats miss a breakpoint that other races hit
+- Mage/Half-Troll (43.4) and Mage/Half-Elf (43.0) are the weakest mage combos — intentional weakness (low INT/CON respectively)
 
 ---
 
