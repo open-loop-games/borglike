@@ -112,7 +112,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       toHit: 13,
       toDam: 15,
     },
-    abilities: ['Slay Evil', 'Resist Light', 'Activation: Detect Objects'],
+    abilities: ['Slay Evil', 'Resist Light'],
     description:
       "The radiant golden staff of an Istar of legend, this wizard's companion grants keen sight and clear knowledge of many hidden things.",
   },
@@ -182,7 +182,6 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       'Brand Fire',
       'Resist Fire',
       'Hold Life',
-      'Activation: Probing',
     ],
     description:
       'The mighty staff of Gandalf the Grey, imbued with the power of the Istari. It blazes with fire against the servants of darkness.',
@@ -255,7 +254,7 @@ export const ARTIFACTS: ArtifactTemplate[] = [
       WIS: 2,
       toAC: 10,
     },
-    abilities: ['Protection from Blindness', 'Protection from Confusion', 'Activation: Detect All'],
+    abilities: ['Protection from Blindness', 'Protection from Confusion'],
     description: 'A famous forged iron helm granting extraordinary powers of mind and awareness.',
   },
 

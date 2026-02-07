@@ -26,9 +26,7 @@ export type ActivationEffectType =
   | 'teleport'
   // Activation-specific
   | 'illuminate'
-  | 'detect'
   | 'debuff'
-  | 'probe'
   | 'haste'
 
 /** Template for an activation ability */
@@ -55,8 +53,6 @@ export interface ActivationTemplate {
   aoeRadius?: number
   /** Buff effect to apply */
   buff?: { type: StatusEffectType; value: number; duration: number }
-  /** Detection type for detect effects */
-  detectType?: 'objects' | 'monsters' | 'all'
   /** Radius for illuminate effect */
   illuminateRadius?: number
   /** Description for UI */
@@ -82,16 +78,6 @@ export const ACTIVATIONS: Record<string, ActivationTemplate> = {
     description: 'Lights up the surrounding area, revealing tiles and dispelling darkness.',
   },
 
-  detect_objects: {
-    id: 'detect_objects',
-    name: 'Detect Objects',
-    effectType: 'detect',
-    mode: 'cooldown',
-    cooldown: 30,
-    detectType: 'objects',
-    description: 'Reveals all items on the current level.',
-  },
-
   blind_monsters: {
     id: 'blind_monsters',
     name: 'Blind Monsters',
@@ -113,25 +99,6 @@ export const ACTIVATIONS: Record<string, ActivationTemplate> = {
     damageType: 'fire',
     aoeRadius: 2,
     description: 'Hurls a ball of fire dealing 72 damage to enemies in a radius.',
-  },
-
-  probing: {
-    id: 'probing',
-    name: 'Probing',
-    effectType: 'probe',
-    mode: 'cooldown',
-    cooldown: 25,
-    description: 'Reveals detailed information about all visible monsters.',
-  },
-
-  detect_all: {
-    id: 'detect_all',
-    name: 'Detect All',
-    effectType: 'detect',
-    mode: 'cooldown',
-    cooldown: 40,
-    detectType: 'all',
-    description: 'Reveals all items and monsters on the current level.',
   },
 
   cold_ball_100: {
@@ -203,11 +170,8 @@ export function parseArtifactActivation(ability: string): string | null {
   // Map known activation strings to IDs
   const mappings: Record<string, string> = {
     'Illuminate Area': 'illuminate_area',
-    'Detect Objects': 'detect_objects',
     'Blind Monsters': 'blind_monsters',
     'Fire Ball (72 damage)': 'fire_ball_72',
-    Probing: 'probing',
-    'Detect All': 'detect_all',
     'Cold Ball (100 damage)': 'cold_ball_100',
     'Haste Self': 'haste_self',
   }

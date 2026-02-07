@@ -271,14 +271,8 @@ function executeActivation(
     case 'illuminate':
       return executeIlluminate(game, activation)
 
-    case 'detect':
-      return executeDetect(game, activation)
-
     case 'debuff':
       return executeBlindMonsters(game, activation)
-
-    case 'probe':
-      return executeProbe(game, activation)
 
     case 'heal':
       return executeHeal(game, activation)
@@ -614,45 +608,6 @@ function executeIlluminate(game: GameState, activation: ActivationTemplate): Act
 }
 
 /**
- * Execute detect effect (Detect Objects, Detect All)
- */
-function executeDetect(game: GameState, activation: ActivationTemplate): ActionResult {
-  const detectType = activation.detectType ?? 'all'
-  let foundCount = 0
-
-  // Reveal items on level
-  if (detectType === 'objects' || detectType === 'all') {
-    for (const item of game.items) {
-      const tile = getTile(game.currentLevel, item.position.x, item.position.y)
-      if (tile && !tile.explored) {
-        tile.explored = true
-        foundCount++
-      }
-    }
-  }
-
-  // Reveal monsters if detecting all
-  if (detectType === 'all') {
-    for (const monster of game.monsters) {
-      if (monster.hp > 0) {
-        monster.seen = true
-        foundCount++
-      }
-    }
-  }
-
-  const typeStr = detectType === 'objects' ? 'objects' : 'everything'
-  const message = `You sense ${typeStr} nearby! (${foundCount} revealed)`
-  addTaggedMessage(game, message, 'good', { tags: ['buff'], importance: 2 })
-
-  return {
-    success: true,
-    message,
-    energyCost: BASE_ENERGY_COST,
-  }
-}
-
-/**
  * Execute blind effect (Totila flail)
  */
 function executeBlindMonsters(game: GameState, activation: ActivationTemplate): ActionResult {
@@ -705,52 +660,6 @@ function executeBlindMonsters(game: GameState, activation: ActivationTemplate): 
     success: true,
     message,
     targets: hitTargets.map((t) => t.id),
-    energyCost: BASE_ENERGY_COST,
-  }
-}
-
-/**
- * Execute probe effect (Staff of Olorin)
- */
-function executeProbe(game: GameState, _activation: ActivationTemplate): ActionResult {
-  // Get visible monsters
-  const visibleMonsters = game.monsters.filter((m) => {
-    if (m.hp <= 0) return false
-    const tile = getTile(game.currentLevel, m.position.x, m.position.y)
-    return tile?.visible
-  })
-
-  if (visibleMonsters.length === 0) {
-    addTaggedMessage(game, 'You sense no creatures nearby.', 'info', {
-      tags: ['buff'],
-      importance: 2,
-    })
-    return {
-      success: true,
-      message: 'No creatures detected.',
-      energyCost: BASE_ENERGY_COST,
-    }
-  }
-
-  // Mark all visible monsters as seen and log info
-  for (const monster of visibleMonsters) {
-    monster.seen = true
-    const hpPercent = Math.floor((monster.hp / monster.maxHp) * 100)
-    const status = hpPercent > 75 ? 'healthy' : hpPercent > 25 ? 'wounded' : 'near death'
-    addTaggedMessage(
-      game,
-      `${monster.template.name} - HP: ${monster.hp}/${monster.maxHp} (${status})`,
-      'info',
-      { tags: ['buff'], importance: 2 }
-    )
-  }
-
-  const message = `You probe ${visibleMonsters.length} creatures.`
-  addTaggedMessage(game, message, 'good', { tags: ['buff'], importance: 2 })
-
-  return {
-    success: true,
-    message,
     energyCost: BASE_ENERGY_COST,
   }
 }

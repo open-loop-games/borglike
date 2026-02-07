@@ -54,6 +54,7 @@ import {
   getShadowStepAction,
 } from './spells'
 import { isShapeshifterClass, getDruidTierAction } from './shapeshift'
+import { getAOEActivationAction, getHasteActivationAction } from './activations'
 
 // ============================================================================
 // PUBLIC API
@@ -158,8 +159,7 @@ function handleCriticalTier(
     // Try to kite away if adjacent (physical movement works for all ranged classes)
     // Requires kiting L2+ for active repositioning
     if (adjacentMonster && effective.kiting >= 2) {
-      const optimalRange =
-        effective.kiting >= 3 ? (classProfile.engageDistance || 3) : 3
+      const optimalRange = effective.kiting >= 3 ? classProfile.engageDistance || 3 : 3
       const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
       if (kiteDir) {
         recordProgress(botState, game.turn)
@@ -307,8 +307,7 @@ function handleDangerTier(
       // 2. Kite away if adjacent (physical movement works for all ranged classes)
       // Requires kiting L2+ for active repositioning
       if (capabilities.kiting >= 2) {
-        const optimalRange =
-          capabilities.kiting >= 3 ? (classProfile.engageDistance || 3) : 3
+        const optimalRange = capabilities.kiting >= 3 ? classProfile.engageDistance || 3 : 3
         const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
         if (kiteDir) {
           recordProgress(botState, game.turn)
@@ -352,6 +351,13 @@ function handleDangerTier(
         if (damageSpell) {
           recordProgress(botState, game.turn)
           return damageSpell
+        }
+
+        // AOE activation fallback (mana-free damage)
+        const aoeActivation = getAOEActivationAction(game, context, visibleMonsters)
+        if (aoeActivation) {
+          recordProgress(botState, game.turn)
+          return aoeActivation
         }
       }
     }
@@ -417,6 +423,13 @@ function handleDangerTier(
       }
       recordProgress(botState, game.turn)
       return damageSpell
+    }
+
+    // AOE activation fallback (mana-free damage when spells unavailable/OOM)
+    const aoeActivation = getAOEActivationAction(game, context, visibleMonsters)
+    if (aoeActivation) {
+      recordProgress(botState, game.turn)
+      return aoeActivation
     }
   }
 
@@ -534,8 +547,7 @@ function handleCautionTier(
 
         // Bow users: kite away (requires kiting L2+ for active repositioning)
         if (capabilities.kiting >= 2) {
-          const optimalRange =
-            capabilities.kiting >= 3 ? (classProfile.engageDistance || 3) : 3
+          const optimalRange = capabilities.kiting >= 3 ? classProfile.engageDistance || 3 : 3
           const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
           if (kiteDir) {
             recordProgress(botState, game.turn)
@@ -605,6 +617,13 @@ function handleCautionTier(
       if (buffSpell) {
         recordProgress(botState, game.turn)
         return buffSpell
+      }
+
+      // Haste activation (mana-free speed buff after spell buffs)
+      const hasteActivation = getHasteActivationAction(game, context, visibleMonsters)
+      if (hasteActivation) {
+        recordProgress(botState, game.turn)
+        return hasteActivation
       }
     }
   }
@@ -704,6 +723,13 @@ function handleCautionTier(
     if (damageSpell) {
       recordProgress(botState, game.turn)
       return damageSpell
+    }
+
+    // AOE activation fallback (mana-free damage)
+    const aoeActivation = getAOEActivationAction(game, context, visibleMonsters)
+    if (aoeActivation) {
+      recordProgress(botState, game.turn)
+      return aoeActivation
     }
 
     // Non-casters still get debuffs as fallback
@@ -825,6 +851,13 @@ function handleSafeTier(
       }
     }
 
+    // Haste activation (mana-free speed buff)
+    const hasteActivation = getHasteActivationAction(game, context, visibleMonsters)
+    if (hasteActivation) {
+      recordProgress(botState, game.turn)
+      return hasteActivation
+    }
+
     // Casters: debuff for control, then pot if low, then damage
     const isCaster = ['mage', 'archmage', 'necromancer'].includes(game.character.classId)
     if (isCaster) {
@@ -860,6 +893,13 @@ function handleSafeTier(
     if (damageSpell) {
       recordProgress(botState, game.turn)
       return damageSpell
+    }
+
+    // AOE activation fallback (mana-free damage)
+    const aoeActivation = getAOEActivationAction(game, context, visibleMonsters)
+    if (aoeActivation) {
+      recordProgress(botState, game.turn)
+      return aoeActivation
     }
 
     // Ranged weapon attacks for ranged classes (rangers, etc.)
