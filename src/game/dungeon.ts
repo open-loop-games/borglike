@@ -76,6 +76,32 @@ export function isOpaque(tile: Tile): boolean {
 }
 
 // ============================================================================
+// PASSABILITY BITMAP
+// ============================================================================
+
+/**
+ * Build pre-computed passability bitmap for a level.
+ * 1 = walkable or door (bot can open), 0 = wall/impassable.
+ * Indexed by y * width + x. Immutable after generation since door_closed
+ * and door_open are both passable for bot pathfinding.
+ */
+export function buildPassabilityBitmap(level: DungeonLevel): Uint8Array {
+  const { width, height, tiles } = level
+  const bitmap = new Uint8Array(width * height)
+  for (let y = 0; y < height; y++) {
+    const row = tiles[y]
+    if (!row) continue
+    for (let x = 0; x < width; x++) {
+      const tile = row[x]
+      if (tile && (isWalkable(tile) || tile.type === 'door_closed')) {
+        bitmap[y * width + x] = 1
+      }
+    }
+  }
+  return bitmap
+}
+
+// ============================================================================
 // POSITION UTILITIES
 // ============================================================================
 
@@ -144,17 +170,9 @@ export function manhattanDistance(a: Point, b: Point): number {
   return Math.abs(b.x - a.x) + Math.abs(b.y - a.y)
 }
 
-/** Count explored tiles on a level */
+/** Count explored tiles on a level (returns incrementally maintained counter) */
 export function countExploredTiles(level: DungeonLevel): number {
-  let count = 0
-  for (let y = 0; y < level.height; y++) {
-    const row = level.tiles[y]
-    if (!row) continue
-    for (let x = 0; x < level.width; x++) {
-      if (row[x]?.explored) count++
-    }
-  }
-  return count
+  return level.exploredCount
 }
 
 // ============================================================================
@@ -196,7 +214,10 @@ export function computeFOV(level: DungeonLevel, origin: Point, radius: number): 
         const tile = getTile(level, x, y)
         if (tile) {
           tile.visible = true
-          tile.explored = true
+          if (!tile.explored) {
+            tile.explored = true
+            level.exploredCount++
+          }
           visible.add(`${x},${y}`)
         }
       }
@@ -212,6 +233,7 @@ export function computeFOV(level: DungeonLevel, origin: Point, radius: number): 
  * Used for town level where everything should always be visible.
  */
 export function setAllTilesVisible(level: DungeonLevel): void {
+  let explored = 0
   for (let y = 0; y < level.height; y++) {
     const row = level.tiles[y]
     if (!row) continue
@@ -220,9 +242,11 @@ export function setAllTilesVisible(level: DungeonLevel): void {
       if (tile) {
         tile.visible = true
         tile.explored = true
+        explored++
       }
     }
   }
+  level.exploredCount = explored
 }
 
 // ============================================================================

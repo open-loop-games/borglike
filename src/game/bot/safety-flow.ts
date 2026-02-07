@@ -16,9 +16,8 @@
  * queue.shift() BFS from the original implementation.
  */
 
-import type { DungeonLevel, Point, Monster, Tile } from '../types'
+import type { DungeonLevel, Point, Monster } from '../types'
 import type { SafetyFlowResult } from './types'
-import { getTile, isWalkable } from '../dungeon'
 
 // ============================================================================
 // CONSTANTS
@@ -138,14 +137,6 @@ function heapPop(): void {
 }
 
 // ============================================================================
-// HELPERS
-// ============================================================================
-
-function isPassable(tile: Tile): boolean {
-  return isWalkable(tile) || tile.type === 'door_closed'
-}
-
-// ============================================================================
 // CORE ALGORITHM
 // ============================================================================
 
@@ -205,8 +196,7 @@ export function computeSafetyFlow(
       const nIdx = ny * width + nx
       if (distGrid[nIdx] !== MAX_COST) continue
 
-      const tile = getTile(level, nx, ny)
-      if (!tile || !isPassable(tile)) continue
+      if (!level.passable[nIdx]) continue
 
       distGrid[nIdx] = nextDist
       bfsXs[bfsTail] = nx
@@ -264,8 +254,7 @@ export function computeSafetyFlow(
         const nIdx = ny * width + nx
         if (distGrid[nIdx] === MAX_COST) continue // Only expand to reachable tiles
 
-        const tile = getTile(level, nx, ny)
-        if (!tile || !isPassable(tile)) continue
+        if (!level.passable[nIdx]) continue
 
         const newCost = popCost + SCALED_STEP_COST
         if (newCost < safetyGrid[nIdx]!) {
@@ -326,8 +315,7 @@ function findEscapeTarget(
       if (visited[nIdx]) continue
       if (monsterSet.has(nIdx)) continue
 
-      const tile = getTile(level, nx, ny)
-      if (!tile || !isPassable(tile)) continue
+      if (!level.passable[nIdx]) continue
 
       const nCost = safetyGrid[nIdx]!
       if (nCost < bestCost) {

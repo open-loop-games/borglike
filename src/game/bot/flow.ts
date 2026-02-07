@@ -9,9 +9,9 @@
  * - Better cache locality
  */
 
-import type { DungeonLevel, Point, Tile } from '../types'
+import type { DungeonLevel, Point } from '../types'
 import type { DangerGrid } from './types'
-import { getTile, isWalkable } from '../dungeon'
+import { getTile } from '../dungeon'
 
 // ============================================================================
 // CONSTANTS
@@ -143,17 +143,6 @@ export function isFlowValid(
 }
 
 // ============================================================================
-// PASSABILITY
-// ============================================================================
-
-/**
- * Check if tile is walkable or a closed door (bot can open doors)
- */
-function isPassable(tile: Tile): boolean {
-  return isWalkable(tile) || tile.type === 'door_closed'
-}
-
-// ============================================================================
 // BFS QUEUE (optimized circular buffer)
 // ============================================================================
 
@@ -267,9 +256,8 @@ export function computeFlow(level: DungeonLevel, goal: Point, avoid?: FlowAvoida
       // Skip if danger exceeds threshold (typed array lookup, zero allocation)
       if (avoidData && avoidData[ny * avoidWidth + nx]! > avoidThreshold) continue
 
-      // Check if passable
-      const tile = getTile(level, nx, ny)
-      if (!tile || !isPassable(tile)) continue
+      // Check if passable (bitmap lookup replaces getTile + string comparisons)
+      if (!level.passable[ny * width + nx]) continue
 
       // Set cost and enqueue
       setFlowCost(grid, nx, ny, nextCost)
@@ -334,10 +322,12 @@ export function computeExplorationFlow(
       if (isVisited(grid, nx, ny)) continue
       if (avoidData && avoidData[ny * avoidWidth + nx]! > avoidThreshold) continue
 
+      // Short-circuit: bitmap check before getTile (walls are common case)
+      if (!level.passable[ny * width + nx]) continue
       const tile = getTile(level, nx, ny)
       // For exploration flow, only expand through EXPLORED passable tiles
       // (we're computing distance from frontiers back to where the bot can be)
-      if (!tile || !tile.explored || !isPassable(tile)) continue
+      if (!tile || !tile.explored) continue
 
       setFlowCost(grid, nx, ny, nextCost)
       enqueue(sharedQueue, nx, ny, nextCost)

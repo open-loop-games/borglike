@@ -172,6 +172,10 @@ export interface DungeonLevel {
   tiles: Tile[][]
   stairsUp: Point | null
   stairsDown: Point | null
+  /** Incrementally maintained count of explored tiles (avoids full-scan) */
+  exploredCount: number
+  /** Pre-computed passability bitmap: 1 = walkable/door, indexed by y * width + x */
+  passable: Uint8Array
   /** Generator type used to create this level (labyrinth, cavern, classic) */
   generatorType?: GeneratorType
   /** Vault placement data (if a vault was placed on this level) */

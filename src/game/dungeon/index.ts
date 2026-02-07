@@ -17,6 +17,7 @@ import { findDoorCandidates, placeDoors } from './doors'
 import { validateConnectivity, ensureConnectivity } from './validation'
 import { tryPlaceVault } from './vaults'
 import { generateTownLevel } from '../town'
+import { buildPassabilityBitmap } from '../dungeon'
 
 // Re-export types
 export type { GeneratorType, RoomData, VaultPlacement } from './types'
@@ -126,8 +127,11 @@ export function generateLevelWithInfo(
     tiles,
     stairsUp,
     stairsDown,
+    exploredCount: 0,
+    passable: new Uint8Array(0),
     generatorType,
   }
+  level.passable = buildPassabilityBitmap(level)
 
   return {
     level,

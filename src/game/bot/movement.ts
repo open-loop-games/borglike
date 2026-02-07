@@ -46,12 +46,7 @@ export function selectStep(game: GameState, botState: BotState, flowCosts: FlowG
   // Get all adjacent positions
   const adjacent = getAdjacentPositions(pos)
   const candidates: StepCandidate[] = []
-
-  // Build occupied set (monster positions)
-  const occupied = new Set<string>()
-  for (const monster of game.monsters) {
-    occupied.add(`${monster.position.x},${monster.position.y}`)
-  }
+  const monsters = game.monsters
 
   for (const adj of adjacent) {
     // Skip if out of bounds or not walkable
@@ -62,9 +57,16 @@ export function selectStep(game: GameState, botState: BotState, flowCosts: FlowG
     const canEnter = isWalkable(tile) || tile.type === 'door_closed'
     if (!canEnter) continue
 
-    // Skip if occupied by monster (combat handled separately)
-    const adjKey = `${adj.x},${adj.y}`
-    if (occupied.has(adjKey)) continue
+    // Skip if occupied by monster (inline check, avoids Set<string> allocation)
+    let isOccupied = false
+    for (let mi = 0; mi < monsters.length; mi++) {
+      const m = monsters[mi]!
+      if (m.position.x === adj.x && m.position.y === adj.y) {
+        isOccupied = true
+        break
+      }
+    }
+    if (isOccupied) continue
 
     // Get direction
     const dx = adj.x - pos.x

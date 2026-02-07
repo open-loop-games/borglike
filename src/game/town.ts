@@ -28,7 +28,7 @@ import {
   TOWN_SHOP_POSITIONS,
   type TownShopId,
 } from './data/town'
-import { getTile, setTile, setAllTilesVisible, computeFOV } from './dungeon'
+import { getTile, setTile, setAllTilesVisible, computeFOV, buildPassabilityBitmap } from './dungeon'
 import { calculateLightRadius } from './lighting'
 import { initializeMerchant, initializeFeaturesFromVault } from './features'
 import { spawnMonstersForLevel } from './monster-ai'
@@ -113,14 +113,18 @@ export function generateTownLevel(): DungeonLevel {
     tiles.push(row)
   }
 
-  return {
+  const level: DungeonLevel = {
     depth: 0,
     width: TOWN_WIDTH,
     height: TOWN_HEIGHT,
     tiles,
     stairsUp: null, // No stairs up from town
     stairsDown: DUNGEON_ENTRANCE_POSITION, // Dungeon entrance acts as stairs down
+    exploredCount: 0,
+    passable: new Uint8Array(0),
   }
+  level.passable = buildPassabilityBitmap(level)
+  return level
 }
 
 /**

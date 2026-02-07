@@ -251,7 +251,10 @@ const SCROLL_EFFECTS: Array<{
       const stairs = game.currentLevel.stairsDown
       if (stairs) {
         const tile = getTile(game.currentLevel, stairs.x, stairs.y)
-        if (tile) tile.explored = true
+        if (tile && !tile.explored) {
+          tile.explored = true
+          game.currentLevel.exploredCount++
+        }
       }
       return {
         success: true,
@@ -264,15 +267,20 @@ const SCROLL_EFFECTS: Array<{
   {
     match: (e) => e.includes('Magic Mapping') || e.includes('reveal level'),
     apply: (game, item) => {
+      let newlyExplored = 0
       for (let y = 0; y < game.currentLevel.height; y++) {
         const row = game.currentLevel.tiles[y]
         if (row) {
           for (let x = 0; x < game.currentLevel.width; x++) {
             const tile = row[x]
-            if (tile) tile.explored = true
+            if (tile && !tile.explored) {
+              tile.explored = true
+              newlyExplored++
+            }
           }
         }
       }
+      game.currentLevel.exploredCount += newlyExplored
       return {
         success: true,
         message: `You read the ${item.template.name}. The level is revealed!`,

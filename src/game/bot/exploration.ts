@@ -12,7 +12,11 @@ import type { GameState, Point, DungeonLevel, Tile, Direction } from '../types'
 import { DIRECTION_VECTORS, chebyshevDistance, isMonsterAt } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
 import { seenGridHas } from './types'
-import { getTile, isWalkable, getAdjacentPositions, countExploredTiles } from '../dungeon'
+import { getTile, getAdjacentPositions, countExploredTiles } from '../dungeon'
+
+// Direction offsets for 8-way adjacency (inlined to avoid Point[] allocation)
+const DX = [-1, 0, 1, -1, 1, -1, 0, 1]
+const DY = [-1, -1, -1, 0, 0, 1, 1, 1]
 import { isTargetBlacklisted } from './state'
 
 // ============================================================================
@@ -97,6 +101,8 @@ const SHORT_DISTANCE_PENALTY_MULTIPLIER = 12
 interface FrontierCache {
   /** Frontier tile positions and unexplored neighbor counts (stable) */
   tiles: Array<{ position: Point; unexploredNeighbors: number }>
+  /** Pre-mapped Point[] for getFrontierPositions (avoids re-allocation on cache hit) */
+  positions: Point[]
   exploredCount: number
   levelDepth: number
 }
@@ -152,6 +158,7 @@ export function findFrontierTiles(game: GameState): FrontierTile[] {
     cachedTiles = computeFrontierPositions(game)
     frontierCache = {
       tiles: cachedTiles,
+      positions: cachedTiles.map((t) => t.position),
       exploredCount,
       levelDepth: game.character.depth,
     }
@@ -182,26 +189,28 @@ export function findFrontierTiles(game: GameState): FrontierTile[] {
 export function getFrontierPositions(game: GameState): Point[] {
   const level = game.currentLevel
 
-  // Count explored tiles for cache validation
+  // Count explored tiles for cache validation (O(1) via incremental counter)
   const exploredCount = countExploredTiles(level)
 
-  // Check cache
+  // Check cache — return pre-mapped Point[] on hit (zero allocation)
   if (
     frontierCache &&
     frontierCache.exploredCount === exploredCount &&
     frontierCache.levelDepth === game.character.depth
   ) {
-    return frontierCache.tiles.map((t) => t.position)
+    return frontierCache.positions
   }
 
-  // Cache miss - compute and cache
+  // Cache miss - compute, cache tiles + positions
   const tiles = computeFrontierPositions(game)
+  const positions = tiles.map((t) => t.position)
   frontierCache = {
     tiles,
+    positions,
     exploredCount,
     levelDepth: game.character.depth,
   }
-  return tiles.map((t) => t.position)
+  return positions
 }
 
 /**
@@ -227,7 +236,7 @@ export function getSweepFrontierPositions(game: GameState, botState: BotState): 
       // Only consider explored walkable tiles (matches findSweepFrontierTiles)
       // Note: explored check ensures we only sweep to known areas, not unknown walls
       if (!tile.explored) continue
-      if (!isWalkableOrDoor(tile)) continue
+      if (!level.passable[y * level.width + x]) continue
 
       result.push({ x, y })
     }
@@ -258,13 +267,14 @@ function findSweepFrontierTiles(game: GameState, botState: BotState): FrontierTi
       if (seenGridHas(botState.seenThisVisit, x, y)) continue
 
       // Only consider walkable tiles
-      if (!isWalkableOrDoor(tile)) continue
+      if (!level.passable[y * level.width + x]) continue
 
       // Count unseen neighbors (for scoring - prefer tiles that reveal more)
-      const neighbors = getAdjacentPositions({ x, y })
       let unseenNeighbors = 0
-      for (const neighbor of neighbors) {
-        if (!seenGridHas(botState.seenThisVisit, neighbor.x, neighbor.y)) {
+      for (let i = 0; i < 8; i++) {
+        const nx = x + DX[i]!
+        const ny = y + DY[i]!
+        if (!seenGridHas(botState.seenThisVisit, nx, ny)) {
           unseenNeighbors++
         }
       }
@@ -303,21 +313,23 @@ function computeFrontierPositions(
       const tile = row[x]
       if (!tile || tile.explored) continue
 
-      // Only consider walkable tiles as frontier
-      if (!isWalkableOrDoor(tile) && tile.type !== 'stairs_down' && tile.type !== 'stairs_up') {
+      // Only consider passable tiles or stairs as frontier
+      if (!level.passable[y * level.width + x] && tile.type !== 'stairs_down' && tile.type !== 'stairs_up') {
         continue
       }
 
       // Check if adjacent to explored walkable
-      const neighbors = getAdjacentPositions({ x, y })
       let hasExploredWalkable = false
       let unexploredCount = 0
 
-      for (const neighbor of neighbors) {
-        const neighborTile = getTile(level, neighbor.x, neighbor.y)
+      for (let i = 0; i < 8; i++) {
+        const nx = x + DX[i]!
+        const ny = y + DY[i]!
+        if (nx < 0 || nx >= level.width || ny < 0 || ny >= level.height) continue
+        const neighborTile = getTile(level, nx, ny)
         if (!neighborTile) continue
 
-        if (neighborTile.explored && isWalkableOrDoor(neighborTile)) {
+        if (neighborTile.explored && level.passable[ny * level.width + nx]) {
           hasExploredWalkable = true
         }
         if (!neighborTile.explored) {
@@ -500,13 +512,14 @@ export function findExplorationTarget(
  * Find nearest explored walkable tile to a position
  */
 function findNearestWalkableExplored(level: DungeonLevel, pos: Point): Point | null {
-  const neighbors = getAdjacentPositions(pos)
-
-  for (const neighbor of neighbors) {
-    const tile = getTile(level, neighbor.x, neighbor.y)
-    if (tile?.explored && isWalkableOrDoor(tile)) {
-      // Direct neighbor is best
-      return neighbor
+  for (let i = 0; i < 8; i++) {
+    const nx = pos.x + DX[i]!
+    const ny = pos.y + DY[i]!
+    if (nx < 0 || nx >= level.width || ny < 0 || ny >= level.height) continue
+    if (!level.passable[ny * level.width + nx]) continue
+    const tile = getTile(level, nx, ny)
+    if (tile?.explored) {
+      return { x: nx, y: ny }
     }
   }
 
@@ -683,7 +696,7 @@ function floodFillCluster(
     const tile = getTile(level, pos.x, pos.y)
     if (!tile || tile.explored) {
       // Check if this is a potential entry point
-      if (tile?.explored && isWalkableOrDoor(tile)) {
+      if (tile?.explored && level.passable[pos.y * level.width + pos.x]) {
         if (!entryPoint) {
           entryPoint = pos
         }
@@ -760,13 +773,6 @@ export function findBestCluster(game: GameState, botState: BotState): Exploratio
 // ============================================================================
 
 /**
- * Check if a tile is walkable or a closed door (can be opened)
- */
-function isWalkableOrDoor(tile: Tile): boolean {
-  return isWalkable(tile) || tile.type === 'door_closed'
-}
-
-/**
  * Check if a tile should be counted as explorable
  */
 function isExplorableTile(tile: Tile): boolean {
@@ -790,9 +796,10 @@ function isLikelyDeadEnd(
   // Check if entry point is in a narrow passage (corridor)
   // Count walkable neighbors of entry point
   let walkableCount = 0
-  for (const adj of getAdjacentPositions(entryPoint)) {
-    const tile = getTile(level, adj.x, adj.y)
-    if (tile && isWalkableOrDoor(tile)) {
+  for (let i = 0; i < 8; i++) {
+    const nx = entryPoint.x + DX[i]!
+    const ny = entryPoint.y + DY[i]!
+    if (nx >= 0 && nx < level.width && ny >= 0 && ny < level.height && level.passable[ny * level.width + nx]) {
       walkableCount++
     }
   }
@@ -865,8 +872,8 @@ export function isInCorridor(game: GameState, pos: Point): boolean {
  * Check if a tile at position is walkable
  */
 function isWalkableTile(level: DungeonLevel, x: number, y: number): boolean {
-  const tile = getTile(level, x, y)
-  return tile !== null && isWalkableOrDoor(tile)
+  if (x < 0 || x >= level.width || y < 0 || y >= level.height) return false
+  return !!level.passable[y * level.width + x]
 }
 
 /**
@@ -901,9 +908,13 @@ export function findCorridorContinuation(game: GameState, botState: BotState): P
 
     // Count unexplored neighbors of target (exploration potential)
     let unexploredCount = 0
-    for (const adj of getAdjacentPositions(target)) {
-      const adjTile = getTile(level, adj.x, adj.y)
-      if (adjTile && !adjTile.explored && isWalkableOrDoor(adjTile)) {
+    for (let i = 0; i < 8; i++) {
+      const ax = target.x + DX[i]!
+      const ay = target.y + DY[i]!
+      if (ax < 0 || ax >= level.width || ay < 0 || ay >= level.height) continue
+      if (!level.passable[ay * level.width + ax]) continue
+      const adjTile = getTile(level, ax, ay)
+      if (adjTile && !adjTile.explored) {
         unexploredCount++
       }
     }
