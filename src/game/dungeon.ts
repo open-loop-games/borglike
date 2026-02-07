@@ -236,8 +236,10 @@ export function computeFOV(level: DungeonLevel, origin: Point, radius: number): 
           tile.visible = true
           if (!tile.explored) {
             tile.explored = true
-            level.explored[y * level.width + x] = 1
+            const idx = y * level.width + x
+            level.explored[idx] = 1
             level.exploredCount++
+            if (level.passable[idx]) level.exploredPassableCount++
           }
           visible.add(`${x},${y}`)
         }
@@ -269,6 +271,7 @@ export function setAllTilesVisible(level: DungeonLevel): void {
   }
   level.exploredCount = explored
   level.explored.fill(1)
+  level.exploredPassableCount = level.passableCount
 }
 
 // ============================================================================

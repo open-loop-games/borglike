@@ -174,6 +174,10 @@ export interface DungeonLevel {
   stairsDown: Point | null
   /** Incrementally maintained count of explored tiles (avoids full-scan) */
   exploredCount: number
+  /** Total passable tiles (set at generation, immutable). Exploration progress denominator. */
+  passableCount: number
+  /** Explored passable tiles (incremented alongside exploredCount). Exploration progress numerator. */
+  exploredPassableCount: number
   /** Pre-computed passability bitmap: 1 = walkable/door, indexed by y * width + x */
   passable: Uint8Array
   /** Explored bitmap: 1 = explored, indexed by y * width + x. Updated alongside tile.explored */

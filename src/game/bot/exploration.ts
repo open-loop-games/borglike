@@ -8,7 +8,7 @@
 // Type declaration for Node.js process (used for debug logging in scripts)
 declare const process: { env: Record<string, string | undefined> } | undefined
 
-import type { GameState, Point, DungeonLevel, Tile, Direction } from '../types'
+import type { GameState, Point, DungeonLevel, Direction } from '../types'
 import { DIRECTION_VECTORS, chebyshevDistance, isMonsterAt } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
 import { seenGridHas } from './types'
@@ -557,53 +557,36 @@ function getRecentVisitPenalty(botState: BotState, pos: Point): number {
 // ============================================================================
 
 /**
- * Calculate detailed exploration statistics
+ * Calculate detailed exploration statistics.
+ * Uses pre-computed level counters + cached frontier (no full-level scans).
  */
 export function getExplorationStats(game: GameState): ExplorationStats {
   const level = game.currentLevel
-  let totalExplorable = 0
-  let explored = 0
+  const progress = getExplorationProgress(game)
+  const frontiers = getFrontierPositions(game)
 
-  for (let y = 0; y < level.height; y++) {
-    const row = level.tiles[y]
-    if (!row) continue
-
-    for (let x = 0; x < level.width; x++) {
-      const tile = row[x]
-      if (!tile) continue
-
-      // Count floor, doors as explorable
-      if (isExplorableTile(tile)) {
-        totalExplorable++
-        if (tile.explored) {
-          explored++
-        }
-      }
-    }
-  }
-
-  const progress = totalExplorable > 0 ? Math.floor((explored / totalExplorable) * 100) : 100
-  const frontier = findFrontierTiles(game)
-
-  // Check if stairs are found
   const stairsFound = level.stairsDown
     ? (getTile(level, level.stairsDown.x, level.stairsDown.y)?.explored ?? false)
     : false
 
   return {
-    totalExplorableTiles: totalExplorable,
-    exploredTiles: explored,
+    totalExplorableTiles: level.passableCount,
+    exploredTiles: level.exploredPassableCount,
     progress,
-    frontierSize: frontier.length,
+    frontierSize: frontiers.length,
     stairsFound,
   }
 }
 
 /**
- * Get exploration progress as percentage (0-100)
+ * Get exploration progress as percentage (0-100).
+ * O(1) — uses incrementally maintained counters on DungeonLevel.
  */
 export function getExplorationProgress(game: GameState): number {
-  return getExplorationStats(game).progress
+  const level = game.currentLevel
+  return level.passableCount > 0
+    ? Math.floor((level.exploredPassableCount / level.passableCount) * 100)
+    : 100
 }
 
 /**
@@ -772,13 +755,6 @@ export function findBestCluster(game: GameState, botState: BotState): Exploratio
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-/**
- * Check if a tile should be counted as explorable
- */
-function isExplorableTile(tile: Tile): boolean {
-  return tile.type === 'floor' || tile.type === 'door_open' || tile.type === 'door_closed'
-}
 
 /**
  * Check if a frontier is likely a dead end.

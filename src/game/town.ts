@@ -121,10 +121,13 @@ export function generateTownLevel(): DungeonLevel {
     stairsUp: null, // No stairs up from town
     stairsDown: DUNGEON_ENTRANCE_POSITION, // Dungeon entrance acts as stairs down
     exploredCount: 0,
+    passableCount: 0,
+    exploredPassableCount: 0,
     passable: new Uint8Array(0),
     explored: new Uint8Array(0),
   }
   level.passable = buildPassabilityBitmap(level)
+  level.passableCount = level.passable.reduce((sum, v) => sum + v, 0)
   level.explored = buildExploredBitmap(level)
   return level
 }

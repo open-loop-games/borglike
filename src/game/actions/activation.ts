@@ -592,8 +592,10 @@ function executeIlluminate(game: GameState, activation: ActivationTemplate): Act
       const tile = level.tiles[y]?.[x]
       if (tile && !tile.explored) {
         tile.explored = true
-        level.explored[y * level.width + x] = 1
+        const idx = y * level.width + x
+        level.explored[idx] = 1
         level.exploredCount++
+        if (level.passable[idx]) level.exploredPassableCount++
         illuminatedCount++
       }
     }

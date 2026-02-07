@@ -253,8 +253,10 @@ const SCROLL_EFFECTS: Array<{
         const tile = getTile(game.currentLevel, stairs.x, stairs.y)
         if (tile && !tile.explored) {
           tile.explored = true
-          game.currentLevel.explored[stairs.y * game.currentLevel.width + stairs.x] = 1
+          const idx = stairs.y * game.currentLevel.width + stairs.x
+          game.currentLevel.explored[idx] = 1
           game.currentLevel.exploredCount++
+          if (game.currentLevel.passable[idx]) game.currentLevel.exploredPassableCount++
         }
       }
       return {
@@ -276,8 +278,10 @@ const SCROLL_EFFECTS: Array<{
             const tile = row[x]
             if (tile && !tile.explored) {
               tile.explored = true
-              game.currentLevel.explored[y * game.currentLevel.width + x] = 1
+              const idx = y * game.currentLevel.width + x
+              game.currentLevel.explored[idx] = 1
               newlyExplored++
+              if (game.currentLevel.passable[idx]) game.currentLevel.exploredPassableCount++
             }
           }
         }
