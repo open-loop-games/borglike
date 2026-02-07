@@ -717,6 +717,16 @@ export const useProgressionStore = defineStore('progression', () => {
     if (stats.maxDepth >= 50) {
       globalStats.value.timesReachedDepth50 = (globalStats.value.timesReachedDepth50 ?? 0) + 1
     }
+
+    // Track best depth per race and class for unlock conditions
+    if (!globalStats.value.bestDepthPerRace) globalStats.value.bestDepthPerRace = {}
+    if (!globalStats.value.bestDepthPerClass) globalStats.value.bestDepthPerClass = {}
+    if (stats.maxDepth > (globalStats.value.bestDepthPerRace[stats.race] ?? 0)) {
+      globalStats.value.bestDepthPerRace[stats.race] = stats.maxDepth
+    }
+    if (stats.maxDepth > (globalStats.value.bestDepthPerClass[stats.class] ?? 0)) {
+      globalStats.value.bestDepthPerClass[stats.class] = stats.maxDepth
+    }
   }
 
   /**

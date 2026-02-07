@@ -234,6 +234,9 @@ export interface GlobalStats {
   // Prestige unlock tracking
   victoriesPerRace?: Record<string, number> // race name → win count
   victoriesPerClass?: Record<string, number> // class name → win count
+  // Best depth tracking for unlock conditions
+  bestDepthPerRace?: Record<string, number> // race name → best depth
+  bestDepthPerClass?: Record<string, number> // class id → best depth
 }
 
 /** Context passed to prestige unlock condition predicates */

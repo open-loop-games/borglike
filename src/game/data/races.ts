@@ -9,8 +9,8 @@
 import type { UnlockContext } from '@/types/progression'
 import { getDragonNames } from './monsters'
 
-/** Starting race names for prestige unlock validation */
-const STARTING_RACE_NAMES = ['Human', 'Dwarf', 'Elf']
+/** Starting race IDs for prestige unlock validation */
+const STARTING_RACE_IDS = ['human', 'dwarf', 'elf']
 
 /** Stat modifiers for a race */
 export interface StatModifiers {
@@ -146,10 +146,10 @@ const halfElf: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Win a run with both Human and Elf',
+  unlockCondition: 'Reach depth 50 with Human and Elf',
   checkCondition: (ctx) => {
-    const wins = ctx.globalStats.victoriesPerRace ?? {}
-    return (wins['Human'] ?? 0) >= 1 && (wins['Elf'] ?? 0) >= 1
+    const best = ctx.globalStats.bestDepthPerRace ?? {}
+    return (best['human'] ?? 0) >= 50 && (best['elf'] ?? 0) >= 50
   },
   description: 'Combining human adaptability with elven grace.',
 }
@@ -179,8 +179,8 @@ const hobbit: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Reach depth 20',
-  checkCondition: (ctx) => ctx.globalStats.maxDepthEver >= 20,
+  unlockCondition: 'Reach depth 50',
+  checkCondition: (ctx) => ctx.globalStats.maxDepthEver >= 50,
   description: 'Small but nimble, hobbits are natural survivors with hearty appetites.',
 }
 
@@ -234,8 +234,8 @@ const halfOrc: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Kill 500 monsters total',
-  checkCondition: (ctx) => ctx.globalStats.totalKills >= 500,
+  unlockCondition: 'Kill 10,000 monsters total',
+  checkCondition: (ctx) => ctx.globalStats.totalKills >= 10000,
   description: 'Fierce warriors who grow stronger when wounded.',
 }
 
@@ -259,11 +259,12 @@ const halfTroll: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Kill a unique monster',
+  unlockCondition: 'Kill 250 unique monsters',
   checkCondition: (ctx) => {
-    return Object.entries(ctx.bestiary).some(
+    const uniqueKills = Object.entries(ctx.bestiary).filter(
       ([name, entry]) => entry.kills > 0 && name.includes(',')
-    )
+    ).length
+    return uniqueKills >= 250
   },
   description: 'Massive and slow, but nearly impossible to kill.',
 }
@@ -284,7 +285,7 @@ const dunadan: Race = {
   ],
   starting: false,
   unlockCondition: 'Win a run with Human',
-  checkCondition: (ctx) => (ctx.globalStats.victoriesPerRace?.['Human'] ?? 0) >= 1,
+  checkCondition: (ctx) => (ctx.globalStats.victoriesPerRace?.['human'] ?? 0) >= 1,
   description: 'Descendants of ancient kings, gifted in all aspects.',
 }
 
@@ -309,7 +310,7 @@ const highElf: Race = {
   ],
   starting: false,
   unlockCondition: 'Win a run with Elf',
-  checkCondition: (ctx) => (ctx.globalStats.victoriesPerRace?.['Elf'] ?? 0) >= 1,
+  checkCondition: (ctx) => (ctx.globalStats.victoriesPerRace?.['elf'] ?? 0) >= 1,
   description: 'Noble and powerful, the eldest of the elven kindred.',
 }
 
@@ -333,8 +334,8 @@ const kobold: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Die 50 times',
-  checkCondition: (ctx) => ctx.globalStats.totalDeaths >= 50,
+  unlockCondition: 'Die 100 times',
+  checkCondition: (ctx) => ctx.globalStats.totalDeaths >= 100,
   description: 'Scrappy survivors who have learned from countless deaths.',
 }
 
@@ -371,7 +372,7 @@ const vampire: Race = {
   prestige: true,
   checkCondition: (ctx) => {
     const wins = ctx.globalStats.victoriesPerRace ?? {}
-    return STARTING_RACE_NAMES.every((race) => (wins[race] ?? 0) >= 1)
+    return STARTING_RACE_IDS.every((id) => (wins[id] ?? 0) >= 1)
   },
   description: 'Immortal predators who sustain themselves on the life force of others.',
 }
@@ -401,9 +402,9 @@ const golem: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Collect 10,000 gold total across all runs',
+  unlockCondition: 'Collect 10,000,000 gold total across all runs',
   prestige: true,
-  checkCondition: (ctx) => ctx.globalStats.totalGold >= 10000,
+  checkCondition: (ctx) => ctx.globalStats.totalGold >= 10000000,
   description: 'Animated constructs of stone and metal, nearly indestructible.',
 }
 
@@ -427,7 +428,7 @@ const draconian: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Kill 50 dragons total',
+  unlockCondition: 'Kill 10,000 dragons total',
   prestige: true,
   checkCondition: (ctx) => {
     const dragonNames = getDragonNames()
@@ -435,7 +436,7 @@ const draconian: Race = {
       (sum, name) => sum + (ctx.bestiary[name]?.kills ?? 0),
       0
     )
-    return totalDragonKills >= 50
+    return totalDragonKills >= 10000
   },
   description: 'Dragon-blooded humanoids with elemental powers.',
 }
