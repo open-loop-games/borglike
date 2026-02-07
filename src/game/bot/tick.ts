@@ -12,7 +12,7 @@
  */
 
 import type { GameState, GameAction, BotPersonality } from '../types'
-import type { BotCapabilities, BotToggles, SweepLevelRange } from '@/types/progression'
+import type { BotCapabilities, BotToggles, SweepLevelRange, SurfLevelRange } from '@/types/progression'
 import { getTile, countExploredTiles } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 
@@ -80,7 +80,9 @@ export function runBotTick(
   existingState?: BotState,
   capabilities?: BotCapabilities,
   toggles?: BotToggles,
-  sweepLevelRange?: SweepLevelRange
+  sweepLevelRange?: SweepLevelRange,
+  surfLevelRange?: SurfLevelRange,
+  personalityConfig?: PersonalityConfig
 ): GameAction {
   // Get or create bot state
   const botState = existingState ?? createBotState()
@@ -162,7 +164,16 @@ export function runBotTick(
 
   // Build context
   const context = profile('buildBotContext', () =>
-    buildBotContext(game, personality, botState, capabilities, toggles, sweepLevelRange)
+    buildBotContext(
+      game,
+      personality,
+      botState,
+      capabilities,
+      toggles,
+      sweepLevelRange,
+      surfLevelRange,
+      personalityConfig
+    )
   )
 
   // Update known stairs if visible

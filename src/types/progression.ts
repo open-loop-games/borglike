@@ -2,6 +2,8 @@
  * Meta-progression types
  */
 
+import type { PersonalityConfig } from '@game/bot/types'
+
 export interface Currency {
   essence: number // Primary currency from runs
   artifacts: number // Rare drops, used for prestige unlocks
@@ -80,16 +82,26 @@ export interface SweepLevelRange {
   end: number // Last level where sweep is active (exclusive)
 }
 
+/** Surf level range - character levels where surf/tether is active */
+export interface SurfLevelRange {
+  start: number // 0 = no lower bound (always eligible)
+  end: number // 0 = no upper bound (always eligible)
+}
+
 /** Per-slot configuration - remembers last used settings */
 export interface SlotConfig {
   race: string
   class: string
-  personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
+  personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
   boosters: [string | null, string | null]
   // Per-slot bot toggles (on/off overrides for globally unlocked capabilities)
   toggles: BotToggles
   // Sweep exploration level range (class-specific defaults)
   sweepLevelRange: SweepLevelRange
+  // Surf level range (character levels where surf/tether activates)
+  surfLevelRange?: SurfLevelRange
+  // Custom personality slider values (used when personality === 'custom')
+  customPersonality?: PersonalityConfig
   // Active levels for graded capabilities (can be lower than unlocked level)
   activeSweepLevel?: number // 0-3, capped by global botCapabilities.sweep
   activeSurfLevel?: number // 0-3, capped by global botCapabilities.surf

@@ -148,6 +148,18 @@ export function getTetherRadii(surfLevel: number): readonly number[] {
   }
 }
 
+/**
+ * Check if character level is within surf level range.
+ * {0, 0} = always eligible (default, no restriction).
+ */
+function isSurfLevelInRange(context: BotContext): boolean {
+  const { start, end } = context.surfLevelRange
+  // Default (no restriction)
+  if (start === 0 && end === 0) return true
+  const charLevel = context.game.character.level
+  return charLevel >= start && (end === 0 || charLevel < end)
+}
+
 /** Base sweep threshold (% of floor tiles seen this visit) - used when sweep disabled */
 const SWEEP_BASE_THRESHOLD = 100 // Effectively disabled at L0
 
@@ -900,8 +912,8 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
     const effective = getEffectiveCapabilities(context)
     const radii = getTetherRadii(effective.surf)
 
-    // No tethering available at this surf level - skip farming loop
-    if (radii.length === 0) {
+    // No tethering available at this surf level or out of surf range - skip farming loop
+    if (radii.length === 0 || !isSurfLevelInRange(context)) {
       return null
     }
 

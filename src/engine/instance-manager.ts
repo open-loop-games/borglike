@@ -250,6 +250,11 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     // Per-slot bot training unlocks (uses active levels for sweep/surf)
     botCapabilities: effectiveCapabilities,
     botToggles: slotConfig.toggles,
+    // Per-slot level ranges and custom personality
+    sweepLevelRange: slotConfig.sweepLevelRange,
+    surfLevelRange: slotConfig.surfLevelRange,
+    botPersonalityConfig:
+      slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
   })
 
   // Create instance
@@ -1017,6 +1022,10 @@ function createRunForCatchUp(
     maxTurns: 0,
     botCapabilities: effectiveCapabilities,
     botToggles: slotConfig.toggles,
+    sweepLevelRange: slotConfig.sweepLevelRange,
+    surfLevelRange: slotConfig.surfLevelRange,
+    botPersonalityConfig:
+      slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
   })
 
   const instance: GameInstance = { runId, slot, runner, intervalId: null, tickRate: 100 }

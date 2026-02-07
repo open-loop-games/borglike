@@ -18,7 +18,14 @@ import type { MerchantTemplate } from './data/merchants'
 import type { GoldPileTemplate } from './data/gold'
 import type { TrapTemplate } from './data/traps'
 import type { VaultPlacement, GeneratorType } from './dungeon/types'
-import type { BestiaryEntry, BotCapabilities, BotToggles } from '@/types/progression'
+import type {
+  BestiaryEntry,
+  BotCapabilities,
+  BotToggles,
+  SweepLevelRange,
+  SurfLevelRange,
+} from '@/types/progression'
+import type { PersonalityConfig } from '@bot/types'
 
 // Re-export data types
 export type {
@@ -924,6 +931,7 @@ export type BotPersonality =
   | 'aggressive' // Fights to low HP, hoards items
   | 'greedy' // Prioritizes gold/items over safety
   | 'speedrunner' // Beelines for stairs
+  | 'custom' // Player-tuned sliders
 
 /** Bot decision context */
 export interface BotContext {
@@ -1001,6 +1009,11 @@ export interface RunConfig {
   // Per-slot bot capabilities (training unlocks)
   botCapabilities?: BotCapabilities
   botToggles?: BotToggles
+  // Per-slot level ranges for sweep/surf activation
+  sweepLevelRange?: SweepLevelRange
+  surfLevelRange?: SurfLevelRange
+  // Custom personality config (used when botPersonality === 'custom')
+  botPersonalityConfig?: PersonalityConfig
 }
 
 // ============================================================================

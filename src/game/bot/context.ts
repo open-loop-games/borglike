@@ -5,9 +5,9 @@
  */
 
 import type { GameState, BotPersonality, Point, AltarState } from '../types'
-import type { BotCapabilities, BotToggles, SweepLevelRange } from '../../types/progression'
+import type { BotCapabilities, BotToggles, SweepLevelRange, SurfLevelRange } from '../../types/progression'
 import { FULL_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../../types/progression'
-import { getDefaultSweepLevelRange } from './types'
+import { getDefaultSweepLevelRange, getDefaultSurfLevelRange } from './types'
 
 import type { BotContext, BotState, PersonalityConfig } from './types'
 import { createSeenGrid } from './types'
@@ -110,15 +110,22 @@ export function buildBotContext(
   botState?: BotState,
   capabilities?: BotCapabilities,
   toggles?: BotToggles,
-  sweepLevelRange?: SweepLevelRange
+  sweepLevelRange?: SweepLevelRange,
+  surfLevelRange?: SurfLevelRange,
+  personalityConfig?: PersonalityConfig
 ): BotContext {
-  const config = getPersonalityConfig(personality)
+  // Resolve personality config: custom uses provided config, presets use lookup
+  const config =
+    personality === 'custom' && personalityConfig
+      ? personalityConfig
+      : getPersonalityConfig(personality)
 
   // Default to full capabilities for backwards compatibility
   const effectiveCapabilities = capabilities ?? FULL_BOT_CAPABILITIES
   const effectiveToggles = toggles ?? DEFAULT_BOT_TOGGLES
-  // Default sweep range based on class
+  // Default sweep/surf ranges based on class
   const effectiveSweepRange = sweepLevelRange ?? getDefaultSweepLevelRange(game.character.classId)
+  const effectiveSurfRange = surfLevelRange ?? getDefaultSurfLevelRange()
 
   // Get class-aware information
   const classId = game.character.classId
@@ -179,6 +186,7 @@ export function buildBotContext(
     capabilities: effectiveCapabilities,
     toggles: effectiveToggles,
     sweepLevelRange: effectiveSweepRange,
+    surfLevelRange: effectiveSurfRange,
     visibleMonsters,
     visibleItems,
     visibleAltars,

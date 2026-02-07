@@ -14,7 +14,7 @@ import type {
   AltarState,
   MerchantState,
 } from '../types'
-import type { BotCapabilities, BotToggles, SweepLevelRange } from '@/types/progression'
+import type { BotCapabilities, BotToggles, SweepLevelRange, SurfLevelRange } from '@/types/progression'
 import type { ClassBehaviorProfile } from './class-profiles'
 import type { FlowGrid } from './flow'
 
@@ -347,8 +347,9 @@ export interface BotContext {
   capabilities: BotCapabilities
   toggles: BotToggles
 
-  // Sweep configuration (per-slot)
+  // Sweep/surf configuration (per-slot)
   sweepLevelRange: SweepLevelRange
+  surfLevelRange: SurfLevelRange
 
   // Derived data
   visibleMonsters: Monster[]
@@ -467,4 +468,9 @@ export function getDefaultSweepLevelRange(classId: string): SweepLevelRange {
     return { start: 1, end: 10 } // Sweep L1-9, surf at L10+
   }
   return { start: 0, end: 0 } // Disabled
+}
+
+/** Get default surf level range (no restriction — always eligible). */
+export function getDefaultSurfLevelRange(): SurfLevelRange {
+  return { start: 0, end: 0 }
 }

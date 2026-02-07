@@ -25,6 +25,6 @@ export type AngbandEvent =
 export interface RunConfig {
   race: string
   class: string
-  personality?: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
+  personality?: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
   seed?: number
 }

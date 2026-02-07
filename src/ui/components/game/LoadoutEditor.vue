@@ -4,13 +4,20 @@ import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById } from '@game/data/boosters'
 import { races, type Race } from '@game/data/races'
 import { classes, type GameClass } from '@game/data/classes'
+import type { PersonalityConfig } from '@game/bot/types'
+import {
+  PARAMETER_INFO,
+  SLIDER_UPGRADE_GATES,
+  getPersonalityConfig,
+  summarizePersonality,
+} from '@game/bot/personality'
 import PanelFrame from '../common/PanelFrame.vue'
 
 const props = defineProps<{
   slot: number
 }>()
 
-type Personality = 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
+type Personality = 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
 
 const emit = defineEmits<{
   start: [config: { race: string; class: string; personality: Personality }]
@@ -26,6 +33,17 @@ const savedConfig = progression.getSlotConfig(props.slot)
 const selectedRace = ref(savedConfig.race)
 const selectedClass = ref(savedConfig.class)
 const selectedPersonality = ref<Personality>(savedConfig.personality)
+
+// Custom personality sliders
+const customPersonality = ref<PersonalityConfig>(
+  savedConfig.customPersonality ?? getPersonalityConfig('cautious')
+)
+
+// Sweep/surf level ranges
+const sweepRangeStart = ref(savedConfig.sweepLevelRange?.start ?? 0)
+const sweepRangeEnd = ref(savedConfig.sweepLevelRange?.end ?? 0)
+const surfRangeStart = ref(savedConfig.surfLevelRange?.start ?? 0)
+const surfRangeEnd = ref(savedConfig.surfLevelRange?.end ?? 0)
 
 // Booster slots - initialized from saved config
 const boosterSlot0 = ref(savedConfig.boosters[0])
@@ -84,6 +102,52 @@ const personalities = [
   { id: 'greedy', name: 'Greedy', desc: 'Prioritizes gold/items over safety' },
   { id: 'speedrunner', name: 'Speedrunner', desc: 'Beelines for stairs' },
 ] as const
+
+// Custom personality — unlocked sliders based on bot upgrade levels
+const unlockedSliders = computed(() => {
+  const caps = progression.botCapabilities
+  return (Object.entries(SLIDER_UPGRADE_GATES) as [keyof PersonalityConfig, { field: string; level: number }][])
+    .filter(([, gate]) => {
+      const capValue = caps[gate.field as keyof typeof caps]
+      return typeof capValue === 'number' && capValue >= gate.level
+    })
+    .map(([key]) => key)
+})
+
+const hasAnySlider = computed(() => unlockedSliders.value.length > 0)
+
+const allSliderKeys = computed(() =>
+  Object.keys(PARAMETER_INFO) as (keyof PersonalityConfig)[]
+)
+
+function isSliderUnlocked(key: keyof PersonalityConfig): boolean {
+  return unlockedSliders.value.includes(key)
+}
+
+function getSliderGateHint(key: keyof PersonalityConfig): string {
+  const gate = SLIDER_UPGRADE_GATES[key]
+  const name = gate.field.charAt(0).toUpperCase() + gate.field.slice(1)
+  return `Requires ${name} ${romanNumeral(gate.level)}`
+}
+
+function romanNumeral(n: number): string {
+  return n === 1 ? 'I' : n === 2 ? 'II' : n === 3 ? 'III' : String(n)
+}
+
+function selectPersonality(id: Personality) {
+  // When switching from preset to custom, seed sliders from that preset
+  if (id === 'custom' && selectedPersonality.value !== 'custom') {
+    const presetConfig = getPersonalityConfig(selectedPersonality.value)
+    customPersonality.value = { ...presetConfig }
+  }
+  selectedPersonality.value = id
+}
+
+const personalitySummary = computed(() =>
+  selectedPersonality.value === 'custom'
+    ? summarizePersonality(customPersonality.value)
+    : ''
+)
 
 // Config performance from run history
 const configPerformance = computed(() => {
@@ -156,6 +220,10 @@ function handleStart() {
     class: selectedClass.value,
     personality: selectedPersonality.value,
     boosters: [boosterSlot0.value, boosterSlot1.value],
+    sweepLevelRange: { start: sweepRangeStart.value, end: sweepRangeEnd.value },
+    surfLevelRange: { start: surfRangeStart.value, end: surfRangeEnd.value },
+    customPersonality:
+      selectedPersonality.value === 'custom' ? { ...customPersonality.value } : undefined,
   })
 
   emit('start', {
@@ -404,11 +472,59 @@ function handleCancel() {
               :key="p.id"
               class="personality-btn"
               :class="{ active: selectedPersonality === p.id }"
-              @click="selectedPersonality = p.id"
+              @click="selectPersonality(p.id)"
             >
               <span class="personality-name">{{ p.name }}</span>
               <span class="personality-desc">{{ p.desc }}</span>
             </button>
+            <button
+              v-if="hasAnySlider"
+              class="personality-btn custom-btn"
+              :class="{ active: selectedPersonality === 'custom' }"
+              @click="selectPersonality('custom')"
+            >
+              <span class="personality-name">Custom</span>
+              <span class="personality-desc">Player-tuned sliders</span>
+            </button>
+          </div>
+
+          <!-- Custom Personality Sliders -->
+          <div v-if="selectedPersonality === 'custom'" class="custom-sliders">
+            <div
+              v-for="key in allSliderKeys"
+              :key="key"
+              class="slider-row"
+              :class="{ locked: !isSliderUnlocked(key) }"
+            >
+              <span class="slider-label">{{ PARAMETER_INFO[key].name }}</span>
+              <input
+                v-if="isSliderUnlocked(key)"
+                type="range"
+                class="param-slider"
+                :min="PARAMETER_INFO[key].min"
+                :max="PARAMETER_INFO[key].max"
+                :value="customPersonality[key]"
+                @input="customPersonality[key] = Number(($event.target as HTMLInputElement).value)"
+              />
+              <input
+                v-else
+                type="range"
+                class="param-slider"
+                :min="PARAMETER_INFO[key].min"
+                :max="PARAMETER_INFO[key].max"
+                :value="customPersonality[key]"
+                disabled
+              />
+              <span class="slider-value">
+                {{ customPersonality[key] }}{{ PARAMETER_INFO[key].unit }}
+              </span>
+              <span v-if="!isSliderUnlocked(key)" class="slider-lock-hint">
+                {{ getSliderGateHint(key) }}
+              </span>
+            </div>
+            <div v-if="personalitySummary" class="personality-summary">
+              {{ personalitySummary }}
+            </div>
           </div>
         </PanelFrame>
 
@@ -443,6 +559,30 @@ function handleCancel() {
                 </div>
               </div>
             </div>
+            <!-- Sweep Level Range -->
+            <div v-if="globalCaps.sweep > 0 && sweepEnabled" class="range-row">
+              <span class="control-label">Sweep Range</span>
+              <div class="range-inputs">
+                <input
+                  v-model.number="sweepRangeStart"
+                  type="number"
+                  class="range-input"
+                  min="0"
+                  max="50"
+                  placeholder="0"
+                />
+                <span class="range-sep">-</span>
+                <input
+                  v-model.number="sweepRangeEnd"
+                  type="number"
+                  class="range-input"
+                  min="0"
+                  max="50"
+                  placeholder="0"
+                />
+              </div>
+              <span class="range-hint">Char levels (0 = disabled)</span>
+            </div>
             <!-- Surf Level -->
             <div v-if="globalCaps.surf > 0" class="control-row">
               <span class="control-label">Surf</span>
@@ -457,6 +597,30 @@ function handleCancel() {
                   L{{ n }}
                 </button>
               </div>
+            </div>
+            <!-- Surf Level Range -->
+            <div v-if="globalCaps.surf > 0" class="range-row">
+              <span class="control-label">Surf Range</span>
+              <div class="range-inputs">
+                <input
+                  v-model.number="surfRangeStart"
+                  type="number"
+                  class="range-input"
+                  min="0"
+                  max="50"
+                  placeholder="0"
+                />
+                <span class="range-sep">-</span>
+                <input
+                  v-model.number="surfRangeEnd"
+                  type="number"
+                  class="range-input"
+                  min="0"
+                  max="50"
+                  placeholder="0"
+                />
+              </div>
+              <span class="range-hint">Char levels (0-0 = always)</span>
             </div>
             <!-- No controls message -->
             <div
@@ -1054,5 +1218,115 @@ function handleCancel() {
   color: var(--text-dim);
   font-style: italic;
   padding: var(--space-2) 0;
+}
+
+/* Custom Personality Sliders */
+.custom-btn {
+  border-style: dashed;
+}
+
+.custom-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  position: relative;
+}
+
+.slider-row.locked {
+  opacity: 0.4;
+}
+
+.slider-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  min-width: 90px;
+}
+
+.param-slider {
+  flex: 1;
+  accent-color: var(--purple);
+  cursor: pointer;
+}
+
+.param-slider:disabled {
+  cursor: not-allowed;
+}
+
+.slider-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--cyan);
+  min-width: 50px;
+  text-align: right;
+}
+
+.slider-lock-hint {
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  font-style: italic;
+  position: absolute;
+  right: 0;
+  top: -2px;
+  font-family: var(--font-mono);
+}
+
+.personality-summary {
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: var(--space-1);
+}
+
+/* Sweep/Surf Range Inputs */
+.range-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.range-input {
+  width: 48px;
+  padding: 2px var(--space-1);
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.range-input:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
+.range-sep {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+}
+
+.range-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
 }
 </style>

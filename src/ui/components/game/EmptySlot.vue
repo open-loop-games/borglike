@@ -7,7 +7,7 @@ const props = defineProps<{
   slot: number
 }>()
 
-type Personality = 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
+type Personality = 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
 
 const emit = defineEmits<{
   startRun: [slot: number, config?: { race: string; class: string; personality: Personality }]

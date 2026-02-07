@@ -14,6 +14,7 @@
 
 import type { BotPersonality } from '../types'
 import type { PersonalityConfig } from './types'
+import type { GradedCapabilityField } from '@game/data/bot-upgrades'
 
 // ============================================================================
 // PERSONALITY CONFIGURATIONS
@@ -56,6 +57,13 @@ export const PERSONALITIES: Record<BotPersonality, PersonalityConfig> = {
     caution: 25, // Retreat at 25% HP (was 35)
     exploration: 30, // Minimal exploration - beeline for stairs
     patience: 100, // Very impatient - descend quickly
+  },
+  custom: {
+    aggression: 50, // Balanced defaults for custom
+    greed: 50,
+    caution: 40,
+    exploration: 60,
+    patience: 150,
   },
 }
 
@@ -134,6 +142,22 @@ export const PARAMETER_INFO: Record<keyof PersonalityConfig, ParameterInfo> = {
     max: 500,
     unit: ' turns',
   },
+}
+
+// ============================================================================
+// SLIDER UPGRADE GATES (which upgrade chain unlocks each slider at L2)
+// ============================================================================
+
+/** Maps each personality slider to the upgrade chain + level that unlocks it */
+export const SLIDER_UPGRADE_GATES: Record<
+  keyof PersonalityConfig,
+  { field: GradedCapabilityField; level: number }
+> = {
+  aggression: { field: 'tactics', level: 2 },
+  caution: { field: 'retreat', level: 2 },
+  exploration: { field: 'sweep', level: 2 },
+  patience: { field: 'preparedness', level: 2 },
+  greed: { field: 'town', level: 2 },
 }
 
 // ============================================================================
@@ -239,6 +263,8 @@ export function describePersonality(personality: BotPersonality): string {
       return 'Prioritizes items and gold. Will detour far for loot, explores very thoroughly, and is very patient.'
     case 'speedrunner':
       return 'Beelines for stairs. Ignores most items, explores minimally, and descends as quickly as possible.'
+    case 'custom':
+      return 'Player-tuned personality sliders. Adjust individual parameters for fine-grained control.'
     default:
       return 'Unknown personality type'
   }

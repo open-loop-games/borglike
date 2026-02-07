@@ -67,7 +67,7 @@ function handleStartRun(
   config?: {
     race: string
     class: string
-    personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
+    personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
   }
 ) {
   try {
@@ -89,7 +89,7 @@ function handleCloseLoadout() {
 function handleLoadoutStart(config: {
   race: string
   class: string
-  personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
+  personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
 }) {
   if (loadoutSlot.value !== null) {
     handleStartRun(loadoutSlot.value, config)

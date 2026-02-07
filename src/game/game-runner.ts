@@ -61,6 +61,10 @@ export function createGameRunner(config: RunnerConfig) {
   // Bot capabilities from slot config (face-rush mode if not provided)
   const capabilities = config.botCapabilities
   const toggles = config.botToggles
+  // Per-slot level ranges and custom personality
+  const sweepLevelRange = config.sweepLevelRange
+  const surfLevelRange = config.surfLevelRange
+  const botPersonalityConfig = config.botPersonalityConfig
 
   const game = createGame(config)
   const botState = createBotState() // Persistent bot state for this run
@@ -75,7 +79,16 @@ export function createGameRunner(config: RunnerConfig) {
     }
 
     // Get bot decision with persistent state
-    const action = runBotTick(game, personality, botState, capabilities, toggles)
+    const action = runBotTick(
+      game,
+      personality,
+      botState,
+      capabilities,
+      toggles,
+      sweepLevelRange,
+      surfLevelRange,
+      botPersonalityConfig
+    )
 
     // Process the turn
     const events = processTurn(game, action)
