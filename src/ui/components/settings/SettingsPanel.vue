@@ -13,6 +13,7 @@ const emit = defineEmits<{
 const settingsStore = useSettingsStore()
 const progression = useProgressionStore()
 
+const appVersion = __APP_VERSION__
 const activeTab = ref<'gameplay' | 'data'>('gameplay')
 
 // Confirmation dialog state
@@ -49,7 +50,7 @@ function handleExportData() {
       lifetimeEssence: progression.lifetimeEssence,
     },
     exportedAt: new Date().toISOString(),
-    version: '1.0.0',
+    version: __APP_VERSION__,
   }
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -88,7 +89,7 @@ function cancelReset() {
 <template>
   <div class="settings-panel">
     <header class="settings-header">
-      <h2>Settings</h2>
+      <h2>Settings <span class="version-tag">v{{ appVersion }}</span></h2>
       <button class="close-btn" @click="emit('close')">✕</button>
     </header>
 
@@ -339,6 +340,12 @@ function cancelReset() {
   font-weight: bold;
   color: var(--text-primary);
   margin: 0;
+}
+
+.version-tag {
+  font-size: var(--text-sm);
+  font-weight: normal;
+  color: var(--text-dim);
 }
 
 .close-btn {

@@ -26,8 +26,8 @@ import { startingClasses } from '@game/data/classes'
 // VERSIONING
 // ============================================================================
 
-/** Current save format version — matches package.json, bump on breaking changes */
-const SAVE_VERSION = '0.1.0'
+/** Save format version — sourced from package.json via Vite define */
+const SAVE_VERSION = __APP_VERSION__
 
 // ============================================================================
 // VALIDATION

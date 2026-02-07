@@ -118,6 +118,16 @@ src/
 - `docs/PERFORMANCE.md` - Performance profiling and optimization
 - `TODO.md` - Current tasks and technical debt
 
+## Versioning & Releases
+
+**Single source of truth:** `package.json` version, injected as `__APP_VERSION__` via Vite `define`. Used for save format version, UI display, and exports. Declared in `src/env.d.ts`.
+
+**Bump version:** `pnpm version patch|minor|major` — updates package.json + creates git tag.
+
+**Save format:** Currently coupled to app version (`SAVE_VERSION = __APP_VERSION__`). Old saves warn on mismatch but still load. No migration system — break saves freely pre-1.0.
+
+**Deploy:** GitHub Pages via `.github/workflows/deploy.yml`, triggers on push to main. Switch to tag-based (`on: push: tags: ['v*']`) once public.
+
 ## Development Notes
 
 - User runs dev server, HMR applies changes immediately
