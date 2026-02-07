@@ -79,24 +79,24 @@ function getPrereqNames(boosterId: string): string[] {
         :class="{ active: activeTab === 'races' }"
         @click="activeTab = 'races'"
       >
+        <span class="tab-icon">☺</span>
         <span class="tab-label">Races</span>
-        <span class="tab-count">{{ progression.availableRaces.length }}</span>
       </button>
       <button
         class="unlock-tab"
         :class="{ active: activeTab === 'classes' }"
         @click="activeTab = 'classes'"
       >
+        <span class="tab-icon">⚔</span>
         <span class="tab-label">Classes</span>
-        <span class="tab-count">{{ progression.availableClasses.length }}</span>
       </button>
       <button
         class="unlock-tab"
         :class="{ active: activeTab === 'boosters' }"
         @click="activeTab = 'boosters'"
       >
+        <span class="tab-icon">★</span>
         <span class="tab-label">Boosters</span>
-        <span class="tab-count">{{ progression.unlockedBoosters.length }}</span>
       </button>
     </div>
 
@@ -249,6 +249,8 @@ function getPrereqNames(boosterId: string): string[] {
 
 .unlock-tabs {
   display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
@@ -256,13 +258,13 @@ function getPrereqNames(boosterId: string): string[] {
 .unlock-tab {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
+  gap: 2px;
+  padding: var(--space-1) var(--space-1);
   background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -272,31 +274,29 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .unlock-tab.active {
-  border-bottom-color: var(--cyan);
+  background: var(--highlight);
+  border-bottom: 2px solid var(--cyan);
+}
+
+.tab-icon {
+  font-size: var(--text-xl);
+  color: var(--text-dim);
+}
+
+.unlock-tab.active .tab-icon {
+  color: var(--cyan);
+  text-shadow: 0 0 6px rgba(6, 182, 212, 0.5);
 }
 
 .tab-label {
   font-family: var(--font-mono);
-  font-size: var(--text-base);
-  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  text-transform: uppercase;
 }
 
 .unlock-tab.active .tab-label {
-  color: var(--cyan);
-}
-
-.tab-count {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  padding: 2px var(--space-2);
-  background: var(--highlight);
-  border-radius: 10px;
-  color: var(--text-dim);
-}
-
-.unlock-tab.active .tab-count {
-  background: rgba(6, 182, 212, 0.2);
-  color: var(--cyan);
+  color: var(--text-secondary);
 }
 
 .unlock-header {

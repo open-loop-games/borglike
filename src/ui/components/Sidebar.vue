@@ -211,7 +211,7 @@ const nemesis = computed(() => {
             <div class="stat-row">
               <span class="stat-label">Items</span>
               <span class="stat-val"
-                >{{ progression.armoryStats.discovered }} / {{ totalItems }}</span
+                >{{ progression.armoryStats.discovered - progression.armoryStats.artifacts }} / {{ totalItems }}</span
               >
             </div>
             <div class="stat-row">
@@ -265,7 +265,7 @@ const nemesis = computed(() => {
   border: none;
   border-bottom: 2px solid transparent;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -305,7 +305,7 @@ const nemesis = computed(() => {
 }
 
 .section h2 {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   text-transform: uppercase;
   color: var(--text-dim);
   margin: 0 0 var(--space-2);
@@ -324,7 +324,7 @@ const nemesis = computed(() => {
   align-items: baseline;
   padding: 2px 0;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .stat-row:not(:last-child) {

@@ -154,7 +154,7 @@ function handlePurchase(upgradeId: string) {
 .category-tabs {
   display: flex;
   gap: var(--space-1);
-  padding: var(--space-2);
+  padding: var(--space-1);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
@@ -165,7 +165,7 @@ function handlePurchase(upgradeId: string) {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: var(--space-2) var(--space-1);
+  padding: var(--space-1) var(--space-1);
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -179,11 +179,11 @@ function handlePurchase(upgradeId: string) {
 
 .category-tab.active {
   background: var(--highlight);
-  border-color: var(--purple);
+  border-bottom: 2px solid var(--purple);
 }
 
 .tab-icon {
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
   color: var(--text-dim);
 }
 
@@ -194,7 +194,7 @@ function handlePurchase(upgradeId: string) {
 
 .tab-label {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
 }
