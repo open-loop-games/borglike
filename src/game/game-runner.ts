@@ -97,6 +97,7 @@ export function createGameRunner(config: RunnerConfig) {
 
     // Circuit breaker: force death if stuck on same level too long
     if (botState.turnsOnLevel > STALE_LEVEL_THRESHOLD && game.character.depth < MAX_DEPTH) {
+      game.messages.push({ turn: game.turn, text: 'The Dumb Bot kills you!', type: 'danger' })
       game.character.hp = 0
       game.character.isDead = true
       game.isRunning = false
