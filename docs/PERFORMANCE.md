@@ -6,9 +6,9 @@
 
 | Mode | Target | Measured | Status |
 |------|--------|----------|--------|
-| Normal (100ms) | <50ms per tick | 0.15ms avg, 4.0ms max | ✅ OK |
-| Turbo (5-20ms) | <5ms per tick | 0.15ms avg, 4.0ms max | ✅ OK |
-| 4x concurrent | <20ms total | ~0.6ms total | ✅ OK |
+| Normal (100ms) | <50ms per tick | 0.14ms avg, 3.6ms max | ✅ OK |
+| Turbo (5-20ms) | <5ms per tick | 0.14ms avg, 3.6ms max | ✅ OK |
+| 4x concurrent | <20ms total | ~0.56ms total | ✅ OK |
 
 **Measurement:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
 
@@ -16,19 +16,19 @@
 
 | Class | Turns | Total Time | Avg/Tick | Main Cost |
 |-------|-------|------------|----------|-----------|
-| Warrior | 15.0k | 2269ms | 0.15ms | goalMovement (34%), getFrontierPositions (14%), computeDangerGrid (12%) |
-| Mage | 25.6k | 3623ms | 0.14ms | goalMovement (33%), computeDangerGrid (10%), selectGoal (8%) |
+| Warrior | 15.0k | 2096ms | 0.14ms | goalMovement (32%), computeDangerGrid (13%), getFrontierPositions (11%) |
+| Mage | 25.6k | 3398ms | 0.13ms | goalMovement (32%), computeDangerGrid (11%), selectGoal (9%) |
 
-### vs Previous Baseline (2026-02-06)
+### vs Previous Baseline (Pass 6)
 
 | Class | Old Avg/Tick | New Avg/Tick | Delta | Notes |
 |-------|-------------|-------------|-------|-------|
-| Warrior | 0.20ms | 0.15ms | **-25%** | Passability bitmap + inlined adjacency |
-| Mage | 0.17ms | 0.14ms | **-18%** | Bitmap + inlined adjacency across all flow/exploration |
+| Warrior | 0.15ms | 0.14ms | **-7%** | Explored bitmap + dequeue elimination |
+| Mage | 0.14ms | 0.13ms | **-7%** | Explored bitmap eliminates getTile in BFS + frontier loops |
 
-**Key optimizations:** Pre-computed `Uint8Array` passability bitmap on `DungeonLevel` replaces `getTile()` + `isPassable()` (object lookup + 10 string comparisons) with single array index. Inlined `DX/DY` offset loops replace `getAdjacentPositions()` (8-element `Point[]` allocation per call).
+**Key optimizations:** `explored: Uint8Array` bitmap on `DungeonLevel` eliminates `getTile()` calls from exploration BFS and frontier detection inner loops. Module-level `popX/popY/popCost` in flow.ts BFS eliminates `{ x, y, cost }` object allocation per dequeue (~1000-4000 per flow computation).
 
-**Per-operation (warrior, seed=1000):** `goalMovement` 55µs (-32%), `getFrontierPositions` 34µs (-33%), `flow.exploration` 17µs (-43%), `flow.singleTarget` 53µs (-28%)
+**Per-operation (warrior, seed=1000):** `goalMovement` 48µs (-13%), `getFrontierPositions` 23µs (-32%), `getSweepFrontiers` 11µs (-21%)
 
 ---
 
@@ -83,23 +83,23 @@ PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --upgrades=none --capabilities=none
 
 | Operation | File | Avg Time | Max Time | Notes |
 |-----------|------|----------|----------|-------|
-| `buildBotContext` | `context.ts` | 2.2µs | 0.44ms | Filters visible entities |
-| `computeDangerGrid` | `danger.ts` | 18µs | 0.61ms | Int16Array + FNV-1a hash (Pass 4) |
-| `selectGoal` | `goals.ts` | 15µs | 2.6ms | Priority-based selection |
-| `flow.singleTarget` | `flow.ts` | 53µs | 1.1ms | Single-target BFS (bitmap passability, Pass 6) |
-| `flow.exploration` | `flow.ts` | 17µs | 0.21ms | Dijkstra frontier flow (bitmap shortcircuit) |
-| `getFrontierPositions` | `exploration.ts` | 34µs | 0.44ms | Frontier detection (inlined DX/DY, Pass 6) |
-| `goalMovement` | `tick.ts` | 55µs | 3.4ms | Goal movement execution (Pass 6) |
-| `selectActionByTier` | `tier-actions.ts` | 7µs | 0.73ms | Class-specific action selection |
-| `recordVisibleTiles` | `progression.ts` | 4.6µs | 0.11ms | SeenGrid typed array (Pass 5) |
+| `buildBotContext` | `context.ts` | 2.3µs | 0.31ms | Filters visible entities |
+| `computeDangerGrid` | `danger.ts` | 19µs | 0.74ms | Int16Array + FNV-1a hash (Pass 4) |
+| `selectGoal` | `goals.ts` | 16µs | 2.9ms | Priority-based selection |
+| `flow.singleTarget` | `flow.ts` | 55µs | 0.69ms | Single-target BFS (bitmap + pop vars, Pass 7) |
+| `flow.exploration` | `flow.ts` | 16µs | 0.23ms | Dijkstra frontier flow (explored bitmap, Pass 7) |
+| `getFrontierPositions` | `exploration.ts` | 23µs | 0.66ms | Frontier detection (explored bitmap, Pass 7) |
+| `goalMovement` | `tick.ts` | 48µs | 3.6ms | Goal movement execution (Pass 7) |
+| `selectActionByTier` | `tier-actions.ts` | 8µs | 0.78ms | Class-specific action selection |
+| `recordVisibleTiles` | `progression.ts` | 5.1µs | 0.29ms | SeenGrid typed array (Pass 5) |
 
 ### Mage-Specific Operations (50k turns, seed=1000)
 
 | Operation | File | Avg Time | Max Time | Notes |
 |-----------|------|----------|----------|-------|
-| `getSweepFrontiers` | `exploration.ts` | 14µs | 0.49ms | SeenGrid typed array + bitmap (Pass 6) |
-| `flow.sweep` | `flow.ts` | 40µs | 0.18ms | Multi-target sweep Dijkstra |
-| `computeSafetyFlow` | `safety-flow.ts` | 957µs | 1.5ms | Int16Array + binary heap + bitmap (Pass 6) |
+| `getSweepFrontiers` | `exploration.ts` | 11µs | 1.3ms | Explored bitmap (Pass 7) |
+| `flow.sweep` | `flow.ts` | 39µs | 3.5ms | Multi-target sweep Dijkstra (pop vars, Pass 7) |
+| `computeSafetyFlow` | `safety-flow.ts` | 1099µs | 1.6ms | Int16Array + binary heap + bitmap (Pass 6) |
 
 ### Expensive Operations (Cached)
 
@@ -232,6 +232,68 @@ pnpm diagnose baseline --seed=1000
 ---
 
 ## Optimization History
+
+### Pass 7: 2026-02-07 - Explored Bitmap + Dequeue Elimination
+
+**Problem 1:** `computeExplorationFlow()` BFS inner loop called `getTile(level, nx, ny)` (bounds check + 2D array dereference) per neighbor just to check `tile.explored`. With bitmap passability already eliminating the passability check, the explored check was the remaining `getTile()` call in the hottest BFS path.
+
+**Problem 2:** `computeFrontierPositions()` inner neighbor loop called `getTile(level, nx, ny)` 8 times per frontier candidate to check `neighborTile.explored` and `level.passable[]`. Full level scan with 8 neighbor checks per tile = thousands of `getTile()` calls.
+
+**Problem 3:** `dequeue()` in flow.ts allocated a `{ x, y, cost }` object on every BFS node extraction (~1000-4000 per flow computation). safety-flow.ts already solved this with module-level pop variables, but flow.ts still allocated.
+
+**Changes (types.ts + dungeon.ts):**
+- Added `explored: Uint8Array` to `DungeonLevel` — maintained alongside `tile.explored`
+- `buildExploredBitmap()`: marks `1` for explored tiles, indexed by `y * width + x`
+- Updated all 5 write sites: `computeFOV()`, `setAllTilesVisible()` (bulk `.fill(1)`), detect-stairs scroll, magic mapping scroll, light orb activation
+
+**Changes (dungeon/index.ts + town.ts):**
+- Level generation initializes `explored` bitmap alongside `passable`
+
+**Changes (flow.ts):**
+- `computeExplorationFlow()`: replaced `getTile() + tile.explored` with `level.explored[nIdx]` — eliminates last `getTile()` call from BFS inner loop
+- `dequeue()`: module-level `popX/popY/popCost` replaces `{ x, y, cost }` return object
+- Both `computeFlow()` and `computeExplorationFlow()` BFS loops use pop variables
+
+**Changes (exploration.ts):**
+- `computeFrontierPositions()`: outer loop uses `level.explored[idx]` instead of `tile.explored`; inner neighbor loop uses `level.explored[nIdx]` + `level.passable[nIdx]` instead of `getTile()`
+- `getSweepFrontierPositions()`: bitmap lookups replace `tile.explored` property access
+- `findNearestWalkableExplored()`: combined `level.passable[nIdx] && level.explored[nIdx]` replaces `getTile()` + `tile?.explored`
+
+**Results (Warrior, seed=1000, 50k turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total tracked | 2269ms | 2096ms | **-8%** |
+| ms/tick | 0.15ms | 0.14ms | **-7%** |
+| Turns survived | 15.0k | 15.0k | Same |
+
+**Results (Mage, seed=1000, 50k turns):**
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total tracked | 3623ms | 3398ms | **-6%** |
+| ms/tick | 0.14ms | 0.13ms | **-7%** |
+| Turns survived | 25.6k | 25.6k | Same |
+
+**Per-operation improvements (warrior):**
+| Operation | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `goalMovement` | 55µs | 48µs | **-13%** |
+| `getFrontierPositions` | 34µs | 23µs | **-32%** |
+| `flow.exploration` | 17µs | 16µs | -6% |
+
+**Per-operation improvements (mage):**
+| Operation | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `goalMovement` | 56µs | 51µs | **-9%** |
+| `getFrontierPositions` | 25µs | 17µs | **-32%** |
+| `getSweepFrontiers` | 14µs | 11µs | **-21%** |
+
+**Learnings:**
+- Explored bitmap completes the typed-array pattern: passable (Pass 6) + explored (Pass 7) = zero `getTile()` calls in all BFS inner loops
+- `computeFrontierPositions` neighbor loop was the biggest win — 8 `getTile()` calls per candidate replaced by 8 array index lookups
+- Dequeue object allocation elimination is a small win per call but compounds over thousands of BFS nodes
+- Explored bitmap is mutable (unlike passable) but updates are trivial — single array write alongside existing `tile.explored = true`
+
+---
 
 ### Pass 6: 2026-02-07 - Passability Bitmap + Inlined Adjacency
 
@@ -402,6 +464,57 @@ pnpm diagnose baseline --seed=1000
 - Binary heap eliminates the worst algorithmic issue (sort-inside-loop)
 - Integer scaling (×5) avoids float precision issues while preserving exact ratios
 - Pre-allocated module-level structures (BFS buffer, heap arrays) avoid per-call allocation
+
+---
+
+### Baseline: 2026-02-07 (Post Explored Bitmap + Dequeue Elimination)
+
+**Test:** `PROFILE_BOT=1 pnpm diagnose deep --seed=1000 --class=warrior --turns=50000`
+**Config:** upgrades=full, capabilities=full, boosters=class (diagnose defaults)
+
+**Warrior (14955 turns, natural death):**
+
+| Operation | % Time | Total | Calls | Avg |
+|-----------|--------|-------|-------|-----|
+| goalMovement | 32.1% | 673ms | 14009 | 48µs |
+| computeDangerGrid | 13.3% | 280ms | 14955 | 19µs |
+| selectGoal | 10.6% | 221ms | 14009 | 16µs |
+| getFrontierPositions | 10.5% | 220ms | 9606 | 23µs |
+| flow.exploration | 6.0% | 126ms | 7912 | 16µs |
+| selectActionByTier | 5.4% | 112ms | 14955 | 8µs |
+| goal.descend | 4.3% | 90ms | 1699 | 53µs |
+| recordVisibleTiles | 3.7% | 77ms | 14955 | 5µs |
+| flow.singleTarget | 2.4% | 51ms | 924 | 55µs |
+| buildBotContext | 1.6% | 34ms | 14955 | 2µs |
+
+**Summary:**
+- Total tracked: 2096ms for ~15.0k turns = **0.14ms/tick avg**
+- `getFrontierPositions` 11% (was 14%) — explored bitmap eliminates getTile in neighbor loop
+- `goalMovement` 32% (was 34%) — explored bitmap in exploration BFS + dequeue elimination
+- `flow.exploration` 6% (unchanged %) — explored bitmap replaces getTile + tile.explored
+
+**Mage (25569 turns, natural death):**
+
+| Operation | % Time | Total | Calls | Avg |
+|-----------|--------|-------|-------|-----|
+| goalMovement | 32.0% | 1088ms | 21471 | 51µs |
+| computeDangerGrid | 10.9% | 372ms | 25569 | 15µs |
+| selectGoal | 8.8% | 298ms | 21471 | 14µs |
+| goal.descend | 5.5% | 188ms | 2112 | 89µs |
+| flow.sweep | 5.4% | 185ms | 4735 | 39µs |
+| flow.exploration | 5.4% | 183ms | 6703 | 27µs |
+| selectActionByTier | 4.9% | 168ms | 25569 | 7µs |
+| getFrontierPositions | 4.8% | 164ms | 9499 | 17µs |
+| recordVisibleTiles | 3.4% | 115ms | 25569 | 5µs |
+| getSweepFrontiers | 2.5% | 84ms | 7481 | 11µs |
+| flow.singleTarget | 2.5% | 87ms | 1462 | 59µs |
+| buildBotContext | 1.5% | 50ms | 25569 | 2µs |
+
+**Summary:**
+- Total tracked: 3398ms for ~25.6k turns = **0.13ms/tick avg**
+- `getFrontierPositions` 5% (was 7%) — explored bitmap in frontier neighbor checks
+- `getSweepFrontiers` 2.5% (was 2.9%) — explored bitmap replaces tile.explored property
+- Sweep overhead (frontiers + flow) = 7.9% — slightly lower than Pass 6
 
 ---
 

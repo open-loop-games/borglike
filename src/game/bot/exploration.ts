@@ -227,16 +227,14 @@ export function getSweepFrontierPositions(game: GameState, botState: BotState): 
     if (!row) continue
 
     for (let x = 0; x < level.width; x++) {
-      const tile = row[x]
-      if (!tile) continue
+      const idx = y * level.width + x
 
       // Skip tiles already seen this visit
       if (seenGridHas(botState.seenThisVisit, x, y)) continue
 
-      // Only consider explored walkable tiles (matches findSweepFrontierTiles)
-      // Note: explored check ensures we only sweep to known areas, not unknown walls
-      if (!tile.explored) continue
-      if (!level.passable[y * level.width + x]) continue
+      // Only consider explored walkable tiles (bitmap lookups, no tile object needed)
+      if (!level.explored[idx]) continue
+      if (!level.passable[idx]) continue
 
       result.push({ x, y })
     }
@@ -310,15 +308,20 @@ function computeFrontierPositions(
     if (!row) continue
 
     for (let x = 0; x < level.width; x++) {
+      const idx = y * level.width + x
+
+      // Skip explored tiles (bitmap lookup, no tile object access needed)
+      if (level.explored[idx]) continue
+
       const tile = row[x]
-      if (!tile || tile.explored) continue
+      if (!tile) continue
 
       // Only consider passable tiles or stairs as frontier
-      if (!level.passable[y * level.width + x] && tile.type !== 'stairs_down' && tile.type !== 'stairs_up') {
+      if (!level.passable[idx] && tile.type !== 'stairs_down' && tile.type !== 'stairs_up') {
         continue
       }
 
-      // Check if adjacent to explored walkable
+      // Check if adjacent to explored walkable (all bitmap lookups)
       let hasExploredWalkable = false
       let unexploredCount = 0
 
@@ -326,13 +329,12 @@ function computeFrontierPositions(
         const nx = x + DX[i]!
         const ny = y + DY[i]!
         if (nx < 0 || nx >= level.width || ny < 0 || ny >= level.height) continue
-        const neighborTile = getTile(level, nx, ny)
-        if (!neighborTile) continue
+        const nIdx = ny * level.width + nx
 
-        if (neighborTile.explored && level.passable[ny * level.width + nx]) {
+        if (level.explored[nIdx] && level.passable[nIdx]) {
           hasExploredWalkable = true
         }
-        if (!neighborTile.explored) {
+        if (!level.explored[nIdx]) {
           unexploredCount++
         }
       }
@@ -516,9 +518,8 @@ function findNearestWalkableExplored(level: DungeonLevel, pos: Point): Point | n
     const nx = pos.x + DX[i]!
     const ny = pos.y + DY[i]!
     if (nx < 0 || nx >= level.width || ny < 0 || ny >= level.height) continue
-    if (!level.passable[ny * level.width + nx]) continue
-    const tile = getTile(level, nx, ny)
-    if (tile?.explored) {
+    const nIdx = ny * level.width + nx
+    if (level.passable[nIdx] && level.explored[nIdx]) {
       return { x: nx, y: ny }
     }
   }

@@ -176,6 +176,8 @@ export interface DungeonLevel {
   exploredCount: number
   /** Pre-computed passability bitmap: 1 = walkable/door, indexed by y * width + x */
   passable: Uint8Array
+  /** Explored bitmap: 1 = explored, indexed by y * width + x. Updated alongside tile.explored */
+  explored: Uint8Array
   /** Generator type used to create this level (labyrinth, cavern, classic) */
   generatorType?: GeneratorType
   /** Vault placement data (if a vault was placed on this level) */

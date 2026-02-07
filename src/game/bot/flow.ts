@@ -174,12 +174,16 @@ function enqueue(q: BFSQueue, x: number, y: number, cost: number): void {
   q.tail = (q.tail + 1) % q.capacity
 }
 
-function dequeue(q: BFSQueue): { x: number; y: number; cost: number } {
-  const x = q.xs[q.head]!
-  const y = q.ys[q.head]!
-  const cost = q.costs[q.head]!
+/** Pop destination (avoids object allocation per dequeue) */
+let popX = 0
+let popY = 0
+let popCost = 0
+
+function dequeue(q: BFSQueue): void {
+  popX = q.xs[q.head]!
+  popY = q.ys[q.head]!
+  popCost = q.costs[q.head]!
   q.head = (q.head + 1) % q.capacity
-  return { x, y, cost }
 }
 
 function isEmpty(q: BFSQueue): boolean {
@@ -235,17 +239,17 @@ export function computeFlow(level: DungeonLevel, goal: Point, avoid?: FlowAvoida
 
   // BFS expansion
   while (!isEmpty(sharedQueue)) {
-    const { x, y, cost } = dequeue(sharedQueue)
+    dequeue(sharedQueue)
 
     // Don't expand beyond MAX_FLOW_COST - 1
-    if (cost >= MAX_FLOW_COST - 1) continue
+    if (popCost >= MAX_FLOW_COST - 1) continue
 
-    const nextCost = cost + 1
+    const nextCost = popCost + 1
 
     // Expand to all 8 neighbors
     for (let i = 0; i < 8; i++) {
-      const nx = x + DX[i]!
-      const ny = y + DY[i]!
+      const nx = popX + DX[i]!
+      const ny = popY + DY[i]!
 
       // Bounds check
       if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
@@ -308,26 +312,24 @@ export function computeExplorationFlow(
 
   // BFS expansion outward from all frontiers
   while (!isEmpty(sharedQueue)) {
-    const { x, y, cost } = dequeue(sharedQueue)
+    dequeue(sharedQueue)
 
-    if (cost >= MAX_FLOW_COST - 1) continue
+    if (popCost >= MAX_FLOW_COST - 1) continue
 
-    const nextCost = cost + 1
+    const nextCost = popCost + 1
 
     for (let i = 0; i < 8; i++) {
-      const nx = x + DX[i]!
-      const ny = y + DY[i]!
+      const nx = popX + DX[i]!
+      const ny = popY + DY[i]!
 
       if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
       if (isVisited(grid, nx, ny)) continue
       if (avoidData && avoidData[ny * avoidWidth + nx]! > avoidThreshold) continue
 
-      // Short-circuit: bitmap check before getTile (walls are common case)
-      if (!level.passable[ny * width + nx]) continue
-      const tile = getTile(level, nx, ny)
-      // For exploration flow, only expand through EXPLORED passable tiles
-      // (we're computing distance from frontiers back to where the bot can be)
-      if (!tile || !tile.explored) continue
+      // Bitmap checks: passable + explored (replaces getTile + property access)
+      const nIdx = ny * width + nx
+      if (!level.passable[nIdx]) continue
+      if (!level.explored[nIdx]) continue
 
       setFlowCost(grid, nx, ny, nextCost)
       enqueue(sharedQueue, nx, ny, nextCost)

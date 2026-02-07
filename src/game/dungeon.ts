@@ -101,6 +101,26 @@ export function buildPassabilityBitmap(level: DungeonLevel): Uint8Array {
   return bitmap
 }
 
+/**
+ * Build explored bitmap for a level.
+ * 1 = explored, indexed by y * width + x. Mutable — updated as tiles are explored.
+ */
+export function buildExploredBitmap(level: DungeonLevel): Uint8Array {
+  const { width, height, tiles } = level
+  const bitmap = new Uint8Array(width * height)
+  for (let y = 0; y < height; y++) {
+    const row = tiles[y]
+    if (!row) continue
+    for (let x = 0; x < width; x++) {
+      const tile = row[x]
+      if (tile?.explored) {
+        bitmap[y * width + x] = 1
+      }
+    }
+  }
+  return bitmap
+}
+
 // ============================================================================
 // POSITION UTILITIES
 // ============================================================================
@@ -216,6 +236,7 @@ export function computeFOV(level: DungeonLevel, origin: Point, radius: number): 
           tile.visible = true
           if (!tile.explored) {
             tile.explored = true
+            level.explored[y * level.width + x] = 1
             level.exploredCount++
           }
           visible.add(`${x},${y}`)
@@ -247,6 +268,7 @@ export function setAllTilesVisible(level: DungeonLevel): void {
     }
   }
   level.exploredCount = explored
+  level.explored.fill(1)
 }
 
 // ============================================================================
