@@ -826,7 +826,7 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
       if (hasBow ? canRangedAttack(character, target.position) : true) {
         return {
           type: 'KITE',
-          target: target.position,
+          target: pos,
           targetId: target.id,
           reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${target.template.name} at range`,
           startTurn: game.turn,
@@ -880,7 +880,7 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
       if (hasBow ? canRangedAttack(character, closestMonster.position) : true) {
         return {
           type: 'KITE',
-          target: closestMonster.position,
+          target: pos,
           targetId: closestMonster.id,
           reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${closestMonster.template.name} (can't kite)`,
           startTurn: game.turn,
@@ -900,7 +900,7 @@ export function getKiteGoal(context: BotContext): BotGoal | null {
     if (hasBow ? canRangedAttack(character, target.position) : true) {
       return {
         type: 'KITE',
-        target: target.position,
+        target: pos,
         targetId: target.id,
         reason: `${isRangedCaster ? 'Casting at' : 'Shooting'} ${target.template.name} at range`,
         startTurn: game.turn,

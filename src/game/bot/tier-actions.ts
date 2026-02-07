@@ -10,7 +10,7 @@
  * - SAFE:     normal flow (combat > items > movement)
  */
 
-import type { GameState, GameAction, BotPersonality } from '../types'
+import type { GameState, GameAction, BotPersonality, Direction } from '../types'
 import { isBossOrUnique } from '../types'
 import { canRangedAttack } from '../combat'
 
@@ -162,6 +162,7 @@ function handleCriticalTier(
       const optimalRange = effective.kiting >= 3 ? classProfile.engageDistance || 3 : 3
       const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
       if (kiteDir) {
+        setKiteGoal(context, adjacentMonster, kiteDir)
         recordProgress(botState, game.turn)
         return { type: 'move', direction: kiteDir }
       }
@@ -310,6 +311,7 @@ function handleDangerTier(
         const optimalRange = capabilities.kiting >= 3 ? classProfile.engageDistance || 3 : 3
         const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
         if (kiteDir) {
+          setKiteGoal(context, adjacentMonster, kiteDir)
           recordProgress(botState, game.turn)
           return { type: 'move', direction: kiteDir }
         }
@@ -550,6 +552,7 @@ function handleCautionTier(
           const optimalRange = capabilities.kiting >= 3 ? classProfile.engageDistance || 3 : 3
           const kiteDir = findKitePosition(game, adjacentMonster, optimalRange)
           if (kiteDir) {
+            setKiteGoal(context, adjacentMonster, kiteDir)
             recordProgress(botState, game.turn)
             return { type: 'move', direction: kiteDir }
           }
@@ -949,5 +952,37 @@ function setKillGoal(
     targetId: monster.id,
     reason: reason,
     startTurn: turn,
+  })
+}
+
+/**
+ * Set a KITE goal when tier-actions trigger kiting movement.
+ * Prevents the goal system from overriding the kite with DESCEND/EXPLORE next tick.
+ */
+function setKiteGoal(
+  context: BotContext,
+  monster: { id: string; position: { x: number; y: number }; template: { name: string } },
+  kiteDir: Direction
+): void {
+  const { game, botState } = context
+  const pos = game.character.position
+  const dx =
+    kiteDir === 'e' || kiteDir === 'ne' || kiteDir === 'se'
+      ? 1
+      : kiteDir === 'w' || kiteDir === 'nw' || kiteDir === 'sw'
+        ? -1
+        : 0
+  const dy =
+    kiteDir === 's' || kiteDir === 'se' || kiteDir === 'sw'
+      ? 1
+      : kiteDir === 'n' || kiteDir === 'ne' || kiteDir === 'nw'
+        ? -1
+        : 0
+  setGoal(botState, {
+    type: 'KITE',
+    target: { x: pos.x + dx, y: pos.y + dy },
+    targetId: monster.id,
+    reason: `Kiting away from ${monster.template.name}`,
+    startTurn: game.turn,
   })
 }
