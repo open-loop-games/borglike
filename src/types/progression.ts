@@ -105,6 +105,9 @@ export interface SlotConfig {
   // Active levels for graded capabilities (can be lower than unlocked level)
   activeSweepLevel?: number // 0-3, capped by global botCapabilities.sweep
   activeSurfLevel?: number // 0-3, capped by global botCapabilities.surf
+  // Depth gate offset: shifts class-based level requirement for descent
+  // Positive = need more levels above depth (cautious), negative = can descend sooner (reckless)
+  depthGateOffset?: number // -5 to +5, default 0
 }
 
 export interface Upgrade {

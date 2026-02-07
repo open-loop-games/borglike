@@ -1014,6 +1014,8 @@ export interface RunConfig {
   surfLevelRange?: SurfLevelRange
   // Custom personality config (used when botPersonality === 'custom')
   botPersonalityConfig?: PersonalityConfig
+  // Depth gate offset: shifts class-based level requirement for descent (-5 to +5)
+  depthGateOffset?: number
 }
 
 // ============================================================================

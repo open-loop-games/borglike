@@ -45,6 +45,9 @@ const sweepRangeEnd = ref(savedConfig.sweepLevelRange?.end ?? 0)
 const surfRangeStart = ref(savedConfig.surfLevelRange?.start ?? 0)
 const surfRangeEnd = ref(savedConfig.surfLevelRange?.end ?? 0)
 
+// Depth gate offset
+const depthGateOffset = ref(savedConfig.depthGateOffset ?? 0)
+
 // Booster slots - initialized from saved config
 const boosterSlot0 = ref(savedConfig.boosters[0])
 const boosterSlot1 = ref(savedConfig.boosters[1])
@@ -143,6 +146,10 @@ function selectPersonality(id: Personality) {
   selectedPersonality.value = id
 }
 
+function seedFromPreset(id: Personality) {
+  customPersonality.value = { ...getPersonalityConfig(id) }
+}
+
 const personalitySummary = computed(() =>
   selectedPersonality.value === 'custom'
     ? summarizePersonality(customPersonality.value)
@@ -191,6 +198,19 @@ const sweepEnabled = computed(() => slotConfig.value.toggles.sweepEnabled)
 const activeSweepLevel = computed(() => slotConfig.value.activeSweepLevel ?? globalCaps.value.sweep)
 const activeSurfLevel = computed(() => slotConfig.value.activeSurfLevel ?? globalCaps.value.surf)
 
+const depthGateLabel = computed(() => {
+  const v = depthGateOffset.value
+  if (v === 0) return '0 (Normal)'
+  return `${v > 0 ? '+' : ''}${v}`
+})
+
+const depthGateClass = computed(() => {
+  const v = depthGateOffset.value
+  if (v < 0) return 'gate-reckless'
+  if (v > 0) return 'gate-cautious'
+  return ''
+})
+
 function toggleFarming() {
   progression.toggleBotCapability(props.slot, 'farming')
 }
@@ -222,6 +242,7 @@ function handleStart() {
     boosters: [boosterSlot0.value, boosterSlot1.value],
     sweepLevelRange: { start: sweepRangeStart.value, end: sweepRangeEnd.value },
     surfLevelRange: { start: surfRangeStart.value, end: surfRangeEnd.value },
+    depthGateOffset: depthGateOffset.value,
     customPersonality:
       selectedPersonality.value === 'custom' ? { ...customPersonality.value } : undefined,
   })
@@ -467,16 +488,30 @@ function handleCancel() {
         <PanelFrame class="selection-section">
           <h3>Bot Personality</h3>
           <div class="personality-list">
-            <button
-              v-for="p in personalities"
-              :key="p.id"
-              class="personality-btn"
-              :class="{ active: selectedPersonality === p.id }"
-              @click="selectPersonality(p.id)"
-            >
-              <span class="personality-name">{{ p.name }}</span>
-              <span class="personality-desc">{{ p.desc }}</span>
-            </button>
+            <!-- Compact 2x2 preset grid when Custom is active -->
+            <div v-if="selectedPersonality === 'custom'" class="preset-grid">
+              <button
+                v-for="p in personalities"
+                :key="p.id"
+                class="preset-seed-btn"
+                @click="seedFromPreset(p.id)"
+              >
+                {{ p.name }}
+              </button>
+            </div>
+            <!-- Full preset list when not in Custom mode -->
+            <template v-else>
+              <button
+                v-for="p in personalities"
+                :key="p.id"
+                class="personality-btn"
+                :class="{ active: selectedPersonality === p.id }"
+                @click="selectPersonality(p.id)"
+              >
+                <span class="personality-name">{{ p.name }}</span>
+                <span class="personality-desc">{{ p.desc }}</span>
+              </button>
+            </template>
             <button
               v-if="hasAnySlider"
               class="personality-btn custom-btn"
@@ -532,6 +567,28 @@ function handleCancel() {
         <PanelFrame class="selection-section">
           <h3>Bot Controls</h3>
           <div class="slot-controls">
+            <!-- Depth Gate Offset (visible when preparedness >= 2) -->
+            <div v-if="globalCaps.preparedness >= 2" class="depth-gate-row">
+              <div class="depth-gate-header">
+                <span class="control-label">Depth Gate</span>
+                <span class="depth-gate-value" :class="depthGateClass">
+                  {{ depthGateLabel }}
+                </span>
+              </div>
+              <input
+                v-model.number="depthGateOffset"
+                type="range"
+                class="depth-gate-slider"
+                min="-5"
+                max="5"
+                step="1"
+              />
+              <div class="depth-gate-labels">
+                <span>Reckless</span>
+                <span>Normal</span>
+                <span>Cautious</span>
+              </div>
+            </div>
             <!-- Farming Toggle -->
             <div v-if="globalCaps.farming" class="control-row">
               <span class="control-label">Farming</span>
@@ -624,7 +681,7 @@ function handleCancel() {
             </div>
             <!-- No controls message -->
             <div
-              v-if="!globalCaps.farming && globalCaps.sweep === 0 && globalCaps.surf === 0"
+              v-if="!globalCaps.farming && globalCaps.sweep === 0 && globalCaps.surf === 0 && globalCaps.preparedness < 2"
               class="no-controls"
             >
               Purchase bot upgrades in Upgrades → Bot
@@ -904,6 +961,31 @@ function handleCancel() {
 .personality-desc {
   font-size: var(--text-sm);
   color: var(--text-secondary);
+}
+
+/* Compact 2x2 preset grid (shown when Custom is active) */
+.preset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.preset-seed-btn {
+  padding: var(--space-2) var(--space-3);
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preset-seed-btn:hover {
+  border-color: var(--purple);
+  color: var(--text-primary);
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .bonuses-section {
@@ -1285,6 +1367,48 @@ function handleCancel() {
   color: var(--text-dim);
   font-style: italic;
   margin-top: var(--space-1);
+}
+
+/* Depth Gate Slider */
+.depth-gate-row {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.depth-gate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.depth-gate-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: bold;
+  color: var(--text-secondary);
+}
+
+.depth-gate-value.gate-reckless {
+  color: var(--red);
+}
+
+.depth-gate-value.gate-cautious {
+  color: var(--cyan);
+}
+
+.depth-gate-slider {
+  width: 100%;
+  accent-color: var(--indigo);
+  cursor: pointer;
+}
+
+.depth-gate-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
 }
 
 /* Sweep/Surf Range Inputs */

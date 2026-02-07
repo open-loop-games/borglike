@@ -112,7 +112,8 @@ export function buildBotContext(
   toggles?: BotToggles,
   sweepLevelRange?: SweepLevelRange,
   surfLevelRange?: SurfLevelRange,
-  personalityConfig?: PersonalityConfig
+  personalityConfig?: PersonalityConfig,
+  depthGateOffset?: number
 ): BotContext {
   // Resolve personality config: custom uses provided config, presets use lookup
   const config =
@@ -187,6 +188,7 @@ export function buildBotContext(
     toggles: effectiveToggles,
     sweepLevelRange: effectiveSweepRange,
     surfLevelRange: effectiveSurfRange,
+    depthGateOffset: depthGateOffset ?? 0,
     visibleMonsters,
     visibleItems,
     visibleAltars,

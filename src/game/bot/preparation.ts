@@ -497,7 +497,8 @@ export function getDepthReadiness(
   inventory: Item[],
   targetDepth: number,
   caution: number = 50,
-  preparednessLevel: number = 3
+  preparednessLevel: number = 3,
+  depthGateOffset: number = 0
 ): string | null {
   // L0: No checks at all (face-rush mode)
   if (preparednessLevel === 0) return null
@@ -532,7 +533,7 @@ export function getDepthReadiness(
   if (preparednessLevel >= 2) {
     // Level check: class-specific requirements
     // Warriors can go deep early, mages need to overlevel (scaled by upgrade tier)
-    const minLevel = getMinLevel(targetDepth, classId, character.upgradeBonuses)
+    const minLevel = getMinLevel(targetDepth, classId, character.upgradeBonuses, depthGateOffset)
     if (character.level < minLevel) {
       return `Need level ${minLevel} for depth ${targetDepth} (have ${character.level})`
     }
@@ -801,12 +802,13 @@ function getClassLevelOffset(tier: ClassTier, upgradeBonuses?: UpgradeBonuses): 
 export function getMinLevel(
   depth: number,
   classId?: string,
-  upgradeBonuses?: UpgradeBonuses
+  upgradeBonuses?: UpgradeBonuses,
+  depthGateOffset: number = 0
 ): number {
   const tier = classId ? getClassTier(classId) : 'MEDIUM'
   const offset = getClassLevelOffset(tier, upgradeBonuses)
   // Cap at 50 (max level) - SQUISHY classes can't reach level 55 for depth 50
-  return Math.min(50, Math.max(1, depth + offset))
+  return Math.min(50, Math.max(1, depth + offset + depthGateOffset))
 }
 
 /**
@@ -822,9 +824,10 @@ export function isUnderLeveled(
   characterLevel: number,
   depth: number,
   classId?: string,
-  upgradeBonuses?: UpgradeBonuses
+  upgradeBonuses?: UpgradeBonuses,
+  depthGateOffset: number = 0
 ): boolean {
-  return characterLevel < getMinLevel(depth, classId, upgradeBonuses)
+  return characterLevel < getMinLevel(depth, classId, upgradeBonuses, depthGateOffset)
 }
 
 // ============================================================================

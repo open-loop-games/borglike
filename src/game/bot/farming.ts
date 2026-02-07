@@ -633,7 +633,8 @@ function findBlockedDepth(context: BotContext): number {
       character.inventory,
       blockedDepth,
       effectiveConfig.caution,
-      capabilities.preparedness
+      capabilities.preparedness,
+      context.depthGateOffset
     )
     if (readinessIssue) break
     blockedDepth++
@@ -679,7 +680,13 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
   // When farming (yo-yoing between depths), being under-leveled for current depth is expected
   if (
     !botState.farmingMode &&
-    isUnderLeveled(character.level, character.depth, character.classId, character.upgradeBonuses)
+    isUnderLeveled(
+      character.level,
+      character.depth,
+      character.classId,
+      character.upgradeBonuses,
+      context.depthGateOffset
+    )
   )
     return null
 
@@ -876,7 +883,8 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
     character.level,
     blockedDepth,
     character.classId,
-    character.upgradeBonuses
+    character.upgradeBonuses,
+    context.depthGateOffset
   )
   if (!underForBlocked) return null
 
@@ -885,7 +893,8 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
     character.level,
     character.depth,
     character.classId,
-    character.upgradeBonuses
+    character.upgradeBonuses,
+    context.depthGateOffset
   )
   if (!underForCurrent) return null
 
@@ -1059,7 +1068,8 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
       character.inventory,
       botState.farmBlockedDepth,
       effectiveConfig.caution,
-      capabilities.preparedness
+      capabilities.preparedness,
+      context.depthGateOffset
     )
   )
 

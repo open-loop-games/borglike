@@ -81,11 +81,19 @@ function getLevelFloorCount(context: BotContext): number {
 export function getDescentBlocker(
   character: Character,
   caution: number,
-  preparednessLevel: number = 3
+  preparednessLevel: number = 3,
+  depthGateOffset: number = 0
 ): string | null {
   const nextDepth = character.depth + 1
   if (nextDepth > MAX_DEPTH) return 'At max depth'
-  return getDepthReadiness(character, character.inventory, nextDepth, caution, preparednessLevel)
+  return getDepthReadiness(
+    character,
+    character.inventory,
+    nextDepth,
+    caution,
+    preparednessLevel,
+    depthGateOffset
+  )
 }
 
 /**
@@ -93,7 +101,8 @@ export function getDescentBlocker(
  */
 export function shouldAscendToFarm(
   character: { level: number; depth: number; classId?: string; upgradeBonuses?: UpgradeBonuses },
-  knownStairsUp: Point | null
+  knownStairsUp: Point | null,
+  depthGateOffset: number = 0
 ): boolean {
   if (!knownStairsUp) return false
   if (character.depth <= 1) return false
@@ -101,7 +110,8 @@ export function shouldAscendToFarm(
     character.level,
     character.depth,
     character.classId,
-    character.upgradeBonuses
+    character.upgradeBonuses,
+    depthGateOffset
   )
 }
 
@@ -300,7 +310,8 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
         character.inventory,
         nextDepth,
         effectiveConfig.caution,
-        effective.preparedness
+        effective.preparedness,
+        context.depthGateOffset
       )
     )
     if (readinessIssue) {

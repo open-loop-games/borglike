@@ -82,7 +82,8 @@ export function runBotTick(
   toggles?: BotToggles,
   sweepLevelRange?: SweepLevelRange,
   surfLevelRange?: SurfLevelRange,
-  personalityConfig?: PersonalityConfig
+  personalityConfig?: PersonalityConfig,
+  depthGateOffset?: number
 ): GameAction {
   // Get or create bot state
   const botState = existingState ?? createBotState()
@@ -172,7 +173,8 @@ export function runBotTick(
       toggles,
       sweepLevelRange,
       surfLevelRange,
-      personalityConfig
+      personalityConfig,
+      depthGateOffset
     )
   )
 

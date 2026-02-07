@@ -255,6 +255,7 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
     surfLevelRange: slotConfig.surfLevelRange,
     botPersonalityConfig:
       slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
+    depthGateOffset: slotConfig.depthGateOffset,
   })
 
   // Create instance
@@ -1026,6 +1027,7 @@ function createRunForCatchUp(
     surfLevelRange: slotConfig.surfLevelRange,
     botPersonalityConfig:
       slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
+    depthGateOffset: slotConfig.depthGateOffset,
   })
 
   const instance: GameInstance = { runId, slot, runner, intervalId: null, tickRate: 100 }

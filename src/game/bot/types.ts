@@ -351,6 +351,9 @@ export interface BotContext {
   sweepLevelRange: SweepLevelRange
   surfLevelRange: SurfLevelRange
 
+  // Depth gate offset: player-controlled shift to class-based level requirements
+  depthGateOffset: number
+
   // Derived data
   visibleMonsters: Monster[]
   visibleItems: GroundItem[]
