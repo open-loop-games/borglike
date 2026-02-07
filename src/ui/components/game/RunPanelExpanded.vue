@@ -742,6 +742,7 @@ function formatGoal(goal: string | undefined): string {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 2lh;
 }
 
 .ai-line + .ai-line {
