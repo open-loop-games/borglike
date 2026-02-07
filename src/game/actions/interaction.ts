@@ -87,9 +87,12 @@ export function handleCast(game: GameState, spellId: string, targetId?: string):
         : ['buff']
     // Spell damage is routine combat spam like melee (importance 2)
     // Heals/buffs are less frequent and more noteworthy (importance 3)
+    // Vision buffs (Light Orb, Shadow Sight) are constantly recast — treat as routine
+    const ROUTINE_BUFF_SPELLS = new Set(['light_orb', 'shadow_sight'])
+    const isRoutineBuff = !result.damage && !result.healed && ROUTINE_BUFF_SPELLS.has(spellId)
     addTaggedMessage(game, result.message, messageType, {
       tags,
-      importance: result.damage ? 2 : 3,
+      importance: result.damage || isRoutineBuff ? 2 : 3,
     })
   }
 

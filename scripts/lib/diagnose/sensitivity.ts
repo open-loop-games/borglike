@@ -34,7 +34,7 @@ const UPGRADE_NAMES: Record<string, string> = {
 export interface SensitivityConfig {
   /** Runs per test (default: 50) */
   runs?: number
-  /** Max turns per run (default: 30000) */
+  /** Max turns per run (default: 50000) */
   turns?: number
   /** Starting seed (default: 1000) */
   seed?: number
@@ -69,7 +69,7 @@ export interface MultiSensitivityResult {
 
 const SENSITIVITY_DEFAULTS = {
   runs: 50,
-  turns: 30000,
+  turns: 50000,
   seed: 1000,
   threads: 20,
 }

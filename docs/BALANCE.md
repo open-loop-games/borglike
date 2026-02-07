@@ -526,38 +526,40 @@ Matching capability and upgrade tiers — simulates realistic player progression
 
 ## Upgrade Sensitivity
 
-### 11-Class Sensitivity @ `af3d305` (50 runs, 50k turns, seed=1000)
+### 11-Class Sensitivity @ `548a393` (50 runs, 50k turns, seed=1000)
 
 | Upgrade | Archmage | Berserker | Blackguard | Druid | Mage | Necromancer | Paladin | Priest | Ranger | Rogue | Warrior |
 |---------|----------|-----------|------------|-------|------|-------------|---------|--------|--------|-------|---------|
-| **Vitality** | +0.4% | -0.5% | **-2.7%** | **-4.2%** | -1.4% | +0.7% | +0.0% | **-3.3%** | -0.8% | **-2.9%** | -0.5% |
-| **Resilience** | -1.4% | -0.6% | +0.3% | **-3.0%** | -1.3% | +1.5% | -0.4% | -0.9% | -0.6% | +0.4% | -1.9% |
-| **Swiftness** | **-2.4%** | -1.8% | +0.6% | -1.6% | **-2.2%** | -0.8% | +0.1% | -0.6% | **-2.8%** | -1.3% | -0.6% |
-| **Reflexes** | -0.5% | -1.1% | +0.6% | -0.6% | -1.3% | -0.4% | +0.1% | -0.3% | +0.0% | -0.4% | -1.2% |
-| **Precision** | +1.3% | -1.5% | +0.6% | -0.5% | -1.4% | +0.2% | +0.2% | -0.6% | -0.2% | -0.2% | -0.9% |
-| **Might** | -0.3% | -1.2% | -0.0% | +0.4% | -0.7% | +0.1% | +0.2% | -0.5% | -0.2% | +0.2% | -0.6% |
+| **Vitality** | +0.4% | -0.5% | -0.4% | -1.9% | -1.4% | +0.7% | **-1.5%** | **-3.3%** | -1.4% | **-2.9%** | -0.5% |
+| **Resilience** | -1.4% | -0.6% | **-2.0%** | -1.6% | -1.3% | +1.5% | -0.4% | -0.9% | -0.4% | +0.4% | -1.9% |
+| **Swiftness** | **-2.4%** | -1.8% | -0.7% | -0.9% | **-2.2%** | -0.8% | -0.9% | -0.6% | **-3.8%** | -1.3% | -0.6% |
+| **Reflexes** | -0.5% | -1.1% | +0.1% | +0.3% | -1.3% | -0.4% | +0.2% | -0.3% | -0.2% | -0.4% | -1.2% |
+| **Precision** | +1.3% | -1.5% | +0.0% | +0.1% | -1.4% | +0.2% | +0.1% | -0.6% | -0.3% | -0.2% | -0.9% |
+| **Might** | -0.3% | -1.2% | -0.1% | +0.5% | -0.7% | +0.1% | -0.2% | -0.5% | -0.0% | +0.2% | -0.6% |
 
-**Per-class baselines:** Archmage 47.4, Berserker 49.5, Blackguard 49.5, Druid 49.4, Mage 48.9, Necromancer 48.1, Paladin 49.8, Priest 49.1, Ranger 49.8, Rogue 49.7, Warrior 49.3
+**Per-class baselines:** Archmage 47.4, Berserker 49.5, Blackguard 49.9, Druid 49.1, Mage 48.9, Necromancer 48.1, Paladin 49.9, Priest 49.1, Ranger 49.5, Rogue 49.7, Warrior 49.3
 
 **Analysis:**
 
-- **Mage Vitality no longer dominant** (-1.4%, was -39.5% at 30k turns) — the 30k turn limit was truncating mage runs before they could recover from lower HP. At 50k turns, mage has time to stabilize via kiting and spell spam regardless of HP pool
-- **Druid Vitality is now the biggest single impact** (-4.2%) — druid's hybrid melee/cast playstyle needs the HP buffer more than any other class
-- **Priest Vitality** (-3.3%) and **Rogue Vitality** (-2.9%) also notable — both classes rely on sustained combat where HP matters
-- **Swiftness is the most consistently impactful upgrade** — negative for 9/11 classes, with Ranger (-2.8%), Archmage (-2.4%), and Mage (-2.2%) as the top beneficiaries. Speed helps kiting classes most
-- **Blackguard ceiling effect** — baseline 49.5, 4 of 6 upgrades show positive (removing them "helps"). Noise at near-perfect baseline, not meaningful
-- **Necromancer anomalies**: Vitality +0.7%, Resilience +1.5% — necromancer's minion/spell-heavy style may not benefit from survivability upgrades at this baseline
-- **Paladin ceiling** at 49.8 — all impacts <0.4%, no upgrade matters at near-perfect play
-- **Ranger Reflexes anomaly resolved** (+0.0%, was +0.7%) — no longer positive at 50k turns
-- **Warrior now shows meaningful sensitivity** — Resilience -1.9%, Reflexes -1.2% (was <1% at 30k). Longer runs reveal survivability matters
+- **Priest Vitality remains the biggest single impact** (-3.3%) — sustained melee healer needs the HP buffer
+- **Rogue Vitality** (-2.9%) also notable — melee class with no healing relies on raw HP pool
+- **Swiftness is the most consistently impactful upgrade** — negative for 11/11 classes, with Ranger (-3.8%), Archmage (-2.4%), and Mage (-2.2%) as the top beneficiaries. Speed helps kiting classes most
+- **Ranger Swiftness surged** (-2.8%→-3.8%) — FAST_SHOT cap nerf (6→5) makes speed even more critical for ranger's kiting playstyle
+- **Paladin decompressed** — Vitality now -1.5% (was +0.0%), Swiftness -0.9% (was +0.1%). Heal potency nerf lowered the ceiling enough for upgrades to register
+- **Blackguard decompressed** — Resilience now -2.0% (was +0.3%), Swiftness -0.7% (was +0.6%). Lifesteal nerf eliminated ceiling anomalies, 4 of 6 upgrades now show real negative values
+- **Druid less sensitive** — Vitality -1.9% (was -4.2%), Resilience -1.6% (was -3.0%). WIS nerf weakened overall power, reducing upgrade dependence
+- **Necromancer anomalies persist**: Vitality +0.7%, Resilience +1.5% — minion/spell-heavy style doesn't benefit from survivability upgrades at this baseline
+- **Warrior unchanged** — Resilience -1.9%, Reflexes -1.2%, same as before (untouched by nerfs)
+
+**Changes from `af3d305`:** S-tier nerfs decompressed paladin and blackguard sensitivity as intended. Ranger swiftness dependence increased. Druid got less sensitive (WIS nerf weakened overall rather than decompressing). Non-nerfed classes identical within noise.
 
 **Success Criteria:** ✅ Passed
-- ✅ No single upgrade >15% impact (max: Druid Vitality -4.2%)
+- ✅ No single upgrade >15% impact (max: Ranger Swiftness -3.8%)
 - ✅ All upgrades <5% impact across all 11 classes
-- ✅ Swiftness registers negatively for 9/11 classes
+- ✅ Swiftness registers negatively for 11/11 classes (was 9/11)
 - ✅ Precision registers negatively for 7/11 classes
-- ⚠️ Blackguard and Necromancer show ceiling/noise anomalies (multiple positive values)
-- ⚠️ Mage Vitality drop from -39.5%→-1.4% suggests 30k turn data was misleading for slow classes
+- ✅ Paladin and Blackguard ceiling anomalies resolved — both now show meaningful sensitivity
+- ⚠️ Necromancer still shows ceiling/noise anomalies (Vitality +0.7%, Resilience +1.5%)
 
 ---
 
@@ -568,152 +570,157 @@ Matching capability and upgrade tiers — simulates realistic player progression
 pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns=50000 --seed=1000
 ```
 
-### Cross-Class × Race @ `af3d305` (50 runs, 50k turns, seed=1000, upgrades=full)
+### Cross-Class × Race @ `548a393` (50 runs, 50k turns, seed=1000, upgrades=full)
 
 | Class | Race | Avg Depth | Max Depth | CB Rate | Kills | Morgoth | Turns |
 |-------|------|-----------|-----------|---------|-------|---------|-------|
-| **Ranger** | **Gnome** | 49.7 | 50 | 0% | 699 | 0 | 21563 |
-| **Ranger** | **Hobbit** | 49.7 | 50 | 0% | 694 | 4 | 20315 |
-| **Ranger** | **Kobold** | 49.7 | 50 | 0% | 694 | 7 | 21534 |
-| **Ranger** | **Elf** | 49.6 | 50 | 0% | 677 | 3 | 21977 |
-| **Ranger** | **Half_orc** | 49.5 | 50 | 0% | 678 | 5 | 22543 |
-| **Ranger** | **Dwarf** | 49.5 | 50 | 0% | 692 | 3 | 21840 |
-| **Ranger** | **Dunadan** | 49.5 | 50 | 0% | 653 | 2 | 22583 |
-| **Ranger** | **Human** | 49.4 | 50 | 0% | 644 | 7 | 22052 |
-| **Ranger** | **Half_troll** | 49.4 | 50 | 0% | 663 | 3 | 21680 |
-| **Mage** | **Hobbit** | 49.3 | 50 | 4% | 685 | 4 | 29694 |
-| **Ranger** | **High_elf** | 49.2 | 50 | 0% | 690 | 6 | 20807 |
-| **Warrior** | **Half_troll** | 49.0 | 50 | 0% | 535 | 4 | 16119 |
-| **Ranger** | **Half_elf** | 49.0 | 50 | 0% | 658 | 2 | 21705 |
-| **Mage** | **Gnome** | 48.8 | 50 | 2% | 671 | 0 | 28775 |
-| **Mage** | **Dwarf** | 48.5 | 50 | 2% | 662 | 1 | 29464 |
-| **Mage** | **Dunadan** | 48.4 | 50 | 0% | 674 | 1 | 30598 |
-| **Warrior** | **Dwarf** | 48.4 | 50 | 0% | 530 | 1 | 15531 |
-| **Mage** | **Kobold** | 48.3 | 50 | 4% | 662 | 1 | 28390 |
-| **Mage** | **Human** | 48.3 | 50 | 2% | 641 | 2 | 30176 |
-| **Warrior** | **Dunadan** | 48.3 | 50 | 0% | 514 | 0 | 15652 |
-| **Warrior** | **Kobold** | 48.2 | 50 | 0% | 530 | 0 | 14881 |
-| **Warrior** | **High_elf** | 48.1 | 50 | 0% | 533 | 3 | 14815 |
-| **Warrior** | **Gnome** | 48.1 | 50 | 0% | 527 | 2 | 15068 |
-| **Mage** | **Half_orc** | 47.6 | 50 | 6% | 653 | 0 | 28747 |
-| **Warrior** | **Human** | 47.4 | 50 | 0% | 496 | 2 | 15208 |
-| **Mage** | **Elf** | 47.4 | 50 | 0% | 642 | 2 | 29377 |
-| **Mage** | **Half_troll** | 47.4 | 50 | 0% | 646 | 0 | 29540 |
-| **Warrior** | **Half_orc** | 47.3 | 50 | 0% | 511 | 1 | 15495 |
-| **Warrior** | **Half_elf** | 46.9 | 50 | 0% | 499 | 0 | 14602 |
-| **Mage** | **High_elf** | 46.8 | 50 | 0% | 645 | 3 | 28311 |
-| **Warrior** | **Hobbit** | 46.7 | 50 | 0% | 504 | 0 | 14464 |
-| **Warrior** | **Elf** | 45.9 | 50 | 0% | 483 | 1 | 14604 |
-| **Mage** | **Half_elf** | 45.9 | 50 | 0% | 620 | 3 | 28607 |
+| **Ranger** | **Kobold** | 49.8 | 50 | 0% | 697 | 4 | 21001 |
+| **Ranger** | **High_elf** | 49.5 | 50 | 0% | 692 | 6 | 21905 |
+| **Mage** | **Hobbit** | 49.4 | 50 | 4% | 685 | 4 | 29768 |
+| **Ranger** | **Dwarf** | 49.4 | 50 | 0% | 680 | 3 | 20987 |
+| **Ranger** | **Hobbit** | 49.2 | 50 | 0% | 685 | 5 | 21143 |
+| **Ranger** | **Dunadan** | 49.2 | 50 | 0% | 658 | 3 | 23747 |
+| **Ranger** | **Gnome** | 49.1 | 50 | 0% | 683 | 8 | 20805 |
+| **Ranger** | **Half_orc** | 49.1 | 50 | 0% | 660 | 4 | 23434 |
+| **Ranger** | **Elf** | 49.0 | 50 | 0% | 665 | 4 | 21412 |
+| **Warrior** | **Half_troll** | 48.9 | 50 | 0% | 532 | 4 | 16072 |
+| **Ranger** | **Half_elf** | 48.8 | 50 | 0% | 653 | 2 | 21483 |
+| **Mage** | **Gnome** | 48.7 | 50 | 0% | 673 | 1 | 28960 |
+| **Ranger** | **Half_troll** | 48.6 | 50 | 0% | 658 | 2 | 21549 |
+| **Mage** | **Dwarf** | 48.4 | 50 | 2% | 662 | 1 | 29801 |
+| **Warrior** | **Dunadan** | 48.4 | 50 | 0% | 517 | 0 | 15670 |
+| **Mage** | **Kobold** | 48.4 | 50 | 4% | 661 | 1 | 28362 |
+| **Mage** | **Human** | 48.4 | 50 | 2% | 640 | 1 | 30539 |
+| **Warrior** | **Gnome** | 48.3 | 50 | 0% | 528 | 2 | 15038 |
+| **Mage** | **Dunadan** | 48.2 | 50 | 0% | 670 | 0 | 30369 |
+| **Warrior** | **Dwarf** | 48.2 | 50 | 0% | 528 | 1 | 15443 |
+| **Warrior** | **High_elf** | 48.2 | 50 | 0% | 533 | 5 | 14846 |
+| **Warrior** | **Kobold** | 48.2 | 50 | 0% | 532 | 0 | 14922 |
+| **Warrior** | **Half_orc** | 47.8 | 50 | 0% | 519 | 1 | 15685 |
+| **Mage** | **Half_orc** | 47.8 | 50 | 6% | 656 | 1 | 28884 |
+| **Ranger** | **Human** | 47.8 | 50 | 0% | 608 | 2 | 22700 |
+| **Warrior** | **Human** | 47.4 | 50 | 0% | 495 | 2 | 15235 |
+| **Mage** | **Elf** | 47.1 | 50 | 0% | 640 | 2 | 29682 |
+| **Warrior** | **Half_elf** | 46.9 | 50 | 0% | 498 | 0 | 14633 |
+| **Mage** | **Half_troll** | 46.9 | 50 | 0% | 634 | 1 | 28816 |
+| **Warrior** | **Hobbit** | 46.7 | 50 | 0% | 505 | 0 | 14438 |
+| **Mage** | **High_elf** | 46.6 | 50 | 0% | 641 | 3 | 28656 |
+| **Warrior** | **Elf** | 46.2 | 50 | 0% | 486 | 2 | 14723 |
+| **Mage** | **Half_elf** | 46.1 | 50 | 0% | 623 | 2 | 28360 |
 
-Runtime: 351s (33 cells, 1650 total runs, 20 threads).
+Runtime: 334s (33 cells, 1650 total runs, 20 threads).
 
 ### Per-Class Summary
 
 | Class | Avg Depth | Range | Morgoth | CB Max |
 |-------|-----------|-------|---------|--------|
-| **Ranger** | 49.5 | 49.0–49.7 | 42 | 0% |
-| **Mage** | 47.9 | 45.9–49.3 | 17 | 6% |
-| **Warrior** | 47.7 | 45.9–49.0 | 14 | 0% |
+| **Ranger** | 49.0 | 47.8–49.8 | 43 | 0% |
+| **Mage** | 47.8 | 46.1–49.4 | 17 | 6% |
+| **Warrior** | 47.7 | 46.2–48.9 | 17 | 0% |
 
-**Ranger** dominates — near-perfect 0.7 depth spread, 42 Morgoth kills, 0% CB across all races. **Mage** rose significantly (46.5→47.9 avg, range narrowed 5.8→3.4 depth). **Warrior** also improved (45.5→47.7 avg, range narrowed 4.1→3.1 depth). All three classes substantially tighter than `62bddb9`.
+**Ranger** still dominant but spread widened (0.7→2.0 depth) due to FAST_SHOT cap nerf. **Mage** and **Warrior** essentially unchanged from `af3d305` (untouched by S-tier nerfs).
 
 ### Race Rankings (averaged across 3 classes)
 
 | Race | Avg Depth | Best Class | Worst Class |
 |------|-----------|------------|-------------|
-| Gnome | 48.9 | Ranger 49.7 | Warrior 48.1 |
-| Dwarf | 48.8 | Ranger 49.5 | Warrior 48.4 |
-| Kobold | 48.7 | Ranger 49.7 | Warrior 48.2 |
-| Dunadan | 48.7 | Ranger 49.5 | Warrior 48.3 |
-| Half-Troll | 48.6 | Warrior 49.0 | Mage 47.4 |
-| Hobbit | 48.6 | Ranger 49.7 | Warrior 46.7 |
-| Human | 48.4 | Ranger 49.4 | Warrior 47.4 |
-| Half-Orc | 48.1 | Ranger 49.5 | Warrior 47.3 |
-| High-Elf | 48.0 | Ranger 49.2 | Mage 46.8 |
-| Elf | 47.6 | Ranger 49.6 | Warrior 45.9 |
-| Half-Elf | 47.3 | Ranger 49.0 | Mage 45.9 |
+| Kobold | 48.8 | Ranger 49.8 | Warrior 48.2 |
+| Gnome | 48.7 | Ranger 49.1 | Warrior 48.3 |
+| Dwarf | 48.7 | Ranger 49.4 | Warrior 48.2 |
+| Dunadan | 48.6 | Ranger 49.2 | Mage 48.2 |
+| Hobbit | 48.4 | Mage 49.4 | Warrior 46.7 |
+| Half-Orc | 48.2 | Ranger 49.1 | Warrior 47.8 |
+| Half-Troll | 48.1 | Warrior 48.9 | Mage 46.9 |
+| High-Elf | 48.1 | Ranger 49.5 | Mage 46.6 |
+| Human | 47.9 | Mage 48.4 | Warrior 47.4 |
+| Elf | 47.4 | Ranger 49.0 | Warrior 46.2 |
+| Half-Elf | 47.3 | Ranger 48.8 | Mage 46.1 |
 
 ### Observations
 
-- **Ranger near-perfect**: All 11 races within 0.7 depth (49.0–49.7), all 0% CB, 42 Morgoth kills. Kobold Ranger leads with 7 Morgoth in 50 runs
-- **Ranger/Human no longer weak**: 49.4 avg (+3.0 from `62bddb9`), 7 Morgoth kills — now tied for best Morgoth count. Human's weakness was a kite/perf artifact
-- **Mage improved across board**: avg 46.5→47.9 (+1.4), worst combo rose 43.0→45.9 (+2.9). Kite duration fix lifted all mage/race combos
-- **Mage/Half-Elf improved**: 45.9 (was 43.0), now -5.0% vs Mage/Human (was -10.2%)
-- **Mage/Elf improved**: 47.4 (was 44.3), now -1.9% vs Mage/Human (was -7.5%)
-- **Warrior improved across board**: avg 45.5→47.7 (+2.2), worst combo rose 43.4→45.9 (+2.5)
-- **Warrior/Half-Troll surged**: 49.0 (was 46.5, +2.5) — now the best warrior race, 4 Morgoth kills
-- **Warrior is race-insensitive**: 3.1 depth spread (45.9–49.0), all 0% CB
-- **73 Morgoth kills total** (was 43): Ranger 42 (58%), Mage 17, Warrior 14
-- **Mage/Half-Orc 6% CB** is the only combo above 4% — outlier worth monitoring
+- **Ranger spread widened**: 0.7→2.0 depth (47.8–49.8) due to FAST_SHOT cap nerf (6→5). Most races dropped ~0.5 avg depth
+- **Ranger/Human dropped significantly**: 49.4→47.8 (-1.6) — the biggest ranger regression, now the weakest ranger/race combo. Human's neutral stats don't compensate for the FAST_SHOT cap reduction
+- **Ranger/Gnome Morgoth leader**: 8 Morgoth kills in 50 runs (was Kobold at 7)
+- **Mage unchanged**: avg 47.9→47.8, all combos within ±0.5 of previous. Untouched by nerfs
+- **Warrior unchanged**: avg 47.7→47.7, all combos within ±0.5 of previous. Untouched by nerfs
+- **Mage/Half-Orc 6% CB persists** — same outlier as before
+- **77 Morgoth kills total** (was 73): Ranger 43 (56%), Mage 17, Warrior 17
+
+**Changes from `af3d305`:** Ranger dropped ~0.5 avg depth across races (FAST_SHOT nerf). Ranger/Human is the notable regression (-1.6). Warrior gained 3 Morgoth kills (14→17). Mage and warrior data essentially identical — only ranger column is meaningfully changed.
 
 ### Success Criteria: ✅ Passed
 
-- ✅ No race/class combo >10% better than human/same-class (max: Ranger/Kobold +0.6% vs Ranger/Human)
-- ✅ Mage/Half-Elf -5.0% vs Mage/Human (was -10.2%, threshold: 15%)
-- ✅ Mage/Elf -1.9% vs Mage/Human (was -7.5%)
-- ✅ All warrior combos viable (45.9+ avg depth)
-- ✅ All ranger combos viable (49.0+ avg depth)
+- ✅ No race/class combo >10% better than human/same-class (max: Ranger/Kobold +4.2% vs Ranger/Human)
+- ✅ Mage/Half-Elf -4.8% vs Mage/Human (threshold: 15%)
+- ✅ Mage/Elf -2.7% vs Mage/Human
+- ✅ All warrior combos viable (46.2+ avg depth)
+- ✅ All ranger combos viable (47.8+ avg depth)
 - ✅ CB rates ≤6% across all combos (Mage/Half-Orc 6% is the outlier)
 
 **Remaining items:**
-- Mage/Half-Orc 6% CB — only combo above 4%, worth investigating with `deep` mode
-- Elf and Half-Elf remain the weakest races across classes (47.6 and 47.3 avg) — but both well within acceptable range
+- Ranger/Human 47.8 is a new low — FAST_SHOT nerf hit human ranger hardest, worth monitoring
+- Mage/Half-Orc 6% CB persists — same outlier as before
+- Elf and Half-Elf remain the weakest races across classes (47.4 and 47.3 avg) — both within acceptable range
 
 ---
 
 ## Personality Comparison
 
-### 3-Class × 4 Personalities @ `af3d305` (50 runs, 50k turns, seed=1000, upgrades=full)
+### 3-Class × 4 Personalities @ `548a393` (50 runs, 50k turns, seed=1000, upgrades=full)
 
 | Class | Personality | Avg Depth | Max Depth | CB Rate | Kills | Morgoth | Turns |
 |-------|-------------|-----------|-----------|---------|-------|---------|-------|
-| **Ranger** | **Cautious** | 49.4 | 50 | 0% | 644 | 7 | 22052 |
-| **Ranger** | **Aggressive** | 49.1 | 50 | 0% | 596 | 6 | 19403 |
-| **Mage** | **Greedy** | 48.5 | 50 | 0% | 742 | 1 | 32394 |
-| **Ranger** | **Speedrunner** | 48.4 | 50 | 0% | 529 | 2 | 17266 |
-| **Mage** | **Cautious** | 48.3 | 50 | 2% | 641 | 2 | 30176 |
-| **Warrior** | **Greedy** | 48.0 | 50 | 0% | 599 | 4 | 19900 |
-| **Mage** | **Aggressive** | 47.5 | 50 | 4% | 576 | 1 | 24514 |
-| **Ranger** | **Greedy** | 47.5 | 50 | 0% | 712 | 2 | 25816 |
-| **Warrior** | **Cautious** | 47.4 | 50 | 0% | 496 | 2 | 15208 |
-| **Mage** | **Speedrunner** | 47.3 | 50 | 2% | 532 | 0 | 23921 |
-| **Warrior** | **Aggressive** | 45.5 | 50 | 0% | 421 | 2 | 12748 |
-| **Warrior** | **Speedrunner** | 44.1 | 50 | 0% | 363 | 1 | 9881 |
+| **Ranger** | **Greedy** | 49.3 | 50 | 0% | 744 | 1 | 26909 |
+| **Mage** | **Greedy** | 48.5 | 50 | 0% | 741 | 1 | 32082 |
+| **Mage** | **Cautious** | 48.4 | 50 | 2% | 640 | 1 | 30539 |
+| **Ranger** | **Speedrunner** | 48.2 | 50 | 0% | 524 | 1 | 17186 |
+| **Mage** | **Aggressive** | 48.0 | 50 | 2% | 584 | 1 | 24688 |
+| **Warrior** | **Greedy** | 47.8 | 50 | 0% | 597 | 4 | 19842 |
+| **Ranger** | **Cautious** | 47.8 | 50 | 0% | 608 | 2 | 22700 |
+| **Warrior** | **Cautious** | 47.4 | 50 | 0% | 495 | 2 | 15235 |
+| **Mage** | **Speedrunner** | 47.4 | 50 | 2% | 533 | 0 | 23927 |
+| **Ranger** | **Aggressive** | 46.2 | 50 | 0% | 552 | 2 | 18816 |
+| **Warrior** | **Aggressive** | 45.5 | 50 | 0% | 421 | 3 | 12700 |
+| **Warrior** | **Speedrunner** | 44.4 | 50 | 0% | 367 | 1 | 9950 |
 
-Runtime: 117s (12 cells, 600 total runs, 20 threads).
+Runtime: 111s (12 cells, 600 total runs, 20 threads).
 
 ### Per-Personality Summary (averaged across 3 classes)
 
 | Personality | Avg Depth | Morgoth | CB Max | Behavior Match |
 |-------------|-----------|---------|--------|----------------|
-| **Cautious** | 48.4 | 11 | 2% | Baseline — safe play |
-| **Greedy** | 48.0 | 7 | 0% | +20% kills, trades depth for loot |
-| **Aggressive** | 47.4 | 9 | 4% | Faster runs, more risk |
-| **Speedrunner** | 46.6 | 3 | 2% | Fastest runs, lowest depth |
+| **Greedy** | 48.5 | 6 | 0% | Most kills, loot compensates for DPS nerfs |
+| **Cautious** | 47.9 | 5 | 2% | Baseline — safe play |
+| **Speedrunner** | 46.7 | 2 | 2% | Fastest runs, lowest depth |
+| **Aggressive** | 46.6 | 6 | 2% | Faster runs, more risk |
 
 ### Per-Class Personality Rankings
 
 | Class | Best | 2nd | 3rd | Worst | Spread |
 |-------|------|-----|-----|-------|--------|
-| **Ranger** | Cautious 49.4 | Aggressive 49.1 | Speedrunner 48.4 | Greedy 47.5 | 1.9 |
-| **Mage** | Greedy 48.5 | Cautious 48.3 | Aggressive 47.5 | Speedrunner 47.3 | 1.2 |
-| **Warrior** | Greedy 48.0 | Cautious 47.4 | Aggressive 45.5 | Speedrunner 44.1 | 3.9 |
+| **Ranger** | Greedy 49.3 | Speedrunner 48.2 | Cautious 47.8 | Aggressive 46.2 | 3.1 |
+| **Mage** | Greedy 48.5 | Cautious 48.4 | Aggressive 48.0 | Speedrunner 47.4 | 1.1 |
+| **Warrior** | Greedy 47.8 | Cautious 47.4 | Aggressive 45.5 | Speedrunner 44.4 | 3.4 |
 
 ### Observations
 
-- **Greedy beats cautious** for warrior (+0.6) and mage (+0.2) — more loot collection translates to more power. Warrior greedy gets 4 Morgoth kills vs cautious's 2
-- **Greedy hurts ranger** (-1.9 vs cautious) — ranger's kit already handles items efficiently; lingering for loot reduces kiting advantage. Ranger greedy gets 712 kills (most in test) but fewer Morgoth kills
-- **Aggressive is class-dependent**: ranger barely notices (-0.3), warrior takes a real hit (-1.9), mage in between (-0.8 with 4% CB)
-- **Speedrunner viable everywhere**: worst case is warrior at 44.1 avg — still well above 35 threshold. Fastest turns across all classes (9.9k warrior, 17.3k ranger, 23.9k mage)
-- **Warrior most personality-sensitive**: 3.9 depth spread vs ranger's 1.9 and mage's 1.2. Warrior benefits most from careful play and loot collection
-- **All CB rates ≤4%** — aggressive mage at 4% is the only notable CB concern
+- **Greedy now best for all 3 classes** — ranger greedy surged from worst (+1.8) to best, mage and warrior unchanged. FAST_SHOT nerf reduced ranger's raw DPS, making loot collection (better gear) more valuable
+- **Ranger personality rankings completely reshuffled**: Old: Cautious > Aggressive > Speedrunner > Greedy. New: Greedy > Speedrunner > Cautious > Aggressive. The FAST_SHOT cap nerf inverted the value of aggression vs gear collection
+- **Ranger/Aggressive took the biggest hit**: 49.1→46.2 (-2.9) — pushing fights without the old FAST_SHOT power is now punished heavily
+- **Ranger/Cautious also dropped**: 49.4→47.8 (-1.6) — consistent with race matrix regression for ranger/human
+- **Ranger spread widened**: 1.9→3.1 depth — ranger is now more personality-sensitive than before (was the least sensitive)
+- **Mage unchanged**: all 4 personalities within ±0.5 of previous. Untouched by nerfs
+- **Warrior unchanged**: all 4 personalities within ±0.3 of previous. Untouched by nerfs
+- **Speedrunner viable everywhere**: worst case is warrior at 44.4 avg — still well above 35 threshold
+- **All CB rates ≤2%** — improved from 4% max (aggressive mage dropped 4%→2%)
+
+**Changes from `af3d305`:** FAST_SHOT nerf reshuffled ranger personalities entirely. Greedy went from worst to best ranger personality (+1.8). Aggressive went from 2nd to worst (-2.9). Mage and warrior data essentially identical.
 
 ### Success Criteria: ✅ Passed
 
-- ✅ All personalities viable (reach depth 35+) — lowest: warrior/speedrunner at 44.1
-- ✅ No personality strictly dominates cautious — greedy beats warrior/mage but loses ranger
-- ✅ Personality behaviors match expectations (greedy = more kills, speedrunner = fewer turns, aggressive = higher risk)
+- ✅ All personalities viable (reach depth 35+) — lowest: warrior/speedrunner at 44.4
+- ✅ No personality strictly dominates cautious — greedy beats all 3 classes but by small margins for mage (+0.1) and warrior (+0.4)
+- ✅ Personality behaviors match expectations (greedy = most kills, speedrunner = fewest turns, aggressive = higher risk)
 
 ---
 
