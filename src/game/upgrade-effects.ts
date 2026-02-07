@@ -30,6 +30,7 @@ export interface UpgradeBonuses {
   essenceMultiplier: number // Essence gain multiplier (from essence_boost)
   merchantDiscount: number // Merchant price discount percent (from haggler)
   bestiaryCapPercent: number // Max bestiary knowledge bonus % (10 base + 5 per bestiary_mastery level)
+  townShopTier: number // Town shop inventory tier (0=T1 only, 1=T1-T2, 2=T1-T3)
 
   // QoL bonuses
   turboSpeedPercent: number // Extra turbo speed (from turbo_mode)
@@ -77,6 +78,7 @@ export function computeUpgradeBonuses(
     essenceMultiplier: 1 + (getEffectValue(levels, 'essence_boost') / 100) * scale,
     merchantDiscount: Math.floor(getEffectValue(levels, 'haggler') * scale),
     bestiaryCapPercent: 10 + getEffectValue(levels, 'bestiary_mastery'), // 10% base + 5% per level (not scaled by upgradePower)
+    townShopTier: getEffectValue(levels, 'town_stock'), // Discrete tier, not scaled by upgradePower
 
     // QoL bonuses (not scaled - turbo speed and auto-restart are convenience features)
     turboSpeedPercent: getEffectValue(levels, 'turbo_mode'),
@@ -119,6 +121,7 @@ export const UPGRADE_PRESETS: Record<string, UpgradeLevels> = {
     reflexes: 4,
     precision: 2,
     swiftness: 2,
+    town_stock: 1,
   },
   late: {
     vitality: 8,
@@ -127,6 +130,7 @@ export const UPGRADE_PRESETS: Record<string, UpgradeLevels> = {
     reflexes: 6,
     precision: 4,
     swiftness: 4,
+    town_stock: 2,
   },
   // 'full' is handled specially via computeMaxUpgradeBonuses()
 }
@@ -178,6 +182,7 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   essenceMultiplier: 1,
   merchantDiscount: 0,
   bestiaryCapPercent: 10,
+  townShopTier: 0,
   turboSpeedPercent: 0,
   hasAutoRestart: false,
 }

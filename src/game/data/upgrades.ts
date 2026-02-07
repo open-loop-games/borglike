@@ -219,6 +219,23 @@ const bestiaryMastery: UpgradeDefinition = {
   icon: '📖',
 }
 
+const townStock: UpgradeDefinition = {
+  id: 'town_stock',
+  name: 'Town Stock',
+  description: 'Town shops stock higher-tier equipment',
+  category: 'meta',
+  maxLevel: 3,
+  baseCost: 2000,
+  costScaling: 3.0,
+  effect: {
+    type: 'flat',
+    stat: 'townShopTier',
+    baseValue: 1,
+    perLevel: 1,
+  },
+  icon: '$',
+}
+
 // =============================================================================
 // QOL UPGRADES
 // =============================================================================
@@ -325,6 +342,7 @@ export const upgrades: UpgradeDefinition[] = [
   fastLearner,
   haggler,
   bestiaryMastery,
+  townStock,
   // QoL
   autoRestart,
   turboMode,
