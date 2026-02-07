@@ -15,10 +15,10 @@ import { useEngineStateStore } from '@/stores/engine-state'
 export const SMALL_GAP_MS = 5_000
 /** Maximum catch-up window (1 hour) */
 export const MAX_CATCHUP_MS = 3_600_000
-/** Target wall-clock time per batch (~60fps budget) */
-const BATCH_TARGET_MS = 12
+/** Target wall-clock time per batch (overlay doesn't need 60fps) */
+const BATCH_TARGET_MS = 50
 /** Starting ticks per batch, adapts dynamically */
-const INITIAL_BATCH_SIZE = 50
+const INITIAL_BATCH_SIZE = 200
 
 // ---------------------------------------------------------------------------
 // Module state
@@ -26,6 +26,17 @@ const INITIAL_BATCH_SIZE = 50
 
 let skipRequested = false
 let catchUpActive = false
+
+/** MessageChannel-based yield — avoids setTimeout's 4ms minimum delay */
+function yieldToBrowser(callback: () => void): void {
+  const { port1, port2 } = new MessageChannel()
+  port1.onmessage = () => {
+    port1.close()
+    callback()
+  }
+  port2.postMessage(null)
+  port2.close()
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -89,6 +100,19 @@ export async function runFullCatchUp(
   const deferredSaves: Promise<void>[] = []
   let batchSize = INITIAL_BATCH_SIZE
 
+  // Catch-up profiling
+  const prof = {
+    wallStart: performance.now(),
+    totalComputeMs: 0,
+    totalTickCount: 0,
+    batchCount: 0,
+    deathCount: 0,
+    deathMs: 0,
+    maxBatchMs: 0,
+    maxBatchSize: 0,
+    peakBatchSize: 0,
+  }
+
   await new Promise<void>((resolve) => {
     function batch() {
       if (skipRequested) {
@@ -104,6 +128,7 @@ export async function runFullCatchUp(
       }
 
       const batchStart = performance.now()
+      let batchTicks = 0
 
       // Round-robin: run batchSize ticks across all active slots
       for (const sw of slotWork) {
@@ -113,11 +138,15 @@ export async function runFullCatchUp(
         for (let i = 0; i < ticksThisBatch; i++) {
           const alive = sw.currentStep()
           sw.ticksDone++
+          batchTicks++
 
           if (!alive) {
             // Run died -- trigger death handling
+            const deathStart = performance.now()
             engineState.recordSlotDeath(sw.slot)
             const newStep = sw.onDeath()
+            prof.deathMs += performance.now() - deathStart
+            prof.deathCount++
             if (newStep) {
               // Auto-restart created a new run, continue with remaining ticks
               sw.currentStep = newStep
@@ -139,6 +168,14 @@ export async function runFullCatchUp(
         engineState.updateSlotProgress(sw.slot, sw.ticksDone)
       }
 
+      const batchElapsed = performance.now() - batchStart
+      prof.totalComputeMs += batchElapsed
+      prof.totalTickCount += batchTicks
+      prof.batchCount++
+      if (batchElapsed > prof.maxBatchMs) prof.maxBatchMs = batchElapsed
+      if (batchTicks > prof.maxBatchSize) prof.maxBatchSize = batchTicks
+      if (batchSize > prof.peakBatchSize) prof.peakBatchSize = batchSize
+
       // Check if all done
       if (slotWork.every((s) => s.done)) {
         resolve()
@@ -146,19 +183,30 @@ export async function runFullCatchUp(
       }
 
       // Adaptive batch sizing
-      const batchElapsed = performance.now() - batchStart
       if (batchElapsed < BATCH_TARGET_MS * 0.8) {
         batchSize = Math.ceil(batchSize * 1.5)
       } else if (batchElapsed > BATCH_TARGET_MS * 1.25) {
         batchSize = Math.max(10, Math.floor(batchSize * 0.7))
       }
 
-      // Yield to browser
-      setTimeout(batch, 0)
+      // Yield to browser via MessageChannel (~0.1ms vs setTimeout's ~4ms)
+      yieldToBrowser(batch)
     }
 
-    setTimeout(batch, 0)
+    yieldToBrowser(batch)
   })
+
+  // Log profiling summary
+  const wallMs = performance.now() - prof.wallStart
+  const yieldMs = wallMs - prof.totalComputeMs
+  const msPerTick = prof.totalTickCount > 0 ? prof.totalComputeMs / prof.totalTickCount : 0
+  console.log(
+    `[catch-up] wall=${wallMs.toFixed(0)}ms compute=${prof.totalComputeMs.toFixed(0)}ms ` +
+    `yield=${yieldMs.toFixed(0)}ms (${((yieldMs / wallMs) * 100).toFixed(0)}%) | ` +
+    `ticks=${prof.totalTickCount} ms/tick=${msPerTick.toFixed(3)} | ` +
+    `batches=${prof.batchCount} peakBatch=${prof.peakBatchSize} maxBatchMs=${prof.maxBatchMs.toFixed(1)} | ` +
+    `deaths=${prof.deathCount} deathMs=${prof.deathMs.toFixed(0)}`
+  )
 
   catchUpActive = false
   onFinished(deferredSaves)
