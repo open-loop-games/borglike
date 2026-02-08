@@ -306,7 +306,7 @@ const nemesis = computed(() => {
 }
 
 .section h2 {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   text-transform: uppercase;
   color: var(--text-dim);
   margin: 0 0 var(--space-2);

@@ -182,7 +182,7 @@ const statPreview = computed(() => {
 }
 
 .race-name {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-primary);
   text-align: center;
   overflow: hidden;
@@ -196,14 +196,14 @@ const statPreview = computed(() => {
 }
 
 .stat-preview {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   font-family: var(--font-mono);
   margin-top: 2px;
 }
 
 .unlock-hint {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-dim);
   font-style: italic;
   margin-top: 2px;
@@ -215,7 +215,7 @@ const statPreview = computed(() => {
 }
 
 .win-count {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--green);
   margin-top: var(--space-1);
   padding: 2px var(--space-2);
@@ -234,7 +234,7 @@ const statPreview = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: white;
 }
 

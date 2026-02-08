@@ -348,7 +348,7 @@ const processedInventory = computed(() => {
   width: 32px;
   color: var(--cyan);
   font-weight: bold;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .depth {
@@ -376,7 +376,7 @@ const processedInventory = computed(() => {
 }
 
 .essence-icon {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .death-cause {
@@ -396,7 +396,7 @@ const processedInventory = computed(() => {
 .expand-icon {
   width: 16px;
   color: var(--text-dim);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .row-expanded {
@@ -499,7 +499,7 @@ const processedInventory = computed(() => {
 }
 
 .death-depth {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
 }
@@ -554,7 +554,7 @@ const processedInventory = computed(() => {
 
 .enchant {
   color: var(--green);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .inventory-list {
@@ -564,7 +564,7 @@ const processedInventory = computed(() => {
 }
 
 .inventory-item {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   padding: 2px var(--space-2);
   background: var(--highlight);
   border-radius: var(--radius-md);

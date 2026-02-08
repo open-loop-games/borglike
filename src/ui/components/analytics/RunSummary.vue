@@ -375,7 +375,7 @@ const hasExtendedStats = computed(() => {
 
 .new-best-badge {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
   background: rgba(139, 92, 246, 0.2);
   border: 1px solid var(--purple);
@@ -494,7 +494,7 @@ const hasExtendedStats = computed(() => {
 
 .stat-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -553,7 +553,7 @@ const hasExtendedStats = computed(() => {
 
 .death-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -609,7 +609,7 @@ const hasExtendedStats = computed(() => {
 
 .essence-diff {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .essence-diff.positive {

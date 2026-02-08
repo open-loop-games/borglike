@@ -129,7 +129,7 @@ watch(
 
 .slot-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   min-width: 48px;
 }
 
@@ -150,14 +150,14 @@ watch(
 
 .slot-percent {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   min-width: 36px;
   text-align: right;
 }
 
 .slot-deaths {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--amber);
 }
 
@@ -173,7 +173,7 @@ watch(
 
 .overall-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-primary);
   min-width: 48px;
 }
@@ -196,7 +196,7 @@ watch(
 }
 
 .catchup-info {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-family: var(--font-mono);
 }
@@ -229,7 +229,7 @@ watch(
   flex-direction: column;
   gap: 2px;
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
 
 .ticker-entry {

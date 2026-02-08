@@ -33,6 +33,12 @@ const totalRuns = computed(() => progression.globalStats.totalRuns)
 // Check if auto-restart upgrade is purchased
 const hasAutoRestartUpgrade = computed(() => progression.getUpgradeLevel('auto_restart') > 0)
 
+const fontSizeOptions = [
+  { value: 'small' as const, label: 'Small' },
+  { value: 'medium' as const, label: 'Medium' },
+  { value: 'large' as const, label: 'Large' },
+]
+
 function handleExportData() {
   const data = {
     settings: settingsStore.settings,
@@ -112,6 +118,28 @@ function cancelReset() {
     <div class="settings-content">
       <!-- Gameplay Settings -->
       <div v-if="activeTab === 'gameplay'" class="settings-section">
+        <PanelFrame class="setting-group">
+          <h3>Display</h3>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Font Size</span>
+              <span class="setting-desc">Scale all text in the UI</span>
+            </div>
+            <div class="font-size-picker">
+              <button
+                v-for="opt in fontSizeOptions"
+                :key="opt.value"
+                class="font-size-btn"
+                :class="{ active: settingsStore.settings.fontSize === opt.value }"
+                @click="settingsStore.updateSetting('fontSize', opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+        </PanelFrame>
+
         <PanelFrame class="setting-group">
           <h3>Run Settings</h3>
 
@@ -345,7 +373,7 @@ function cancelReset() {
 }
 
 .version-tag {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: normal;
   color: var(--text-dim);
 }
@@ -458,7 +486,7 @@ function cancelReset() {
 }
 
 .setting-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 
@@ -484,6 +512,37 @@ function cancelReset() {
 .setting-select:focus {
   outline: none;
   border-color: var(--indigo);
+}
+
+/* Font Size Picker */
+.font-size-picker {
+  display: flex;
+  gap: 2px;
+  background: var(--highlight);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.font-size-btn {
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.font-size-btn:hover {
+  color: var(--text-primary);
+}
+
+.font-size-btn.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--indigo);
+  color: var(--indigo);
 }
 
 /* Toggle Switch */
@@ -553,7 +612,7 @@ function cancelReset() {
 
 .stat-item .stat-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
 }

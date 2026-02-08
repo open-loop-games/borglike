@@ -598,6 +598,7 @@ function handleCancel() {
             <!-- Sweep Toggle + Level -->
             <div v-if="globalCaps.sweep > 0" class="control-row">
               <span class="control-label">Sweep</span>
+              <span class="control-hint">Re-explore previous floors to trigger spawns</span>
               <div class="control-actions">
                 <button class="toggle-btn" :class="{ active: sweepEnabled }" @click="toggleSweep">
                   {{ sweepEnabled ? 'ON' : 'OFF' }}
@@ -642,6 +643,7 @@ function handleCancel() {
             <!-- Surf Level -->
             <div v-if="globalCaps.surf > 0" class="control-row">
               <span class="control-label">Surf</span>
+              <span class="control-hint">Farm tethered near stairs, flip depths for respawns</span>
               <div class="level-selector">
                 <button
                   v-for="n in globalCaps.surf"
@@ -734,7 +736,7 @@ function handleCancel() {
 
 .slot-badge {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
@@ -753,7 +755,7 @@ function handleCancel() {
 }
 
 .config-column {
-  flex: 1;
+  flex: 3;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -761,7 +763,7 @@ function handleCancel() {
 }
 
 .training-column {
-  flex: 0 0 320px;
+  flex: 2;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -773,7 +775,7 @@ function handleCancel() {
 
 .selection-section h3 {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -824,13 +826,13 @@ function handleCancel() {
 
 .pool-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 
 .pool-tag {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-base);
   padding: 2px var(--space-2);
   background: rgba(99, 102, 241, 0.1);
   border: 1px solid var(--border);
@@ -851,7 +853,7 @@ function handleCancel() {
   gap: var(--space-2) var(--space-3);
   margin-bottom: var(--space-2);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .stat-positive {
@@ -882,7 +884,7 @@ function handleCancel() {
 }
 
 .details-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   line-height: 1.4;
   margin-bottom: var(--space-2);
@@ -896,7 +898,7 @@ function handleCancel() {
 
 .ability-tag {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-base);
   padding: 3px 6px;
   background: rgba(6, 182, 212, 0.1);
   border: 1px solid rgba(6, 182, 212, 0.3);
@@ -911,7 +913,7 @@ function handleCancel() {
 }
 
 .details-behavior {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -963,7 +965,7 @@ function handleCancel() {
 }
 
 .personality-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
@@ -980,7 +982,7 @@ function handleCancel() {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -998,7 +1000,7 @@ function handleCancel() {
 
 .bonuses-section h3 {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1039,7 +1041,7 @@ function handleCancel() {
 
 .no-bonuses {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
 }
@@ -1057,7 +1059,7 @@ function handleCancel() {
 
 .config-performance h4 {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1089,7 +1091,7 @@ function handleCancel() {
 
 .perf-label {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -1142,7 +1144,7 @@ function handleCancel() {
 }
 
 .start-icon {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 /* Booster Section */
@@ -1153,7 +1155,7 @@ function handleCancel() {
 }
 
 .booster-hint {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: normal;
   color: var(--text-dim);
 }
@@ -1172,7 +1174,7 @@ function handleCancel() {
 
 .slot-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -1209,7 +1211,7 @@ function handleCancel() {
 }
 
 .booster-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--purple);
   font-style: italic;
 }
@@ -1223,6 +1225,7 @@ function handleCancel() {
 
 .control-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   padding: var(--space-2) 0;
@@ -1239,6 +1242,15 @@ function handleCancel() {
   color: var(--text-secondary);
 }
 
+.control-hint {
+  width: 100%;
+  order: 3;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  font-style: italic;
+}
+
 .control-actions {
   display: flex;
   align-items: center;
@@ -1251,7 +1263,7 @@ function handleCancel() {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-dim);
   cursor: pointer;
@@ -1274,14 +1286,14 @@ function handleCancel() {
 }
 
 .level-btn {
-  min-width: 28px;
-  height: 22px;
+  min-width: 32px;
+  height: 26px;
   padding: 2px var(--space-1);
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-secondary);
   cursor: pointer;
@@ -1300,7 +1312,7 @@ function handleCancel() {
 
 .no-controls {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
   padding: var(--space-2) 0;
@@ -1333,7 +1345,7 @@ function handleCancel() {
 
 .slider-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   min-width: 90px;
 }
@@ -1350,14 +1362,14 @@ function handleCancel() {
 
 .slider-value {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--cyan);
   min-width: 50px;
   text-align: right;
 }
 
 .slider-lock-hint {
-  font-size: var(--text-xs);
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
   position: absolute;
@@ -1367,7 +1379,7 @@ function handleCancel() {
 }
 
 .personality-summary {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
   margin-top: var(--space-1);
@@ -1388,7 +1400,7 @@ function handleCancel() {
 
 .depth-gate-value {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-secondary);
 }
@@ -1411,7 +1423,7 @@ function handleCancel() {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 
@@ -1437,7 +1449,7 @@ function handleCancel() {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-primary);
   text-align: center;
 }
@@ -1454,7 +1466,7 @@ function handleCancel() {
 
 .range-hint {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 </style>

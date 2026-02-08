@@ -197,7 +197,7 @@ const categoryColor = computed(() => {
 }
 
 .achievement-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   margin-top: 2px;
   white-space: nowrap;
@@ -245,7 +245,7 @@ const categoryColor = computed(() => {
   position: absolute;
   bottom: 6px;
   right: var(--space-2);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 

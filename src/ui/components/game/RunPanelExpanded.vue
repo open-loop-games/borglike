@@ -619,7 +619,7 @@ function formatGoal(goal: string | undefined): string {
 
 .slot-badge {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
   background: var(--highlight);
   border: 1px solid var(--border);
@@ -668,7 +668,7 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .turbo-icon {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .kill-btn {
@@ -732,7 +732,7 @@ function formatGoal(goal: string | undefined): string {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .ai-line {
@@ -756,7 +756,7 @@ function formatGoal(goal: string | undefined): string {
 .ai-label {
   color: var(--text-dim);
   text-transform: uppercase;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
 
 .stats-panel {
@@ -776,7 +776,7 @@ function formatGoal(goal: string | undefined): string {
 
 .stat-section h3 {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -785,7 +785,7 @@ function formatGoal(goal: string | undefined): string {
 
 .stat-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
@@ -810,7 +810,7 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   margin-top: var(--space-1);
 }
@@ -877,7 +877,7 @@ function formatGoal(goal: string | undefined): string {
   gap: var(--space-2);
   padding: 2px 0;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .item-char {
@@ -899,7 +899,7 @@ function formatGoal(goal: string | undefined): string {
 
 .inv-empty,
 .inv-more {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
 }
@@ -916,7 +916,7 @@ function formatGoal(goal: string | undefined): string {
   align-items: center;
   gap: var(--space-1);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .consumable-count {
@@ -932,7 +932,7 @@ function formatGoal(goal: string | undefined): string {
 
 .status-badge {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   padding: 3px var(--space-2);
   border-radius: var(--radius-md);
   text-transform: uppercase;
@@ -1002,7 +1002,7 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .core-label {
@@ -1041,7 +1041,7 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .combat-label {
@@ -1086,7 +1086,7 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .resist-label {
@@ -1122,7 +1122,7 @@ function formatGoal(goal: string | undefined): string {
   border: 1px solid;
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .status-name {

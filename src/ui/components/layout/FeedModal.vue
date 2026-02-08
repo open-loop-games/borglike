@@ -224,7 +224,7 @@ function formatTimestamp(timestamp: number): string {
 
 .event-count {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   margin-left: auto;
 }
@@ -252,7 +252,7 @@ function formatTimestamp(timestamp: number): string {
 
 .event-timestamp {
   color: var(--text-dim);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   flex-shrink: 0;
 }
 

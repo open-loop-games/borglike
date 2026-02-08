@@ -304,7 +304,7 @@ function handleUnlock() {
 }
 
 .unlock-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -314,7 +314,7 @@ function handleUnlock() {
 }
 
 .unlock-condition {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--amber);
   margin-top: 2px;
   font-style: italic;
@@ -351,7 +351,7 @@ function handleUnlock() {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -375,7 +375,7 @@ function handleUnlock() {
 
 .cost-icon {
   color: var(--purple);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
 
 .unlock-btn:not(:disabled):hover .cost-icon {
@@ -413,7 +413,7 @@ function handleUnlock() {
 }
 
 .tooltip-prestige {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   padding: 2px var(--space-1);
   background: rgba(245, 158, 11, 0.2);
   border: 1px solid var(--amber);
@@ -431,7 +431,7 @@ function handleUnlock() {
   background: var(--highlight);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .stat-positive {
@@ -451,7 +451,7 @@ function handleUnlock() {
   justify-content: space-between;
   align-items: center;
   padding: 3px 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .tooltip-label {
@@ -480,7 +480,7 @@ function handleUnlock() {
 
 .abilities-header {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--purple);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -499,13 +499,13 @@ function handleUnlock() {
 
 .ability-name {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--cyan);
 }
 
 .ability-desc {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   margin-top: 1px;
 }
@@ -518,7 +518,7 @@ function handleUnlock() {
 
 .behavior-header {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--purple);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -526,7 +526,7 @@ function handleUnlock() {
 }
 
 .behavior-text {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -537,7 +537,7 @@ function handleUnlock() {
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: var(--radius-md);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--amber);
   font-style: italic;
 }

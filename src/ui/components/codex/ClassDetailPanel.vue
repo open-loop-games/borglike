@@ -373,7 +373,7 @@ const specialAbilities = computed(() => {
 }
 
 .tag {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   padding: 2px var(--space-2);
   border-radius: var(--radius-md);
   font-weight: 500;
@@ -405,7 +405,7 @@ const specialAbilities = computed(() => {
 
 .lock-badge {
   display: inline-block;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
@@ -464,7 +464,7 @@ h4 {
 
 .stat-label {
   width: 32px;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-family: var(--font-mono);
   color: var(--text-secondary);
 }
@@ -503,7 +503,7 @@ h4 {
 
 .stat-value {
   width: 24px;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-family: var(--font-mono);
   text-align: right;
 }
@@ -558,7 +558,7 @@ h4 {
 }
 
 .ability-description {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
@@ -574,7 +574,7 @@ h4 {
   gap: var(--space-2);
   padding: 3px var(--space-2);
   border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .spell-row:hover {
@@ -601,7 +601,7 @@ h4 {
   gap: var(--space-2);
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
 
 .spell-level {

@@ -54,7 +54,7 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
   border: none;
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -83,7 +83,7 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 }
 
 .badge {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   padding: 1px 5px;
   background: var(--highlight);
   border: 1px solid var(--border);

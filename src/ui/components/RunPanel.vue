@@ -322,7 +322,7 @@ function handleDismiss() {
 }
 
 .run-personality {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   padding: 1px var(--space-1);
   background: rgba(0, 0, 0, 0.3);
   border-radius: var(--radius-sm);
@@ -374,7 +374,7 @@ function handleDismiss() {
   background: var(--highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-family: var(--font-mono);
   cursor: pointer;
   border-radius: var(--radius-sm);
@@ -440,7 +440,7 @@ function handleDismiss() {
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .stat-group {
@@ -467,7 +467,7 @@ function handleDismiss() {
 
 .stat-label {
   color: var(--text-dim);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   width: 20px;
   flex-shrink: 0;
 }
@@ -483,7 +483,7 @@ function handleDismiss() {
 }
 
 .stat-icon {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .stat.kills {
@@ -511,7 +511,7 @@ function handleDismiss() {
 
 .new-best-badge {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--amber);
   background: rgba(245, 158, 11, 0.15);
@@ -548,7 +548,7 @@ function handleDismiss() {
   display: flex;
   gap: var(--space-2);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .char-race {
@@ -560,7 +560,7 @@ function handleDismiss() {
 }
 
 .char-personality {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   padding: 1px var(--space-1);
   background: rgba(0, 0, 0, 0.3);
   border-radius: var(--radius-sm);
@@ -568,7 +568,7 @@ function handleDismiss() {
 
 .death-cause {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   margin-bottom: var(--space-1);
 }
@@ -616,7 +616,7 @@ function handleDismiss() {
 }
 
 .metric-label {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -647,7 +647,7 @@ function handleDismiss() {
 }
 
 .essence-label {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 
@@ -660,7 +660,7 @@ function handleDismiss() {
 .death-btn {
   padding: var(--space-2) var(--space-3);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;

@@ -183,7 +183,7 @@ const metaAchievements = computed(() => {
 }
 
 .section-count {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: normal;
   color: var(--text-secondary);
   padding: var(--space-1) var(--space-2);
@@ -201,7 +201,7 @@ const metaAchievements = computed(() => {
 
 .tier-label {
   display: block;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: 600;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -223,7 +223,7 @@ const metaAchievements = computed(() => {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   position: relative;
   transition: all 0.2s;

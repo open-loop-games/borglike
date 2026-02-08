@@ -78,7 +78,7 @@ const CHAIN_COSTS = {
 const farmingUpgrade: BotUpgradeDefinition = {
   id: 'farming',
   name: 'Resource Farming',
-  description: 'Bot will farm gold/XP when under-prepared for descent',
+  description: 'Farms gold/XP when under-leveled for descent',
   cost: 200,
   category: 'toggle',
 }

@@ -208,7 +208,7 @@ const emit = defineEmits<{
 }
 
 .essence-label {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   text-transform: uppercase;
 }
@@ -219,7 +219,7 @@ const emit = defineEmits<{
   border: 1px solid var(--amber);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--amber);
   cursor: pointer;

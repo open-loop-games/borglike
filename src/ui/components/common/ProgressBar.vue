@@ -100,7 +100,7 @@ const variantClass = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-family: var(--font-mono);
   color: var(--text-primary);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);

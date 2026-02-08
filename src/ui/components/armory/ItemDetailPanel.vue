@@ -331,7 +331,7 @@ const bonuses = computed(() => {
 
 .tier-badge {
   display: inline-block;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
@@ -359,7 +359,7 @@ const bonuses = computed(() => {
 
 .artifact-badge {
   display: inline-block;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
@@ -431,7 +431,7 @@ h4 {
   background: rgba(251, 191, 36, 0.1);
   border: 1px solid rgba(251, 191, 36, 0.3);
   border-radius: var(--radius-md);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .bonus-stat {

@@ -142,7 +142,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
 }
 
 .item-name {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-primary);
   text-align: center;
   overflow: hidden;
@@ -159,7 +159,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
 .discovery-info {
   display: flex;
   gap: var(--space-2);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   margin-top: 2px;
 }
@@ -171,7 +171,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
 }
 
 .tier-badge {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: bold;
   padding: 2px var(--space-2);
   border-radius: var(--radius-md);
@@ -209,7 +209,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: white;
 }
 

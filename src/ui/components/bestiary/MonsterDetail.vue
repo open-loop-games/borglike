@@ -335,7 +335,7 @@ const nextUnlock = computed(() => {
 .knowledge-tiers {
   display: flex;
   justify-content: space-between;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   margin-bottom: var(--space-2);
 }
@@ -346,7 +346,7 @@ const nextUnlock = computed(() => {
 }
 
 .knowledge-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   text-align: center;
 }
@@ -395,7 +395,7 @@ const nextUnlock = computed(() => {
 }
 
 .stat-label {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -413,7 +413,7 @@ const nextUnlock = computed(() => {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--radius-md);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--red);
 }
 
@@ -422,7 +422,7 @@ const nextUnlock = computed(() => {
   background: rgba(139, 92, 246, 0.15);
   border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: var(--radius-md);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--purple);
 }
 
@@ -449,7 +449,7 @@ const nextUnlock = computed(() => {
 
 .info-label {
   display: block;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
   margin-bottom: var(--space-1);
@@ -496,7 +496,7 @@ const nextUnlock = computed(() => {
 }
 
 .progress-text {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 </style>

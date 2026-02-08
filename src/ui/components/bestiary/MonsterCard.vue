@@ -144,7 +144,7 @@ const monsterColor = computed(() => {
 }
 
 .monster-name {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-primary);
   text-align: center;
   overflow: hidden;
@@ -161,7 +161,7 @@ const monsterColor = computed(() => {
 .monster-stats {
   display: flex;
   gap: var(--space-2);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 
@@ -172,13 +172,13 @@ const monsterColor = computed(() => {
 }
 
 .kill-count {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   margin-top: var(--space-1);
 }
 
 .knowledge-badge {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: bold;
   color: var(--green);
   background: rgba(34, 197, 94, 0.15);
@@ -206,7 +206,7 @@ const monsterColor = computed(() => {
   position: absolute;
   bottom: 6px;
   right: var(--space-2);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 
@@ -221,7 +221,7 @@ const monsterColor = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: white;
 }
 </style>

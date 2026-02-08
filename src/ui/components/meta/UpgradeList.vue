@@ -61,7 +61,7 @@ const botUpgradeItems = computed(() => {
   items.push({
     id: 'farming',
     name: 'Resource Farming',
-    description: 'Bot will farm gold/XP when under-prepared for descent',
+    description: 'Farms gold/XP when under-leveled for descent',
     icon: '$',
     currentLevel: farmingUnlocked ? 1 : 0,
     maxLevel: 1,
@@ -194,7 +194,7 @@ function handlePurchase(upgradeId: string) {
 
 .tab-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -209,7 +209,7 @@ function handlePurchase(upgradeId: string) {
   padding: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .no-upgrades {

@@ -202,7 +202,7 @@ const primaryStat = computed(() => {
 }
 
 .class-name {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-primary);
   text-align: center;
   overflow: hidden;
@@ -239,7 +239,7 @@ const primaryStat = computed(() => {
 }
 
 .unlock-hint {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-dim);
   font-style: italic;
   margin-top: 2px;
@@ -251,7 +251,7 @@ const primaryStat = computed(() => {
 }
 
 .win-count {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--green);
   margin-top: var(--space-1);
   padding: 2px var(--space-2);
@@ -270,7 +270,7 @@ const primaryStat = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: white;
 }
 

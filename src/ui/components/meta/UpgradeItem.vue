@@ -85,7 +85,7 @@ function handlePurchase() {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-3);
+  padding: var(--space-2);
   background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -153,12 +153,12 @@ function handlePurchase() {
 
 .upgrade-level {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
 }
 
 .upgrade-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   margin-bottom: var(--space-1);
 }
@@ -177,7 +177,7 @@ function handlePurchase() {
 
 .effect-value {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--cyan);
 }
 
@@ -190,12 +190,12 @@ function handlePurchase() {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-2);
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -214,7 +214,7 @@ function handlePurchase() {
 
 .cost-icon {
   color: var(--purple);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .purchase-btn:not(:disabled):hover .cost-icon {

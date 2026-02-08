@@ -290,7 +290,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .tab-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -309,7 +309,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .header-text {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
 }
@@ -318,12 +318,12 @@ function getPrereqNames(boosterId: string): string[] {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 
 .codex-icon {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 .unlocks-scroll {
@@ -350,7 +350,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .category-header {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--purple);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -418,12 +418,12 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .booster-desc {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
 .booster-prereq {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--amber);
   font-style: italic;
   margin-top: 2px;
@@ -448,7 +448,7 @@ function getPrereqNames(boosterId: string): string[] {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
@@ -467,7 +467,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .booster-status .cost-icon {
   color: var(--purple);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
 
 .booster-status .unlock-btn:not(:disabled):hover .cost-icon {

@@ -133,13 +133,29 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.value = { ...DEFAULT_SETTINGS }
   }
 
+  // Apply font scale to :root CSS variable
+  const FONT_SCALE_MAP: Record<GameSettings['fontSize'], number> = {
+    small: 0.85,
+    medium: 1,
+    large: 1.2,
+  }
+
+  function applyFontScale() {
+    document.documentElement.style.setProperty(
+      '--font-scale',
+      String(FONT_SCALE_MAP[settings.value.fontSize])
+    )
+  }
+
   // Watch for changes and auto-save (single source of truth for persistence)
   watch(settings, saveSettings, { deep: true })
+  watch(() => settings.value.fontSize, applyFontScale)
   watch(panelStates, savePanelStates, { deep: true })
 
   // Load on init
   loadSettings()
   loadPanelStates()
+  applyFontScale()
 
   return {
     settings,
