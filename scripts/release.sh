@@ -26,13 +26,17 @@ git checkout --orphan github-release
 git add -A
 git commit -m "Release ${NEW_TAG}"
 
-# 4. Force push to github
+# 4. Re-tag the orphan commit (github tag must point to github commit)
+echo "🏷️  Tagging orphan commit..."
+git tag -f ${NEW_TAG}
+
+# 5. Force push to github
 echo "📤 Pushing snapshot to github..."
 git push github github-release:main --force
 
-# 5. Push tag to github
+# 6. Push tag to github
 echo "🏷️  Pushing tag to github..."
-git push github ${NEW_TAG}
+git push github ${NEW_TAG} --force
 
 # 6. Cleanup
 echo "🧹 Cleaning up..."
