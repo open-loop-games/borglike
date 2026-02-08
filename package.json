@@ -1,7 +1,7 @@
 {
   "name": "borglike",
   "private": false,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Idle/incremental game featuring an auto-playing roguelike",
   "author": "Namahanna",
