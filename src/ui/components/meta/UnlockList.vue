@@ -382,10 +382,18 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .booster-item.is-unlocked {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .booster-item.cannot-unlock {
+  border-color: var(--border);
+}
+
+.cannot-unlock .booster-name {
+  color: var(--text-secondary);
+}
+
+.cannot-unlock .booster-icon {
   opacity: 0.5;
 }
 

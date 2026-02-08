@@ -103,11 +103,19 @@ function handlePurchase() {
 }
 
 .upgrade-item.is-maxed {
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .upgrade-item.cannot-afford {
-  opacity: 0.6;
+  border-color: var(--border);
+}
+
+.cannot-afford .upgrade-name {
+  color: var(--text-secondary);
+}
+
+.cannot-afford .upgrade-icon {
+  opacity: 0.5;
 }
 
 .upgrade-icon {

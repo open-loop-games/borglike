@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect, ref } from 'vue'
 import type { ActiveRun, DisplayItem, EquipSlot } from '@/stores/runs'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
@@ -70,6 +70,32 @@ const activeStatuses = computed(() => {
     ...(STATUS_CONFIG[effect.type] || { label: effect.type.toUpperCase(), color: '#94a3b8' }),
   }))
 })
+
+// Linger sections for N turns after content disappears (prevents layout thrash on buff cycling)
+const SECTION_LINGER_TURNS = 15
+
+const lastResistActiveTurn = ref(0)
+const lastStatusActiveTurn = ref(0)
+
+watchEffect(() => {
+  if (activeResistances.value.length > 0) lastResistActiveTurn.value = props.run.turns
+})
+watchEffect(() => {
+  if (activeStatuses.value.length > 0) lastStatusActiveTurn.value = props.run.turns
+})
+
+const showResistSection = computed(
+  () =>
+    activeResistances.value.length > 0 ||
+    (lastResistActiveTurn.value > 0 &&
+      props.run.turns - lastResistActiveTurn.value < SECTION_LINGER_TURNS),
+)
+const showStatusSection = computed(
+  () =>
+    activeStatuses.value.length > 0 ||
+    (lastStatusActiveTurn.value > 0 &&
+      props.run.turns - lastStatusActiveTurn.value < SECTION_LINGER_TURNS),
+)
 
 // Get personal best for comparison in RunSummary (uses cached value from store)
 const personalBest = computed(() => {
@@ -383,7 +409,7 @@ function formatGoal(goal: string | undefined): string {
 
         <!-- Resistances (only show if any) -->
         <CollapsibleSection
-          v-if="activeResistances.length > 0"
+          v-show="showResistSection"
           title="Resist"
           :expanded="settingsStore.panelStates.resist"
           :badge="activeResistances.length"
@@ -409,7 +435,7 @@ function formatGoal(goal: string | undefined): string {
 
         <!-- Status Effects (only show if any) -->
         <CollapsibleSection
-          v-if="activeStatuses.length > 0"
+          v-show="showStatusSection"
           title="Status"
           :expanded="settingsStore.panelStates.status"
           :badge="activeStatuses.length"

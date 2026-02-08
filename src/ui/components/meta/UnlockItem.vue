@@ -98,6 +98,15 @@ function handleUnlock() {
     </div>
 
     <div class="unlock-info">
+      <div class="unlock-status">
+        <span v-if="isUnlocked" class="status-unlocked">✓</span>
+        <template v-else>
+          <button class="unlock-btn" :disabled="!canUnlock">
+            <span class="cost-icon">◆</span>
+            <span>{{ cost.toLocaleString() }}</span>
+          </button>
+        </template>
+      </div>
       <div class="unlock-header">
         <span class="unlock-name">{{ name }}</span>
         <span v-if="prestige" class="prestige-tag">Prestige</span>
@@ -109,16 +118,6 @@ function handleUnlock() {
       >
         {{ unlockCondition }}
       </div>
-    </div>
-
-    <div class="unlock-status">
-      <span v-if="isUnlocked" class="status-unlocked">✓</span>
-      <template v-else>
-        <button class="unlock-btn" :disabled="!canUnlock">
-          <span class="cost-icon">◆</span>
-          <span>{{ cost.toLocaleString() }}</span>
-        </button>
-      </template>
     </div>
 
     <!-- Tooltip -->
@@ -207,7 +206,7 @@ function handleUnlock() {
 <style scoped>
 .unlock-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
@@ -227,10 +226,18 @@ function handleUnlock() {
 }
 
 .unlock-item.is-unlocked {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .unlock-item.cannot-afford {
+  border-color: var(--border);
+}
+
+.cannot-afford .unlock-name {
+  color: var(--text-secondary);
+}
+
+.cannot-afford .unlock-badge {
   opacity: 0.5;
 }
 
@@ -250,6 +257,7 @@ function handleUnlock() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .badge-icon {
@@ -306,10 +314,6 @@ function handleUnlock() {
 .unlock-desc {
   font-size: var(--text-base);
   color: var(--text-secondary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   line-height: 1.4;
 }
 
@@ -323,7 +327,6 @@ function handleUnlock() {
 
 .condition-not-met {
   border-color: var(--text-dim);
-  opacity: 0.7;
 }
 
 .condition-not-met .prestige-tag {
@@ -333,7 +336,8 @@ function handleUnlock() {
 }
 
 .unlock-status {
-  flex-shrink: 0;
+  float: right;
+  margin-left: var(--space-2);
 }
 
 .status-unlocked {
