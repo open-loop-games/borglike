@@ -121,12 +121,12 @@ src/
 ## Git & Release Workflow
 
 **Remotes:**
-- `gitea` (primary) - Local Gitea, daily development target, configured as `remote.pushDefault`, full 287+ commit history
+- `gitea` (primary) - Local Gitea, daily development target, configured as `remote.pushDefault`, full commit history
 - `github` (public) - https://github.com/Namahanna/borglike.git, clean snapshot releases only (always 1 orphan commit)
 
 **Architecture:**
 ```
-gitea/main:  [287 commits of full dev history] → [continuous development]
+gitea/main:  [full commits of dev history] → [continuous development]
 github/main: [Single orphan commit: "Release v0.1.x"] ← always force-pushed
 ```
 

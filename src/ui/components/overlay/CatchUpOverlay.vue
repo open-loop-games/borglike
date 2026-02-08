@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useEngineStateStore } from '@/stores/engine-state'
 import { skipCatchUp } from '@/engine/instance-manager'
 
@@ -10,6 +10,41 @@ const SLOT_COLORS = ['var(--cyan)', 'var(--green)', 'var(--amber)', 'var(--purpl
 
 const targetSeconds = computed(() => Math.round(engineState.catchUpTargetMs / 1000))
 const overallPercent = computed(() => Math.round(engineState.overallProgress * 100))
+
+// ETA tracking
+const startTime = ref(Date.now())
+const currentTime = ref(Date.now())
+let etaInterval: number | undefined
+
+const eta = computed(() => {
+  const elapsed = (currentTime.value - startTime.value) / 1000
+  const progress = engineState.overallProgress
+
+  if (progress < 0.01) return null // Not enough data yet
+
+  const estimatedTotal = elapsed / progress
+  const remaining = Math.max(0, estimatedTotal - elapsed)
+
+  if (remaining < 60) {
+    return `~${Math.ceil(remaining)}s`
+  } else {
+    const mins = Math.floor(remaining / 60)
+    const secs = Math.ceil(remaining % 60)
+    return `~${mins}m ${secs}s`
+  }
+})
+
+onMounted(() => {
+  etaInterval = window.setInterval(() => {
+    currentTime.value = Date.now()
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (etaInterval !== undefined) {
+    clearInterval(etaInterval)
+  }
+})
 
 // Auto-scroll ticker to bottom when new completions arrive
 watch(
@@ -66,7 +101,10 @@ watch(
         <span class="overall-percent">{{ overallPercent }}%</span>
       </div>
 
-      <div class="catchup-info">Simulating {{ targetSeconds }}s of game time...</div>
+      <div class="catchup-info">
+        Simulating {{ targetSeconds }}s of game time...
+        <span v-if="eta" class="eta-timer">{{ eta }} remaining</span>
+      </div>
 
       <button class="skip-btn" @click="skipCatchUp()">Skip</button>
 
@@ -193,6 +231,16 @@ watch(
 .catchup-info {
   font-size: var(--text-base);
   color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.eta-timer {
+  font-size: var(--text-sm);
+  color: var(--indigo);
+  font-weight: 500;
 }
 
 .skip-btn {

@@ -22,14 +22,27 @@ const emit = defineEmits<{
         </p>
         <p>
           Each death earns <span class="essence">Essence</span> based on depth reached and monsters
-          killed. Spend essence on permanent upgrades and unlocks to help future runs go deeper.
+          killed. Deeper runs earn exponentially more. Spend essence on permanent upgrades and
+          unlocks to help future runs go deeper.
+        </p>
+      </PanelFrame>
+
+      <PanelFrame class="help-section">
+        <h3>Getting Started</h3>
+        <p>
+          Your first bot picks a random race and class and dives in. Let it die &mdash; that's the
+          point. Spend the essence it earns on upgrades. Close the tab and come back later; the game
+          simulates missed time on return.
         </p>
       </PanelFrame>
 
       <PanelFrame class="help-section">
         <h3>Core Loop</h3>
         <ol>
-          <li><strong>Setup</strong> &mdash; Pick race, class, boosters, and bot upgrades</li>
+          <li>
+            <strong>Run</strong> &mdash; A bot enters the dungeon with a random build. Unlock
+            race/class selection through purchases.
+          </li>
           <li><strong>Watch</strong> &mdash; Bots explore, fight, and loot automatically</li>
           <li><strong>Die</strong> &mdash; Death is inevitable (and profitable)</li>
           <li><strong>Earn</strong> &mdash; Gain essence from each run</li>
@@ -39,15 +52,10 @@ const emit = defineEmits<{
       </PanelFrame>
 
       <PanelFrame class="help-section">
-        <h3>Slots &amp; Bot Upgrades</h3>
+        <h3>Upgrades &amp; Unlocks</h3>
         <p>
-          Unlock up to <span class="slots">4 run slots</span> to watch multiple dungeon runs
-          simultaneously. Each slot has its own bot that can be upgraded independently.
-        </p>
-        <p>
-          <span class="training">Bot Upgrades</span> unlock smarter behaviors: town visits, resource
-          farming, exploration sweeps, retreat tactics, and ranged kiting. Upgrade each slot's bot
-          to suit different strategies.
+          Essence buys permanent upgrades: more run slots, smarter bots, race/class selection, and
+          more. Equip up to 2 boosters per run for bonus stats, gear, or special effects.
         </p>
       </PanelFrame>
 
@@ -55,16 +63,50 @@ const emit = defineEmits<{
         <h3>Controls</h3>
         <div class="controls-grid">
           <div class="control-item">
-            <span class="control-key">Click Run</span>
-            <span class="control-desc">Expand to detailed view</span>
+            <span class="control-key">Expand (⛶)</span>
+            <span class="control-desc">Expand run to detailed view</span>
           </div>
           <div class="control-item">
             <span class="control-key">Turbo (⏩)</span>
-            <span class="control-desc">Speed up simulation</span>
+            <span class="control-desc">Faster simulation, no cost</span>
           </div>
           <div class="control-item">
             <span class="control-key">Auto (↻)</span>
-            <span class="control-desc">Auto-restart on death</span>
+            <span class="control-desc">Auto-restart on death (upgrade required)</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">Pause (⏸)</span>
+            <span class="control-desc">Pause/resume all runs</span>
+          </div>
+        </div>
+      </PanelFrame>
+
+      <PanelFrame class="help-section">
+        <h3>Header Bar</h3>
+        <div class="controls-grid">
+          <div class="control-item">
+            <span class="control-key">≡ History</span>
+            <span class="control-desc">Past runs with depth, kills, and essence earned</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">🏆 Achievements</span>
+            <span class="control-desc">Milestones with essence rewards to claim</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">📖 Bestiary</span>
+            <span class="control-desc">Monsters encountered; high kill counts unlock knowledge</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">📦 Armory</span>
+            <span class="control-desc">Equipment discovered across all runs</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">📜 Codex</span>
+            <span class="control-desc">Race and class details with unlock status</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">⚙ Settings</span>
+            <span class="control-desc">Game configuration and display options</span>
           </div>
         </div>
       </PanelFrame>
@@ -178,16 +220,6 @@ const emit = defineEmits<{
 
 .boss {
   color: var(--red);
-  font-weight: bold;
-}
-
-.slots {
-  color: var(--cyan);
-  font-weight: bold;
-}
-
-.training {
-  color: var(--amber);
   font-weight: bold;
 }
 

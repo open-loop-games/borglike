@@ -13,6 +13,7 @@ import AchievementsModal from './ui/components/achievements/AchievementsModal.vu
 import HelpModal from './ui/components/help/HelpModal.vue'
 import CatchUpOverlay from './ui/components/overlay/CatchUpOverlay.vue'
 import { useEngineStateStore } from './stores/engine-state'
+import { useProgressionStore } from './stores/progression'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
 import { useGameTitle } from './ui/composables/use-game-title'
@@ -25,6 +26,7 @@ const isLoaded = ref(false)
 useKeyboard()
 useGameTitle()
 const engineState = useEngineStateStore()
+const progression = useProgressionStore()
 
 // Initialize persistence on mount
 onMounted(async () => {
@@ -32,6 +34,11 @@ onMounted(async () => {
   // This prevents race conditions where components try to write before data loads
   await initPersistence()
   isLoaded.value = true
+
+  // Show help on first launch
+  if (progression.globalStats.totalRuns === 0) {
+    showHelp.value = true
+  }
 })
 
 // Modal state
