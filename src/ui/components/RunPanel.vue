@@ -302,7 +302,6 @@ function handleDismiss() {
   padding: var(--space-2) var(--space-3);
   background: var(--elevated);
   border-bottom: 1px solid var(--border);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -375,7 +374,6 @@ function handleDismiss() {
   border: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: var(--text-base);
-  font-family: var(--font-mono);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: all 0.2s;
@@ -439,7 +437,6 @@ function handleDismiss() {
   padding: var(--space-2) var(--space-3);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -510,7 +507,6 @@ function handleDismiss() {
 }
 
 .new-best-badge {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--amber);
@@ -536,7 +532,6 @@ function handleDismiss() {
 }
 
 .death-text {
-  font-family: var(--font-mono);
   font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--red);
@@ -547,7 +542,6 @@ function handleDismiss() {
 .death-character {
   display: flex;
   gap: var(--space-2);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -567,7 +561,6 @@ function handleDismiss() {
 }
 
 .death-cause {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   margin-bottom: var(--space-1);
@@ -576,7 +569,6 @@ function handleDismiss() {
 .death-metrics {
   display: flex;
   gap: var(--space-4);
-  font-family: var(--font-mono);
 }
 
 .metric {
@@ -626,7 +618,6 @@ function handleDismiss() {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-family: var(--font-mono);
   padding: var(--space-1) var(--space-3);
   background: rgba(139, 92, 246, 0.1);
   border: 1px solid rgba(139, 92, 246, 0.3);
@@ -659,7 +650,6 @@ function handleDismiss() {
 
 .death-btn {
   padding: var(--space-2) var(--space-3);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   border-radius: var(--radius-md);
   cursor: pointer;

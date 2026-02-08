@@ -136,7 +136,6 @@ const monsterColor = computed(() => {
 }
 
 .monster-symbol {
-  font-family: var(--font-mono);
   font-size: var(--text-5xl);
   font-weight: bold;
   line-height: 1;

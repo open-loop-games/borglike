@@ -174,7 +174,6 @@ const statPreview = computed(() => {
 }
 
 .race-symbol {
-  font-family: var(--font-mono);
   font-size: var(--text-5xl);
   font-weight: bold;
   line-height: 1;
@@ -198,7 +197,6 @@ const statPreview = computed(() => {
 .stat-preview {
   font-size: var(--text-sm);
   color: var(--text-secondary);
-  font-family: var(--font-mono);
   margin-top: 2px;
 }
 

@@ -308,7 +308,6 @@ const artifactStats = computed(() => {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  font-family: var(--font-mono);
   font-size: var(--text-md);
   color: var(--text-secondary);
   cursor: pointer;
@@ -337,7 +336,6 @@ const artifactStats = computed(() => {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
   cursor: pointer;
@@ -354,7 +352,6 @@ const artifactStats = computed(() => {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
 }

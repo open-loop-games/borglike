@@ -323,7 +323,6 @@ const processedInventory = computed(() => {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -440,7 +439,6 @@ const processedInventory = computed(() => {
 }
 
 .detail .value.seed {
-  font-family: var(--font-mono);
   color: var(--indigo);
 }
 

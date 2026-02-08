@@ -21,7 +21,7 @@
   --text-dim: #64748b;
 
   /* Typography */
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
 
   /* Missing Colors */
   --gold: #eab308;
@@ -73,7 +73,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-mono);
   background: var(--void);
   color: var(--text-primary);
   font-synthesis: none;

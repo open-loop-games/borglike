@@ -201,7 +201,6 @@ function formatTimeAgo(timestamp: number): string {
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-md);
   color: var(--text-secondary);
   cursor: pointer;

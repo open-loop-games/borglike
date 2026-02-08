@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { GridCell } from '@/stores/runs'
+import { useSettingsStore, FONT_OPTIONS } from '@/stores/settings'
 
 const props = defineProps<{
   grid: GridCell[][]
@@ -10,8 +11,16 @@ const props = defineProps<{
   height?: number
 }>()
 
+const settingsStore = useSettingsStore()
+
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const containerRef = ref<HTMLDivElement | null>(null)
+
+// CSS font-family string derived from user setting
+const fontCss = computed(() => {
+  const opt = FONT_OPTIONS.find((f) => f.id === settingsStore.settings.fontFamily)
+  return opt?.css ?? 'monospace'
+})
 
 // Grid dimensions
 const COLS = props.width || 80
@@ -34,14 +43,24 @@ function colorToHex(color: number): string {
   return '#' + color.toString(16).padStart(6, '0')
 }
 
+/** Measure actual character width/height ratio for the current font */
+function measureCharAspect(): number {
+  if (!canvasRef.value) return 0.6
+  const tempCtx = canvasRef.value.getContext('2d')
+  if (!tempCtx) return 0.6
+  const sampleSize = 100
+  tempCtx.font = `${sampleSize}px ${fontCss.value}`
+  return tempCtx.measureText('M').width / sampleSize
+}
+
 function calculateSize() {
   if (!containerRef.value || !canvasRef.value) return
 
   const container = containerRef.value
   const rect = container.getBoundingClientRect()
 
-  // Target aspect ratio for monospace: ~0.6 width/height per character
-  const charAspect = 0.6
+  // Measure real character aspect ratio from the active font
+  const charAspect = measureCharAspect()
 
   // Calculate cell size to fit container while maintaining character aspect ratio
   // Try fitting by height first
@@ -69,15 +88,15 @@ function calculateSize() {
 
   fontSize = Math.floor(cellHeight * 0.85)
 
-  // Set canvas size
+  // Set canvas size (resets context state)
   const canvas = canvasRef.value
   canvas.width = COLS * cellWidth
   canvas.height = ROWS * cellHeight
 
-  // Get context and set font
+  // Re-apply context state after resize
   ctx = canvas.getContext('2d')
   if (ctx) {
-    ctx.font = `${fontSize}px monospace`
+    ctx.font = `${fontSize}px ${fontCss.value}`
     ctx.textBaseline = 'middle'
     ctx.textAlign = 'center'
   }
@@ -120,7 +139,8 @@ function render() {
 // Resize observer for responsive sizing
 let resizeObserver: ResizeObserver | null = null
 
-onMounted(() => {
+onMounted(async () => {
+  await document.fonts.ready
   calculateSize()
   render()
 
@@ -154,6 +174,13 @@ function scheduleRender() {
 watch(() => props.grid, scheduleRender)
 watch(() => props.cursorX, scheduleRender)
 watch(() => props.cursorY, scheduleRender)
+
+// Recalculate cell sizing + re-render when font changes (may load async from Google Fonts)
+watch(fontCss, async () => {
+  await document.fonts.ready
+  calculateSize()
+  render()
+})
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useSettingsStore } from '@/stores/settings'
+import { useSettingsStore, FONT_OPTIONS } from '@/stores/settings'
 import { useProgressionStore } from '@/stores/progression'
 import { clearData } from '@/ui/composables/use-persistence'
 import { cleanupPersistence } from '@/stores/persistence'
@@ -137,6 +137,27 @@ function cancelReset() {
                 {{ opt.label }}
               </button>
             </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Font</span>
+              <span class="setting-desc">Monospace font for the entire UI</span>
+            </div>
+            <select
+              :value="settingsStore.settings.fontFamily"
+              class="setting-select"
+              @change="
+                settingsStore.updateSetting(
+                  'fontFamily',
+                  ($event.target as HTMLSelectElement).value as any
+                )
+              "
+            >
+              <option v-for="font in FONT_OPTIONS" :key="font.id" :value="font.id">
+                {{ font.label }}
+              </option>
+            </select>
           </div>
         </PanelFrame>
 
@@ -365,7 +386,6 @@ function cancelReset() {
 }
 
 .settings-header h2 {
-  font-family: var(--font-mono);
   font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--text-primary);
@@ -415,7 +435,6 @@ function cancelReset() {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -453,7 +472,6 @@ function cancelReset() {
 }
 
 .setting-group h3 {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -480,7 +498,6 @@ function cancelReset() {
 }
 
 .setting-label {
-  font-family: var(--font-mono);
   font-size: var(--text-md);
   color: var(--text-primary);
 }
@@ -503,7 +520,6 @@ function cancelReset() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
   cursor: pointer;
@@ -528,7 +544,6 @@ function cancelReset() {
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -611,14 +626,12 @@ function cancelReset() {
 }
 
 .stat-item .stat-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
 }
 
 .stat-item .stat-value {
-  font-family: var(--font-mono);
   font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--text-primary);
@@ -644,7 +657,6 @@ function cancelReset() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -666,7 +678,6 @@ function cancelReset() {
   background: rgba(34, 197, 94, 0.1);
   border: 1px solid var(--green);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--green);
   text-align: center;
@@ -694,7 +705,6 @@ function cancelReset() {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid var(--red);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--red);
   cursor: pointer;
@@ -724,7 +734,6 @@ function cancelReset() {
 }
 
 .confirm-modal h3 {
-  font-family: var(--font-mono);
   font-size: var(--text-xl);
   color: var(--red);
   margin: 0 0 var(--space-3);
@@ -746,7 +755,6 @@ function cancelReset() {
   flex: 1;
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   cursor: pointer;
   transition: all 0.2s;

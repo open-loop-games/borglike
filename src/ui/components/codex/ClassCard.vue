@@ -232,7 +232,6 @@ const primaryStat = computed(() => {
 .primary-stat {
   font-size: var(--text-2xs);
   color: var(--text-secondary);
-  font-family: var(--font-mono);
   background: var(--void);
   padding: 1px var(--space-1);
   border-radius: var(--radius-sm);

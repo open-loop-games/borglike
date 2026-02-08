@@ -87,7 +87,6 @@ function formatTimestamp(timestamp: number): string {
 }
 
 .feed-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -110,7 +109,6 @@ function formatTimestamp(timestamp: number): string {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -154,7 +152,6 @@ function formatTimestamp(timestamp: number): string {
 }
 
 .feed-empty {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;

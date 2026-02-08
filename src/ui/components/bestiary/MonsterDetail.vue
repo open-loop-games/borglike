@@ -222,7 +222,6 @@ const nextUnlock = computed(() => {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -244,7 +243,6 @@ const nextUnlock = computed(() => {
 }
 
 .monster-symbol {
-  font-family: var(--font-mono);
   font-size: 64px;
   font-weight: bold;
   line-height: 1;

@@ -4,12 +4,56 @@ import { ref, watch } from 'vue'
 /** Feed verbosity levels for filtering messages */
 export type FeedVerbosity = 'minimal' | 'normal' | 'verbose' | 'all'
 
+export type FontFamily =
+  | 'jetbrains-mono'
+  | 'fira-code'
+  | 'source-code-pro'
+  | 'ibm-plex-mono'
+  | 'inconsolata'
+  | 'roboto-mono'
+  | 'space-mono'
+  | 'system'
+
+export interface FontOption {
+  id: FontFamily
+  label: string
+  css: string
+  googleFamily?: string
+}
+
+export const FONT_OPTIONS: FontOption[] = [
+  { id: 'jetbrains-mono', label: 'JetBrains Mono', css: "'JetBrains Mono', monospace" },
+  { id: 'fira-code', label: 'Fira Code', css: "'Fira Code', monospace", googleFamily: 'Fira+Code' },
+  {
+    id: 'source-code-pro',
+    label: 'Source Code Pro',
+    css: "'Source Code Pro', monospace",
+    googleFamily: 'Source+Code+Pro',
+  },
+  {
+    id: 'ibm-plex-mono',
+    label: 'IBM Plex Mono',
+    css: "'IBM Plex Mono', monospace",
+    googleFamily: 'IBM+Plex+Mono',
+  },
+  { id: 'inconsolata', label: 'Inconsolata', css: "'Inconsolata', monospace", googleFamily: 'Inconsolata' },
+  {
+    id: 'roboto-mono',
+    label: 'Roboto Mono',
+    css: "'Roboto Mono', monospace",
+    googleFamily: 'Roboto+Mono',
+  },
+  { id: 'space-mono', label: 'Space Mono', css: "'Space Mono', monospace", googleFamily: 'Space+Mono' },
+  { id: 'system', label: 'System Mono', css: 'monospace' },
+]
+
 export interface GameSettings {
   // Display
   showGrid: boolean
   showMinimap: boolean
   animationSpeed: 'slow' | 'normal' | 'fast' | 'instant'
   fontSize: 'small' | 'medium' | 'large'
+  fontFamily: FontFamily
 
   // Gameplay
   defaultPersonality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
@@ -58,6 +102,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   showMinimap: true,
   animationSpeed: 'normal',
   fontSize: 'medium',
+  fontFamily: 'jetbrains-mono',
   defaultPersonality: 'cautious',
   autoRestart: false,
   turboByDefault: true,
@@ -147,15 +192,37 @@ export const useSettingsStore = defineStore('settings', () => {
     )
   }
 
+  // Track loaded Google Fonts to avoid duplicate <link> tags
+  const loadedFonts = new Set<string>()
+
+  function applyFontFamily() {
+    const fontId = settings.value.fontFamily
+    const option = FONT_OPTIONS.find((f) => f.id === fontId)
+    if (!option) return
+
+    // Lazy-load Google Font if needed
+    if (option.googleFamily && !loadedFonts.has(option.googleFamily)) {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = `https://fonts.googleapis.com/css2?family=${option.googleFamily}:wght@400;700&display=swap`
+      document.head.appendChild(link)
+      loadedFonts.add(option.googleFamily)
+    }
+
+    document.documentElement.style.setProperty('--font-mono', option.css)
+  }
+
   // Watch for changes and auto-save (single source of truth for persistence)
   watch(settings, saveSettings, { deep: true })
   watch(() => settings.value.fontSize, applyFontScale)
+  watch(() => settings.value.fontFamily, applyFontFamily)
   watch(panelStates, savePanelStates, { deep: true })
 
   // Load on init
   loadSettings()
   loadPanelStates()
   applyFontScale()
+  applyFontFamily()
 
   return {
     settings,

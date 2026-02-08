@@ -623,7 +623,6 @@ function formatGoal(goal: string | undefined): string {
 .run-identity {
   display: flex;
   gap: var(--space-3);
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
 }
 
@@ -644,7 +643,6 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .slot-badge {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
   background: var(--highlight);
@@ -655,7 +653,6 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .run-time {
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   color: var(--text-dim);
 }
@@ -674,7 +671,6 @@ function formatGoal(goal: string | undefined): string {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -705,7 +701,6 @@ function formatGoal(goal: string | undefined): string {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -757,7 +752,6 @@ function formatGoal(goal: string | undefined): string {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -801,7 +795,6 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .stat-section h3 {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -810,7 +803,6 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .stat-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
 }
@@ -835,7 +827,6 @@ function formatGoal(goal: string | undefined): string {
 .stats-row {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   margin-top: var(--space-1);
@@ -879,13 +870,11 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .slot-char {
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   line-height: 1;
 }
 
 .slot-label {
-  font-family: var(--font-mono);
   font-size: var(--text-2xs);
   color: var(--text-dim);
   text-transform: lowercase;
@@ -902,7 +891,6 @@ function formatGoal(goal: string | undefined): string {
   align-items: center;
   gap: var(--space-2);
   padding: 2px 0;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -941,7 +929,6 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -957,7 +944,6 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .status-badge {
-  font-family: var(--font-mono);
   font-size: var(--text-sm);
   padding: 3px var(--space-2);
   border-radius: var(--radius-md);
@@ -1027,7 +1013,6 @@ function formatGoal(goal: string | undefined): string {
 .core-stat {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -1066,7 +1051,6 @@ function formatGoal(goal: string | undefined): string {
 .combat-stat {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -1111,7 +1095,6 @@ function formatGoal(goal: string | undefined): string {
 .resist-item {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -1147,7 +1130,6 @@ function formatGoal(goal: string | undefined): string {
   background: var(--highlight);
   border: 1px solid;
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -1198,7 +1180,6 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .death-text {
-  font-family: var(--font-mono);
   font-size: var(--text-5xl);
   font-weight: bold;
   color: var(--red);
@@ -1209,7 +1190,6 @@ function formatGoal(goal: string | undefined): string {
 .death-stats {
   display: flex;
   gap: var(--space-6);
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   color: var(--text-secondary);
 }
@@ -1226,7 +1206,6 @@ function formatGoal(goal: string | undefined): string {
   gap: var(--space-2);
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   cursor: pointer;
   transition: all 0.2s;

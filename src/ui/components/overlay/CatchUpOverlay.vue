@@ -108,7 +108,6 @@ watch(
 }
 
 .catchup-title {
-  font-family: var(--font-mono);
   font-size: var(--text-2xl);
   color: var(--text-primary);
   margin: 0;
@@ -128,7 +127,6 @@ watch(
 }
 
 .slot-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   min-width: 48px;
 }
@@ -149,7 +147,6 @@ watch(
 }
 
 .slot-percent {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   min-width: 36px;
@@ -172,7 +169,6 @@ watch(
 }
 
 .overall-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
   min-width: 48px;
@@ -187,7 +183,6 @@ watch(
 }
 
 .overall-percent {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
   font-weight: bold;
@@ -198,7 +193,6 @@ watch(
 .catchup-info {
   font-size: var(--text-base);
   color: var(--text-dim);
-  font-family: var(--font-mono);
 }
 
 .skip-btn {
@@ -207,7 +201,6 @@ watch(
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -228,7 +221,6 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-family: var(--font-mono);
   font-size: var(--text-sm);
 }
 

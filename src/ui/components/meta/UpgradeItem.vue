@@ -153,14 +153,12 @@ function handlePurchase() {
 }
 
 .upgrade-name {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
 }
 
 .upgrade-level {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
 }
@@ -184,7 +182,6 @@ function handlePurchase() {
 }
 
 .effect-value {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--cyan);
 }
@@ -202,7 +199,6 @@ function handlePurchase() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;

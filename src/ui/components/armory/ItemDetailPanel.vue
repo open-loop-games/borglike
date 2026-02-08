@@ -297,7 +297,6 @@ const bonuses = computed(() => {
 }
 
 .item-symbol {
-  font-family: var(--font-mono);
   font-size: 48px;
   font-weight: bold;
   line-height: 1;
@@ -407,7 +406,6 @@ h4 {
 
 .stat-value {
   color: var(--text-primary);
-  font-family: var(--font-mono);
 }
 
 .stat-value.damage {
@@ -440,7 +438,6 @@ h4 {
 
 .bonus-value {
   color: var(--gold);
-  font-family: var(--font-mono);
 }
 
 .abilities-list {
@@ -485,7 +482,6 @@ h4 {
 
 .discovery-value {
   color: var(--green);
-  font-family: var(--font-mono);
 }
 
 .undiscovered-text {

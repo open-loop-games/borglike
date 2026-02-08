@@ -148,7 +148,6 @@ const emit = defineEmits<{
 }
 
 .logo {
-  font-family: var(--font-mono);
   font-size: var(--text-3xl);
   font-weight: bold;
   margin: 0;
@@ -195,7 +194,6 @@ const emit = defineEmits<{
 }
 
 .essence-value {
-  font-family: var(--font-mono);
   font-size: var(--text-xl);
   font-weight: bold;
   color: var(--purple);
@@ -218,7 +216,6 @@ const emit = defineEmits<{
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid var(--amber);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--amber);
@@ -244,7 +241,6 @@ const emit = defineEmits<{
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -279,7 +275,6 @@ const emit = defineEmits<{
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;

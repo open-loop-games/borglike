@@ -202,7 +202,6 @@ function formatTimestamp(timestamp: number): string {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -217,13 +216,11 @@ function formatTimestamp(timestamp: number): string {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   cursor: pointer;
 }
 
 .event-count {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   margin-left: auto;
@@ -241,7 +238,6 @@ function formatTimestamp(timestamp: number): string {
   align-items: baseline;
   gap: var(--space-2);
   padding: var(--space-1) 0;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   border-bottom: 1px solid var(--border-dim, rgba(255, 255, 255, 0.05));
 }

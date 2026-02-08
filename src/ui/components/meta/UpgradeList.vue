@@ -193,7 +193,6 @@ function handlePurchase(upgradeId: string) {
 }
 
 .tab-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;

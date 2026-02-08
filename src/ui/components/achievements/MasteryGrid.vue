@@ -276,7 +276,6 @@ const metaAchievements = computed(() => {
 }
 
 .cell-icon {
-  font-family: var(--font-mono);
   font-weight: bold;
   font-size: var(--text-base);
   width: 20px;

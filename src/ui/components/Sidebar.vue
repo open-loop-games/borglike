@@ -265,7 +265,6 @@ const nemesis = computed(() => {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -311,7 +310,6 @@ const nemesis = computed(() => {
   color: var(--text-dim);
   margin: 0 0 var(--space-2);
   letter-spacing: 1px;
-  font-family: var(--font-mono);
 }
 
 .stat-rows {
@@ -324,7 +322,6 @@ const nemesis = computed(() => {
   justify-content: space-between;
   align-items: baseline;
   padding: 2px 0;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 

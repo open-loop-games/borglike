@@ -291,7 +291,6 @@ function handleUnlock() {
 }
 
 .unlock-name {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
@@ -354,7 +353,6 @@ function handleUnlock() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -410,7 +408,6 @@ function handleUnlock() {
 }
 
 .tooltip-name {
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   font-weight: bold;
   color: var(--text-primary);
@@ -434,7 +431,6 @@ function handleUnlock() {
   padding: var(--space-2);
   background: var(--highlight);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -463,7 +459,6 @@ function handleUnlock() {
 }
 
 .tooltip-value {
-  font-family: var(--font-mono);
   color: var(--text-primary);
 }
 
@@ -483,7 +478,6 @@ function handleUnlock() {
 }
 
 .abilities-header {
-  font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--purple);
   text-transform: uppercase;
@@ -502,7 +496,6 @@ function handleUnlock() {
 }
 
 .ability-name {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--cyan);
@@ -521,7 +514,6 @@ function handleUnlock() {
 }
 
 .behavior-header {
-  font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--purple);
   text-transform: uppercase;

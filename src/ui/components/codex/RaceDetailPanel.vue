@@ -298,7 +298,6 @@ h4 {
 .stat-label {
   width: 32px;
   font-size: var(--text-base);
-  font-family: var(--font-mono);
   color: var(--text-secondary);
 }
 
@@ -337,7 +336,6 @@ h4 {
 .stat-value {
   width: 24px;
   font-size: var(--text-base);
-  font-family: var(--font-mono);
   text-align: right;
 }
 
@@ -363,7 +361,6 @@ h4 {
 
 .property-value {
   color: var(--text-primary);
-  font-family: var(--font-mono);
 }
 
 .property-value.penalty {
@@ -416,7 +413,6 @@ h4 {
 }
 
 .history-value {
-  font-family: var(--font-mono);
 }
 
 .history-value.wins {

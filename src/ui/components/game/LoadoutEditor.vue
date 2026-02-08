@@ -727,7 +727,6 @@ function handleCancel() {
 }
 
 .editor-header h2 {
-  font-family: var(--font-mono);
   font-size: var(--text-xl);
   font-weight: bold;
   color: var(--text-primary);
@@ -735,7 +734,6 @@ function handleCancel() {
 }
 
 .slot-badge {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
   background: var(--highlight);
@@ -774,7 +772,6 @@ function handleCancel() {
 }
 
 .selection-section h3 {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -793,7 +790,6 @@ function handleCancel() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -825,13 +821,11 @@ function handleCancel() {
 }
 
 .pool-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
 }
 
 .pool-tag {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   padding: 2px var(--space-2);
   background: rgba(99, 102, 241, 0.1);
@@ -852,7 +846,6 @@ function handleCancel() {
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-3);
   margin-bottom: var(--space-2);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -897,7 +890,6 @@ function handleCancel() {
 }
 
 .ability-tag {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   padding: 3px 6px;
   background: rgba(6, 182, 212, 0.1);
@@ -953,7 +945,6 @@ function handleCancel() {
 }
 
 .personality-name {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);
@@ -981,7 +972,6 @@ function handleCancel() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   cursor: pointer;
@@ -999,7 +989,6 @@ function handleCancel() {
 }
 
 .bonuses-section h3 {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -1026,13 +1015,11 @@ function handleCancel() {
 }
 
 .bonus-name {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
 .bonus-value {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--green);
@@ -1040,7 +1027,6 @@ function handleCancel() {
 }
 
 .no-bonuses {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
@@ -1058,7 +1044,6 @@ function handleCancel() {
 }
 
 .config-performance h4 {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -1079,7 +1064,6 @@ function handleCancel() {
 }
 
 .perf-value {
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   font-weight: bold;
   color: var(--cyan);
@@ -1090,7 +1074,6 @@ function handleCancel() {
 }
 
 .perf-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -1110,7 +1093,6 @@ function handleCancel() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-md);
   color: var(--text-secondary);
   cursor: pointer;
@@ -1130,7 +1112,6 @@ function handleCancel() {
   background: var(--indigo);
   border: 1px solid var(--indigo);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-md);
   font-weight: bold;
   color: white;
@@ -1173,7 +1154,6 @@ function handleCancel() {
 }
 
 .slot-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -1184,7 +1164,6 @@ function handleCancel() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
   cursor: pointer;
@@ -1237,7 +1216,6 @@ function handleCancel() {
 }
 
 .control-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
 }
@@ -1245,7 +1223,6 @@ function handleCancel() {
 .control-hint {
   width: 100%;
   order: 3;
-  font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--text-dim);
   font-style: italic;
@@ -1262,7 +1239,6 @@ function handleCancel() {
   background: var(--border);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-dim);
@@ -1292,7 +1268,6 @@ function handleCancel() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-secondary);
@@ -1311,7 +1286,6 @@ function handleCancel() {
 }
 
 .no-controls {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   font-style: italic;
@@ -1344,7 +1318,6 @@ function handleCancel() {
 }
 
 .slider-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   min-width: 90px;
@@ -1361,7 +1334,6 @@ function handleCancel() {
 }
 
 .slider-value {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--cyan);
   min-width: 50px;
@@ -1375,7 +1347,6 @@ function handleCancel() {
   position: absolute;
   right: 0;
   top: -2px;
-  font-family: var(--font-mono);
 }
 
 .personality-summary {
@@ -1399,7 +1370,6 @@ function handleCancel() {
 }
 
 .depth-gate-value {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-secondary);
@@ -1422,7 +1392,6 @@ function handleCancel() {
 .depth-gate-labels {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
 }
@@ -1448,7 +1417,6 @@ function handleCancel() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
   text-align: center;
@@ -1460,12 +1428,10 @@ function handleCancel() {
 }
 
 .range-sep {
-  font-family: var(--font-mono);
   color: var(--text-dim);
 }
 
 .range-hint {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
 }

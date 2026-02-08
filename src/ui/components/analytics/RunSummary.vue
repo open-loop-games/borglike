@@ -366,7 +366,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .summary-header h2 {
-  font-family: var(--font-mono);
   font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--text-primary);
@@ -374,7 +373,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .new-best-badge {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
   background: rgba(139, 92, 246, 0.2);
@@ -431,7 +429,6 @@ const hasExtendedStats = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
 }
 
@@ -463,7 +460,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .grade-display {
-  font-family: var(--font-mono);
   font-size: var(--text-display);
   font-weight: bold;
   line-height: 1;
@@ -471,7 +467,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .grade-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -493,7 +488,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .stat-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -502,7 +496,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .stat-value {
-  font-family: var(--font-mono);
   font-size: var(--text-4xl);
   font-weight: bold;
   color: var(--text-primary);
@@ -527,7 +520,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .stat-diff {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   margin-top: var(--space-2);
 }
@@ -552,7 +544,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .death-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -561,7 +552,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .death-text {
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   color: var(--red);
 }
@@ -582,7 +572,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .essence-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -595,7 +584,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .essence-value {
-  font-family: var(--font-mono);
   font-size: var(--text-5xl);
   font-weight: bold;
   color: var(--purple);
@@ -608,7 +596,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .essence-diff {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -639,7 +626,6 @@ const hasExtendedStats = computed(() => {
   gap: var(--space-2);
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   cursor: pointer;
   transition: all 0.2s;
@@ -680,7 +666,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .section-title {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -703,13 +688,11 @@ const hasExtendedStats = computed(() => {
 }
 
 .combat-label {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
 }
 
 .combat-value {
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   font-weight: bold;
   color: var(--text-primary);
@@ -748,7 +731,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .source-name {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-secondary);
 }
@@ -766,7 +748,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .source-damage {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--text-primary);

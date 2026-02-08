@@ -158,7 +158,6 @@ const categoryColor = computed(() => {
 }
 
 .achievement-icon {
-  font-family: var(--font-mono);
   font-size: var(--text-4xl);
   font-weight: bold;
   width: 40px;
@@ -220,7 +219,6 @@ const categoryColor = computed(() => {
 }
 
 .reward-value {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--purple);
@@ -283,7 +281,6 @@ const categoryColor = computed(() => {
   background: var(--purple);
   border: none;
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   font-weight: bold;
   color: white;

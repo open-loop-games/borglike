@@ -100,7 +100,6 @@ const emit = defineEmits<{
 }
 
 .help-header h2 {
-  font-family: var(--font-mono);
   font-size: var(--text-2xl);
   font-weight: bold;
   color: var(--purple);
@@ -142,7 +141,6 @@ const emit = defineEmits<{
 }
 
 .help-section h3 {
-  font-family: var(--font-mono);
   font-size: var(--text-md);
   color: var(--cyan);
   text-transform: uppercase;
@@ -209,7 +207,6 @@ const emit = defineEmits<{
 }
 
 .control-key {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--amber);
   min-width: 100px;

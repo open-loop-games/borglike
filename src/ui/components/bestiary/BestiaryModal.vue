@@ -224,7 +224,6 @@ function closeDetail() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
   cursor: pointer;
@@ -241,7 +240,6 @@ function closeDetail() {
   background: var(--highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
 }

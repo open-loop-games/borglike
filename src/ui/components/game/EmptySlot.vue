@@ -97,7 +97,6 @@ function handleOpenLoadout() {
 }
 
 .slot-number {
-  font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
@@ -120,7 +119,6 @@ function handleOpenLoadout() {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  font-family: var(--font-mono);
   font-size: var(--text-base);
 }
 
@@ -146,7 +144,6 @@ function handleOpenLoadout() {
   color: var(--text-primary);
   padding: var(--space-3) var(--space-6);
   font-size: var(--text-lg);
-  font-family: var(--font-mono);
   cursor: pointer;
   border-radius: var(--radius-md);
   transition: all 0.2s;
@@ -176,7 +173,6 @@ function handleOpenLoadout() {
   color: var(--text-dim);
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-base);
-  font-family: var(--font-mono);
   cursor: pointer;
   border-radius: var(--radius-md);
   transition: all 0.2s;
@@ -195,7 +191,6 @@ function handleOpenLoadout() {
 }
 
 .deco-char {
-  font-family: var(--font-mono);
   font-size: 120px;
   color: var(--indigo);
 }
