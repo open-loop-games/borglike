@@ -10,7 +10,7 @@
  */
 
 import type { DungeonLevel, Point } from '../types'
-import type { DangerGrid } from './types'
+import type { DangerGrid, FlowResult } from './types'
 import { getTile } from '../dungeon'
 
 // ============================================================================
@@ -34,12 +34,6 @@ export interface FlowGrid {
   height: number
 }
 
-/** Flow computation result with metadata */
-export interface FlowResult {
-  goal: Point
-  costs: FlowGrid
-  computedAt: number // Turn when computed
-}
 
 /** Danger-grid avoidance for flow computation (replaces Set<string> avoid) */
 export interface FlowAvoidance {

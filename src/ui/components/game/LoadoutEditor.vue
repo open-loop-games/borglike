@@ -4,7 +4,9 @@ import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById } from '@game/data/boosters'
 import { races, type Race } from '@game/data/races'
 import { classes, type GameClass } from '@game/data/classes'
-import type { PersonalityConfig } from '@game/bot/types'
+import { getClassTier, type PersonalityConfig } from '@game/bot/types'
+import { PERSONALITY_DISPLAY, type Personality } from '@/types/events'
+import { computeUpgradeBonuses, getUpgradeTier } from '@game/upgrade-effects'
 import {
   PARAMETER_INFO,
   SLIDER_UPGRADE_GATES,
@@ -16,8 +18,6 @@ import PanelFrame from '../common/PanelFrame.vue'
 const props = defineProps<{
   slot: number
 }>()
-
-type Personality = 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
 
 const emit = defineEmits<{
   start: [config: { race: string; class: string; personality: Personality }]
@@ -47,6 +47,25 @@ const surfRangeEnd = ref(savedConfig.surfLevelRange?.end ?? 0)
 
 // Depth gate offset
 const depthGateOffset = ref(savedConfig.depthGateOffset ?? 0)
+
+// Update depth gate to class default when switching class
+watch(selectedClass, (cls) => {
+  if (cls === 'Random') {
+    depthGateOffset.value = 0
+    return
+  }
+  const tier = getClassTier(cls.toLowerCase())
+  if (tier === 'TANK') {
+    depthGateOffset.value = -4
+  } else if (tier === 'SQUISHY') {
+    const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
+    const upgradeTier = getUpgradeTier(bonuses)
+    const offsets = [5, 4, 3, 1, 0] // none → early → mid → late → full
+    depthGateOffset.value = offsets[upgradeTier] ?? 5
+  } else {
+    depthGateOffset.value = 0
+  }
+})
 
 // Booster slots - initialized from saved config
 const boosterSlot0 = ref(savedConfig.boosters[0])
@@ -99,12 +118,9 @@ function getBoosterInfo(id: string | null) {
   return getBoosterById(id)
 }
 
-const personalities = [
-  { id: 'cautious', name: 'Cautious', desc: 'Retreats early, uses items freely' },
-  { id: 'aggressive', name: 'Aggressive', desc: 'Fights to low HP, hoards items' },
-  { id: 'greedy', name: 'Greedy', desc: 'Prioritizes gold/items over safety' },
-  { id: 'speedrunner', name: 'Speedrunner', desc: 'Beelines for stairs' },
-] as const
+const personalities = (Object.entries(PERSONALITY_DISPLAY) as [Personality, typeof PERSONALITY_DISPLAY[Personality]][])
+  .filter(([id]) => id !== 'custom')
+  .map(([id, p]) => ({ id, name: p.name, desc: p.desc }))
 
 // Custom personality — unlocked sliders based on bot upgrade levels
 const unlockedSliders = computed(() => {
@@ -194,8 +210,6 @@ const activeBonuses = computed(() => {
 // Per-slot bot controls - toggles and active levels
 const globalCaps = computed(() => progression.botCapabilities)
 const slotConfig = computed(() => progression.getSlotConfig(props.slot))
-const farmingEnabled = computed(() => slotConfig.value.toggles.farming)
-const sweepEnabled = computed(() => slotConfig.value.toggles.sweepEnabled)
 const activeSweepLevel = computed(() => slotConfig.value.activeSweepLevel ?? globalCaps.value.sweep)
 const activeSurfLevel = computed(() => slotConfig.value.activeSurfLevel ?? globalCaps.value.surf)
 
@@ -212,17 +226,8 @@ const depthGateClass = computed(() => {
   return ''
 })
 
-function toggleFarming() {
-  progression.toggleBotCapability(props.slot, 'farming')
-}
-
-function toggleSweep() {
-  const config = progression.getSlotConfig(props.slot)
-  progression.saveSlotConfig(props.slot, {
-    ...config,
-    toggles: { ...config.toggles, sweepEnabled: !config.toggles.sweepEnabled },
-  })
-}
+const sweepLabels: Record<number, string> = { 1: '60%', 2: '75%', 3: '90%' }
+const surfLabels: Record<number, string> = { 1: '5x5', 2: '9x9', 3: '21x21' }
 
 function setActiveSweep(level: number) {
   progression.setActiveGradedLevel(props.slot, 'sweep', level)
@@ -588,36 +593,12 @@ function handleCancel() {
                 <span>Cautious</span>
               </div>
             </div>
-            <!-- Farming Toggle -->
-            <div v-if="globalCaps.farming" class="control-row">
-              <span class="control-label">Farming</span>
-              <button class="toggle-btn" :class="{ active: farmingEnabled }" @click="toggleFarming">
-                {{ farmingEnabled ? 'ON' : 'OFF' }}
-              </button>
-            </div>
-            <!-- Sweep Toggle + Level -->
+            <!-- Sweep Farming -->
             <div v-if="globalCaps.sweep > 0" class="control-row">
-              <span class="control-label">Sweep</span>
-              <span class="control-hint">Re-explore previous floors to trigger spawns</span>
-              <div class="control-actions">
-                <button class="toggle-btn" :class="{ active: sweepEnabled }" @click="toggleSweep">
-                  {{ sweepEnabled ? 'ON' : 'OFF' }}
-                </button>
-                <div v-if="sweepEnabled" class="level-selector">
-                  <button
-                    v-for="n in globalCaps.sweep"
-                    :key="n"
-                    class="level-btn"
-                    :class="{ selected: activeSweepLevel === n }"
-                    @click="setActiveSweep(n)"
-                  >
-                    L{{ n }}
-                  </button>
-                </div>
-              </div>
+              <span class="control-label">Sweep Farming</span>
+              <span class="control-hint">Re-explore previous floors to respawn monsters and farm</span>
             </div>
-            <!-- Sweep Level Range -->
-            <div v-if="globalCaps.sweep > 0 && sweepEnabled" class="range-row">
+            <div v-if="globalCaps.sweep > 0" class="range-row">
               <span class="control-label">Sweep Range</span>
               <div class="range-inputs">
                 <input
@@ -639,22 +620,22 @@ function handleCancel() {
                 />
               </div>
               <span class="range-hint">Char levels (0 = disabled)</span>
-            </div>
-            <!-- Surf Level -->
-            <div v-if="globalCaps.surf > 0" class="control-row">
-              <span class="control-label">Surf</span>
-              <span class="control-hint">Farm tethered near stairs, flip depths for respawns</span>
               <div class="level-selector">
                 <button
-                  v-for="n in globalCaps.surf"
+                  v-for="n in globalCaps.sweep"
                   :key="n"
                   class="level-btn"
-                  :class="{ selected: activeSurfLevel === n }"
-                  @click="setActiveSurf(n)"
+                  :class="{ selected: activeSweepLevel === n }"
+                  @click="setActiveSweep(n)"
                 >
-                  L{{ n }}
+                  {{ sweepLabels[n] }}
                 </button>
               </div>
+            </div>
+            <!-- Surf Farming -->
+            <div v-if="globalCaps.surf > 0" class="control-row">
+              <span class="control-label">Surf Farming</span>
+              <span class="control-hint">Flip depths for respawns, farm near stairs. Takes priority over sweep farming.</span>
             </div>
             <!-- Surf Level Range -->
             <div v-if="globalCaps.surf > 0" class="range-row">
@@ -679,6 +660,17 @@ function handleCancel() {
                 />
               </div>
               <span class="range-hint">Char levels (0-0 = always)</span>
+              <div class="level-selector">
+                <button
+                  v-for="n in globalCaps.surf"
+                  :key="n"
+                  class="level-btn"
+                  :class="{ selected: activeSurfLevel === n }"
+                  @click="setActiveSurf(n)"
+                >
+                  {{ surfLabels[n] }}
+                </button>
+              </div>
             </div>
             <!-- No controls message -->
             <div
@@ -1259,6 +1251,7 @@ function handleCancel() {
 .level-selector {
   display: flex;
   gap: 2px;
+  margin-left: auto;
 }
 
 .level-btn {

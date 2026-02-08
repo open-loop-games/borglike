@@ -2,12 +2,11 @@
 import { computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById } from '@game/data/boosters'
+import type { Personality } from '@/types/events'
 
 const props = defineProps<{
   slot: number
 }>()
-
-type Personality = 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
 
 const emit = defineEmits<{
   startRun: [slot: number, config?: { race: string; class: string; personality: Personality }]

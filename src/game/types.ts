@@ -609,8 +609,8 @@ export function isUniqueAlive(state: UniqueState, name: string): boolean {
 // GAME STATE
 // ============================================================================
 
-/** Current run statistics */
-export interface RunStats {
+/** In-engine run statistics accumulator */
+export interface RunTally {
   kills: number
   goldCollected: number
   goldSpent: number
@@ -774,7 +774,7 @@ export interface GameState {
   isVictory: boolean
 
   // Statistics
-  stats: RunStats
+  stats: RunTally
 
   // Message log (recent messages)
   messages: GameMessage[]
@@ -943,15 +943,6 @@ export type BotPersonality =
   | 'speedrunner' // Beelines for stairs
   | 'custom' // Player-tuned sliders
 
-/** Bot decision context */
-export interface BotContext {
-  game: GameState
-  personality: BotPersonality
-  visibleMonsters: Monster[]
-  visibleItems: GroundItem[]
-  knownStairs: Point | null
-  unexploredTiles: Point[]
-}
 
 // ============================================================================
 // BALANCE OVERRIDES (for A/B testing)

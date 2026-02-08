@@ -213,12 +213,16 @@ function handlePurchase() {
 
 .purchase-btn:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
 }
 
 .cost-icon {
   color: var(--purple);
   font-size: var(--text-base);
+}
+
+.cannot-afford .cost-icon {
+  opacity: 0.5;
+  filter: saturate(0.5);
 }
 
 .purchase-btn:not(:disabled):hover .cost-icon {

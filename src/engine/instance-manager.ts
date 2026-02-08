@@ -5,7 +5,7 @@
  * to the UI stores.
  */
 
-import { useRunsStore, type DisplayItem, type EquipSlot } from '@/stores/runs'
+import { useRunsStore, type DisplayItem } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore } from '@/stores/settings'
 import { useFeedStore } from '@/stores/feed'
@@ -21,6 +21,7 @@ import {
   type BotPersonality,
   type Item,
   type BotState,
+  type EquipSlot,
 } from '@/game'
 import { randomInt } from '@game/rng'
 import { getRaceById, getClassById } from '@game/data'
@@ -33,7 +34,7 @@ import {
   MAX_CATCHUP_MS,
   type CatchUpSlot,
 } from '@/engine/catch-up'
-import type { RunConfig } from '@/types'
+import type { RunRequest } from '@/types'
 import type { MinionType } from '@/game'
 
 interface GameInstance {
@@ -48,6 +49,9 @@ const instances = new Map<string, GameInstance>()
 
 // Track pending auto-restart timeouts by slot (to cancel on manual stop)
 const autoRestartTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
+
+// Slots where the loadout editor is open — suppresses auto-restart
+const configuringSlots = new Set<number>()
 
 // Background / pause tracking
 let lastTickTime = performance.now()
@@ -166,7 +170,7 @@ function toDisplayItem(item: Item): DisplayItem {
 /**
  * Start a new run in the given slot
  */
-export function startRun(slot: number, config?: Partial<RunConfig>): string {
+export function startRun(slot: number, config?: Partial<RunRequest>): string {
   const runs = useRunsStore()
   const progression = useProgressionStore()
 
@@ -203,7 +207,7 @@ export function startRun(slot: number, config?: Partial<RunConfig>): string {
   const personality: BotPersonality =
     (config?.personality as BotPersonality) || settings.settings.defaultPersonality
 
-  const runConfig: RunConfig = {
+  const runConfig: RunRequest = {
     race: raceName,
     class: className,
     personality,
@@ -841,7 +845,7 @@ function handleGameEndSync(runId: string, result: RunResult, slot: number): Prom
 async function handleGameEnd(
   runId: string,
   result: RunResult,
-  _config: RunConfig,
+  _config: RunRequest,
   slot: number
 ): Promise<void> {
   const savePromise = handleGameEndSync(runId, result, slot)
@@ -858,6 +862,7 @@ function checkAutoRestart(slot: number): void {
   const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
   if (!bonuses.hasAutoRestart) return
   if (!settings.settings.autoRestart) return
+  if (configuringSlots.has(slot)) return
 
   // Cancel any existing timeout for this slot (prevents duplicates)
   const existingTimeout = autoRestartTimeouts.get(slot)
@@ -893,6 +898,21 @@ function checkAutoRestart(slot: number): void {
 
   // Track the timeout so it can be cancelled if needed
   autoRestartTimeouts.set(slot, timeoutId)
+}
+
+/** Mark a slot as being configured (suppresses auto-restart) */
+export function setSlotConfiguring(slot: number, configuring: boolean): void {
+  if (configuring) {
+    configuringSlots.add(slot)
+    // Cancel any pending auto-restart for this slot
+    const pending = autoRestartTimeouts.get(slot)
+    if (pending) {
+      clearTimeout(pending)
+      autoRestartTimeouts.delete(slot)
+    }
+  } else {
+    configuringSlots.delete(slot)
+  }
 }
 
 /**
@@ -998,7 +1018,7 @@ function createRunForCatchUp(
   progression.setActiveBooster(0, slotConfig.boosters[0])
   progression.setActiveBooster(1, slotConfig.boosters[1])
 
-  const runConfig: RunConfig = { race: raceName, class: className, personality }
+  const runConfig: RunRequest = { race: raceName, class: className, personality }
   const runId = runs.createRun(slot, runConfig)
 
   const bonuses = computeUpgradeBonuses(progression.upgradeLevels)

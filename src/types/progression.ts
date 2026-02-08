@@ -3,6 +3,7 @@
  */
 
 import type { PersonalityConfig } from '@game/bot/types'
+import type { Personality } from './events'
 
 export interface Currency {
   essence: number // Primary currency from runs
@@ -92,7 +93,7 @@ export interface SurfLevelRange {
 export interface SlotConfig {
   race: string
   class: string
-  personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
+  personality: Personality
   boosters: [string | null, string | null]
   // Per-slot bot toggles (on/off overrides for globally unlocked capabilities)
   toggles: BotToggles

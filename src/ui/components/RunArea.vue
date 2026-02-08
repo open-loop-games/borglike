@@ -2,7 +2,8 @@
 import { ref, computed } from 'vue'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
-import { startRun, killRun } from '@/engine/instance-manager'
+import { startRun, killRun, setSlotConfiguring } from '@/engine/instance-manager'
+import type { Personality } from '@/types/events'
 import RunPanel from './RunPanel.vue'
 import PanelFrame from './common/PanelFrame.vue'
 import EmptySlot from './game/EmptySlot.vue'
@@ -67,10 +68,11 @@ function handleStartRun(
   config?: {
     race: string
     class: string
-    personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
+    personality: Personality
   }
 ) {
   try {
+    setSlotConfiguring(slot, false)
     startRun(slot, config)
     loadoutSlot.value = null
   } catch (err) {
@@ -79,17 +81,19 @@ function handleStartRun(
 }
 
 function handleOpenLoadout(slot: number) {
+  setSlotConfiguring(slot, true)
   loadoutSlot.value = slot
 }
 
 function handleCloseLoadout() {
+  if (loadoutSlot.value !== null) setSlotConfiguring(loadoutSlot.value, false)
   loadoutSlot.value = null
 }
 
 function handleLoadoutStart(config: {
   race: string
   class: string
-  personality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner' | 'custom'
+  personality: Personality
 }) {
   if (loadoutSlot.value !== null) {
     handleStartRun(loadoutSlot.value, config)
@@ -128,6 +132,7 @@ function handleDismiss(slot: number) {
 }
 
 function handleConfigure(slot: number) {
+  setSlotConfiguring(slot, true)
   const run = runs.getRunBySlot(slot)
   if (run) {
     runs.removeRun(run.id)

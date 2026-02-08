@@ -118,15 +118,43 @@ src/
 - `docs/PERFORMANCE.md` - Performance profiling and optimization
 - `TODO.md` - Current tasks and technical debt
 
-## Versioning & Releases
+## Git & Release Workflow
+
+**Remotes:**
+- `gitea` (primary) - Local Gitea, daily development target, configured as `remote.pushDefault`
+- `github` (public) - https://github.com/Namahanna/borglike.git, versioned releases only, tag-push restricted
+
+**Daily workflow:**
+```bash
+git push              # → gitea (default), all branches
+git push gitea        # → explicit if needed
+```
+
+**Release workflow (manual control):**
+```bash
+pnpm version patch              # → bump package.json, create git tag
+git push gitea main --follow-tags  # → push to local with tags
+git push github v0.1.x          # → push ONLY the tag to public
+```
+
+**Protection:**
+- `gitea` accepts all pushes (branches + tags)
+- `github` is restricted to tags only via `remote.github.push` refspec
+- Attempting `git push github main` will fail by design
+
+**GitHub Pages:** Auto-deploys when tag matching `v*` is pushed (see `.github/workflows/deploy.yml`). No branch-based deploys.
+
+**Agent guidance:**
+- Default `git push` always goes to gitea
+- NEVER push branches to github
+- When asked to "release" or "publish version", follow the three-step release workflow above
+- User decides when things go public
+
+## Versioning
 
 **Single source of truth:** `package.json` version, injected as `__APP_VERSION__` via Vite `define`. Used for save format version, UI display, and exports. Declared in `src/env.d.ts`.
 
-**Bump version:** `pnpm version patch|minor|major` — updates package.json + creates git tag.
-
 **Save format:** Currently coupled to app version (`SAVE_VERSION = __APP_VERSION__`). Old saves warn on mismatch but still load. No migration system — break saves freely pre-1.0.
-
-**Deploy:** GitHub Pages via `.github/workflows/deploy.yml`, triggers on push to main. Switch to tag-based (`on: push: tags: ['v*']`) once public.
 
 ## Development Notes
 

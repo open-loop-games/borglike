@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, watchEffect, ref } from 'vue'
-import type { ActiveRun, DisplayItem, EquipSlot } from '@/stores/runs'
+import type { ActiveRun, DisplayItem } from '@/stores/runs'
+import type { EquipSlot } from '@game/types'
+import { PERSONALITY_DISPLAY } from '@/types/events'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore, type PanelStates } from '@/stores/settings'
@@ -42,6 +44,8 @@ const RESIST_CONFIG: Record<string, { label: string; color: string }> = {
   DARK: { label: 'Dk', color: '#6366f1' },
   DRAIN: { label: 'Dr', color: '#a855f7' },
 }
+
+const personalityDisplay = computed(() => PERSONALITY_DISPLAY[props.run.config.personality ?? 'cautious'])
 
 // Computed: active resistances for display
 const activeResistances = computed(() => {
@@ -242,6 +246,7 @@ function formatGoal(goal: string | undefined): string {
         <div class="run-identity">
           <span class="run-class">{{ run.config.class }}</span>
           <span class="run-race">{{ run.config.race }}</span>
+          <span class="run-personality" :style="{ color: personalityDisplay.color }">{{ personalityDisplay.label }}</span>
         </div>
       </div>
 
@@ -634,6 +639,11 @@ function formatGoal(goal: string | undefined): string {
 .run-race {
   color: var(--cyan);
   text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+}
+
+.run-personality {
+  font-size: var(--text-base);
+  opacity: 0.7;
 }
 
 .header-center {

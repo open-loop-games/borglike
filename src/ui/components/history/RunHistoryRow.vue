@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { PERSONALITY_DISPLAY } from '@/types/events'
 import type { RunStats } from '@/types/progression'
 
 interface Props {
@@ -15,26 +16,13 @@ const emit = defineEmits<{
   toggle: []
 }>()
 
-// Personality abbreviation mapping
-const personalityAbbrev: Record<string, string> = {
-  cautious: 'CAU',
-  aggressive: 'AGG',
-  greedy: 'GRD',
-  speedrunner: 'SPD',
-}
-
-const personalityDisplay = computed(() => {
+const personalityInfo = computed(() => {
   if (!props.run.personality) return null
-  const abbrev =
-    personalityAbbrev[props.run.personality] ?? props.run.personality.slice(0, 3).toUpperCase()
-  return abbrev
+  return PERSONALITY_DISPLAY[props.run.personality as keyof typeof PERSONALITY_DISPLAY] ?? null
 })
 
-// Personality full name for tooltip
-const personalityTooltip = computed(() => {
-  if (!props.run.personality) return ''
-  return props.run.personality.charAt(0).toUpperCase() + props.run.personality.slice(1)
-})
+const personalityDisplay = computed(() => personalityInfo.value?.label ?? null)
+const personalityTooltip = computed(() => personalityInfo.value?.name ?? '')
 
 // Full death cause for tooltip
 const fullDeathCause = computed(() => {

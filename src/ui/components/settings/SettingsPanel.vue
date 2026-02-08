@@ -166,32 +166,6 @@ function cancelReset() {
 
           <div class="setting-row">
             <div class="setting-info">
-              <span class="setting-label">Default Personality</span>
-              <span class="setting-desc">Bot behavior for new runs</span>
-            </div>
-            <select
-              :value="settingsStore.settings.defaultPersonality"
-              class="setting-select"
-              @change="
-                settingsStore.updateSetting(
-                  'defaultPersonality',
-                  ($event.target as HTMLSelectElement).value as
-                    | 'cautious'
-                    | 'aggressive'
-                    | 'greedy'
-                    | 'speedrunner'
-                )
-              "
-            >
-              <option value="cautious">Cautious</option>
-              <option value="aggressive">Aggressive</option>
-              <option value="greedy">Greedy</option>
-              <option value="speedrunner">Speedrunner</option>
-            </select>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
               <span class="setting-label">Turbo by Default</span>
               <span class="setting-desc">Start new runs in turbo mode</span>
             </div>

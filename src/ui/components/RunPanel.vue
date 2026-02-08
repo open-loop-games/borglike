@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted, computed } from 'vue'
 import type { ActiveRun } from '@/stores/runs'
+import { PERSONALITY_DISPLAY } from '@/types/events'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById } from '@game/data/boosters'
@@ -19,21 +20,7 @@ const activeBoosters = computed(() => {
   return ids.map((id) => getBoosterById(id)).filter((b) => b !== undefined)
 })
 
-// Personality display
-const personalityDisplay = computed(() => {
-  const p = props.run.config.personality
-  switch (p) {
-    case 'aggressive':
-      return { label: 'AGG', color: 'var(--red)' }
-    case 'greedy':
-      return { label: 'GRD', color: 'var(--amber)' }
-    case 'speedrunner':
-      return { label: 'SPD', color: 'var(--cyan)' }
-    case 'cautious':
-    default:
-      return { label: 'CAU', color: 'var(--blue)' }
-  }
-})
+const personalityDisplay = computed(() => PERSONALITY_DISPLAY[props.run.config.personality ?? 'cautious'])
 
 const emit = defineEmits<{
   expand: []

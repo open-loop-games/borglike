@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { RunConfig, AngbandEvent } from '../types'
+import type { RunRequest, AngbandEvent } from '../types'
+import type { EquipSlot } from '@game/types'
 import type { RunStats } from '@/types/progression'
 import { useSettingsStore } from './settings'
 
@@ -35,7 +36,7 @@ export type DisplayResistances = Partial<Record<string, number>>
 export interface ActiveRun {
   id: string
   slot: number
-  config: RunConfig
+  config: RunRequest
   state: 'starting' | 'running' | 'dead'
   turbo: boolean
   startTime: number
@@ -98,18 +99,6 @@ export interface DisplayItem {
   tier: number
 }
 
-export type EquipSlot =
-  | 'weapon'
-  | 'bow'
-  | 'armor'
-  | 'shield'
-  | 'helm'
-  | 'gloves'
-  | 'boots'
-  | 'ring1'
-  | 'ring2'
-  | 'amulet'
-  | 'light'
 
 function createEmptyGrid(): GridCell[][] {
   return Array.from({ length: 24 }, () =>
@@ -131,7 +120,7 @@ export const useRunsStore = defineStore('runs', () => {
     return getRunBySlot(focusedSlot.value)
   })
 
-  function createRun(slot: number, config: RunConfig): string {
+  function createRun(slot: number, config: RunRequest): string {
     const id = `run-${Date.now()}-${slot}`
     const settings = useSettingsStore()
 

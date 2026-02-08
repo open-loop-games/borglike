@@ -13,7 +13,7 @@ import type {
   GameAction,
   GameEvent,
   ActionResult,
-  RunStats,
+  RunTally,
   FountainState,
   AltarState,
   TrapState,
@@ -142,7 +142,7 @@ export function createGame(config: RunConfig): GameState {
   )
 
   // Initialize run stats
-  const stats: RunStats = {
+  const stats: RunTally = {
     kills: 0,
     goldCollected: 0,
     goldSpent: 0,

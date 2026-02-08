@@ -4,7 +4,7 @@
  * Utility functions for incrementing and tracking run statistics.
  */
 
-import type { RunStats } from './types'
+import type { RunTally } from './types'
 
 /**
  * Increment a numeric value in a Record by key
@@ -18,7 +18,7 @@ export function incrementStat(record: Record<string, number>, key: string, amoun
  * Track spell usage (casts, damage, mana)
  */
 export function trackSpellUsage(
-  stats: RunStats,
+  stats: RunTally,
   spellName: string,
   damage: number,
   manaCost: number
@@ -34,7 +34,7 @@ export function trackSpellUsage(
 /**
  * Track ability usage (uses, damage)
  */
-export function trackAbilityUsage(stats: RunStats, abilityName: string, damage: number): void {
+export function trackAbilityUsage(stats: RunTally, abilityName: string, damage: number): void {
   if (!stats.abilityUsage[abilityName]) {
     stats.abilityUsage[abilityName] = { uses: 0, damage: 0 }
   }
@@ -45,7 +45,7 @@ export function trackAbilityUsage(stats: RunStats, abilityName: string, damage: 
 /**
  * Check and track close calls (HP dropped below 20% but survived)
  */
-export function checkCloseCall(stats: RunStats, hp: number, maxHp: number): void {
+export function checkCloseCall(stats: RunTally, hp: number, maxHp: number): void {
   if (hp > 0 && hp < maxHp * 0.2) {
     stats.closeCalls++
   }
