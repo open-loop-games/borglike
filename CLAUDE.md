@@ -121,34 +121,47 @@ src/
 ## Git & Release Workflow
 
 **Remotes:**
-- `gitea` (primary) - Local Gitea, daily development target, configured as `remote.pushDefault`
-- `github` (public) - https://github.com/Namahanna/borglike.git, versioned releases only, tag-push restricted
+- `gitea` (primary) - Local Gitea, daily development target, configured as `remote.pushDefault`, full 287+ commit history
+- `github` (public) - https://github.com/Namahanna/borglike.git, clean snapshot releases only (always 1 orphan commit)
+
+**Architecture:**
+```
+gitea/main:  [287 commits of full dev history] → [continuous development]
+github/main: [Single orphan commit: "Release v0.1.x"] ← always force-pushed
+```
 
 **Daily workflow:**
 ```bash
-git push              # → gitea (default), all branches
-git push gitea        # → explicit if needed
+git push              # → gitea (default), full history preserved
 ```
 
-**Release workflow (manual control):**
+**Release workflow (orphan snapshot):**
 ```bash
-pnpm version patch              # → bump package.json, create git tag
-git push gitea main --follow-tags  # → push to local with tags
-git push github v0.1.x          # → push ONLY the tag to public
+# 1. Bump version on main
+pnpm version patch                    # → creates v0.1.x tag on main (gitea history)
+git push gitea main --follow-tags     # → push to gitea with tag
+
+# 2. Create clean orphan for github
+git checkout --orphan github-release
+git add -A
+git commit -m "Release v0.1.x"
+git push github github-release:main --force
+
+# 3. Push tag and cleanup
+git push github v0.1.x
+git checkout main
+git branch -D github-release
 ```
 
-**Protection:**
-- `gitea` accepts all pushes (branches + tags)
-- `github` is restricted to tags only via `remote.github.push` refspec
-- Attempting `git push github main` will fail by design
+**Result:** GitHub always shows single clean snapshot commit, no development history. Tags tell the version story.
 
-**GitHub Pages:** Auto-deploys when tag matching `v*` is pushed (see `.github/workflows/deploy.yml`). No branch-based deploys.
+**GitHub Pages:** Auto-deploys when tag matching `v*` is pushed (see `.github/workflows/deploy.yml`).
 
 **Agent guidance:**
 - Default `git push` always goes to gitea
-- NEVER push branches to github
-- When asked to "release" or "publish version", follow the three-step release workflow above
-- User decides when things go public
+- NEVER push main branch or development history to github
+- When asked to "release" or "publish version", follow the 3-step orphan workflow above
+- GitHub is public-facing snapshot only, gitea preserves full lineage
 
 ## Versioning
 
