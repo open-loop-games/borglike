@@ -58,6 +58,7 @@ export interface GameSettings {
   // Gameplay
   defaultPersonality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
   autoRestart: boolean
+  pauseOnVictory: boolean
   turboByDefault: boolean
 
   // Feed
@@ -105,6 +106,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   fontFamily: 'jetbrains-mono',
   defaultPersonality: 'cautious',
   autoRestart: false,
+  pauseOnVictory: true,
   turboByDefault: true,
   feedVerbosity: 'normal',
   feedShowTimestamps: false,

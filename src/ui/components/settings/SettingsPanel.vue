@@ -207,6 +207,30 @@ function cancelReset() {
               <span class="toggle-slider"></span>
             </label>
           </div>
+
+          <div class="setting-row" :class="{ locked: !hasAutoRestartUpgrade }">
+            <div class="setting-info">
+              <span class="setting-label">Pause on Victory</span>
+              <span v-if="hasAutoRestartUpgrade" class="setting-desc"
+                >Suppress auto-restart when a run wins</span
+              >
+              <span v-else class="setting-desc locked-desc">Requires Auto Restart upgrade</span>
+            </div>
+            <label class="toggle">
+              <input
+                type="checkbox"
+                :checked="settingsStore.settings.pauseOnVictory"
+                :disabled="!hasAutoRestartUpgrade"
+                @change="
+                  settingsStore.updateSetting(
+                    'pauseOnVictory',
+                    ($event.target as HTMLInputElement).checked
+                  )
+                "
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </PanelFrame>
 
         <PanelFrame class="setting-group">

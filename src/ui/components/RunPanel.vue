@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted, computed } from 'vue'
 import type { ActiveRun } from '@/stores/runs'
+import { isRunEnded } from '@/stores/runs'
 import { PERSONALITY_DISPLAY } from '@/types/events'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
@@ -30,7 +31,11 @@ const emit = defineEmits<{
   configure: []
 }>()
 
-// Death screen computed values
+// Victory/death computed values
+const isVictory = computed(() => props.run.state === 'victory')
+const runEnded = computed(() => isRunEnded(props.run.state))
+const isFirstVictory = computed(() => isVictory.value && progression.totalVictories === 1)
+
 const deathCause = computed(() => {
   return props.run.finalStats?.deathCause || 'Unknown causes'
 })
@@ -83,7 +88,7 @@ function updateKillProgress() {
 }
 
 function startKillHold() {
-  if (props.run.state === 'dead') return
+  if (runEnded.value) return
   killHoldStart = Date.now()
   killHoldRafId = requestAnimationFrame(updateKillProgress)
 }
@@ -121,7 +126,7 @@ function handleDismiss() {
 </script>
 
 <template>
-  <div class="run-panel" :class="{ dead: run.state === 'dead' }">
+  <div class="run-panel" :class="{ dead: run.state === 'dead', victory: isVictory }">
     <header class="run-header">
       <div class="run-info">
         <span class="run-class">{{ run.config.class }}</span>
@@ -153,8 +158,8 @@ function handleDismiss() {
         </button>
         <button
           class="control-btn kill"
-          :class="{ holding: killHoldProgress > 0, disabled: run.state === 'dead' }"
-          :disabled="run.state === 'dead'"
+          :class="{ holding: killHoldProgress > 0, disabled: runEnded }"
+          :disabled="runEnded"
           title="Hold to kill run"
           @mousedown="startKillHold"
           @mouseup="cancelKillHold"
@@ -216,9 +221,10 @@ function handleDismiss() {
 
     <DungeonGrid :grid="run.grid" :cursor-x="run.cursorX" :cursor-y="run.cursorY" />
 
-    <div v-if="run.state === 'dead'" class="death-overlay">
+    <div v-if="runEnded" class="death-overlay" :class="{ 'victory-overlay': isVictory, 'flash-in': isVictory }">
+      <span v-if="isFirstVictory" class="first-victory-badge">FIRST VICTORY!</span>
       <span v-if="isNewBest" class="new-best-badge">NEW BEST!</span>
-      <span class="death-text">DEFEATED</span>
+      <span class="death-text" :class="{ 'victory-text': isVictory }">{{ isVictory ? 'VICTORIOUS' : 'DEFEATED' }}</span>
       <div class="death-character">
         <span class="char-race">{{ run.config.race }}</span>
         <span class="char-class">{{ run.config.class }}</span>
@@ -227,7 +233,7 @@ function handleDismiss() {
         }}</span>
       </div>
       <span class="death-cause">{{
-        killerMonster ? `Slain by ${killerMonster}` : deathCause
+        isVictory ? 'Morgoth, Lord of Darkness has been slain!' : killerMonster ? `Slain by ${killerMonster}` : deathCause
       }}</span>
       <div class="death-metrics">
         <div class="metric">
@@ -280,6 +286,10 @@ function handleDismiss() {
 
 .run-panel.dead {
   opacity: 0.7;
+}
+
+.run-panel.victory {
+  opacity: 0.85;
 }
 
 .run-header {
@@ -688,5 +698,45 @@ function handleDismiss() {
 .death-btn.dismiss:hover {
   background: var(--border);
   color: var(--text-primary);
+}
+
+/* Victory styles */
+.victory-overlay {
+  background: rgba(10, 10, 18, 0.92) !important;
+}
+
+.victory-text {
+  color: var(--amber) !important;
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 40px rgba(245, 158, 11, 0.4) !important;
+}
+
+.first-victory-badge {
+  font-size: var(--text-base);
+  font-weight: bold;
+  color: var(--amber);
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid var(--amber);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-md);
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  animation: pulse-best 1.5s ease-in-out infinite;
+}
+
+@keyframes flash-in {
+  0% {
+    background: rgba(245, 158, 11, 0.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    background: rgba(10, 10, 18, 0.92);
+  }
+}
+
+.flash-in {
+  animation: flash-in 0.8s ease-out;
 }
 </style>

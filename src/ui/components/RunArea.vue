@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
+import { isRunEnded } from '@/stores/runs'
 import { startRun, killRun, setSlotConfiguring } from '@/engine/instance-manager'
 import type { Personality } from '@/types/events'
 import RunPanel from './RunPanel.vue'
@@ -149,7 +150,7 @@ function handleDismissExpanded() {
 
 function handleKill(slot: number) {
   const run = runs.getRunBySlot(slot)
-  if (run && run.state !== 'dead') {
+  if (run && !isRunEnded(run.state)) {
     killRun(run.id)
   }
 }

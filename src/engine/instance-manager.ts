@@ -5,7 +5,7 @@
  * to the UI stores.
  */
 
-import { useRunsStore, type DisplayItem } from '@/stores/runs'
+import { useRunsStore, isRunEnded, type DisplayItem } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore } from '@/stores/settings'
 import { useFeedStore } from '@/stores/feed'
@@ -181,11 +181,11 @@ export function startRun(slot: number, config?: Partial<RunRequest>): string {
 
   // Check if slot already has a run
   const existingRun = runs.getRunBySlot(slot)
-  if (existingRun && existingRun.state !== 'dead') {
+  if (existingRun && !isRunEnded(existingRun.state)) {
     throw new Error(`Slot ${slot} already has an active run`)
   }
 
-  // Remove dead run if exists
+  // Remove ended run if exists
   if (existingRun) {
     runs.removeRun(existingRun.id)
   }
@@ -330,7 +330,7 @@ export function killRun(runId: string): void {
 
   const runs = useRunsStore()
   const run = runs.getRun(runId)
-  if (!run || run.state === 'dead') return
+  if (!run || isRunEnded(run.state)) return
 
   // Stop the game loop
   if (instance.intervalId) {
@@ -737,7 +737,7 @@ function startGameLoop(runId: string): void {
     const runs = useRunsStore()
     const run = runs.getRun(runId)
 
-    if (!run || run.state === 'dead') {
+    if (!run || isRunEnded(run.state)) {
       stopRun(runId)
       return
     }
@@ -803,11 +803,21 @@ function handleGameEndSync(runId: string, result: RunResult, slot: number): Prom
   const runs = useRunsStore()
   const feed = useFeedStore()
 
-  // Mark run as dead
-  runs.handleEvent(runId, { type: 'death' })
+  const isVictory = result.reason === 'victory'
+
+  // Mark run state
+  runs.handleEvent(runId, isVictory ? { type: 'victory' } : { type: 'death' })
 
   // Clear feed tracking for this run
   feed.clearRunTracking(runId)
+
+  // Add victory feed message
+  if (isVictory) {
+    const char = result.game.character
+    const raceName = getRaceById(char.raceId)?.name ?? char.raceId
+    const className = getClassById(char.classId)?.name ?? char.classId
+    feed.addSystemMessage(`${raceName} ${className} has defeated Morgoth!`, 'victory')
+  }
 
   const { completion, savePromise } = handleRunCompletionSync(result)
 
@@ -833,7 +843,7 @@ function handleGameEndSync(runId: string, result: RunResult, slot: number): Prom
       victory: completion.isVictory,
     })
   } else {
-    checkAutoRestart(slot)
+    checkAutoRestart(slot, isVictory)
   }
 
   return savePromise
@@ -855,13 +865,14 @@ async function handleGameEnd(
 /**
  * Check if auto-restart is enabled and start a new run if so
  */
-function checkAutoRestart(slot: number): void {
+function checkAutoRestart(slot: number, isVictory = false): void {
   const progression = useProgressionStore()
   const settings = useSettingsStore()
 
   const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
   if (!bonuses.hasAutoRestart) return
   if (!settings.settings.autoRestart) return
+  if (isVictory && settings.settings.pauseOnVictory) return
   if (configuringSlots.has(slot)) return
 
   // Cancel any existing timeout for this slot (prevents duplicates)
@@ -879,7 +890,7 @@ function checkAutoRestart(slot: number): void {
 
     const runs = useRunsStore()
     const existingRun = runs.getRunBySlot(slot)
-    if (existingRun && existingRun.state !== 'dead') return
+    if (existingRun && !isRunEnded(existingRun.state)) return
 
     if (existingRun) {
       runs.removeRun(existingRun.id)
@@ -928,7 +939,7 @@ export function getActiveInstances(): string[] {
 export function isSlotActive(slot: number): boolean {
   const runs = useRunsStore()
   const run = runs.getRunBySlot(slot)
-  return run !== undefined && run.state !== 'dead'
+  return run !== undefined && !isRunEnded(run.state)
 }
 
 // ============================================================================
@@ -997,7 +1008,7 @@ function createRunForCatchUp(
   if (slot >= progression.maxRunSlots) return null
 
   const existingRun = runs.getRunBySlot(slot)
-  if (existingRun && existingRun.state !== 'dead') return null
+  if (existingRun && !isRunEnded(existingRun.state)) return null
   if (existingRun) runs.removeRun(existingRun.id)
 
   const slotConfig = progression.getSlotConfig(slot)
@@ -1132,7 +1143,9 @@ async function startLargeCatchUp(gapMs: number): Promise<void> {
 
         // Check auto-restart
         const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
+        const catchUpVictory = result.reason === 'victory'
         if (!bonuses.hasAutoRestart || !settings.settings.autoRestart) return null
+        if (catchUpVictory && settings.settings.pauseOnVictory) return null
 
         const newRun = createRunForCatchUp(slot)
         if (!newRun) return null

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect, ref } from 'vue'
 import type { ActiveRun, DisplayItem } from '@/stores/runs'
+import { isRunEnded } from '@/stores/runs'
 import type { EquipSlot } from '@game/types'
 import { PERSONALITY_DISPLAY } from '@/types/events'
 import { useRunsStore } from '@/stores/runs'
@@ -12,6 +13,7 @@ import DungeonGrid from '../DungeonGridCanvas.vue'
 import ProgressBar from '../common/ProgressBar.vue'
 import CollapsibleSection from '../common/CollapsibleSection.vue'
 import RunSummary from '../analytics/RunSummary.vue'
+import GameTooltip from '../common/GameTooltip.vue'
 
 const props = defineProps<{
   run: ActiveRun
@@ -44,6 +46,10 @@ const RESIST_CONFIG: Record<string, { label: string; color: string }> = {
   DARK: { label: 'Dk', color: '#6366f1' },
   DRAIN: { label: 'Dr', color: '#a855f7' },
 }
+
+// Victory/death computed values
+const isVictory = computed(() => props.run.state === 'victory')
+const runEnded = computed(() => isRunEnded(props.run.state))
 
 const personalityDisplay = computed(() => PERSONALITY_DISPLAY[props.run.config.personality ?? 'cautious'])
 
@@ -173,6 +179,39 @@ const equipSlots = [
   { id: 'bow', label: 'bow' },
 ]
 
+const SLOT_NAMES: Record<string, string> = {
+  weapon: 'Weapon',
+  armor: 'Body Armor',
+  shield: 'Shield',
+  helm: 'Helm',
+  gloves: 'Gloves',
+  boots: 'Boots',
+  ring1: 'Ring (left)',
+  ring2: 'Ring (right)',
+  amulet: 'Amulet',
+  light: 'Light Source',
+  bow: 'Bow',
+}
+
+const COMBAT_TIPS = {
+  AC: { label: 'Armor Class', desc: 'Damage reduction from armor and shields' },
+  EVA: { label: 'Evasion', desc: 'Chance to dodge attacks entirely' },
+  DMG: { label: 'Melee Damage', desc: 'Base damage dealt per hit' },
+  ACC: { label: 'Accuracy', desc: 'Bonus to attack hit chance' },
+  SPD: { label: 'Speed', desc: 'Action speed — above 100 is faster, below is slower' },
+} as const
+
+const RESIST_FULL_NAMES: Record<string, string> = {
+  FIRE: 'Fire',
+  COLD: 'Cold',
+  POISON: 'Poison',
+  ACID: 'Acid',
+  LIGHTNING: 'Lightning',
+  LIGHT: 'Light',
+  DARK: 'Dark',
+  DRAIN: 'Life Drain',
+}
+
 const EMPTY_CHAR = '─'
 
 function getSlotChar(slotId: string): string {
@@ -184,12 +223,6 @@ function getSlotColor(slotId: string): string {
   const item = props.run.equipment[slotId as EquipSlot]
   if (!item) return '#475569' // dim
   return '#' + item.color.toString(16).padStart(6, '0')
-}
-
-function getSlotTooltip(slotId: string): string {
-  const item = props.run.equipment[slotId as EquipSlot]
-  if (!item) return `${slotId} (empty)`
-  return formatItemName(item)
 }
 
 function formatItemName(item: DisplayItem): string {
@@ -222,7 +255,7 @@ const killHold = useKillHoldButton({
 })
 
 function startKillHold() {
-  if (props.run.state === 'dead') return
+  if (runEnded.value) return
   killHold.start()
 }
 
@@ -236,7 +269,7 @@ function formatGoal(goal: string | undefined): string {
 </script>
 
 <template>
-  <div class="run-expanded" :class="{ dead: run.state === 'dead' }">
+  <div class="run-expanded" :class="{ dead: run.state === 'dead', victory: isVictory }">
     <!-- Header -->
     <header class="expanded-header">
       <div class="header-left">
@@ -262,8 +295,8 @@ function formatGoal(goal: string | undefined): string {
         </button>
         <button
           class="kill-btn"
-          :class="{ holding: killHold.progress.value > 0, disabled: run.state === 'dead' }"
-          :disabled="run.state === 'dead'"
+          :class="{ holding: killHold.progress.value > 0, disabled: runEnded }"
+          :disabled="runEnded"
           title="Hold to end run"
           @mousedown="startKillHold"
           @mouseup="killHold.cancel"
@@ -384,23 +417,38 @@ function formatGoal(goal: string | undefined): string {
           @toggle="togglePanel('combat')"
         >
           <div class="combat-stats-grid">
-            <div class="combat-stat">
+            <GameTooltip
+              class="combat-stat"
+              :text="`${COMBAT_TIPS.AC.label} — ${COMBAT_TIPS.AC.desc}`"
+            >
               <span class="combat-label">AC</span>
               <span class="combat-val armor">{{ run.combat.armor }}</span>
-            </div>
-            <div class="combat-stat">
+            </GameTooltip>
+            <GameTooltip
+              class="combat-stat"
+              :text="`${COMBAT_TIPS.EVA.label} — ${COMBAT_TIPS.EVA.desc}`"
+            >
               <span class="combat-label">EVA</span>
               <span class="combat-val evasion">{{ run.combat.evasion }}</span>
-            </div>
-            <div class="combat-stat">
+            </GameTooltip>
+            <GameTooltip
+              class="combat-stat"
+              :text="`${COMBAT_TIPS.DMG.label} — ${COMBAT_TIPS.DMG.desc}`"
+            >
               <span class="combat-label">DMG</span>
               <span class="combat-val damage">{{ run.combat.meleeDamage }}</span>
-            </div>
-            <div class="combat-stat">
+            </GameTooltip>
+            <GameTooltip
+              class="combat-stat"
+              :text="`${COMBAT_TIPS.ACC.label} — ${COMBAT_TIPS.ACC.desc}`"
+            >
               <span class="combat-label">ACC</span>
               <span class="combat-val accuracy">{{ run.combat.accuracy }}</span>
-            </div>
-            <div class="combat-stat">
+            </GameTooltip>
+            <GameTooltip
+              class="combat-stat"
+              :text="`${COMBAT_TIPS.SPD.label} — ${COMBAT_TIPS.SPD.desc}`"
+            >
               <span class="combat-label">SPD</span>
               <span
                 class="combat-val speed"
@@ -408,7 +456,7 @@ function formatGoal(goal: string | undefined): string {
               >
                 {{ run.combat.speed }}
               </span>
-            </div>
+            </GameTooltip>
           </div>
         </CollapsibleSection>
 
@@ -421,11 +469,10 @@ function formatGoal(goal: string | undefined): string {
           @toggle="togglePanel('resist')"
         >
           <div class="resist-grid">
-            <div
+            <GameTooltip
               v-for="resist in activeResistances"
               :key="resist.type"
               class="resist-item"
-              :title="`${resist.type}: ${resist.value}%`"
             >
               <span class="resist-label" :style="{ color: resist.color }">{{ resist.label }}</span>
               <span
@@ -434,7 +481,15 @@ function formatGoal(goal: string | undefined): string {
               >
                 {{ resist.value }}
               </span>
-            </div>
+              <template #content>
+                <div class="tt-header">{{ RESIST_FULL_NAMES[resist.type] ?? resist.type }} Resistance</div>
+                <span class="game-tooltip-text">
+                  {{ resist.value >= 100 ? 'Immune to' : resist.value < 0 ? `Vulnerable to` : `Reduces` }}
+                  {{ (RESIST_FULL_NAMES[resist.type] ?? resist.type).toLowerCase() }}
+                  damage{{ resist.value >= 100 || resist.value < 0 ? '' : ` by ${resist.value}%` }}
+                </span>
+              </template>
+            </GameTooltip>
           </div>
         </CollapsibleSection>
 
@@ -466,17 +521,31 @@ function formatGoal(goal: string | undefined): string {
           @toggle="togglePanel('equipment')"
         >
           <div class="equip-grid">
-            <div
+            <GameTooltip
               v-for="slot in equipSlots"
               :key="slot.id"
               class="equip-slot"
-              :title="getSlotTooltip(slot.id)"
+              position="bottom"
             >
               <span class="slot-char" :style="{ color: getSlotColor(slot.id) }">
                 {{ getSlotChar(slot.id) }}
               </span>
               <span class="slot-label">{{ slot.label }}</span>
-            </div>
+              <template #content>
+                <div class="tt-header">{{ SLOT_NAMES[slot.id] ?? slot.id }}</div>
+                <template v-if="run.equipment[slot.id as EquipSlot]">
+                  <span
+                    :class="{ 'equip-tt-artifact': run.equipment[slot.id as EquipSlot]!.isArtifact }"
+                  >
+                    {{ formatItemName(run.equipment[slot.id as EquipSlot]!) }}
+                  </span>
+                  <div class="tt-muted">
+                    {{ run.equipment[slot.id as EquipSlot]!.isArtifact ? 'Artifact' : `Tier ${run.equipment[slot.id as EquipSlot]!.tier}` }}
+                  </div>
+                </template>
+                <span v-else class="tt-muted">Empty</span>
+              </template>
+            </GameTooltip>
           </div>
         </CollapsibleSection>
 
@@ -528,7 +597,7 @@ function formatGoal(goal: string | undefined): string {
         <!-- Run Status Badge -->
         <div class="run-status-badges">
           <span class="status-badge" :class="run.state">
-            {{ run.state === 'dead' ? 'DEAD' : run.state === 'running' ? 'ACTIVE' : 'STARTING' }}
+            {{ run.state === 'victory' ? 'VICTORY' : run.state === 'dead' ? 'DEAD' : run.state === 'running' ? 'ACTIVE' : 'STARTING' }}
           </span>
           <span v-if="run.turbo" class="status-badge turbo">TURBO</span>
         </div>
@@ -545,8 +614,8 @@ function formatGoal(goal: string | undefined): string {
       </div>
     </div>
 
-    <!-- Death Overlay with RunSummary -->
-    <div v-if="run.state === 'dead'" class="death-overlay">
+    <!-- Death/Victory Overlay with RunSummary -->
+    <div v-if="runEnded" class="death-overlay" :class="{ 'victory-overlay': isVictory, 'flash-in': isVictory }">
       <RunSummary
         v-if="run.finalStats"
         :run="run.finalStats"
@@ -586,6 +655,10 @@ function formatGoal(goal: string | undefined): string {
 
 .run-expanded.dead {
   opacity: 0.9;
+}
+
+.run-expanded.victory {
+  opacity: 0.95;
 }
 
 /* Header */
@@ -979,6 +1052,12 @@ function formatGoal(goal: string | undefined): string {
   color: var(--red);
 }
 
+.status-badge.victory {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+}
+
 .status-badge.turbo {
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid var(--amber);
@@ -1243,5 +1322,35 @@ function formatGoal(goal: string | undefined): string {
   background: var(--border);
   color: var(--text-primary);
   border-color: var(--indigo);
+}
+
+/* Victory overlay */
+.victory-overlay {
+  background: rgba(10, 10, 18, 0.92) !important;
+}
+
+@keyframes flash-in {
+  0% {
+    background: rgba(245, 158, 11, 0.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    background: rgba(10, 10, 18, 0.92);
+  }
+}
+
+.flash-in {
+  animation: flash-in 0.8s ease-out;
+}
+</style>
+
+<!-- Tooltip artifact name glow (global since tooltip is teleported) -->
+<style>
+.equip-tt-artifact {
+  color: var(--amber);
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
 }
 </style>

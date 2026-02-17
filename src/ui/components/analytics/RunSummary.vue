@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RunStats } from '@/types/progression'
+import { useProgressionStore } from '@/stores/progression'
 import PanelFrame from '../common/PanelFrame.vue'
 import ProgressBar from '../common/ProgressBar.vue'
 
@@ -13,6 +14,11 @@ const emit = defineEmits<{
   close: []
   restart: []
 }>()
+
+const progression = useProgressionStore()
+
+const isVictory = computed(() => !!props.run.isVictory)
+const isFirstVictory = computed(() => isVictory.value && progression.totalVictories === 1)
 
 // Format duration
 const duration = computed(() => {
@@ -142,7 +148,8 @@ const hasExtendedStats = computed(() => {
   <div class="run-summary">
     <header class="summary-header">
       <div class="header-content">
-        <h2>Run Complete</h2>
+        <h2 :class="{ 'victory-header': isVictory }">{{ isVictory ? 'Victory!' : 'Run Complete' }}</h2>
+        <span v-if="isFirstVictory" class="first-victory-badge">FIRST VICTORY!</span>
         <span v-if="isNewBest" class="new-best-badge">NEW BEST!</span>
       </div>
       <button class="close-btn" @click="emit('close')">✕</button>
@@ -197,8 +204,14 @@ const hasExtendedStats = computed(() => {
         </PanelFrame>
       </div>
 
-      <!-- Cause of Death -->
-      <PanelFrame v-if="run.deathCause" class="death-cause">
+      <!-- Victory Message -->
+      <PanelFrame v-if="isVictory" class="victory-cause">
+        <div class="victory-label">Triumph</div>
+        <div class="victory-message">Morgoth, Lord of Darkness has been slain!</div>
+      </PanelFrame>
+
+      <!-- Cause of Death (hide for victories) -->
+      <PanelFrame v-else-if="run.deathCause" class="death-cause">
         <div class="death-label">Cause of Death</div>
         <div class="death-text">{{ run.deathCause }}</div>
       </PanelFrame>
@@ -413,6 +426,45 @@ const hasExtendedStats = computed(() => {
   background: var(--red);
   border-color: var(--red);
   color: white;
+}
+
+.victory-header {
+  color: var(--amber) !important;
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+}
+
+.first-victory-badge {
+  font-size: var(--text-base);
+  padding: var(--space-1) var(--space-3);
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid var(--amber);
+  border-radius: var(--radius-md);
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: pulse 2s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.victory-cause {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-4) !important;
+  text-align: center;
+}
+
+.victory-label {
+  font-size: var(--text-base);
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: var(--space-2);
+}
+
+.victory-message {
+  font-size: var(--text-lg);
+  color: var(--amber);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
 }
 
 .summary-content {

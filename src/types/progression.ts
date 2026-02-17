@@ -199,6 +199,8 @@ export interface RunStats {
   deathDepth?: number // Depth where death occurred (may differ from maxDepth)
   // Loadout
   boosters?: string[] // Booster names used this run
+  // Victory flag
+  isVictory?: boolean
 
   // === EXTENDED STATS (v2) ===
   // Damage dealt breakdown

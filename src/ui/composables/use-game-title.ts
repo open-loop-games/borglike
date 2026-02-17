@@ -7,7 +7,7 @@
 
 import { computed } from 'vue'
 import { useTitle } from '@vueuse/core'
-import { useRunsStore } from '@/stores/runs'
+import { useRunsStore, isRunEnded } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 
 const BASE_TITLE = 'Borglike'
@@ -23,7 +23,7 @@ export function useGameTitle() {
     // Check for focused run first
     const focused = runs.focusedRun
     if (focused) {
-      const status = focused.state === 'dead' ? '☠' : ''
+      const status = focused.state === 'victory' ? '👑' : focused.state === 'dead' ? '☠' : ''
       return `${status}D${focused.depth} ${focused.config.class} | ${essenceStr}⬡ - ${BASE_TITLE}`
     }
 
@@ -37,8 +37,8 @@ export function useGameTitle() {
       return `D${maxDepth} (${runsLabel}) | ${essenceStr}⬡ - ${BASE_TITLE}`
     }
 
-    // Check for dead runs awaiting dismissal
-    const deadRuns = runs.activeRuns.filter((r) => r.state === 'dead')
+    // Check for ended runs awaiting dismissal
+    const deadRuns = runs.activeRuns.filter((r) => isRunEnded(r.state))
     if (deadRuns.length > 0) {
       return `☠ ${deadRuns.length} ended | ${essenceStr}⬡ - ${BASE_TITLE}`
     }

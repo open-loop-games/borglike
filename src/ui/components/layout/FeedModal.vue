@@ -33,6 +33,7 @@ const typeOptions: { value: FeedEventType | 'all'; label: string }[] = [
   { value: 'item', label: 'Item' },
   { value: 'level', label: 'Level' },
   { value: 'death', label: 'Death' },
+  { value: 'victory', label: 'Victory' },
   { value: 'good', label: 'Good' },
   { value: 'danger', label: 'Danger' },
   { value: 'info', label: 'Info' },
@@ -284,6 +285,12 @@ function formatTimestamp(timestamp: number): string {
 
 .event-danger .event-message {
   color: var(--red);
+  font-weight: bold;
+}
+
+.event-victory .event-message {
+  color: var(--amber);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
   font-weight: bold;
 }
 

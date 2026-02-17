@@ -5,6 +5,11 @@ import type { EquipSlot } from '@game/types'
 import type { RunStats } from '@/types/progression'
 import { useSettingsStore } from './settings'
 
+/** Check if a run state represents a terminal (ended) state */
+export function isRunEnded(state: ActiveRun['state']): boolean {
+  return state === 'dead' || state === 'victory'
+}
+
 /** Core character stats */
 export interface DisplayStats {
   str: number
@@ -37,7 +42,7 @@ export interface ActiveRun {
   id: string
   slot: number
   config: RunRequest
-  state: 'starting' | 'running' | 'dead'
+  state: 'starting' | 'running' | 'dead' | 'victory'
   turbo: boolean
   startTime: number
 
@@ -205,6 +210,9 @@ export const useRunsStore = defineStore('runs', () => {
         break
       case 'death':
         run.state = 'dead'
+        break
+      case 'victory':
+        run.state = 'victory'
         break
     }
   }

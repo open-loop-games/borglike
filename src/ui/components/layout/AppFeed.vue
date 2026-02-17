@@ -151,6 +151,12 @@ function formatTimestamp(timestamp: number): string {
   font-weight: bold;
 }
 
+.event-victory .event-message {
+  color: var(--amber);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  font-weight: bold;
+}
+
 .feed-empty {
   font-size: var(--text-base);
   color: var(--text-dim);

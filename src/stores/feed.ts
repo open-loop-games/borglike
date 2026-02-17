@@ -12,7 +12,7 @@ import { useSettingsStore, type FeedVerbosity } from './settings'
 import type { MessageTag, MessageImportance } from '@game/types'
 
 /** Feed event type (maps from GameMessage types) */
-export type FeedEventType = 'info' | 'combat' | 'item' | 'level' | 'death' | 'good' | 'danger'
+export type FeedEventType = 'info' | 'combat' | 'item' | 'level' | 'death' | 'victory' | 'good' | 'danger'
 
 /** A single event in the feed */
 export interface FeedEvent {

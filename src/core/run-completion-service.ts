@@ -189,6 +189,8 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
     deathDepth: isVictory ? undefined : char.depth,
     // Loadout
     boosters,
+    // Victory flag
+    isVictory: isVictory || undefined,
     // Extended stats (v2)
     damageBySource: game.stats.damageBySource,
     damageByElement: game.stats.damageByElement,
