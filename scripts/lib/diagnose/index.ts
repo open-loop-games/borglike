@@ -26,8 +26,8 @@ export { runMatrix, formatMatrixSummary, buildCellLabel, ALL_CAPABILITY_TIERS, A
 export type { MatrixConfig, MatrixCell, MatrixCellResult, MatrixResult, MatrixAxis } from './matrix'
 
 // Sensitivity testing
-export { runSensitivityTest, SENSITIVITY_UPGRADES } from './sensitivity'
-export type { SensitivityConfig, SensitivityResult, MultiSensitivityResult, UpgradeImpact } from './sensitivity'
+export { runSensitivityTest, SENSITIVITY_UPGRADES, runCapSensitivityTest, GRADED_CHAINS, CHAIN_NAMES } from './sensitivity'
+export type { SensitivityConfig, SensitivityResult, MultiSensitivityResult, UpgradeImpact, CapSensitivityConfig, CapSensitivityResult, MultiCapSensitivityResult, CapChainData, GradedChain } from './sensitivity'
 
 // Types
 export type {
@@ -116,6 +116,8 @@ export {
   formatBaselineRaceResults,
   formatSensitivityResults,
   formatMultiSensitivityResults,
+  formatCapSensitivityResults,
+  formatMultiCapSensitivityResults,
   formatFindResults,
 } from './output'
 export type { TurnLogOptions } from './output'

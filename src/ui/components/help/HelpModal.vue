@@ -40,14 +40,16 @@ const emit = defineEmits<{
         <h3>Core Loop</h3>
         <ol>
           <li>
-            <strong>Run</strong> &mdash; A bot enters the dungeon with a random build. Unlock
-            race/class selection through purchases.
+            <strong>Configure</strong> &mdash; Select a race, class, boosters, bot config for your bot.
+          </li>
+          <li>
+            <strong>Run</strong> &mdash; A bot enters the dungeon with your build.
           </li>
           <li><strong>Watch</strong> &mdash; Bots explore, fight, and loot automatically</li>
           <li><strong>Die</strong> &mdash; Death is inevitable (and profitable)</li>
           <li><strong>Earn</strong> &mdash; Gain essence from each run</li>
-          <li><strong>Upgrade</strong> &mdash; Buy upgrades and unlock new options</li>
-          <li><strong>Repeat</strong> &mdash; Each run goes a little deeper</li>
+          <li><strong>Upgrade</strong> &mdash; Buy upgrades and unlock new bot options</li>
+          <li><strong>Repeat</strong> &mdash; Each run goes a little deeper, with good RNG</li>
         </ol>
       </PanelFrame>
 

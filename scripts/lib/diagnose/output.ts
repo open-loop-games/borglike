@@ -13,8 +13,8 @@ import type {
 } from './types'
 import type { TurnLogEntry } from './runner'
 import type { BaselineResult, BaselineRaceResult } from './baseline'
-import type { SensitivityResult, MultiSensitivityResult } from './sensitivity'
-import { SENSITIVITY_UPGRADES } from './sensitivity'
+import type { SensitivityResult, MultiSensitivityResult, CapSensitivityResult, MultiCapSensitivityResult } from './sensitivity'
+import { SENSITIVITY_UPGRADES, GRADED_CHAINS } from './sensitivity'
 
 // ============================================================================
 // FORMATTING HELPERS
@@ -537,5 +537,210 @@ export function formatFindResults(problemRuns: DiagnoseResult[]): string {
     lines.push(formatOneLiner(run))
   }
   lines.push('\nRun with "deep <seed>" for detailed analysis.')
+  return lines.join('\n')
+}
+
+// ============================================================================
+// CAP SENSITIVITY OUTPUT
+// ============================================================================
+
+function fmtDelta(n: number): string {
+  return n >= 0 ? `+${n.toFixed(1)}` : n.toFixed(1)
+}
+
+function fmtPct(n: number): string {
+  return n >= 0 ? `+${n.toFixed(1)}%` : `${n.toFixed(1)}%`
+}
+
+function chainImpactIcon(pct: number): string {
+  // pct is negative (removing the chain costs this much depth)
+  if (pct < -25) return '🔴'
+  if (pct < -10) return '🟡'
+  return '🟢'
+}
+
+/** Format per-class cap sensitivity detail */
+export function formatCapSensitivityResults(
+  result: CapSensitivityResult,
+  opts: { totalTime: string }
+): string {
+  const lines: string[] = []
+  const b = result.baselineAvgDepth
+
+  lines.push(`\n${'='.repeat(60)}`)
+  lines.push(`CAP SENSITIVITY: ${result.classId.toUpperCase()}  (baseline: ${b.toFixed(1)})`)
+  lines.push('='.repeat(60))
+
+  // Farming line
+  const farmDelta = result.farmingOffDepth - b
+  const farmPct = b > 0 ? (farmDelta / b) * 100 : 0
+  lines.push(
+    `\nFarming (toggle): ${b.toFixed(1)} → ${result.farmingOffDepth.toFixed(1)}` +
+    `  (${fmtDelta(farmDelta)}, ${fmtPct(farmPct)})`
+  )
+
+  // Chain table: L0 | +L1 | +L2 | +L3 | Total | Impact
+  lines.push('\n| Chain                | L0   | +L1  | +L2  | +L3  | Total  | Impact |')
+  lines.push('|----------------------|------|------|------|------|--------|--------|')
+
+  const chainRows = result.chains.map((c) => {
+    const [d0, d1, d2] = c.depthAtLevel
+    const m1 = d1 - d0
+    const m2 = d2 - d1
+    const m3 = b - d2
+    const total = b - d0
+    const pct = b > 0 ? ((d0 - b) / b) * 100 : 0  // negative
+    return { c, d0, m1, m2, m3, total, pct }
+  })
+
+  // Sort by total chain value descending (most impactful first)
+  chainRows.sort((a, b_) => b_.total - a.total)
+
+  for (const { c, d0, m1, m2, m3, total, pct } of chainRows) {
+    const icon = chainImpactIcon(pct)
+    lines.push(
+      `| ${icon} ${c.chainName.padEnd(18)} | ${d0.toFixed(1).padStart(4)} | ${fmtDelta(m1).padStart(4)} | ${fmtDelta(m2).padStart(4)} | ${fmtDelta(m3).padStart(4)} | ${fmtDelta(total).padStart(6)} | ${fmtPct(pct).padStart(6)} |`
+    )
+  }
+
+  lines.push(`\n  L0 = depth with chain removed. +L1/+L2/+L3 = marginal gain per tier.`)
+  lines.push(`  Total = chain's full contribution. Impact = % of baseline depth.`)
+  lines.push(`\nTotal time: ${opts.totalTime}s`)
+
+  // Copy/paste block
+  lines.push(`\nCopy/paste for BALANCE.md:`)
+  lines.push('```')
+  lines.push(`Farming: ${b.toFixed(1)} → ${result.farmingOffDepth.toFixed(1)} (${fmtDelta(farmDelta)}, ${fmtPct(farmPct)})`)
+  lines.push('| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |')
+  lines.push('|------------------|------|------|------|------|--------|--------|')
+  for (const { c, d0, m1, m2, m3, total, pct } of chainRows) {
+    lines.push(`| ${c.chainName} | ${d0.toFixed(1)} | ${fmtDelta(m1)} | ${fmtDelta(m2)} | ${fmtDelta(m3)} | ${fmtDelta(total)} | ${fmtPct(pct)} |`)
+  }
+  lines.push('```')
+
+  return lines.join('\n')
+}
+
+/** Format multi-class cap sensitivity with per-class tables and cross-class summary */
+export function formatMultiCapSensitivityResults(result: MultiCapSensitivityResult): string {
+  const lines: string[] = []
+  const totalTime = result.totalTime.toFixed(1)
+
+  for (const classResult of result.results) {
+    lines.push(formatCapSensitivityResults(classResult, { totalTime }))
+  }
+
+  if (result.results.length <= 1) return lines.join('\n')
+
+  // Cross-class summary
+  lines.push(`\n${'='.repeat(60)}`)
+  lines.push('CROSS-CLASS CAP SENSITIVITY SUMMARY')
+  lines.push('='.repeat(60))
+
+  const classNames = result.results.map((r) => r.classId.charAt(0).toUpperCase() + r.classId.slice(1))
+  const colWidth = Math.max(...classNames.map((n) => n.length), 7)
+  const namePad = (s: string) => s.padStart(colWidth)
+
+  // Chain-level exclusion impact table
+  lines.push(`\n### Chain impact (% depth lost when chain removed)\n`)
+  lines.push(`| Chain               | ${classNames.map(namePad).join(' | ')} |`)
+  lines.push(`|---------------------|${classNames.map(() => '-'.repeat(colWidth + 2)).join('|')}|`)
+
+  // farming row
+  {
+    const cells = result.results.map((r) => {
+      const b = r.baselineAvgDepth
+      const pct = b > 0 ? ((r.farmingOffDepth - b) / b) * 100 : 0
+      return fmtPct(pct).padStart(colWidth)
+    })
+    lines.push(`| Farming (toggle)    | ${cells.join(' | ')} |`)
+  }
+
+  // graded chain rows in canonical order, sorted by avg impact across classes
+  const chainSummaries = GRADED_CHAINS.map((chain) => {
+    const perClass = result.results.map((r) => {
+      const c = r.chains.find((c_) => c_.chain === chain)
+      if (!c) return 0
+      const b = r.baselineAvgDepth
+      return b > 0 ? ((c.depthAtLevel[0] - b) / b) * 100 : 0  // negative
+    })
+    const avgPct = perClass.reduce((s, v) => s + v, 0) / perClass.length
+    return { chain, perClass, avgPct }
+  })
+  chainSummaries.sort((a, b_) => a.avgPct - b_.avgPct)  // most negative first
+
+  for (const { chain, perClass } of chainSummaries) {
+    const chainData = result.results[0]!.chains.find((c) => c.chain === chain)
+    const label = chainData?.chainName ?? chain
+    const cells = perClass.map((pct) => fmtPct(pct).padStart(colWidth))
+    lines.push(`| ${label.padEnd(19)} | ${cells.join(' | ')} |`)
+  }
+
+  // Tier marginal breakdown table
+  lines.push(`\n### Tier marginal gains (depth added per tier, all other chains at max)\n`)
+  lines.push(`| Chain/Tier       | ${classNames.map(namePad).join(' | ')} |`)
+  lines.push(`|------------------|${classNames.map(() => '-'.repeat(colWidth + 2)).join('|')}|`)
+
+  for (const { chain } of chainSummaries) {
+    for (let tier = 1; tier <= 3; tier++) {
+      const label = `${chain}_${tier}`
+      const cells = result.results.map((r) => {
+        const c = r.chains.find((c_) => c_.chain === chain)
+        if (!c) return '?'.padStart(colWidth)
+        const b = r.baselineAvgDepth
+        const marginal =
+          tier === 1 ? c.depthAtLevel[1] - c.depthAtLevel[0]
+          : tier === 2 ? c.depthAtLevel[2] - c.depthAtLevel[1]
+          : b - c.depthAtLevel[2]
+        return fmtDelta(marginal).padStart(colWidth)
+      })
+      lines.push(`| ${label.padEnd(16)} | ${cells.join(' | ')} |`)
+    }
+  }
+
+  // Baseline row
+  lines.push(`| ${'**Baseline**'.padEnd(16)} | ${result.results.map((r) => r.baselineAvgDepth.toFixed(1).padStart(colWidth)).join(' | ')} |`)
+
+  lines.push(`\nTotal time: ${totalTime}s`)
+
+  // Copy/paste block
+  lines.push(`\nCopy/paste for BALANCE.md:`)
+  lines.push('```')
+  lines.push(`| Chain               | ${classNames.join(' | ')} |`)
+  lines.push(`|---------------------|${classNames.map((n) => '-'.repeat(n.length + 2)).join('|')}|`)
+  {
+    const cells = result.results.map((r) => {
+      const b = r.baselineAvgDepth
+      return b > 0 ? fmtPct(((r.farmingOffDepth - b) / b) * 100) : '0%'
+    })
+    lines.push(`| Farming (toggle)    | ${cells.join(' | ')} |`)
+  }
+  for (const { chain, perClass } of chainSummaries) {
+    const chainData = result.results[0]!.chains.find((c) => c.chain === chain)
+    const label = chainData?.chainName ?? chain
+    lines.push(`| ${label} | ${perClass.map(fmtPct).join(' | ')} |`)
+  }
+  lines.push(`| **Baseline** | ${result.results.map((r) => r.baselineAvgDepth.toFixed(1)).join(' | ')} |`)
+  lines.push('')
+  lines.push(`| Chain/Tier       | ${classNames.join(' | ')} |`)
+  lines.push(`|------------------|${classNames.map((n) => '-'.repeat(n.length + 2)).join('|')}|`)
+  for (const { chain } of chainSummaries) {
+    for (let tier = 1; tier <= 3; tier++) {
+      const label = `${chain}_${tier}`
+      const cells = result.results.map((r) => {
+        const c = r.chains.find((c_) => c_.chain === chain)
+        if (!c) return '?'
+        const b = r.baselineAvgDepth
+        const marginal =
+          tier === 1 ? c.depthAtLevel[1] - c.depthAtLevel[0]
+          : tier === 2 ? c.depthAtLevel[2] - c.depthAtLevel[1]
+          : b - c.depthAtLevel[2]
+        return fmtDelta(marginal)
+      })
+      lines.push(`| ${label} | ${cells.join(' | ')} |`)
+    }
+  }
+  lines.push('```')
+
   return lines.join('\n')
 }

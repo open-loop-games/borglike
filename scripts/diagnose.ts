@@ -54,10 +54,13 @@ import {
   runBaseline,
   runBaselineRaces,
   runSensitivityTest,
+  runCapSensitivityTest,
   formatBaselineResults,
   formatBaselineRaceResults,
   formatSensitivityResults,
   formatMultiSensitivityResults,
+  formatCapSensitivityResults,
+  formatMultiCapSensitivityResults,
   formatFindResults,
   destroyPool,
   runMatrix,
@@ -80,7 +83,7 @@ import type { BotPersonality } from '@game/types'
 // ============================================================================
 
 interface Args {
-  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'baseline-races' | 'sensitivity' | 'matrix' | 'help'
+  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'baseline-races' | 'sensitivity' | 'cap-sensitivity' | 'matrix' | 'help'
   seed?: number
   runs: number
   turns: number
@@ -228,6 +231,7 @@ function parseArgs(): Args {
     mode === 'baseline' ||
     mode === 'baseline-races' ||
     mode === 'sensitivity' ||
+    mode === 'cap-sensitivity' ||
     mode === 'matrix' ||
     mode === 'help'
   ) {
@@ -378,6 +382,7 @@ MODES:
   baseline        Run full baseline across all 11 classes (100 runs, 50k turns)
   baseline-races  Run full baseline across all 11 races (100 runs, 50k turns)
   sensitivity     Test per-upgrade impact on performance (supports --classes)
+  cap-sensitivity Test per-capability-chain impact with tier breakdown (supports --classes)
   matrix          Run cartesian product of classes/races/tiers (shared pool)
   help            Show this help message
 
@@ -461,6 +466,12 @@ EXAMPLES:
 
   # Test upgrade sensitivity (all classes, single pool)
   pnpm diagnose sensitivity --classes=all --seed=1000
+
+  # Test cap sensitivity - 3 key classes, tier breakdown (~8 min)
+  pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000
+
+  # Test cap sensitivity - single class
+  pnpm diagnose cap-sensitivity --class=mage --seed=1000 --turns=50000
 
   # Test with mid-game capabilities
   pnpm diagnose batch --runs=50 --capabilities=mid --class=warrior
@@ -699,6 +710,68 @@ async function main(): Promise<void> {
           text,
           json: {
             mode: 'sensitivity-multi',
+            timestamp: new Date().toISOString(),
+            config: buildConfigSnapshot(args),
+            result,
+          },
+        })
+      }
+
+      console.log(`\nTotal time: ${result.totalTime.toFixed(1)}s`)
+      console.log(`Output: ${dir}/`)
+    } else {
+      console.log(text)
+    }
+    return
+  }
+
+  // Handle cap-sensitivity mode
+  if (args.mode === 'cap-sensitivity') {
+    const capSensClasses = args.matrixClasses.length > 0 ? args.matrixClasses : [args.classId]
+    const capSensThreads = args.userSetThreads ? args.threads : 20
+
+    const result = await runCapSensitivityTest({
+      runs: args.runs !== 50 ? args.runs : undefined,
+      turns: args.turns !== 20000 ? args.turns : undefined,
+      seed: args.seed,
+      threads: capSensThreads,
+      classes: capSensClasses,
+      raceId: args.race,
+      personality: args.personality,
+      upgrades: args.upgrades,
+    })
+
+    const text = formatMultiCapSensitivityResults(result)
+
+    if (shouldWriteFiles('cap-sensitivity', args.forceStdout)) {
+      const dir = args.outputDir ?? DEFAULT_OUTPUT_DIR
+
+      for (const classResult of result.results) {
+        const classText = formatCapSensitivityResults(classResult, {
+          totalTime: result.totalTime.toFixed(1),
+        })
+        const baseName = generateFileName({ mode: 'cap-sensitivity', classId: classResult.classId })
+        writeOutputFiles({
+          dir,
+          baseName,
+          text: classText,
+          json: {
+            mode: 'cap-sensitivity',
+            timestamp: new Date().toISOString(),
+            config: { ...buildConfigSnapshot(args), classId: classResult.classId },
+            result: classResult,
+          },
+        })
+      }
+
+      if (result.results.length > 1) {
+        const summaryName = generateFileName({ mode: 'cap-sensitivity', classId: 'all' })
+        writeOutputFiles({
+          dir,
+          baseName: summaryName,
+          text,
+          json: {
+            mode: 'cap-sensitivity-multi',
             timestamp: new Date().toISOString(),
             config: buildConfigSnapshot(args),
             result,

@@ -188,6 +188,7 @@ pnpm diagnose [mode] [options]
 | `baseline` | Full baseline across all 11 classes | `baseline` (100 runs, 50k turns per class) |
 | `baseline-races` | Full baseline across all 11 races | `baseline-races --class=warrior` |
 | `sensitivity` | Test per-upgrade impact | `sensitivity --class=warrior` or `sensitivity --classes=all` |
+| `cap-sensitivity` | Test per-cap-chain impact with tier breakdown | `cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000` |
 | `matrix` | Cartesian product of classes/races/tiers | `matrix --classes=warrior,mage --races=all` |
 
 ### Seed Syntax
@@ -380,6 +381,26 @@ pnpm diagnose sensitivity --classes=warrior,mage,rogue --seed=1000
 Multi-class runs use pool-based parallelism (same as matrix mode) — all work items across all classes are submitted to a single thread pool. Output includes per-class tables and a cross-class summary showing each upgrade's impact across all tested classes.
 
 Output: per-class `.txt`/`.json` files + combined summary for multi-class runs. Uses `--classes` flag (same as matrix mode).
+
+### Cap Sensitivity Mode
+
+Test per-capability-chain impact with per-tier marginal breakdown. For each graded chain (tactics, town, preparedness, sweep, surf, kiting, targeting, retreat), varies the chain level 0→3 while holding all other chains at full. Also tests farming toggle off vs full.
+
+```bash
+# 3 key archetypes — recommended starting point (~8 min)
+pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000
+
+# Single class
+pnpm diagnose cap-sensitivity --class=mage --seed=1000 --turns=50000
+```
+
+**Cell count:** 26 per class (1 baseline + 1 farming-off + 8 chains × 3 levels). Runtime: ~3 min for 3 classes at 50 runs/50k turns.
+
+**Output format:** Per-class table showing L0 (chain removed), +L1/+L2/+L3 (marginal gain per tier), total chain value, and % impact. Cross-class summary includes:
+- Chain-level exclusion impact table (% depth lost per chain per class)
+- Tier marginal table (depth added per tier per chain per class — directly useful for cost calibration)
+
+**Interpretation:** The tier marginal table shows whether kiting_3 deserves to cost 4× kiting_1, or if most of the value is in tier 1.
 
 ## Analyzers
 

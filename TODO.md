@@ -1,7 +1,7 @@
 # TODO
 
 ## Balance
-
+- Do more testing on bot upgrade sensitivity and chains, rebalance cost structure based upon results. total cost is out of balance to gains, relative to stat gains.
 
 ## Future Features
 - [ ] Challenge Modifiers (run-based risk/reward)

@@ -59,6 +59,12 @@ pnpm diagnose sensitivity --seed=1000 --class=warrior
 # Upgrade sensitivity, all 6 classes in one pool (~8 min)
 pnpm diagnose sensitivity --classes=all --seed=1000
 
+# Cap sensitivity: per-chain + per-tier breakdown, 3 classes (~12 min)
+pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000
+
+# Cap sensitivity at mid-upgrade tier (reveals progression-window chain values)
+pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000 --upgrades=mid
+
 # Personality comparison
 pnpm diagnose compare --runs=50 --seed=1000 --class=CLASS --turns=50000
 
@@ -262,6 +268,25 @@ pnpm diagnose sensitivity --classes=all --seed=1000
 - No single upgrade > 15% impact (too dominant)
 - Stat upgrades roughly equal impact across classes
 - QoL upgrades < 5% impact (convenience, not power)
+
+### Phase 4.5: Cap Sensitivity
+
+**Goal:** Identify which capability chains and tiers deliver meaningful value, and at what point in the progression arc.
+
+```bash
+# At full upgrades (ceiling view — measures marginal value at saturation)
+pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000
+
+# At mid upgrades (progression-window view — reveals value during normal play)
+pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000 --upgrades=mid
+```
+
+**Important:** Run at both upgrade tiers. Full-upgrade tests show marginal value at ceiling; mid-upgrade tests show value in the progression window where players actually unlock caps. A chain that looks useless at ceiling may be transformative at mid.
+
+**Success Criteria:**
+- town_3 remains the highest single-tier value (it is transformative)
+- Tactics/sweep/targeting/retreat show meaningful impact at mid-upgrade baseline
+- No chain costs >5× another chain of equal measured impact
 
 ### Phase 5: Cross-Class Race Testing
 
@@ -560,6 +585,149 @@ Matching capability and upgrade tiers — simulates realistic player progression
 - ✅ Precision registers negatively for 7/11 classes
 - ✅ Paladin and Blackguard ceiling anomalies resolved — both now show meaningful sensitivity
 - ⚠️ Necromancer still shows ceiling/noise anomalies (Vitality +0.7%, Resilience +1.5%)
+
+---
+
+## Cap Sensitivity
+
+Measures per-capability-chain impact with per-tier marginal breakdown. For each graded chain, varies that chain's level 0→3 while holding all other chains at full. Farming toggle tested separately.
+
+```bash
+# 3 archetype classes, full stat upgrades, tier breakdown (~12 min)
+pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000
+```
+
+**Cell layout:** 26 per class (1 baseline + 1 farming-off + 8 chains × 3 levels). Baseline = all caps full, max upgrades, bestiary=25.
+
+**Reading the tables:**
+- `L0` = avg depth when chain entirely removed, all others at full
+- `+L1/+L2/+L3` = marginal depth added by each successive tier
+- `Total` = full chain contribution (baseline − L0)
+- `Impact` = negative % = depth lost when chain removed
+
+### Cap Sensitivity @ `52c2237` (50 runs, 50k turns, seed=1000, upgrades=full)
+
+**Warrior (baseline: 49.3)**
+
+Farming: 49.3 → 48.8 (-0.5, -1.0%)
+
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
+|------------------|------|------|------|------|--------|--------|
+| Town (portal/healer) | 47.2 | -0.0 | -1.0 | +3.1 | +2.1 | -4.3% |
+| Preparedness | 48.8 | -0.7 | +1.1 | +0.0 | +0.5 | -1.0% |
+| Surf (stair farm) | 49.3 | -0.1 | -0.4 | +0.6 | +0.0 | -0.1% |
+| Retreat (escape) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | -0.1% |
+| Sweep (floor %) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Kiting (ranged pos) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Targeting (AI) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Tactics (spell use) | 49.3 | -0.1 | +0.0 | +0.0 | -0.0 | +0.1% |
+
+**Mage (baseline: 48.9)**
+
+Farming: 48.9 → 47.8 (-1.1, -2.3%)
+
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
+|------------------|------|------|------|------|--------|--------|
+| Town (portal/healer) | 42.8 | +0.0 | -2.3 | +8.4 | +6.1 | -12.5% |
+| Kiting (ranged pos) | 47.6 | -0.2 | +2.0 | -0.4 | +1.4 | -2.8% |
+| Preparedness | 47.8 | -8.9 | +9.7 | +0.3 | +1.1 | -2.3% |
+| Surf (stair farm) | 48.6 | +0.3 | +0.1 | -0.0 | +0.4 | -0.7% |
+| Targeting (AI) | 48.7 | +0.2 | +0.0 | +0.0 | +0.2 | -0.4% |
+| Retreat (escape) | 48.8 | -0.0 | +0.0 | +0.2 | +0.1 | -0.2% |
+| Tactics (spell use) | 49.2 | -0.9 | +0.7 | +0.0 | -0.2 | +0.4% |
+| Sweep (floor %) | 49.3 | -0.3 | +0.0 | +0.0 | -0.3 | +0.7% |
+
+**Ranger (baseline: 49.5)**
+
+Farming: 49.5 → 46.6 (-2.9, -5.9%)
+
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
+|------------------|------|------|------|------|--------|--------|
+| Town (portal/healer) | 46.2 | +0.0 | +0.3 | +3.0 | +3.3 | -6.7% |
+| Preparedness | 46.6 | +3.2 | -0.3 | +0.0 | +2.9 | -5.9% |
+| Surf (stair farm) | 48.3 | +1.4 | -0.1 | +0.0 | +1.3 | -2.6% |
+| Kiting (ranged pos) | 48.9 | +0.0 | +0.6 | +0.0 | +0.6 | -1.2% |
+| Sweep (floor %) | 49.5 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Targeting (AI) | 49.5 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Tactics (spell use) | 49.6 | -0.0 | -0.1 | +0.0 | -0.1 | +0.2% |
+| Retreat (escape) | 49.7 | -0.2 | +0.0 | +0.0 | -0.2 | +0.3% |
+
+### Cross-Class Summary
+
+| Chain               | Warrior | Mage   | Ranger |
+|---------------------|---------|--------|--------|
+| Farming (toggle)    | -1.0%   | -2.3%  | -5.9%  |
+| Town (portal/healer) | -4.3%  | -12.5% | -6.7%  |
+| Preparedness        | -1.0%   | -2.3%  | -5.9%  |
+| Kiting (ranged pos) | +0.0%   | -2.8%  | -1.2%  |
+| Surf (stair farm)   | -0.1%   | -0.7%  | -2.6%  |
+| Targeting (AI)      | +0.0%   | -0.4%  | +0.0%  |
+| Retreat (escape)    | -0.1%   | -0.2%  | +0.3%  |
+| Sweep (floor %)     | +0.0%   | +0.7%  | +0.0%  |
+| Tactics (spell use) | +0.1%   | +0.4%  | +0.2%  |
+| **Baseline**        | 49.3    | 48.9   | 49.5   |
+
+### Tier Marginal Breakdown
+
+| Chain/Tier       | Warrior | Mage   | Ranger |
+|------------------|---------|--------|--------|
+| town_1           | -0.0    | +0.0   | +0.0   |
+| town_2           | -1.0    | -2.3   | +0.3   |
+| town_3           | +3.1    | +8.4   | +3.0   |
+| preparedness_1   | -0.7    | -8.9   | +3.2   |
+| preparedness_2   | +1.1    | +9.7   | -0.3   |
+| preparedness_3   | +0.0    | +0.3   | +0.0   |
+| kiting_1         | +0.0    | -0.2   | +0.0   |
+| kiting_2         | +0.0    | +2.0   | +0.6   |
+| kiting_3         | +0.0    | -0.4   | +0.0   |
+| surf_1           | -0.1    | +0.3   | +1.4   |
+| surf_2           | -0.4    | +0.1   | -0.1   |
+| surf_3           | +0.6    | -0.0   | +0.0   |
+| targeting_1      | +0.0    | +0.2   | +0.0   |
+| targeting_2      | +0.0    | +0.0   | +0.0   |
+| targeting_3      | +0.0    | +0.0   | +0.0   |
+| retreat_1        | +0.0    | -0.0   | -0.2   |
+| retreat_2        | +0.0    | +0.0   | +0.0   |
+| retreat_3        | +0.0    | +0.2   | +0.0   |
+| sweep_1          | +0.0    | -0.3   | +0.0   |
+| sweep_2          | +0.0    | +0.0   | +0.0   |
+| sweep_3          | +0.0    | +0.0   | +0.0   |
+| tactics_1        | -0.1    | -0.9   | -0.0   |
+| tactics_2        | +0.0    | +0.7   | -0.1   |
+| tactics_3        | +0.0    | +0.0   | +0.0   |
+
+### Analysis
+
+**⚠️ Ceiling effect dominates:** All three classes are already at 49+ avg depth at full caps + full upgrades. This compresses individual chain deltas — chains collectively push mage from ~6 (none/none) to 49 (+43 depth), but removing any single chain at the margin rarely shows >3 depth impact because the others compensate. The low per-chain deltas here do **not** mean chains are weak — they mean the test is measuring marginal value at saturation, not total value.
+
+**town_3 is the single most impactful individual tier across all tested classes:**
+- Warrior: +3.1 depth (the only meaningful warrior chain)
+- Mage: +8.4 depth (the biggest single-tier value anywhere in the dataset)
+- Ranger: +3.0 depth
+- town_1 and town_2 register near-zero or negative marginal value when tested against full baseline — their value is as prerequisites and at lower upgrade tiers, not at saturation
+
+**Tactics, sweep, targeting, retreat: essentially 0 measurable impact at full baseline** — all show <1% across all 3 classes. These chains cost 200–250+ essence per tier (total: 1,208–1,510) but show no measurable value at full-cap full-upgrade baseline. This could mean: (1) their value is front-loaded and captured at partial upgrade tiers, or (2) they are genuinely low-value and overpriced.
+
+**Preparedness shows a suspicious mage interaction** (preparedness_1 = -8.9, preparedness_2 = +9.7): capping at L1 alone sharply hurts mage (the bot refuses to descend without consumables, stalls), while L2 adds the gear-tier check that allows progression again. Total chain value is only +1.1 despite the volatile internals. This is real behavior, not noise.
+
+**Farming matters most for ranger** (-5.9%) and least for warrior (-1.0%). Ranger relies on gold-fueled gear progression; warrior can brute-force early floors without optimal equipment.
+
+**Kiting's value is concentrated at kiting_2** for both mage (+2.0) and ranger (+0.6). Kiting_3 shows near-zero or slightly negative marginal value at full baseline — the "optimal positioning" tier appears redundant when all other caps are maxed.
+
+### Implications for Cost Structure
+
+This data should be interpreted **alongside** the capability progression baselines (Phase 2), not in isolation. The progression test shows kiting contributes +15.5 depth for mage at mid-upgrade tier (the "late" unlock); at full-upgrade saturation it contributes only ~1.6. Both are true — kiting is high-value in the progression window, near-zero at the ceiling.
+
+**Clearest actionable signals:**
+- **town_3 is severely underpriced** (225 essence, +3–8 depth marginal value at ceiling) — likely 5–10× too cheap
+- **Tactics/sweep/targeting/retreat chains may be overpriced** for their measurable impact — further testing at `--upgrades=mid` needed before cost changes
+- **The fundamental imbalance is stat upgrades vs bot caps**: stat upgrades total ~322k essence for <4% marginal depth each; bot caps total ~9.4k for transformative gains in the progression window. Costs are inverted relative to value.
+
+**Next testing step:** Repeat cap sensitivity at `--upgrades=mid` to see chain values in the progression window rather than at ceiling. This will reveal which chains carry weight when the stat floor isn't compensating for everything.
+
+```bash
+pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000 --upgrades=mid
+```
 
 ---
 
