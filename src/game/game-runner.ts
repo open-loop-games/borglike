@@ -62,7 +62,6 @@ export function createGameRunner(config: RunnerConfig) {
   const capabilities = config.botCapabilities
   const toggles = config.botToggles
   // Per-slot level ranges, custom personality, and depth gate offset
-  const sweepLevelRange = config.sweepLevelRange
   const surfLevelRange = config.surfLevelRange
   const botPersonalityConfig = config.botPersonalityConfig
   const depthGateOffset = config.depthGateOffset
@@ -86,7 +85,6 @@ export function createGameRunner(config: RunnerConfig) {
       botState,
       capabilities,
       toggles,
-      sweepLevelRange,
       surfLevelRange,
       botPersonalityConfig,
       depthGateOffset

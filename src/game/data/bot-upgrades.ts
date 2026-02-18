@@ -18,9 +18,6 @@ export type BotUpgradeId =
   | 'preparedness_1'
   | 'preparedness_2'
   | 'preparedness_3'
-  | 'sweep_1'
-  | 'sweep_2'
-  | 'sweep_3'
   | 'surf_1'
   | 'surf_2'
   | 'surf_3'
@@ -64,7 +61,6 @@ const CHAIN_COSTS = {
   tactics: { baseCost: 200, costScaling: 1.8 },
   town: { baseCost: 100, costScaling: 1.5 },
   preparedness: { baseCost: 150, costScaling: 1.8 },
-  sweep: { baseCost: 150, costScaling: 1.8 },
   surf: { baseCost: 200, costScaling: 1.8 },
   kiting: { baseCost: 250, costScaling: 2.0 },
   targeting: { baseCost: 200, costScaling: 1.8 },
@@ -188,42 +184,6 @@ const preparedness3: BotUpgradeDefinition = {
   requires: 'preparedness_2',
   category: 'graded',
   targetField: 'preparedness',
-  targetLevel: 3,
-}
-
-// =============================================================================
-// SWEEP UPGRADES (exploration thoroughness)
-// =============================================================================
-
-const sweep1: BotUpgradeDefinition = {
-  id: 'sweep_1',
-  name: 'Sweep I',
-  description: 'Explore 60% of floor tiles before descent',
-  cost: chainCost(CHAIN_COSTS.sweep, 1),
-  category: 'graded',
-  targetField: 'sweep',
-  targetLevel: 1,
-}
-
-const sweep2: BotUpgradeDefinition = {
-  id: 'sweep_2',
-  name: 'Sweep II',
-  description: 'Explore 75% of floor tiles before descent',
-  cost: chainCost(CHAIN_COSTS.sweep, 2),
-  requires: 'sweep_1',
-  category: 'graded',
-  targetField: 'sweep',
-  targetLevel: 2,
-}
-
-const sweep3: BotUpgradeDefinition = {
-  id: 'sweep_3',
-  name: 'Sweep III',
-  description: 'Explore 90% of floor tiles before descent',
-  cost: chainCost(CHAIN_COSTS.sweep, 3),
-  requires: 'sweep_2',
-  category: 'graded',
-  targetField: 'sweep',
   targetLevel: 3,
 }
 
@@ -390,10 +350,6 @@ export const BOT_UPGRADES: BotUpgradeDefinition[] = [
   preparedness1,
   preparedness2,
   preparedness3,
-  // Sweep upgrades
-  sweep1,
-  sweep2,
-  sweep3,
   // Surf upgrades
   surf1,
   surf2,
@@ -500,7 +456,6 @@ export type GradedCapabilityField =
   | 'tactics'
   | 'town'
   | 'preparedness'
-  | 'sweep'
   | 'surf'
   | 'kiting'
   | 'targeting'

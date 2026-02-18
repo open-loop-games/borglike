@@ -39,9 +39,7 @@ const customPersonality = ref<PersonalityConfig>(
   savedConfig.customPersonality ?? getPersonalityConfig('cautious')
 )
 
-// Sweep/surf level ranges
-const sweepRangeStart = ref(savedConfig.sweepLevelRange?.start ?? 0)
-const sweepRangeEnd = ref(savedConfig.sweepLevelRange?.end ?? 0)
+// Surf level range
 const surfRangeStart = ref(savedConfig.surfLevelRange?.start ?? 0)
 const surfRangeEnd = ref(savedConfig.surfLevelRange?.end ?? 0)
 
@@ -210,7 +208,6 @@ const activeBonuses = computed(() => {
 // Per-slot bot controls - toggles and active levels
 const globalCaps = computed(() => progression.botCapabilities)
 const slotConfig = computed(() => progression.getSlotConfig(props.slot))
-const activeSweepLevel = computed(() => slotConfig.value.activeSweepLevel ?? globalCaps.value.sweep)
 const activeSurfLevel = computed(() => slotConfig.value.activeSurfLevel ?? globalCaps.value.surf)
 
 const depthGateLabel = computed(() => {
@@ -226,12 +223,7 @@ const depthGateClass = computed(() => {
   return ''
 })
 
-const sweepLabels: Record<number, string> = { 1: '60%', 2: '75%', 3: '90%' }
 const surfLabels: Record<number, string> = { 1: '5x5', 2: '9x9', 3: '21x21' }
-
-function setActiveSweep(level: number) {
-  progression.setActiveGradedLevel(props.slot, 'sweep', level)
-}
 
 function setActiveSurf(level: number) {
   progression.setActiveGradedLevel(props.slot, 'surf', level)
@@ -246,7 +238,6 @@ function handleStart() {
     class: selectedClass.value,
     personality: selectedPersonality.value,
     boosters: [boosterSlot0.value, boosterSlot1.value],
-    sweepLevelRange: { start: sweepRangeStart.value, end: sweepRangeEnd.value },
     surfLevelRange: { start: surfRangeStart.value, end: surfRangeEnd.value },
     depthGateOffset: depthGateOffset.value,
     customPersonality:
@@ -593,49 +584,10 @@ function handleCancel() {
                 <span>Cautious</span>
               </div>
             </div>
-            <!-- Sweep Farming -->
-            <div v-if="globalCaps.sweep > 0" class="control-row">
-              <span class="control-label">Sweep Farming</span>
-              <span class="control-hint">Re-explore previous floors to respawn monsters and farm</span>
-            </div>
-            <div v-if="globalCaps.sweep > 0" class="range-row">
-              <span class="control-label">Sweep Range</span>
-              <div class="range-inputs">
-                <input
-                  v-model.number="sweepRangeStart"
-                  type="number"
-                  class="range-input"
-                  min="0"
-                  max="50"
-                  placeholder="0"
-                />
-                <span class="range-sep">-</span>
-                <input
-                  v-model.number="sweepRangeEnd"
-                  type="number"
-                  class="range-input"
-                  min="0"
-                  max="50"
-                  placeholder="0"
-                />
-              </div>
-              <span class="range-hint">Char levels (0 = disabled)</span>
-              <div class="level-selector">
-                <button
-                  v-for="n in globalCaps.sweep"
-                  :key="n"
-                  class="level-btn"
-                  :class="{ selected: activeSweepLevel === n }"
-                  @click="setActiveSweep(n)"
-                >
-                  {{ sweepLabels[n] }}
-                </button>
-              </div>
-            </div>
             <!-- Surf Farming -->
             <div v-if="globalCaps.surf > 0" class="control-row">
               <span class="control-label">Surf Farming</span>
-              <span class="control-hint">Flip depths for respawns, farm near stairs. Takes priority over sweep farming.</span>
+              <span class="control-hint">Flip depths for respawns, farm near stairs</span>
             </div>
             <!-- Surf Level Range -->
             <div v-if="globalCaps.surf > 0" class="range-row">
@@ -676,7 +628,6 @@ function handleCancel() {
             <div
               v-if="
                 !globalCaps.farming &&
-                globalCaps.sweep === 0 &&
                 globalCaps.surf === 0 &&
                 globalCaps.preparedness < 2
               "

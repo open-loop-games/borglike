@@ -62,10 +62,6 @@ export function createBotState(): BotState {
     sweepDirection: null,
     sweepStartTurn: 0,
     sweepExhausted: false,
-    // Sweep flip state (yo-yo into blocked depth)
-    sweepFlipActive: false,
-    sweepFlipTargetDepth: null,
-    sweepFlipVisitedBlocked: false,
     // Kite duration tracking
     kiteTargetId: null,
     kiteTargetStartTurn: 0,

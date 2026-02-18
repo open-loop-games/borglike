@@ -232,11 +232,9 @@ export function startRun(slot: number, config?: Partial<RunRequest>): string {
   const globalCaps = progression.botCapabilities
 
   // Build effective capabilities with active levels (player can select lower levels)
-  const activeSweep = Math.min(slotConfig.activeSweepLevel ?? globalCaps.sweep, globalCaps.sweep)
   const activeSurf = Math.min(slotConfig.activeSurfLevel ?? globalCaps.surf, globalCaps.surf)
   const effectiveCapabilities = {
     ...globalCaps,
-    sweep: activeSweep,
     surf: activeSurf,
   }
 
@@ -251,11 +249,10 @@ export function startRun(slot: number, config?: Partial<RunRequest>): string {
     bestiary,
     maxDepthEver,
     maxTurns: 0, // Unlimited
-    // Per-slot bot training unlocks (uses active levels for sweep/surf)
+    // Per-slot bot training unlocks (uses active levels for surf)
     botCapabilities: effectiveCapabilities,
     botToggles: slotConfig.toggles,
-    // Per-slot level ranges and custom personality
-    sweepLevelRange: slotConfig.sweepLevelRange,
+    // Per-slot level range and custom personality
     surfLevelRange: slotConfig.surfLevelRange,
     botPersonalityConfig:
       slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
@@ -1038,9 +1035,8 @@ function createRunForCatchUp(
   const bestiary = progression.bestiary
   const maxDepthEver = progression.globalStats.maxDepthEver
   const globalCaps = progression.botCapabilities
-  const activeSweep = Math.min(slotConfig.activeSweepLevel ?? globalCaps.sweep, globalCaps.sweep)
   const activeSurf = Math.min(slotConfig.activeSurfLevel ?? globalCaps.surf, globalCaps.surf)
-  const effectiveCapabilities = { ...globalCaps, sweep: activeSweep, surf: activeSurf }
+  const effectiveCapabilities = { ...globalCaps, surf: activeSurf }
 
   const runner = createGameRunner({
     raceId: RACE_IDS[raceName] || 'human',
@@ -1054,7 +1050,6 @@ function createRunForCatchUp(
     maxTurns: 0,
     botCapabilities: effectiveCapabilities,
     botToggles: slotConfig.toggles,
-    sweepLevelRange: slotConfig.sweepLevelRange,
     surfLevelRange: slotConfig.surfLevelRange,
     botPersonalityConfig:
       slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,

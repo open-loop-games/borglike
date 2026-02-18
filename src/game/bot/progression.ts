@@ -19,7 +19,7 @@ import type { Point, GameState, Character } from '../types'
 import type { UpgradeBonuses } from '../upgrade-effects'
 import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { SQUISHY_CLASSES, getEffectiveCapabilities, seenGridAdd } from './types'
+import { getEffectiveCapabilities, seenGridAdd } from './types'
 import { profile } from './profiler'
 import {
   getExplorationProgress,
@@ -32,12 +32,8 @@ import { monsters as MONSTERS, VICTORY_BOSS_NAME } from '../data/monsters'
 import {
   handleActiveFarmingLoop,
   initiateFarmingLoop,
-  getSweepGoal,
   getFlipNavigationGoal,
 } from './farming'
-
-// Re-export farming functions that other modules need
-export { initializeSweepDirection } from './farming'
 
 // ============================================================================
 // HELPERS
@@ -318,11 +314,6 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
       const farmingGoal = profile('prog.initFarm', () => initiateFarmingLoop(context))
       if (farmingGoal) return farmingGoal
     }
-  }
-
-  if (botState.sweepMode && SQUISHY_CLASSES.has(character.classId)) {
-    const sweepGoal = getSweepGoal(context)
-    if (sweepGoal) return sweepGoal
   }
 
   const descendGoal = profile('prog.getDescendGoal', () => getDescendGoal(context))

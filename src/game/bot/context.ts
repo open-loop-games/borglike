@@ -8,11 +8,10 @@ import type { GameState, BotPersonality, Point, AltarState } from '../types'
 import type {
   BotCapabilities,
   BotToggles,
-  SweepLevelRange,
   SurfLevelRange,
 } from '../../types/progression'
 import { FULL_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../../types/progression'
-import { getDefaultSweepLevelRange, getDefaultSurfLevelRange } from './types'
+import { getDefaultSurfLevelRange } from './types'
 
 import type { BotContext, BotState, PersonalityConfig } from './types'
 import { createSeenGrid } from './types'
@@ -80,10 +79,6 @@ function createMinimalBotState(): BotState {
     sweepDirection: null,
     sweepStartTurn: 0,
     sweepExhausted: false,
-    // Sweep flip state (yo-yo into blocked depth)
-    sweepFlipActive: false,
-    sweepFlipTargetDepth: null,
-    sweepFlipVisitedBlocked: false,
     // Kite duration tracking
     kiteTargetId: null,
     kiteTargetStartTurn: 0,
@@ -118,7 +113,6 @@ export function buildBotContext(
   botState?: BotState,
   capabilities?: BotCapabilities,
   toggles?: BotToggles,
-  sweepLevelRange?: SweepLevelRange,
   surfLevelRange?: SurfLevelRange,
   personalityConfig?: PersonalityConfig,
   depthGateOffset?: number
@@ -132,8 +126,6 @@ export function buildBotContext(
   // Default to full capabilities for backwards compatibility
   const effectiveCapabilities = capabilities ?? FULL_BOT_CAPABILITIES
   const effectiveToggles = toggles ?? DEFAULT_BOT_TOGGLES
-  // Default sweep/surf ranges based on class
-  const effectiveSweepRange = sweepLevelRange ?? getDefaultSweepLevelRange(game.character.classId)
   const effectiveSurfRange = surfLevelRange ?? getDefaultSurfLevelRange()
 
   // Get class-aware information
@@ -194,7 +186,6 @@ export function buildBotContext(
     effectiveConfig,
     capabilities: effectiveCapabilities,
     toggles: effectiveToggles,
-    sweepLevelRange: effectiveSweepRange,
     surfLevelRange: effectiveSurfRange,
     depthGateOffset: depthGateOffset ?? 0,
     visibleMonsters,

@@ -35,7 +35,6 @@ const gradedChains: { field: GradedCapabilityField; name: string; icon: string }
   { field: 'retreat', name: 'Retreat', icon: '←' },
   { field: 'kiting', name: 'Kiting', icon: '→' },
   { field: 'preparedness', name: 'Preparedness', icon: '✓' },
-  { field: 'sweep', name: 'Sweep Farming', icon: '↔' },
   { field: 'surf', name: 'Surf Farming', icon: '≈' },
 ]
 
@@ -76,7 +75,7 @@ const botUpgradeItems = computed(() => {
 
   // Graded chains: one card per field (sweep/surf require farming)
   for (const chain of gradedChains) {
-    if ((chain.field === 'sweep' || chain.field === 'surf') && !farmingUnlocked) continue
+    if (chain.field === 'surf' && !farmingUnlocked) continue
     const currentLevel = caps[chain.field]
     const next = getNextGradedUpgrade(chain.field, caps)
     const nextId = next?.id

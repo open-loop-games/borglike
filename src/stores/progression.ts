@@ -15,7 +15,6 @@ import type {
   BotToggles,
 } from '../types'
 import { DEFAULT_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../types/progression'
-import { getDefaultSweepLevelRange } from '@game/bot/types'
 import {
   type BotUpgradeId,
   type ToggleUpgradeId,
@@ -93,7 +92,6 @@ export const useProgressionStore = defineStore('progression', () => {
       personality: 'cautious',
       boosters: [null, null],
       toggles: { ...DEFAULT_BOT_TOGGLES },
-      sweepLevelRange: getDefaultSweepLevelRange('warrior'),
     }
   }
 
@@ -522,11 +520,8 @@ export const useProgressionStore = defineStore('progression', () => {
         saved.race === 'Random' || unlocks.value.races.has(saved.race) ? saved.race : 'Random'
       const validClass =
         saved.class === 'Random' || unlocks.value.classes.has(saved.class) ? saved.class : 'Random'
-      const effectiveClassId = validClass === 'Random' ? 'warrior' : validClass.toLowerCase()
-      const sweepLevelRange = saved.sweepLevelRange ?? getDefaultSweepLevelRange(effectiveClassId)
       const surfLevelRange = saved.surfLevelRange ?? { start: 0, end: 0 }
       // Active levels default to max unlocked from global capabilities
-      const activeSweepLevel = saved.activeSweepLevel ?? botCapabilities.value.sweep
       const activeSurfLevel = saved.activeSurfLevel ?? botCapabilities.value.surf
 
       return {
@@ -542,10 +537,8 @@ export const useProgressionStore = defineStore('progression', () => {
             : null,
         ],
         toggles,
-        sweepLevelRange,
         surfLevelRange,
         customPersonality: saved.customPersonality,
-        activeSweepLevel,
         activeSurfLevel,
       }
     }
@@ -610,8 +603,8 @@ export const useProgressionStore = defineStore('progression', () => {
     })
   }
 
-  /** Set active level for a graded capability (sweep/surf) */
-  function setActiveGradedLevel(slot: number, field: 'sweep' | 'surf', level: number): void {
+  /** Set active level for a graded capability (surf) */
+  function setActiveGradedLevel(slot: number, field: 'surf', level: number): void {
     const config = getSlotConfig(slot)
     const maxLevel = botCapabilities.value[field]
 
@@ -621,8 +614,7 @@ export const useProgressionStore = defineStore('progression', () => {
     // Save updated config
     saveSlotConfig(slot, {
       ...config,
-      activeSweepLevel: field === 'sweep' ? activeLevel : config.activeSweepLevel,
-      activeSurfLevel: field === 'surf' ? activeLevel : config.activeSurfLevel,
+      activeSurfLevel: activeLevel,
     })
   }
 
@@ -631,15 +623,12 @@ export const useProgressionStore = defineStore('progression', () => {
     const config = getSlotConfig(slot)
     const caps = botCapabilities.value
     // Use active levels if set, otherwise use max unlocked
-    const activeSweep = Math.min(config.activeSweepLevel ?? caps.sweep, caps.sweep)
     const activeSurf = Math.min(config.activeSurfLevel ?? caps.surf, caps.surf)
     return {
       town: caps.town,
       farming: caps.farming && config.toggles.farming,
       tactics: caps.tactics,
       preparedness: caps.preparedness,
-      sweepEnabled: config.toggles.sweepEnabled,
-      sweep: activeSweep,
       surf: activeSurf,
       kiting: caps.kiting,
       targeting: caps.targeting,

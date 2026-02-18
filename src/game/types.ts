@@ -22,7 +22,6 @@ import type {
   BestiaryEntry,
   BotCapabilities,
   BotToggles,
-  SweepLevelRange,
   SurfLevelRange,
 } from '@/types/progression'
 import type { PersonalityConfig } from '@bot/types'
@@ -1010,8 +1009,7 @@ export interface RunConfig {
   // Per-slot bot capabilities (training unlocks)
   botCapabilities?: BotCapabilities
   botToggles?: BotToggles
-  // Per-slot level ranges for sweep/surf activation
-  sweepLevelRange?: SweepLevelRange
+  // Per-slot level range for surf activation
   surfLevelRange?: SurfLevelRange
   // Custom personality config (used when botPersonality === 'custom')
   botPersonalityConfig?: PersonalityConfig

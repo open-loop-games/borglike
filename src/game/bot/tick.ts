@@ -15,14 +15,12 @@ import type { GameState, GameAction, BotPersonality } from '../types'
 import type {
   BotCapabilities,
   BotToggles,
-  SweepLevelRange,
   SurfLevelRange,
 } from '@/types/progression'
 import { getTile, countExploredTiles } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 
 import type { BotState, BotGoal, BotContext, DangerResult, PersonalityConfig } from './types'
-import { getDefaultSweepLevelRange } from './types'
 import type { FlowGrid } from './flow'
 import {
   createBotState,
@@ -66,7 +64,7 @@ import {
   getFrontierPositions,
   getSweepFrontierPositions,
 } from './exploration'
-import { initializeSweepDirection, recordVisibleTiles } from './progression'
+import { recordVisibleTiles } from './progression'
 import { findAdjacentMonster, hasRangedWeapon, findKitePosition, shouldAvoidMelee } from './combat'
 import { getDamageSpellAction } from './spells'
 import { getCombatBuffAction, getPreCombatBuffAction } from './survival'
@@ -85,7 +83,6 @@ export function runBotTick(
   existingState?: BotState,
   capabilities?: BotCapabilities,
   toggles?: BotToggles,
-  sweepLevelRange?: SweepLevelRange,
   surfLevelRange?: SurfLevelRange,
   personalityConfig?: PersonalityConfig,
   depthGateOffset?: number
@@ -118,43 +115,9 @@ export function runBotTick(
       }
     }
 
-    // Initialize sweep mode on dungeon level change if conditions are met
-    // Get effective sweep range (use provided or default based on class)
-    const effectiveSweepRange = sweepLevelRange ?? getDefaultSweepLevelRange(game.character.classId)
-    const effectiveToggles = toggles ?? {
-      town: true,
-      farming: true,
-      preparedness: true,
-      sweepEnabled: true,
-    }
-    const effectiveCapabilities = capabilities ?? {
-      town: true,
-      farming: true,
-      preparedness: true,
-      sweep: 3,
-      surf: 3,
-      kiting: 3,
-      targeting: 3,
-      retreat: 3,
-    }
     const inDungeon = game.character.depth !== 0
-    const charLevel = game.character.level
 
-    // Sweep activates when: in dungeon, capability unlocked, toggle on, and level in range
-    const sweepActive =
-      inDungeon &&
-      effectiveCapabilities.sweep >= 1 &&
-      effectiveToggles.sweepEnabled &&
-      effectiveSweepRange.start > 0 &&
-      charLevel >= effectiveSweepRange.start &&
-      charLevel < effectiveSweepRange.end
-
-    if (sweepActive) {
-      botState.sweepMode = true
-      botState.sweepStartTurn = game.turn
-      initializeSweepDirection(game, botState)
-      // Don't set tetheredOrigin - sweep mode uses sweep exploration, not tether
-    } else if (wasInFarmingMode && inDungeon) {
+    if (wasInFarmingMode && inDungeon) {
       // Set tethered origin for non-sweep farming mode
       // Origin = current position (where we entered the level)
       // The tether check in getAscendToFarmGoal will block flipping until exploration is done
@@ -176,7 +139,6 @@ export function runBotTick(
       botState,
       capabilities,
       toggles,
-      sweepLevelRange,
       surfLevelRange,
       personalityConfig,
       depthGateOffset

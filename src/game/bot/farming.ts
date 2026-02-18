@@ -1,26 +1,24 @@
 /**
  * Farming Domain
  *
- * Handles resource acquisition through tethered exploration, sweep mode,
- * and farming loops. Used when descent is blocked by consumable requirements.
+ * Handles resource acquisition through tethered exploration and farming loops.
+ * Used when descent is blocked by consumable requirements.
  *
  * Key concepts:
  * - Tethered mode: Exploring within radius of stairs to trigger spawns
- * - Sweep mode: Full-level re-exploration for casters (no stair-surfing)
  * - Farming loop: Yo-yo between depths to accumulate gold/XP
  * - Town trips: Portal to town when ready to restock
  */
 
 import type { Point, GameState, Tile, Character } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
-import { getEffectiveCapabilities, seenGridHas, seenGridClear } from './types'
+import { getEffectiveCapabilities, seenGridHas } from './types'
 import type { SeenGrid } from './types'
 import { MAX_DEPTH } from '../types'
 import { getTile } from '../dungeon'
 import type { FlowGrid } from './flow'
 import { computeFlow, getFlowCost, MAX_FLOW_COST } from './flow'
 import { profile } from './profiler'
-import { findExplorationTarget } from './exploration'
 import { getDepthReadiness, getGoldTarget, isUnderLeveled, getEffectiveGold } from './preparation'
 import { findTownPortalScroll } from './items'
 
@@ -160,20 +158,6 @@ function isSurfLevelInRange(context: BotContext): boolean {
   return charLevel >= start && (end === 0 || charLevel < end)
 }
 
-/** Base sweep threshold (% of floor tiles seen this visit) - used when sweep disabled */
-const SWEEP_BASE_THRESHOLD = 100 // Effectively disabled at L0
-
-/** Sweep completion thresholds by level: L0=disabled, L1=60%, L2=75%, L3=90% */
-const SWEEP_THRESHOLDS = [100, 60, 75, 90] as const
-
-/** Get sweep completion threshold based on capability level */
-export function getSweepCompletionThreshold(sweepLevel: number): number {
-  return SWEEP_THRESHOLDS[sweepLevel] ?? SWEEP_BASE_THRESHOLD
-}
-
-/** Max turns before sweep times out */
-const SWEEP_TIMEOUT = 500
-
 // ============================================================================
 // HELPERS - Tile Counting
 // ============================================================================
@@ -294,129 +278,6 @@ export function exitTetheredMode(botState: BotState): void {
 }
 
 // ============================================================================
-// STATE TRANSITIONS - Sweep Mode
-// ============================================================================
-
-/**
- * Exit sweep mode - clears all sweep state.
- * @param exhausted - If true, marks sweep as exhausted on this level (won't re-enable)
- */
-export function exitSweepMode(botState: BotState, exhausted: boolean = false): void {
-  botState.sweepMode = false
-  botState.sweepDirection = null
-  botState.sweepStartTurn = 0
-  if (exhausted) {
-    botState.sweepExhausted = true
-  }
-}
-
-// ============================================================================
-// STATE TRANSITIONS - Sweep Flip (yo-yo descent into blocked depth)
-// ============================================================================
-
-/**
- * Enter sweep flip mode - about to descend into blocked depth.
- */
-export function enterSweepFlip(botState: BotState, targetDepth: number): void {
-  botState.sweepFlipActive = true
-  botState.sweepFlipTargetDepth = targetDepth
-  botState.sweepFlipVisitedBlocked = false
-}
-
-/**
- * Mark that we've visited the blocked depth during flip.
- */
-export function markSweepFlipVisitedBlocked(botState: BotState): void {
-  botState.sweepFlipVisitedBlocked = true
-}
-
-/**
- * Exit sweep flip mode - arrived at target depth with fresh level.
- */
-export function exitSweepFlip(botState: BotState): void {
-  botState.sweepFlipActive = false
-  botState.sweepFlipTargetDepth = null
-  botState.sweepFlipVisitedBlocked = false
-}
-
-/**
- * Handle sweep flip navigation (yo-yo into blocked depth to trigger regen).
- * Returns goal to navigate, or null if flip is complete/invalid.
- */
-function handleSweepFlipNavigation(context: BotContext): BotGoal | null {
-  const { game, botState } = context
-  const character = game.character
-  const targetDepth = botState.sweepFlipTargetDepth!
-  const blockedDepth = botState.farmBlockedDepth
-
-  // At target depth: check if flip is complete or needs to start
-  if (character.depth === targetDepth) {
-    if (botState.sweepFlipVisitedBlocked) {
-      // Completed round trip - arrived back at target with fresh level
-      exitSweepFlip(botState)
-      seenGridClear(botState.seenThisVisit)
-      return null // Fall through to normal sweep
-    }
-    // Haven't visited blocked yet - descend toward it
-    const stairs = getStairsDown(context)
-    if (!stairs) {
-      exitSweepFlip(botState)
-      return null
-    }
-    return makeDescendGoal(game, stairs, `Sweep flip: descending to D${blockedDepth}`)
-  }
-
-  // At blocked depth - mark visited and ascend back
-  if (character.depth === blockedDepth) {
-    markSweepFlipVisitedBlocked(botState)
-    const stairs = getStairsUp(context)
-    if (!stairs) {
-      exitSweepFlip(botState)
-      return null
-    }
-    return makeAscendGoal(game, stairs, `Sweep flip: ascending to fresh D${targetDepth}`)
-  }
-
-  // Between target and blocked - use generic navigation
-  const navigateTarget = botState.sweepFlipVisitedBlocked ? targetDepth : blockedDepth
-  const reason = botState.sweepFlipVisitedBlocked
-    ? `Sweep flip: ascending to D${targetDepth}`
-    : `Sweep flip: descending to D${blockedDepth}`
-  const goal = getFlipNavigationGoal(context, navigateTarget, blockedDepth, reason)
-  if (!goal) {
-    exitSweepFlip(botState)
-  }
-  return goal
-}
-
-/**
- * Set sweep direction toward level center (away from entry point).
- * Called when initializing sweep mode for casters.
- */
-export function initializeSweepDirection(game: GameState, botState: BotState): void {
-  const pos = game.character.position
-  const level = game.currentLevel
-
-  // Find center of level
-  const centerX = Math.floor(level.width / 2)
-  const centerY = Math.floor(level.height / 2)
-
-  // Direction from player to center
-  const dx = centerX - pos.x
-  const dy = centerY - pos.y
-
-  // Choose primary direction based on larger delta
-  if (Math.abs(dx) > Math.abs(dy)) {
-    botState.sweepDirection = dx > 0 ? 'e' : 'w'
-  } else if (dy !== 0) {
-    botState.sweepDirection = dy > 0 ? 's' : 'n'
-  } else {
-    // At center, default to east
-    botState.sweepDirection = 'e'
-  }
-}
-
-// ============================================================================
 // QUERIES - Tether Geometry
 // ============================================================================
 
@@ -530,86 +391,6 @@ function findClosestByManhattan<T extends { position: Point }>(
   return closest
 }
 
-// ============================================================================
-// QUERIES - Sweep Mode
-// ============================================================================
-
-/**
- * Check if a tile should be counted as explorable (floor or door).
- */
-function isExplorableTile(tile: Tile): boolean {
-  return tile.type === 'floor' || tile.type === 'door_open' || tile.type === 'door_closed'
-}
-
-/**
- * Get sweep exploration progress (% of floor tiles seen this visit).
- * Used by casters to re-cover previously explored levels.
- */
-export function getSweepProgress(game: GameState, botState: BotState): number {
-  const { total, seen } = countTilesInBounds(
-    game.currentLevel,
-    botState.seenThisVisit,
-    undefined, // full level
-    isExplorableTile
-  )
-  return total > 0 ? Math.floor((seen / total) * 100) : 100
-}
-
-/**
- * Check if sweep is complete (progress >= threshold).
- * @param sweepLevel - Capability level (0=disabled, 1-3=levels)
- */
-export function isSweepComplete(
-  game: GameState,
-  botState: BotState,
-  sweepLevel: number = 3
-): boolean {
-  const threshold = getSweepCompletionThreshold(sweepLevel)
-  return getSweepProgress(game, botState) >= threshold
-}
-
-/**
- * Check if sweep has timed out (too many turns without completion).
- */
-export function isSweepTimedOut(game: GameState, botState: BotState): boolean {
-  if (botState.sweepStartTurn === 0) return false
-  return game.turn - botState.sweepStartTurn > SWEEP_TIMEOUT
-}
-
-// ============================================================================
-// QUERIES - Sweep Mode
-// ============================================================================
-
-/**
- * Check if bot should use sweep exploration based on configuration.
- * Sweep mode is activated when:
- * - Bot has sweep mode enabled in state (set on level change in tick.ts)
- * - OR character level is within configured sweep range AND capability unlocked AND toggle enabled
- *
- * This allows any class to use sweep exploration if configured, not just casters.
- */
-function shouldUseSweep(context: BotContext): boolean {
-  const { game, botState, capabilities, toggles, sweepLevelRange } = context
-  const charLevel = game.character.level
-
-  // Don't re-enable sweep if it was exhausted on this level (timed out or unreachable tiles)
-  if (botState.sweepExhausted) return false
-
-  // If sweep mode is already active (set on level change), use it
-  if (botState.sweepMode) return true
-
-  // Check if conditions are met to use sweep
-  // (this handles cases where sweepMode wasn't set on level entry)
-  const result =
-    capabilities.sweep >= 1 &&
-    toggles.sweepEnabled &&
-    sweepLevelRange.start > 0 &&
-    charLevel >= sweepLevelRange.start &&
-    charLevel < sweepLevelRange.end
-
-  return result
-}
-
 /**
  * Find the depth that blocks descent due to readiness requirements.
  *
@@ -669,9 +450,6 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
   const { game, botState, visibleMonsters, visibleItems } = context
   const character = game.character
   const pos = character.position
-
-  // Sweep mode uses sweep exploration instead of tethered farming
-  if (shouldUseSweep(context)) return null
 
   // Already have enough effective gold? Don't need to farm
   if (getEffectiveGold(character) >= goldTarget) return null
@@ -749,58 +527,6 @@ function getFarmGoal(context: BotContext, goldTarget: number): BotGoal | null {
 }
 
 // ============================================================================
-// GOAL CREATORS - Sweep
-// ============================================================================
-
-/**
- * Get SWEEP goal - sweep exploration for casters.
- * Walk through entire level to trigger spawns.
- * Targets tiles explored but NOT seen this visit (monsters spawn on sight).
- */
-export function getSweepGoal(context: BotContext): BotGoal | null {
-  const { game, botState } = context
-
-  // Only when sweep mode is active (any class can sweep if configured)
-  if (!shouldUseSweep(context)) return null
-
-  // Initialize sweep state if entering via conditions (not via sweepMode flag)
-  if (!botState.sweepMode && botState.sweepStartTurn === 0) {
-    botState.sweepMode = true
-    botState.sweepStartTurn = game.turn
-  }
-
-  const progress = getSweepProgress(game, botState)
-
-  // Check if sweep is complete (70% of floor tiles seen this visit)
-  if (isSweepComplete(game, botState)) {
-    exitSweepMode(botState)
-    return null
-  }
-
-  // Check for timeout (prevent infinite sweep on weird maps)
-  if (isSweepTimedOut(game, botState)) {
-    exitSweepMode(botState, true) // Mark exhausted - don't re-enable on this level
-    return null
-  }
-
-  // Find sweep target using standard exploration logic with sweep mode
-  const target = findExplorationTarget(game, botState, true)
-  if (!target) {
-    // No reachable unseen tiles left - mark exhausted so we don't re-enable
-    exitSweepMode(botState, true)
-    return null
-  }
-
-  return {
-    type: 'EXPLORE',
-    target,
-    targetId: null,
-    reason: `Sweep exploration (${progress}% seen)`,
-    startTurn: game.turn,
-  }
-}
-
-// ============================================================================
 // GOAL CREATORS - Town Trip
 // ============================================================================
 
@@ -858,8 +584,6 @@ export function getTownTripGoal(context: BotContext): BotGoal | null {
  * Key: Check against blocked depth (where readiness fails), not current depth.
  * This prevents stair surfing between N and N-1 when blocked at N+1.
  *
- * Casters skip stair-surfing in early game (Angband borg-inspired) since
- * it resets spawns, which is deadly for low-HP classes. They use sweep instead.
  */
 export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
   const { game, botState, effectiveConfig } = context
@@ -867,13 +591,6 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
 
   // Can't ascend from depth 1
   if (character.depth <= 1) return null
-
-  // SWEEP MODE: Must complete sweep before ascending again
-  if (shouldUseSweep(context)) {
-    const sweepGoal = getSweepGoal(context)
-    if (sweepGoal) return sweepGoal
-    // Sweep complete - getSweepGoal already called exitSweepMode
-  }
 
   // Find the "blocked depth" - use stored value when farming, else scan forward
   const blockedDepth = findBlockedDepth(context)
@@ -906,48 +623,36 @@ export function getAscendToFarmGoal(context: BotContext): BotGoal | null {
   const stairsUp = botState.knownStairsUp
   if (!stairsUp) return null
 
-  // Sweep mode uses sweep instead of tethered exploration
-  if (shouldUseSweep(context)) {
-    if (!botState.farmingMode) {
-      enterFarmingMode(
-        botState,
-        blockedDepth,
-        getGoldTarget(blockedDepth, effectiveConfig.caution),
-        game.turn
-      )
-    }
-  } else {
-    // Tethered exploration check
-    const effective = getEffectiveCapabilities(context)
-    const radii = getTetherRadii(effective.surf)
+  // Tethered exploration check
+  const effective = getEffectiveCapabilities(context)
+  const radii = getTetherRadii(effective.surf)
 
-    // No tethering available at this surf level or out of surf range - skip farming loop
-    if (radii.length === 0 || !isSurfLevelInRange(context)) {
-      return null
-    }
+  // No tethering available at this surf level or out of surf range - skip farming loop
+  if (radii.length === 0 || !isSurfLevelInRange(context)) {
+    return null
+  }
 
-    if (botState.tetheredRadius > 0 && botState.tetheredOrigin) {
-      const done = isTetheredExplorationComplete(
-        context,
-        botState.tetheredOrigin,
-        botState.tetheredRadius
-      )
-      if (!done) return null
+  if (botState.tetheredRadius > 0 && botState.tetheredOrigin) {
+    const done = isTetheredExplorationComplete(
+      context,
+      botState.tetheredOrigin,
+      botState.tetheredRadius
+    )
+    if (!done) return null
 
-      if (!advanceTetherRadius(botState, radii)) {
-        exitTetheredMode(botState)
-      }
-    } else if (botState.tetheredRadius === 0) {
-      // Starting a new tether cycle
-      enterFarmingMode(
-        botState,
-        blockedDepth,
-        getGoldTarget(blockedDepth, effectiveConfig.caution),
-        game.turn
-      )
-      botState.tetheredRadius = radii[0]!
-      botState.tetheredFlipCount = 0
+    if (!advanceTetherRadius(botState, radii)) {
+      exitTetheredMode(botState)
     }
+  } else if (botState.tetheredRadius === 0) {
+    // Starting a new tether cycle
+    enterFarmingMode(
+      botState,
+      blockedDepth,
+      getGoldTarget(blockedDepth, effectiveConfig.caution),
+      game.turn
+    )
+    botState.tetheredRadius = radii[0]!
+    botState.tetheredFlipCount = 0
   }
 
   // Check if previous level is in cache
@@ -1059,7 +764,6 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   const character = game.character
   const goldTarget =
     botState.farmGoldTarget || getGoldTarget(botState.farmBlockedDepth, effectiveConfig.caution)
-  const useSweep = shouldUseSweep(context)
 
   // Check if ready for blocked depth
   const blockedReadiness = profile('farm.readiness', () =>
@@ -1076,14 +780,7 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   if (!blockedReadiness) {
     // Ready for blocked depth - exit farming mode
     exitFarmingMode(botState)
-    exitSweepFlip(botState)
     return null // Fall through to normal descent
-  }
-
-  // 0. Handle active sweep flip (yo-yo into blocked depth to trigger regen)
-  if (useSweep && botState.sweepFlipActive && botState.sweepFlipTargetDepth !== null) {
-    const flipGoal = handleSweepFlipNavigation(context)
-    if (flipGoal) return flipGoal
   }
 
   // 1. If ready for town trip, use portal (unless at depth 1 - just walk)
@@ -1110,13 +807,13 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
     return farm
   }
 
-  // 4. Tether sweep - actively walk to unseen tiles within tether radius (non-sweep mode only)
-  if (botState.tetheredOrigin && !useSweep) {
+  // 4. Tether sweep - actively walk to unseen tiles within tether radius
+  if (botState.tetheredOrigin) {
     const sweepGoal = profile('farm.tetherSweep', () => handleTetherSweep(context, goldTarget))
     if (sweepGoal) return sweepGoal
   }
 
-  // 5. At farming floor with complete tether? Allow descent (tether mode only)
+  // 5. At farming floor with complete tether? Allow descent
   const farmingFloor = Math.max(1, botState.farmBlockedDepth - 2)
   if (character.depth <= farmingFloor && botState.tetheredOrigin) {
     if (isTetheredExplorationComplete(context, botState.tetheredOrigin, botState.tetheredRadius)) {
@@ -1133,44 +830,6 @@ export function handleActiveFarmingLoop(context: BotContext): BotGoal | null {
   // Still tethered? Need to explore
   if (botState.tetheredOrigin) {
     return null // Let EXPLORE find content
-  }
-
-  // 6. Sweep mode descent logic (yo-yo pattern)
-  if (useSweep) {
-    const sweepDone = isSweepComplete(game, botState) || isSweepTimedOut(game, botState)
-
-    if (sweepDone) {
-      const stairs = getStairsDown(context)
-      if (!stairs) {
-        // Don't exit sweep mode yet - keep sweeping until stairs are found
-        // This prevents state corruption where sweep is marked done but flip can't happen
-        return null
-      }
-
-      // Only exit sweep mode when we can actually proceed with flip/descent
-      exitSweepMode(botState)
-
-      // At blockedDepth - 1: flip INTO blocked depth to trigger level regen above
-      if (character.depth === botState.farmBlockedDepth - 1) {
-        enterSweepFlip(botState, character.depth) // Return to this depth after flip
-        seenGridClear(botState.seenThisVisit)
-        return makeDescendGoal(
-          game,
-          stairs,
-          `Sweep flip: descending into D${botState.farmBlockedDepth} to trigger regen`
-        )
-      }
-
-      // Between farmingFloor and blockedDepth-1: descend toward blockedDepth-1
-      // Or below farmingFloor: descend
-      if (character.depth < botState.farmBlockedDepth - 1) {
-        seenGridClear(botState.seenThisVisit)
-        return makeDescendGoal(game, stairs, `Sweep: descending to D${character.depth + 1}`)
-      }
-    }
-
-    // Sweep not done - let EXPLORE/sweep goal handle it
-    return null
   }
 
   // Tether cleared - fall through to normal descent

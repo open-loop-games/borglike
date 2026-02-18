@@ -19,8 +19,8 @@ import {
 /** Named capability presets for progression testing. */
 export const CAPABILITY_PRESETS: Record<string, string> = {
   early: 'town_1,farming,tactics_1,preparedness_1,targeting_1,retreat_1',
-  mid: 'town_2,farming,tactics_2,preparedness_2,sweep_1,surf_1,kiting_1,targeting_2,retreat_2',
-  late: 'town_3,farming,tactics_3,preparedness_3,sweep_2,surf_2,kiting_2,targeting_3,retreat_3',
+  mid: 'town_2,farming,tactics_2,preparedness_2,surf_1,kiting_1,targeting_2,retreat_2',
+  late: 'town_3,farming,tactics_3,preparedness_3,surf_2,kiting_2,targeting_3,retreat_3',
 }
 
 /**
@@ -59,10 +59,6 @@ export function parseCapabilities(spec: string): BotCapabilities {
     else if (id.startsWith('preparedness_')) {
       const level = parseInt(id.slice(13), 10)
       if (level >= 1 && level <= 3) caps.preparedness = Math.max(caps.preparedness, level)
-    }
-    else if (id.startsWith('sweep_')) {
-      const level = parseInt(id.slice(6), 10)
-      if (level >= 1 && level <= 3) caps.sweep = Math.max(caps.sweep, level)
     }
     else if (id.startsWith('surf_')) {
       const level = parseInt(id.slice(5), 10)

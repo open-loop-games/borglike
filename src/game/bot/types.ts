@@ -17,7 +17,6 @@ import type {
 import type {
   BotCapabilities,
   BotToggles,
-  SweepLevelRange,
   SurfLevelRange,
 } from '@/types/progression'
 import type { ClassBehaviorProfile } from './class-profiles'
@@ -286,14 +285,6 @@ export interface BotState {
   /** Whether sweep has been exhausted on this level (timed out or unreachable tiles) */
   sweepExhausted: boolean
 
-  // Sweep flip state (yo-yo descent into blocked depth to trigger level regen)
-  /** Whether we're in a sweep flip (descended into blocked, ascending back) */
-  sweepFlipActive: boolean
-  /** Depth to return to after descending into blocked depth */
-  sweepFlipTargetDepth: number | null
-  /** Whether we've actually descended into the blocked depth during this flip */
-  sweepFlipVisitedBlocked: boolean
-
   // Unique hunt level flip (when unique blocks descent but isn't on current level)
   /** Name of unique we're hunting that blocks descent */
   huntingUniqueBlocker: string | null
@@ -358,8 +349,7 @@ export interface BotContext {
   capabilities: BotCapabilities
   toggles: BotToggles
 
-  // Sweep/surf configuration (per-slot)
-  sweepLevelRange: SweepLevelRange
+  // Surf configuration (per-slot)
   surfLevelRange: SurfLevelRange
 
   // Depth gate offset: player-controlled shift to class-based level requirements
@@ -383,7 +373,6 @@ export interface EffectiveCapabilities {
   tactics: number // 0=none, 1=debuffs, 2=+buffs, 3=+smart debuffs
   town: number // 0=none, 1=portal, 2=+healer, 3=+commerce
   preparedness: number
-  sweep: number
   surf: number
   kiting: number
   targeting: number
@@ -398,7 +387,6 @@ export function getEffectiveCapabilities(context: BotContext): EffectiveCapabili
     tactics: capabilities.tactics, // Graded capability, no toggle
     town: capabilities.town,
     preparedness: capabilities.preparedness,
-    sweep: capabilities.sweep,
     surf: capabilities.surf,
     kiting: capabilities.kiting,
     targeting: capabilities.targeting,
@@ -468,17 +456,6 @@ export function getClassTier(classId: string): ClassTier {
     default:
       return 'MEDIUM'
   }
-}
-
-/** Caster classes that use sweep exploration instead of stair surfing */
-export const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
-
-/**
- * Get default sweep level range based on class tier.
- * SQUISHY classes sweep L1-10 by default, others have sweep disabled.
- */
-export function getDefaultSweepLevelRange(_classId: string): SweepLevelRange {
-  return { start: 0, end: 0 } // Disabled — surf is sufficient for all classes
 }
 
 /** Get default surf level range (no restriction — always eligible). */

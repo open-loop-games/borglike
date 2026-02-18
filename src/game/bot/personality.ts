@@ -155,7 +155,7 @@ export const SLIDER_UPGRADE_GATES: Record<
 > = {
   aggression: { field: 'tactics', level: 2 },
   caution: { field: 'retreat', level: 2 },
-  exploration: { field: 'sweep', level: 2 },
+  exploration: { field: 'surf', level: 2 },
   patience: { field: 'preparedness', level: 2 },
   greed: { field: 'town', level: 2 },
 }

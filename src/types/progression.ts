@@ -32,7 +32,6 @@ export interface BotCapabilities {
   tactics: number // 0=none, 1=debuffs, 2=+buffs, 3=+smart debuffs
   town: number // 0=none, 1=portal, 2=+healer, 3=+commerce
   preparedness: number // 0=none, 1=counts, 2=tiers, 3=full Morgoth prep
-  sweep: number // 0=disabled, 1-3=exploration thoroughness
   surf: number // 0=disabled, 1-3=HP thresholds for stair surfing
   kiting: number // 0=disabled, 1-3=engage distance for ranged classes
   targeting: number // 0=closest, 1-3=target selection intelligence
@@ -42,7 +41,6 @@ export interface BotCapabilities {
 /** User toggles for ON/OFF capabilities (can disable even when unlocked) */
 export interface BotToggles {
   farming: boolean
-  sweepEnabled: boolean // Can disable sweep exploration even when in-range
 }
 
 /** Default capabilities - face-rush mode (all disabled) */
@@ -51,7 +49,6 @@ export const DEFAULT_BOT_CAPABILITIES: BotCapabilities = {
   tactics: 0,
   town: 0,
   preparedness: 0,
-  sweep: 0,
   surf: 0,
   kiting: 0,
   targeting: 0,
@@ -64,7 +61,6 @@ export const FULL_BOT_CAPABILITIES: BotCapabilities = {
   tactics: 3,
   town: 3,
   preparedness: 3,
-  sweep: 3,
   surf: 3,
   kiting: 3,
   targeting: 3,
@@ -74,13 +70,6 @@ export const FULL_BOT_CAPABILITIES: BotCapabilities = {
 /** Default toggles - all ON when unlocked */
 export const DEFAULT_BOT_TOGGLES: BotToggles = {
   farming: true,
-  sweepEnabled: true,
-}
-
-/** Sweep level range - character levels where sweep is active */
-export interface SweepLevelRange {
-  start: number // First level where sweep activates (0 = disabled)
-  end: number // Last level where sweep is active (exclusive)
 }
 
 /** Surf level range - character levels where surf/tether is active */
@@ -97,14 +86,11 @@ export interface SlotConfig {
   boosters: [string | null, string | null]
   // Per-slot bot toggles (on/off overrides for globally unlocked capabilities)
   toggles: BotToggles
-  // Sweep exploration level range (class-specific defaults)
-  sweepLevelRange: SweepLevelRange
   // Surf level range (character levels where surf/tether activates)
   surfLevelRange?: SurfLevelRange
   // Custom personality slider values (used when personality === 'custom')
   customPersonality?: PersonalityConfig
   // Active levels for graded capabilities (can be lower than unlocked level)
-  activeSweepLevel?: number // 0-3, capped by global botCapabilities.sweep
   activeSurfLevel?: number // 0-3, capped by global botCapabilities.surf
   // Depth gate offset: shifts class-based level requirement for descent
   // Positive = need more levels above depth (cautious), negative = can descend sooner (reckless)

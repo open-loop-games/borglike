@@ -424,10 +424,8 @@ function serializeProgression(): ProgressionData {
     personality: config.personality,
     boosters: [config.boosters[0], config.boosters[1]] as [string | null, string | null],
     toggles: { ...config.toggles },
-    sweepLevelRange: { ...config.sweepLevelRange },
     surfLevelRange: config.surfLevelRange ? { ...config.surfLevelRange } : undefined,
     customPersonality: config.customPersonality ? { ...config.customPersonality } : undefined,
-    activeSweepLevel: config.activeSweepLevel,
     activeSurfLevel: config.activeSurfLevel,
   }))
 

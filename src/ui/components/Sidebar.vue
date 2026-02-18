@@ -29,11 +29,11 @@ const totalBotUpgrades = computed(() => {
   let count = 0
   if (caps.farming) count++
   count += caps.tactics + caps.town + caps.preparedness
-  count += caps.sweep + caps.surf
+  count += caps.surf
   count += caps.kiting + caps.targeting + caps.retreat
   return count
 })
-const maxBotUpgrades = 25 // 1 toggle + 8 graded × 3 levels each
+const maxBotUpgrades = 22 // 1 toggle + 7 graded × 3 levels each
 
 // Swap max depth for times reached depth 50 after first time
 const hasReachedDepth50 = computed(() => (progression.globalStats.timesReachedDepth50 ?? 0) > 0)
