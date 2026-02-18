@@ -9,6 +9,7 @@ import { ALL_ITEMS } from '@game/data/items'
 import { ARTIFACTS } from '@game/data/artifacts'
 import UpgradeList from './meta/UpgradeList.vue'
 import UnlockList from './meta/UnlockList.vue'
+import GameTooltip from './common/GameTooltip.vue'
 const progression = useProgressionStore()
 
 type Tab = 'stats' | 'upgrades' | 'unlocks'
@@ -110,10 +111,10 @@ const nemesis = computed(() => {
               <span class="stat-label">Victories</span>
               <span class="stat-val victory">{{ progression.totalVictories }}</span>
             </div>
-            <div class="stat-row">
+            <GameTooltip tag="div" class="stat-row" text="Victories / Total Runs">
               <span class="stat-label">Win Rate</span>
               <span class="stat-val">{{ winRate }}</span>
-            </div>
+            </GameTooltip>
             <div v-if="hasReachedDepth50" class="stat-row">
               <span class="stat-label">Depth 50 Clears</span>
               <span class="stat-val depth">{{ progression.globalStats.timesReachedDepth50 }}</span>
@@ -134,23 +135,23 @@ const nemesis = computed(() => {
                 progression.globalStats.totalGold.toLocaleString()
               }}</span>
             </div>
-            <div class="stat-row">
+            <GameTooltip tag="div" class="stat-row" text="Total dungeon levels entered across all runs">
               <span class="stat-label">Floors Traveled</span>
               <span class="stat-val depth">{{
                 (progression.globalStats.totalFloorsVisited ?? 0).toLocaleString()
               }}</span>
-            </div>
-            <div class="stat-row">
+            </GameTooltip>
+            <GameTooltip tag="div" class="stat-row" text="Lifetime essence earned (not current balance)">
               <span class="stat-label">Essence Earned</span>
               <span class="stat-val essence">{{
                 progression.globalStats.totalEssence.toLocaleString()
               }}</span>
-            </div>
+            </GameTooltip>
           </div>
         </section>
 
         <section v-if="recentStats" class="section">
-          <h2>Recent Runs</h2>
+          <GameTooltip tag="h2" :text="`Averages from last ${recentStats.count} runs`">Recent Runs</GameTooltip>
           <div class="stat-rows">
             <div class="stat-row">
               <span class="stat-label">Avg Depth</span>
@@ -164,12 +165,12 @@ const nemesis = computed(() => {
               <span class="stat-label">Avg Turns</span>
               <span class="stat-val">{{ recentStats.avgTurns.toLocaleString() }}</span>
             </div>
-            <div v-if="nemesis" class="stat-row nemesis-row">
+            <GameTooltip v-if="nemesis" tag="div" class="stat-row nemesis-row" text="Monster that has killed you the most">
               <span class="stat-label">Nemesis</span>
               <span class="stat-val kills nemesis-name"
                 >{{ nemesis.name }} ({{ nemesis.deaths }})</span
               >
-            </div>
+            </GameTooltip>
           </div>
         </section>
 

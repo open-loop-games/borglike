@@ -4,6 +4,7 @@ import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore } from '@/stores/settings'
 import { useEngineStateStore } from '@/stores/engine-state'
 import { togglePause } from '@/engine/instance-manager'
+import GameTooltip from '../common/GameTooltip.vue'
 
 const progression = useProgressionStore()
 const settings = useSettingsStore()
@@ -72,61 +73,81 @@ const emit = defineEmits<{
     </div>
 
     <div class="header-right">
-      <button
+      <GameTooltip
+        tag="button"
         class="pause-toggle"
         :class="{ active: engineState.isPaused }"
         :disabled="engineState.isCatchingUp"
-        :title="engineState.isPaused ? 'Resume (P)' : 'Pause (P)'"
+        :text="engineState.isPaused ? 'Resume — Key: P' : 'Pause — Key: P'"
+        position="bottom"
         @click="togglePause()"
       >
         <span class="toggle-icon">{{ engineState.isPaused ? '▶' : '⏸' }}</span>
         <span class="toggle-label">{{ engineState.isPaused ? 'Play' : 'Pause' }}</span>
-      </button>
-      <button
+        <template #extended>
+          <span class="tt-muted">Pauses all runs. Offline progress still accumulates.</span>
+        </template>
+      </GameTooltip>
+      <GameTooltip
+        tag="button"
         class="auto-run-toggle"
         :class="{
           active: settings.settings.autoRestart,
           locked: !hasAutoRestartUpgrade,
         }"
-        :title="
+        :text="
           hasAutoRestartUpgrade
             ? settings.settings.autoRestart
               ? 'Auto-Run: ON'
               : 'Auto-Run: OFF'
             : 'Requires Auto Restart upgrade'
         "
+        position="bottom"
         @click="toggleAutoRestart"
       >
         <span class="toggle-icon">↻</span>
         <span class="toggle-label">Auto</span>
-      </button>
-      <button class="header-btn" title="Run History" @click="emit('openRunHistory')">
+        <template #extended>
+          <span class="tt-muted">Automatically starts new runs when slots empty.</span>
+        </template>
+      </GameTooltip>
+      <GameTooltip tag="button" class="header-btn" text="Run History" position="bottom" @click="emit('openRunHistory')">
         <span>≡</span>
-      </button>
-      <button
+      </GameTooltip>
+      <GameTooltip
+        tag="button"
         class="header-btn"
         :class="{ 'has-notification': progression.hasNewAchievements }"
-        title="Achievements"
+        position="bottom"
         @click="emit('openAchievements')"
       >
         <span>🏆</span>
         <span v-if="progression.hasNewAchievements" class="notification-dot"></span>
-      </button>
-      <button class="header-btn" title="Bestiary" @click="emit('openBestiary')">
+        <template #content>
+          <span class="game-tooltip-text">Achievements — {{ progression.achievementStats.unlocked }}/{{ progression.achievementStats.total }}</span>
+        </template>
+      </GameTooltip>
+      <GameTooltip tag="button" class="header-btn" position="bottom" @click="emit('openBestiary')">
         <span>📖</span>
-      </button>
-      <button class="header-btn" title="Armory" @click="emit('openArmory')">
+        <template #content>
+          <span class="game-tooltip-text">Bestiary — {{ progression.bestiaryStats.discovered }} discovered</span>
+        </template>
+      </GameTooltip>
+      <GameTooltip tag="button" class="header-btn" position="bottom" @click="emit('openArmory')">
         <span>📦</span>
-      </button>
-      <button class="header-btn" title="Codex" @click="emit('openCodex')">
+        <template #content>
+          <span class="game-tooltip-text">Armory — {{ progression.armoryStats.discovered }} discovered</span>
+        </template>
+      </GameTooltip>
+      <GameTooltip tag="button" class="header-btn" text="Codex — Races &amp; Classes" position="bottom" @click="emit('openCodex')">
         <span>📜</span>
-      </button>
-      <button class="header-btn" title="Settings" @click="emit('openSettings')">
+      </GameTooltip>
+      <GameTooltip tag="button" class="header-btn" text="Settings" position="bottom" @click="emit('openSettings')">
         <span>⚙</span>
-      </button>
-      <button class="header-btn" title="Help" @click="emit('openHelp')">
+      </GameTooltip>
+      <GameTooltip tag="button" class="header-btn" text="Help" position="bottom" @click="emit('openHelp')">
         <span>?</span>
-      </button>
+      </GameTooltip>
     </div>
   </header>
 </template>

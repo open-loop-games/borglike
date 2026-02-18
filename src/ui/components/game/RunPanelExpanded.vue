@@ -65,19 +65,19 @@ const activeResistances = computed(() => {
 })
 
 // Status effect display config
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  speed: { label: 'SPD', color: '#06b6d4' },
-  heroism: { label: 'HERO', color: '#f59e0b' },
-  berserk: { label: 'BRSRK', color: '#ef4444' },
-  blessing: { label: 'BLESS', color: '#fbbf24' },
-  protection: { label: 'PROT', color: '#3b82f6' },
+const STATUS_CONFIG: Record<string, { label: string; color: string; name: string; desc: string }> = {
+  speed: { label: 'SPD', color: '#06b6d4', name: 'Haste', desc: 'Increased action speed' },
+  heroism: { label: 'HERO', color: '#f59e0b', name: 'Heroism', desc: 'Bonus to-hit and damage, resist fear' },
+  berserk: { label: 'BRSRK', color: '#ef4444', name: 'Berserk', desc: 'Large damage bonus, reduced defense' },
+  blessing: { label: 'BLESS', color: '#fbbf24', name: 'Blessing', desc: 'Bonus to-hit and armor class' },
+  protection: { label: 'PROT', color: '#3b82f6', name: 'Protection', desc: 'Increased armor class' },
 }
 
 // Computed: formatted status effects
 const activeStatuses = computed(() => {
   return props.run.statusEffects.map((effect) => ({
     ...effect,
-    ...(STATUS_CONFIG[effect.type] || { label: effect.type.toUpperCase(), color: '#94a3b8' }),
+    ...(STATUS_CONFIG[effect.type] || { label: effect.type.toUpperCase(), color: '#94a3b8', name: effect.type, desc: effect.type }),
   }))
 })
 
@@ -192,6 +192,14 @@ const SLOT_NAMES: Record<string, string> = {
   light: 'Light Source',
   bow: 'Bow',
 }
+
+const STAT_TIPS = {
+  STR: { label: 'Strength', desc: 'Melee damage and carry capacity' },
+  INT: { label: 'Intelligence', desc: 'Spell power and mana pool' },
+  DEX: { label: 'Dexterity', desc: 'Accuracy, evasion, and ranged damage' },
+  WIS: { label: 'Wisdom', desc: 'Spell resistance and mana regeneration' },
+  CON: { label: 'Constitution', desc: 'Hit points and physical resilience' },
+} as const
 
 const COMBAT_TIPS = {
   AC: { label: 'Armor Class', desc: 'Damage reduction from armor and shields' },
@@ -387,26 +395,26 @@ function formatGoal(goal: string | undefined): string {
           @toggle="togglePanel('stats')"
         >
           <div class="core-stats-grid">
-            <div class="core-stat">
+            <GameTooltip class="core-stat" :text="`${STAT_TIPS.STR.label} — ${STAT_TIPS.STR.desc}`">
               <span class="core-label">STR</span>
               <span class="core-val str">{{ run.stats.str }}</span>
-            </div>
-            <div class="core-stat">
+            </GameTooltip>
+            <GameTooltip class="core-stat" :text="`${STAT_TIPS.INT.label} — ${STAT_TIPS.INT.desc}`">
               <span class="core-label">INT</span>
               <span class="core-val int">{{ run.stats.int }}</span>
-            </div>
-            <div class="core-stat">
+            </GameTooltip>
+            <GameTooltip class="core-stat" :text="`${STAT_TIPS.DEX.label} — ${STAT_TIPS.DEX.desc}`">
               <span class="core-label">DEX</span>
               <span class="core-val dex">{{ run.stats.dex }}</span>
-            </div>
-            <div class="core-stat">
+            </GameTooltip>
+            <GameTooltip class="core-stat" :text="`${STAT_TIPS.WIS.label} — ${STAT_TIPS.WIS.desc}`">
               <span class="core-label">WIS</span>
               <span class="core-val wis">{{ run.stats.wis }}</span>
-            </div>
-            <div class="core-stat">
+            </GameTooltip>
+            <GameTooltip class="core-stat" :text="`${STAT_TIPS.CON.label} — ${STAT_TIPS.CON.desc}`">
               <span class="core-label">CON</span>
               <span class="core-val con">{{ run.stats.con }}</span>
-            </div>
+            </GameTooltip>
           </div>
         </CollapsibleSection>
 
@@ -423,6 +431,9 @@ function formatGoal(goal: string | undefined): string {
             >
               <span class="combat-label">AC</span>
               <span class="combat-val armor">{{ run.combat.armor }}</span>
+              <template #extended>
+                <span class="tt-muted">Higher is better. Each point reduces incoming melee damage.</span>
+              </template>
             </GameTooltip>
             <GameTooltip
               class="combat-stat"
@@ -430,6 +441,9 @@ function formatGoal(goal: string | undefined): string {
             >
               <span class="combat-label">EVA</span>
               <span class="combat-val evasion">{{ run.combat.evasion }}</span>
+              <template #extended>
+                <span class="tt-muted">Compared against attacker's accuracy. Higher evasion means more dodges.</span>
+              </template>
             </GameTooltip>
             <GameTooltip
               class="combat-stat"
@@ -437,6 +451,9 @@ function formatGoal(goal: string | undefined): string {
             >
               <span class="combat-label">DMG</span>
               <span class="combat-val damage">{{ run.combat.meleeDamage }}</span>
+              <template #extended>
+                <span class="tt-muted">Combined weapon damage + strength bonus. Shown as average per hit.</span>
+              </template>
             </GameTooltip>
             <GameTooltip
               class="combat-stat"
@@ -444,6 +461,9 @@ function formatGoal(goal: string | undefined): string {
             >
               <span class="combat-label">ACC</span>
               <span class="combat-val accuracy">{{ run.combat.accuracy }}</span>
+              <template #extended>
+                <span class="tt-muted">Compared against target's evasion. Higher accuracy means fewer misses.</span>
+              </template>
             </GameTooltip>
             <GameTooltip
               class="combat-stat"
@@ -456,6 +476,9 @@ function formatGoal(goal: string | undefined): string {
               >
                 {{ run.combat.speed }}
               </span>
+              <template #extended>
+                <span class="tt-muted">100 = normal. Each +10 means ~10% more actions per turn cycle.</span>
+              </template>
             </GameTooltip>
           </div>
         </CollapsibleSection>
@@ -502,7 +525,7 @@ function formatGoal(goal: string | undefined): string {
           @toggle="togglePanel('status')"
         >
           <div class="status-effects">
-            <div
+            <GameTooltip
               v-for="status in activeStatuses"
               :key="status.type"
               class="status-effect"
@@ -510,7 +533,17 @@ function formatGoal(goal: string | undefined): string {
             >
               <span class="status-name" :style="{ color: status.color }">{{ status.label }}</span>
               <span class="status-turns">{{ status.turnsRemaining }}</span>
-            </div>
+              <template #content>
+                <div class="tt-header" :style="{ color: status.color }">{{ status.name ?? status.type }}</div>
+                <span class="game-tooltip-text">{{ status.desc ?? status.type }}</span>
+              </template>
+              <template #extended>
+                <div class="tt-row">
+                  <span class="tt-label">Turns left</span>
+                  <span class="tt-val">{{ status.turnsRemaining }}</span>
+                </div>
+              </template>
+            </GameTooltip>
           </div>
         </CollapsibleSection>
 
@@ -544,6 +577,19 @@ function formatGoal(goal: string | undefined): string {
                   </div>
                 </template>
                 <span v-else class="tt-muted">Empty</span>
+              </template>
+              <template v-if="run.equipment[slot.id as EquipSlot]" #extended>
+                <div v-if="run.equipment[slot.id as EquipSlot]!.enchantment > 0" class="tt-row">
+                  <span class="tt-label">Enchantment</span>
+                  <span class="tt-val">+{{ run.equipment[slot.id as EquipSlot]!.enchantment }}</span>
+                </div>
+                <div class="tt-row">
+                  <span class="tt-label">Tier</span>
+                  <span class="tt-val">{{ run.equipment[slot.id as EquipSlot]!.tier }}</span>
+                </div>
+                <div v-if="run.equipment[slot.id as EquipSlot]!.isArtifact" class="tt-muted">
+                  Artifacts are unique and cannot be found again
+                </div>
               </template>
             </GameTooltip>
           </div>

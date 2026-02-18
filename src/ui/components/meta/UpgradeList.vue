@@ -50,6 +50,7 @@ const botUpgradeItems = computed(() => {
     currentLevel: number
     maxLevel: number
     cost: number
+    costScaling: number
     canAfford: boolean
     isMaxed: boolean
     effectValue: number
@@ -66,6 +67,7 @@ const botUpgradeItems = computed(() => {
     currentLevel: farmingUnlocked ? 1 : 0,
     maxLevel: 1,
     cost: farmingUnlocked ? 0 : (getBotUpgradeById('farming')?.cost ?? 200),
+    costScaling: 1,
     canAfford: !farmingUnlocked && canPurchaseBotUpgrade('farming', caps, ess),
     isMaxed: farmingUnlocked,
     effectValue: farmingUnlocked ? 1 : 0,
@@ -90,6 +92,7 @@ const botUpgradeItems = computed(() => {
       currentLevel,
       maxLevel: 3,
       cost: next?.cost ?? 0,
+      costScaling: 1,
       canAfford: nextId ? canPurchaseBotUpgrade(nextId, caps, ess) : false,
       isMaxed: currentLevel >= 3,
       effectValue: currentLevel,

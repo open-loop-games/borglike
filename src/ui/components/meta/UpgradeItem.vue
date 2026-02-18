@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ProgressBar from '../common/ProgressBar.vue'
+import GameTooltip from '../common/GameTooltip.vue'
 
 const props = defineProps<{
   id: string
@@ -13,6 +14,7 @@ const props = defineProps<{
   canAfford: boolean
   isMaxed: boolean
   effectValue: number
+  costScaling: number
   effect: {
     type: 'flat' | 'percent' | 'unlock'
     stat?: string
@@ -39,6 +41,19 @@ const costText = computed(() => {
   return props.cost.toLocaleString()
 })
 
+// Extended tooltip: next level effect value
+const nextLevelEffect = computed(() => {
+  if (props.isMaxed || props.effect.type === 'unlock') return null
+  const nextLevel = props.currentLevel + 1
+  return props.effect.baseValue + props.effect.perLevel * (nextLevel - 1)
+})
+
+// Extended tooltip: next level cost (for level after current purchase)
+const nextNextCost = computed(() => {
+  if (props.currentLevel + 1 >= props.maxLevel) return null
+  return Math.ceil(props.cost * props.costScaling)
+})
+
 function handlePurchase() {
   if (!props.isMaxed && props.canAfford) {
     emit('purchase', props.id)
@@ -47,13 +62,15 @@ function handlePurchase() {
 </script>
 
 <template>
-  <div
+  <GameTooltip
     class="upgrade-item"
     :class="{
       'is-maxed': isMaxed,
       'can-afford': canAfford && !isMaxed,
       'cannot-afford': !canAfford && !isMaxed,
     }"
+    position="left"
+    :max-width="260"
   >
     <div class="upgrade-icon">{{ icon }}</div>
 
@@ -77,7 +94,39 @@ function handlePurchase() {
         <span class="cost-text">{{ costText }}</span>
       </button>
     </div>
-  </div>
+
+    <template #content>
+      <div class="tt-header">{{ name }}</div>
+      <span class="game-tooltip-text">{{ description }}</span>
+    </template>
+
+    <template v-if="effect.type !== 'unlock'" #extended>
+      <div class="tt-row">
+        <span class="tt-label">Formula</span>
+        <span class="tt-val">{{ effect.baseValue }} + {{ effect.perLevel }}/lvl</span>
+      </div>
+      <div v-if="effect.stat" class="tt-row">
+        <span class="tt-label">Stat</span>
+        <span class="tt-val">{{ effect.stat }}</span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-label">Scaling</span>
+        <span class="tt-val">&times;{{ costScaling }} per level</span>
+      </div>
+      <template v-if="!isMaxed">
+        <div v-if="nextLevelEffect !== null" class="tt-row">
+          <span class="tt-label">Next (Lv{{ currentLevel + 1 }})</span>
+          <span class="tt-val"
+            >+{{ nextLevelEffect }}{{ effect.type === 'percent' ? '%' : '' }}</span
+          >
+        </div>
+        <div v-if="nextNextCost !== null" class="tt-row">
+          <span class="tt-label">After that</span>
+          <span class="tt-val">◆ {{ nextNextCost.toLocaleString() }}</span>
+        </div>
+      </template>
+    </template>
+  </GameTooltip>
 </template>
 
 <style scoped>

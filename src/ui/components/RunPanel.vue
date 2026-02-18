@@ -5,9 +5,10 @@ import { isRunEnded } from '@/stores/runs'
 import { PERSONALITY_DISPLAY } from '@/types/events'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
-import { getBoosterById } from '@game/data/boosters'
+import { getBoosterById, type BoosterEffect } from '@game/data/boosters'
 import DungeonGrid from './DungeonGridCanvas.vue'
 import ProgressBar from './common/ProgressBar.vue'
+import GameTooltip from './common/GameTooltip.vue'
 
 const props = defineProps<{
   run: ActiveRun
@@ -22,6 +23,19 @@ const activeBoosters = computed(() => {
 })
 
 const personalityDisplay = computed(() => PERSONALITY_DISPLAY[props.run.config.personality ?? 'cautious'])
+
+function formatBoosterEffect(effect: BoosterEffect): string {
+  switch (effect.type) {
+    case 'stat_bonus':
+      return `+${effect.value} ${effect.stat.toUpperCase()}`
+    case 'equipment_bonus':
+      return `+${effect.value} ${effect.slot} enchantment`
+    case 'multiplier':
+      return `+${effect.percent}% ${effect.stat}`
+    case 'special':
+      return effect.effect
+  }
+}
 
 const emit = defineEmits<{
   expand: []
@@ -131,50 +145,47 @@ function handleDismiss() {
       <div class="run-info">
         <span class="run-class">{{ run.config.class }}</span>
         <span class="run-race">{{ run.config.race }}</span>
-        <span class="run-personality" :style="{ color: personalityDisplay.color }">
+        <GameTooltip tag="span" class="run-personality" :style="{ color: personalityDisplay.color }" :text="`${personalityDisplay.name} — ${personalityDisplay.desc}`">
           {{ personalityDisplay.label }}
-        </span>
+        </GameTooltip>
       </div>
       <div v-if="activeBoosters.length > 0" class="run-boosters">
-        <span v-for="b in activeBoosters" :key="b!.id" class="booster-badge" :title="b!.name">
+        <GameTooltip v-for="b in activeBoosters" :key="b!.id" tag="span" class="booster-badge" :text="`${b!.name} — ${b!.description}`">
           {{ b!.icon }}
-        </span>
+          <template #extended>
+            <div class="tt-row">
+              <span class="tt-label">Effect</span>
+              <span class="tt-val">{{ formatBoosterEffect(b!.effect) }}</span>
+            </div>
+            <div class="tt-row">
+              <span class="tt-label">Category</span>
+              <span class="tt-val">{{ b!.category }}</span>
+            </div>
+          </template>
+        </GameTooltip>
       </div>
       <div class="run-depth">
         <span class="depth-label">D:</span>
         <span class="depth-value">{{ run.depth }}</span>
       </div>
       <div class="run-controls">
-        <button
-          class="control-btn turbo"
-          :class="{ active: run.turbo }"
-          title="Toggle turbo mode"
-          @click="handleToggleTurbo"
-        >
+        <GameTooltip tag="button" class="control-btn turbo" :class="{ active: run.turbo }" :text="run.turbo ? 'Turbo: ON — Key: T' : 'Turbo: OFF — Key: T'" position="bottom" @click="handleToggleTurbo">
           ▶▶
-        </button>
-        <button class="control-btn expand" title="Expand to full view" @click="handleExpand">
+          <template #extended>
+            <span class="tt-muted">Fast-forwards this run. Uses more CPU.</span>
+          </template>
+        </GameTooltip>
+        <GameTooltip tag="button" class="control-btn expand" text="Expand to full view — Key: 1-4" position="bottom" @click="handleExpand">
           ⛶
-        </button>
-        <button
-          class="control-btn kill"
-          :class="{ holding: killHoldProgress > 0, disabled: runEnded }"
-          :disabled="runEnded"
-          title="Hold to kill run"
-          @mousedown="startKillHold"
-          @mouseup="cancelKillHold"
-          @mouseleave="cancelKillHold"
-          @touchstart.prevent="startKillHold"
-          @touchend="cancelKillHold"
-          @touchcancel="cancelKillHold"
-        >
+        </GameTooltip>
+        <GameTooltip tag="button" class="control-btn kill" :class="{ holding: killHoldProgress > 0, disabled: runEnded }" :disabled="runEnded" text="Hold to kill run" position="bottom" @mousedown="startKillHold" @mouseup="cancelKillHold" @mouseleave="cancelKillHold" @touchstart.prevent="startKillHold" @touchend="cancelKillHold" @touchcancel="cancelKillHold">
           <span class="kill-icon">✗</span>
           <span
             v-if="killHoldProgress > 0"
             class="kill-progress"
             :style="{ width: killHoldProgress + '%' }"
           />
-        </button>
+        </GameTooltip>
       </div>
     </header>
 
