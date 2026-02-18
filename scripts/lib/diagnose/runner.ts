@@ -281,8 +281,8 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
   const metricSums: Record<string, number[]> = {}
   const issueCounter = new Map<string, number>()
   const deathCauses = new Map<string, number>()
-  let victoryCount = 0
-  let morgothKillCount = 0
+  let victories = 0
+  const victorySeeds: number[] = []
   let circuitBreakerCount = 0
 
   for (let i = 0; i < config.runs; i++) {
@@ -300,7 +300,8 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
 
     // Track end reasons
     if (result.endReason === 'victory') {
-      victoryCount++
+      victories++
+      victorySeeds.push(result.seed)
     } else if (result.endReason === 'circuit_breaker') {
       circuitBreakerCount++
     }
@@ -315,10 +316,6 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
             metricSums[fullKey] = []
           }
           metricSums[fullKey].push(value)
-          // Track morgoth kills specifically
-          if (key === 'morgothKills' && value > 0) {
-            morgothKillCount++
-          }
         } else if (key === 'killedBy' && typeof value === 'string') {
           if (result.endReason === 'death') {
             const count = deathCauses.get(value) ?? 0
@@ -377,8 +374,8 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
     aggregateMetrics,
     aggregateIssues,
     deathCauses: sortedDeathCauses,
-    victoryCount,
-    morgothKillCount,
+    victories,
+    victorySeeds,
     circuitBreakerCount,
   }
 }
@@ -429,8 +426,8 @@ export function aggregateBatchResults(
   const metricSums: Record<string, number[]> = {}
   const issueCounter = new Map<string, number>()
   const deathCauses = new Map<string, number>()
-  let victoryCount = 0
-  let morgothKillCount = 0
+  let victories = 0
+  const victorySeeds: number[] = []
   let circuitBreakerCount = 0
 
   for (const result of results) {
@@ -438,8 +435,12 @@ export function aggregateBatchResults(
       problemRuns.push(result)
     }
 
-    if (result.endReason === 'victory') victoryCount++
-    else if (result.endReason === 'circuit_breaker') circuitBreakerCount++
+    if (result.endReason === 'victory') {
+      victories++
+      victorySeeds.push(result.seed)
+    } else if (result.endReason === 'circuit_breaker') {
+      circuitBreakerCount++
+    }
 
     for (const ar of result.analyzerResults) {
       for (const [key, value] of Object.entries(ar.metrics)) {
@@ -447,7 +448,6 @@ export function aggregateBatchResults(
           const fullKey = `${ar.name}.${key}`
           if (!metricSums[fullKey]) metricSums[fullKey] = []
           metricSums[fullKey].push(value)
-          if (key === 'morgothKills' && value > 0) morgothKillCount++
         } else if (key === 'killedBy' && typeof value === 'string' && result.endReason === 'death') {
           deathCauses.set(value, (deathCauses.get(value) ?? 0) + 1)
         }
@@ -496,8 +496,8 @@ export function aggregateBatchResults(
     deathCauses: Array.from(deathCauses.entries())
       .map(([monster, count]) => ({ monster, count }))
       .sort((a, b) => b.count - a.count),
-    victoryCount,
-    morgothKillCount,
+    victories,
+    victorySeeds: victorySeeds.sort((a, b) => a - b),
     circuitBreakerCount,
   }
 }

@@ -723,11 +723,156 @@ This data should be interpreted **alongside** the capability progression baselin
 - **Tactics/sweep/targeting/retreat chains may be overpriced** for their measurable impact — further testing at `--upgrades=mid` needed before cost changes
 - **The fundamental imbalance is stat upgrades vs bot caps**: stat upgrades total ~322k essence for <4% marginal depth each; bot caps total ~9.4k for transformative gains in the progression window. Costs are inverted relative to value.
 
-**Next testing step:** Repeat cap sensitivity at `--upgrades=mid` to see chain values in the progression window rather than at ceiling. This will reveal which chains carry weight when the stat floor isn't compensating for everything.
+See mid-upgrade results below for chain values in the progression window.
 
-```bash
-pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000 --upgrades=mid
-```
+### Cap Sensitivity @ `52c2237` (50 runs, 50k turns, seed=1000, upgrades=mid)
+
+**Warrior (baseline: 47.3)**
+
+Farming: 47.3 → 45.0 (-2.4, -5.0%)
+
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
+|------------------|------|------|------|------|--------|--------|
+| Town (portal/healer) | 41.7 | +0.3 | +2.7 | +2.6 | +5.7 | -12.0% |
+| Preparedness | 45.0 | +1.8 | +0.6 | +0.0 | +2.4 | -5.0% |
+| Surf (stair farm) | 45.1 | +1.9 | -0.4 | +0.6 | +2.2 | -4.6% |
+| Tactics (spell use) | 46.0 | -0.0 | +1.4 | +0.0 | +1.3 | -2.8% |
+| Retreat (escape) | 47.0 | +0.0 | +0.0 | +0.3 | +0.3 | -0.7% |
+| Sweep (floor %) | 47.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Kiting (ranged pos) | 47.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Targeting (AI) | 47.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+
+**Mage (baseline: 45.7)**
+
+Farming: 45.7 → 41.2 (-4.5, -9.8%)
+
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
+|------------------|------|------|------|------|--------|--------|
+| Town (portal/healer) | 26.9 | +0.0 | +1.1 | +17.6 | +18.8 | -41.1% |
+| Preparedness | 41.2 | -20.8 | +25.7 | -0.4 | +4.5 | -9.8% |
+| Kiting (ranged pos) | 44.0 | -0.0 | +3.6 | -1.9 | +1.7 | -3.7% |
+| Surf (stair farm) | 44.8 | -0.8 | +3.1 | -1.4 | +0.8 | -1.8% |
+| Tactics (spell use) | 45.2 | +2.1 | -1.6 | +0.0 | +0.5 | -1.1% |
+| Sweep (floor %) | 45.5 | +0.2 | +0.0 | +0.0 | +0.2 | -0.4% |
+| Targeting (AI) | 45.7 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Retreat (escape) | 46.2 | -0.2 | +0.0 | -0.3 | -0.5 | +1.1% |
+
+**Ranger (baseline: 45.3)**
+
+Farming: 45.3 → 29.5 (-15.8, -34.9%)
+
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
+|------------------|------|------|------|------|--------|--------|
+| Preparedness | 29.5 | +10.6 | +5.2 | +0.0 | +15.8 | -34.9% |
+| Surf (stair farm) | 30.2 | +16.4 | -0.6 | -0.8 | +15.1 | -33.3% |
+| Town (portal/healer) | 33.4 | -0.1 | +3.1 | +8.9 | +11.8 | -26.1% |
+| Tactics (spell use) | 45.3 | +0.3 | -0.3 | +0.0 | +0.0 | +0.0% |
+| Sweep (floor %) | 45.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Targeting (AI) | 45.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Retreat (escape) | 46.3 | -0.3 | +0.0 | -0.7 | -1.0 | +2.3% |
+| Kiting (ranged pos) | 47.6 | +0.0 | -2.4 | +0.0 | -2.4 | +5.3% |
+
+### Cross-Class Summary (mid upgrades)
+
+| Chain               | Warrior | Mage   | Ranger |
+|---------------------|---------|--------|--------|
+| Farming (toggle)    | -5.0%   | -9.8%  | -34.9% |
+| Town (portal/healer) | -12.0% | -41.1% | -26.1% |
+| Preparedness        | -5.0%   | -9.8%  | -34.9% |
+| Surf (stair farm)   | -4.6%   | -1.8%  | -33.3% |
+| Tactics (spell use) | -2.8%   | -1.1%  | +0.0%  |
+| Kiting (ranged pos) | +0.0%   | -3.7%  | +5.3%  |
+| Sweep (floor %)     | +0.0%   | -0.4%  | +0.0%  |
+| Retreat (escape)    | -0.7%   | +1.1%  | +2.3%  |
+| Targeting (AI)      | +0.0%   | +0.0%  | +0.0%  |
+| **Baseline**        | 47.3    | 45.7   | 45.3   |
+
+### Tier Marginal Breakdown (mid upgrades)
+
+| Chain/Tier       | Warrior | Mage   | Ranger |
+|------------------|---------|--------|--------|
+| town_1           | +0.3    | +0.0   | -0.1   |
+| town_2           | +2.7    | +1.1   | +3.1   |
+| town_3           | +2.6    | +17.6  | +8.9   |
+| preparedness_1   | +1.8    | -20.8  | +10.6  |
+| preparedness_2   | +0.6    | +25.7  | +5.2   |
+| preparedness_3   | +0.0    | -0.4   | +0.0   |
+| surf_1           | +1.9    | -0.8   | +16.4  |
+| surf_2           | -0.4    | +3.1   | -0.6   |
+| surf_3           | +0.6    | -1.4   | -0.8   |
+| tactics_1        | -0.0    | +2.1   | +0.3   |
+| tactics_2        | +1.4    | -1.6   | -0.3   |
+| tactics_3        | +0.0    | +0.0   | +0.0   |
+| sweep_1          | +0.0    | +0.2   | +0.0   |
+| sweep_2          | +0.0    | +0.0   | +0.0   |
+| sweep_3          | +0.0    | +0.0   | +0.0   |
+| targeting_1      | +0.0    | +0.0   | +0.0   |
+| targeting_2      | +0.0    | +0.0   | +0.0   |
+| targeting_3      | +0.0    | +0.0   | +0.0   |
+| kiting_1         | +0.0    | -0.0   | +0.0   |
+| kiting_2         | +0.0    | +3.6   | -2.4   |
+| kiting_3         | +0.0    | -1.9   | +0.0   |
+| retreat_1        | +0.0    | -0.2   | -0.3   |
+| retreat_2        | +0.0    | +0.0   | +0.0   |
+| retreat_3        | +0.3    | -0.3   | -0.7   |
+| **Baseline**     | 47.3    | 45.7   | 45.3   |
+
+### Analysis (mid upgrades)
+
+**Ceiling effect lifted:** Baselines drop to 47.3/45.7/45.3 (vs 49.3/48.9/49.5 at full), and chain deltas expand dramatically. This is the progression window where players actually unlock caps.
+
+**town_3 is the most impactful single tier in the dataset — and even stronger at mid upgrades:**
+- Warrior: +2.6 (similar to full)
+- Mage: +17.6 (vs +8.4 at full — doubles in importance as ceiling drops)
+- Ranger: +8.9 (vs +3.0 at full — triples)
+- town_1 and town_2 register near-zero or slightly negative — the chain's value is almost entirely in the final tier
+
+**Ranger is farming/surf/preparedness-gated at mid upgrades:**
+- Farming toggle: ranger drops 45.3 → 29.5 without it (-34.9%) — effectively nonfunctional
+- surf_1 alone: +16.4 depth (30.2 → 46.6) — biggest single-tier gain in the dataset
+- preparedness_1: +10.6 depth for ranger — critical early capability
+- These three chains are must-haves for ranger in the progression window; without them, ranger is stuck ~30 avg depth
+
+**Mage is town-gated at mid upgrades:**
+- Town chain removal drops mage 45.7 → 26.9 (-41.1%) — barely functional
+- town_3 alone provides +17.6 depth — almost the entire chain's contribution is front-loaded here
+- Consistent with why capability `late` preset (which adds town_3) was the transformative step in progression testing
+
+**Mage preparedness volatile interaction is amplified at mid upgrades:**
+- preparedness_1 alone: mage drops to 20.4 (-20.8 vs baseline) — bot refuses to descend without consumables, stalls hard
+- preparedness_2 rescues: +25.7 recovery (vs +9.7 at full)
+- Total chain value is +4.5 despite volatile internals
+- Implication: preparedness_1 as a standalone unlock is harmful for mage. Players who unlock only tier 1 are worse off. Either fix the stall behavior for partial tier, or design the unlock tree to require L2 together.
+
+**Tactics, sweep, targeting, retreat: confirmed low-value in the progression window:**
+- All show <3% impact across all 3 classes at mid upgrades — consistent with near-zero at full
+- Targeting and sweep: 0 measurable impact for all 3 classes
+- Retreat: 0 or slightly negative (possibly counterproductive behavior at this tier)
+- Tactics: marginal for warrior (+1.3) and mage (+0.5), zero for ranger
+- These chains total 1,208–1,510 essence each and show no measurable value at the tier where players unlock them — confirmed overpriced relative to impact
+
+**Kiting is class-specific:**
+- Mage: kiting_2 shows +3.6 at mid (meaningful positioning benefit)
+- Ranger: kiting_2 is -2.4 (negative — ranger doesn't benefit from kiting at mid upgrades, possibly actively harmful)
+- Warrior: 0 impact throughout
+
+### Cost Rebalancing Signals
+
+Both full and mid tests together provide clear cost calibration data:
+
+| Chain | Full Impact (best class) | Mid Impact (best class) | Assessment | Current Cost |
+|-------|--------------------------|-------------------------|------------|--------------|
+| town_3 | +8.4 depth (mage) | +17.6 depth (mage) | **Severely underpriced** | 225 essence |
+| farming | -5.9% ranger | -34.9% ranger | **Underpriced** | 350 essence |
+| surf_1 | +1.3 ranger | +16.4 ranger | **Underpriced** | ~150 essence |
+| preparedness_1 | +3.2 ranger | +10.6 ranger | **Underpriced** | ~150 essence |
+| kiting | -2.8% mage | -3.7% mage | Fair (class-specific) | ~600 essence |
+| tactics | <1% all classes | <3% all classes | **Overpriced** | ~500 essence |
+| sweep | 0% all classes | 0% all classes | **Overpriced** | ~500 essence |
+| targeting | 0% all classes | 0% all classes | **Overpriced** | ~500 essence |
+| retreat | 0% all classes | 0-2% all classes | **Overpriced** | ~500 essence |
+
+**The stat upgrade vs bot cap imbalance is confirmed in both tests:** stat upgrades total ~322k essence for <4% marginal depth each; bot caps total ~9.4k essence for transformative gains in the progression window. Costs are systematically inverted relative to value across all tiers.
 
 ---
 

@@ -203,10 +203,12 @@ export function formatBatchResult(result: BatchResult): string {
   lines.push(`  Turns:  avg=${turns?.avg.toFixed(0) ?? '?'}`)
   lines.push(`  Runs:   ${result.totalRuns} total, ${circuitBreakers} circuit breakers (${(circuitBreakers/result.totalRuns*100).toFixed(0)}%)`)
 
-  // Victory and Morgoth tracking
-  if (result.victoryCount > 0 || result.morgothKillCount > 0) {
-    lines.push(`  VICTORIES: ${result.victoryCount} (${(result.victoryCount/result.totalRuns*100).toFixed(0)}%)`)
-    lines.push(`  Morgoth kills: ${result.morgothKillCount}`)
+  // Victory tracking
+  if (result.victories > 0) {
+    lines.push(`  VICTORIES: ${result.victories} (${(result.victories/result.totalRuns*100).toFixed(0)}%)`)
+    if (result.victorySeeds.length > 0) {
+      lines.push(`  Victory seeds: ${result.victorySeeds.join(', ')}`)
+    }
   }
 
   // Death causes
@@ -266,7 +268,7 @@ export function formatBatchResult(result: BatchResult): string {
   const maxDepthVal = depth?.max.toFixed(0) ?? '?'
   const cbRate = ((circuitBreakers / result.totalRuns) * 100).toFixed(0)
   const avgKills = kills?.avg.toFixed(0) ?? '?'
-  const victories = result.victoryCount
+  const victories = result.victories
 
   lines.push(section('Summary'))
   lines.push('| Class | Avg Depth | Max Depth | CB Rate | Kills | Victories |')
@@ -340,12 +342,12 @@ export function formatBaselineResults(
   lines.push(`\n${'='.repeat(60)}`)
   lines.push('BASELINE RESULTS')
   lines.push('='.repeat(60))
-  lines.push(`\n| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth |`)
+  lines.push(`\n| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Victories |`)
   lines.push('|-------|-----------|-----------|---------|-----------|-------|---------|')
   for (const r of results) {
     const status = r.avgDepth >= 30 ? '\u2705' : r.avgDepth >= 10 ? '\u26A0\uFE0F' : '\u274C'
     lines.push(
-      `| ${status} ${r.classId.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
+      `| ${status} ${r.classId.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.victories.toString().padStart(7)} |`
     )
   }
 
@@ -379,13 +381,13 @@ export function formatBaselineRaceResults(
   lines.push(`\n${'='.repeat(60)}`)
   lines.push('RACE BASELINE RESULTS')
   lines.push('='.repeat(60))
-  lines.push(`\n| Race | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth |`)
+  lines.push(`\n| Race | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Victories |`)
   lines.push('|------|-----------|-----------|---------|-----------|-------|---------|')
   for (const r of results) {
     const status = r.avgDepth >= 30 ? '\u2705' : r.avgDepth >= 10 ? '\u26A0\uFE0F' : '\u274C'
     const displayName = r.raceId.replace('_', '-')
     lines.push(
-      `| ${status} ${displayName.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.morgothKills.toString().padStart(7)} |`
+      `| ${status} ${displayName.padEnd(10)} | ${r.avgDepth.toFixed(1).padStart(9)} | ${r.maxDepth.toString().padStart(9)} | ${r.cbRate.toFixed(0).padStart(5)}%  | ${r.avgTurns.toFixed(0).padStart(9)} | ${r.avgKills.toFixed(0).padStart(5)} | ${r.victories.toString().padStart(7)} |`
     )
   }
 
@@ -574,14 +576,21 @@ export function formatCapSensitivityResults(
   // Farming line
   const farmDelta = result.farmingOffDepth - b
   const farmPct = b > 0 ? (farmDelta / b) * 100 : 0
+  const bv = result.baselineVictories
   lines.push(
     `\nFarming (toggle): ${b.toFixed(1)} → ${result.farmingOffDepth.toFixed(1)}` +
-    `  (${fmtDelta(farmDelta)}, ${fmtPct(farmPct)})`
+    `  (${fmtDelta(farmDelta)}, ${fmtPct(farmPct)})` +
+    `  Victories: ${bv} → ${result.farmingOffVictories}`
   )
 
-  // Chain table: L0 | +L1 | +L2 | +L3 | Total | Impact
-  lines.push('\n| Chain                | L0   | +L1  | +L2  | +L3  | Total  | Impact |')
-  lines.push('|----------------------|------|------|------|------|--------|--------|')
+  // Victory seeds
+  if (result.baselineVictorySeeds.length > 0) {
+    lines.push(`Victory seeds: ${result.baselineVictorySeeds.join(', ')}`)
+  }
+
+  // Chain table: L0 | +L1 | +L2 | +L3 | Total | Impact | Vic
+  lines.push('\n| Chain                | L0   | +L1  | +L2  | +L3  | Total  | Impact | Vic        |')
+  lines.push('|----------------------|------|------|------|------|--------|--------|------------|')
 
   const chainRows = result.chains.map((c) => {
     const [d0, d1, d2] = c.depthAtLevel
@@ -590,31 +599,35 @@ export function formatCapSensitivityResults(
     const m3 = b - d2
     const total = b - d0
     const pct = b > 0 ? ((d0 - b) / b) * 100 : 0  // negative
-    return { c, d0, m1, m2, m3, total, pct }
+    const [v0, v1, v2] = c.victoriesAtLevel
+    return { c, d0, m1, m2, m3, total, pct, v0, v1, v2 }
   })
 
   // Sort by total chain value descending (most impactful first)
   chainRows.sort((a, b_) => b_.total - a.total)
 
-  for (const { c, d0, m1, m2, m3, total, pct } of chainRows) {
+  for (const { c, d0, m1, m2, m3, total, pct, v0, v1, v2 } of chainRows) {
     const icon = chainImpactIcon(pct)
+    const vicStr = `${v0}/${v1}/${v2}/${bv}`
     lines.push(
-      `| ${icon} ${c.chainName.padEnd(18)} | ${d0.toFixed(1).padStart(4)} | ${fmtDelta(m1).padStart(4)} | ${fmtDelta(m2).padStart(4)} | ${fmtDelta(m3).padStart(4)} | ${fmtDelta(total).padStart(6)} | ${fmtPct(pct).padStart(6)} |`
+      `| ${icon} ${c.chainName.padEnd(18)} | ${d0.toFixed(1).padStart(4)} | ${fmtDelta(m1).padStart(4)} | ${fmtDelta(m2).padStart(4)} | ${fmtDelta(m3).padStart(4)} | ${fmtDelta(total).padStart(6)} | ${fmtPct(pct).padStart(6)} | ${vicStr.padStart(10)} |`
     )
   }
 
   lines.push(`\n  L0 = depth with chain removed. +L1/+L2/+L3 = marginal gain per tier.`)
   lines.push(`  Total = chain's full contribution. Impact = % of baseline depth.`)
+  lines.push(`  Vic = victories at L0/L1/L2/L3 (L3 = baseline).`)
   lines.push(`\nTotal time: ${opts.totalTime}s`)
 
   // Copy/paste block
   lines.push(`\nCopy/paste for BALANCE.md:`)
   lines.push('```')
-  lines.push(`Farming: ${b.toFixed(1)} → ${result.farmingOffDepth.toFixed(1)} (${fmtDelta(farmDelta)}, ${fmtPct(farmPct)})`)
-  lines.push('| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |')
-  lines.push('|------------------|------|------|------|------|--------|--------|')
-  for (const { c, d0, m1, m2, m3, total, pct } of chainRows) {
-    lines.push(`| ${c.chainName} | ${d0.toFixed(1)} | ${fmtDelta(m1)} | ${fmtDelta(m2)} | ${fmtDelta(m3)} | ${fmtDelta(total)} | ${fmtPct(pct)} |`)
+  lines.push(`Farming: ${b.toFixed(1)} → ${result.farmingOffDepth.toFixed(1)} (${fmtDelta(farmDelta)}, ${fmtPct(farmPct)}) Vic: ${bv} → ${result.farmingOffVictories}`)
+  lines.push('| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact | Vic        |')
+  lines.push('|------------------|------|------|------|------|--------|--------|------------|')
+  for (const { c, d0, m1, m2, m3, total, pct, v0, v1, v2 } of chainRows) {
+    const vicStr = `${v0}/${v1}/${v2}/${bv}`
+    lines.push(`| ${c.chainName} | ${d0.toFixed(1)} | ${fmtDelta(m1)} | ${fmtDelta(m2)} | ${fmtDelta(m3)} | ${fmtDelta(total)} | ${fmtPct(pct)} | ${vicStr} |`)
   }
   lines.push('```')
 

@@ -171,10 +171,10 @@ export interface BatchResult {
   aggregateIssues: { message: string; count: number }[]
   /** Death causes aggregated by monster name */
   deathCauses: { monster: string; count: number }[]
-  /** Number of runs that ended in victory */
-  victoryCount: number
-  /** Number of runs where Morgoth was killed */
-  morgothKillCount: number
+  /** Number of victories (Morgoth killed) */
+  victories: number
+  /** Seeds that produced victories */
+  victorySeeds: number[]
   /** Number of runs that hit circuit breaker */
   circuitBreakerCount: number
 }

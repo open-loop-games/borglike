@@ -59,9 +59,8 @@ export interface MatrixCellResult {
   maxDepth: number
   cbRate: number
   avgKills: number
-  morgothKills: number
+  victories: number
   avgTurns: number
-  victoryCount: number
   batchResult: BatchResult
 }
 
@@ -155,9 +154,8 @@ function buildCellResult(
     maxDepth: depthMetrics?.max ?? 0,
     cbRate: (batchResult.circuitBreakerCount / runs) * 100,
     avgKills: killMetrics?.avg ?? 0,
-    morgothKills: batchResult.morgothKillCount,
+    victories: batchResult.victories,
     avgTurns: turnMetrics?.avg ?? 0,
-    victoryCount: batchResult.victoryCount,
     batchResult,
   }
 }
@@ -333,7 +331,7 @@ export function formatMatrixSummary(result: MatrixResult): string {
   lines.push('')
 
   const axisHeaders = result.varyingAxes.map(axisHeader)
-  const metricHeaders = ['Avg Depth', 'Max Depth', 'CB Rate', 'Kills', 'Morgoth', 'Turns']
+  const metricHeaders = ['Avg Depth', 'Max Depth', 'CB Rate', 'Kills', 'Victories', 'Turns']
 
   // Header
   lines.push(`| ${[...axisHeaders, ...metricHeaders].join(' | ')} |`)
@@ -349,7 +347,7 @@ export function formatMatrixSummary(result: MatrixResult): string {
       String(cell.maxDepth),
       `${cell.cbRate.toFixed(0)}%`,
       cell.avgKills.toFixed(0),
-      String(cell.morgothKills),
+      String(cell.victories),
       cell.avgTurns.toFixed(0),
     ]
     lines.push(`| ${[...axisVals, ...metricVals].join(' | ')} |`)
@@ -370,7 +368,7 @@ export function formatMatrixSummary(result: MatrixResult): string {
       String(cell.maxDepth),
       `${cell.cbRate.toFixed(0)}%`,
       cell.avgKills.toFixed(0),
-      String(cell.morgothKills),
+      String(cell.victories),
       cell.avgTurns.toFixed(0),
     ]
     lines.push(`| ${[...axisVals, ...metricVals].join(' | ')} |`)

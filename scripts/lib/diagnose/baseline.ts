@@ -89,7 +89,7 @@ export interface BaselineResult {
   maxDepth: number
   cbRate: number
   avgKills: number
-  morgothKills: number
+  victories: number
   avgTurns: number
 }
 
@@ -99,7 +99,7 @@ export interface BaselineRaceResult {
   maxDepth: number
   cbRate: number
   avgKills: number
-  morgothKills: number
+  victories: number
   avgTurns: number
 }
 
@@ -169,7 +169,7 @@ export async function runBaseline(config: BaselineConfig = {}): Promise<Baseline
     maxDepth: c.maxDepth,
     cbRate: c.cbRate,
     avgKills: c.avgKills,
-    morgothKills: c.morgothKills,
+    victories: c.victories,
     avgTurns: c.avgTurns,
   })).sort((a, b) => b.avgDepth - a.avgDepth)
 }
@@ -212,7 +212,7 @@ export async function runBaselineRaces(config: BaselineRacesConfig = {}): Promis
     maxDepth: c.maxDepth,
     cbRate: c.cbRate,
     avgKills: c.avgKills,
-    morgothKills: c.morgothKills,
+    victories: c.victories,
     avgTurns: c.avgTurns,
   })).sort((a, b) => b.avgDepth - a.avgDepth)
 }

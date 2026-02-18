@@ -286,14 +286,22 @@ export interface CapChainData {
   chainName: string
   /** Avg depth when chain is capped at level [0, 1, 2]. Level 3 = class baseline. */
   depthAtLevel: [number, number, number]
+  /** Victories at each tier level [0, 1, 2]. Level 3 = baseline victories. */
+  victoriesAtLevel: [number, number, number]
 }
 
 export interface CapSensitivityResult {
   classId: string
   /** Depth with all capabilities at full — the reference for all deltas */
   baselineAvgDepth: number
+  /** Victories in baseline (all caps full) */
+  baselineVictories: number
+  /** Victory seeds in baseline */
+  baselineVictorySeeds: number[]
   /** Depth with farming disabled, all graded chains at full */
   farmingOffDepth: number
+  /** Victories with farming disabled */
+  farmingOffVictories: number
   /** Per-chain data, in GRADED_CHAINS order */
   chains: CapChainData[]
 }
@@ -474,24 +482,39 @@ export async function runCapSensitivityTest(
   if (isTTY) process.stdout.write('\r' + ' '.repeat(80) + '\r')
 
   const results: CapSensitivityResult[] = classes.map((classId, ci) => {
-    const getAvgDepth = (cfgIdx: number): number => {
-      const batchResult = aggregateBatchResults(cellResults[ci]![cfgIdx]!, { runs } as any)
-      return batchResult.aggregateMetrics['worker-metrics.maxDepth']?.avg ?? 0
-    }
+    const getBatch = (cfgIdx: number) =>
+      aggregateBatchResults(cellResults[ci]![cfgIdx]!, { runs } as any)
+    const getAvgDepth = (batch: ReturnType<typeof getBatch>) =>
+      batch.aggregateMetrics['worker-metrics.maxDepth']?.avg ?? 0
 
-    const baselineAvgDepth = getAvgDepth(0)
-    const farmingOffDepth = getAvgDepth(1)
+    const baselineBatch = getBatch(0)
+    const baselineAvgDepth = getAvgDepth(baselineBatch)
+    const baselineVictories = baselineBatch.victories
+    const baselineVictorySeeds = baselineBatch.victorySeeds
+
+    const farmingBatch = getBatch(1)
+    const farmingOffDepth = getAvgDepth(farmingBatch)
+    const farmingOffVictories = farmingBatch.victories
 
     const chains: CapChainData[] = GRADED_CHAINS.map((chain, chainIdx) => {
+      const batches = [0, 1, 2].map((level) => getBatch(2 + chainIdx * 3 + level))
       const depthAtLevel: [number, number, number] = [
-        getAvgDepth(2 + chainIdx * 3 + 0),
-        getAvgDepth(2 + chainIdx * 3 + 1),
-        getAvgDepth(2 + chainIdx * 3 + 2),
+        getAvgDepth(batches[0]!),
+        getAvgDepth(batches[1]!),
+        getAvgDepth(batches[2]!),
       ]
-      return { chain, chainName: CHAIN_NAMES[chain], depthAtLevel }
+      const victoriesAtLevel: [number, number, number] = [
+        batches[0]!.victories,
+        batches[1]!.victories,
+        batches[2]!.victories,
+      ]
+      return { chain, chainName: CHAIN_NAMES[chain], depthAtLevel, victoriesAtLevel }
     })
 
-    return { classId, baselineAvgDepth, farmingOffDepth, chains }
+    return {
+      classId, baselineAvgDepth, baselineVictories, baselineVictorySeeds,
+      farmingOffDepth, farmingOffVictories, chains,
+    }
   })
 
   return { results, totalTime: (Date.now() - startTime) / 1000 }

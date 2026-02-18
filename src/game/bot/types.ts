@@ -477,11 +477,8 @@ export const SQUISHY_CLASSES = new Set(['mage', 'archmage', 'necromancer'])
  * Get default sweep level range based on class tier.
  * SQUISHY classes sweep L1-10 by default, others have sweep disabled.
  */
-export function getDefaultSweepLevelRange(classId: string): SweepLevelRange {
-  if (SQUISHY_CLASSES.has(classId)) {
-    return { start: 1, end: 10 } // Sweep L1-9, surf at L10+
-  }
-  return { start: 0, end: 0 } // Disabled
+export function getDefaultSweepLevelRange(_classId: string): SweepLevelRange {
+  return { start: 0, end: 0 } // Disabled — surf is sufficient for all classes
 }
 
 /** Get default surf level range (no restriction — always eligible). */
