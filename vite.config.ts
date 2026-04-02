@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'node:url'
 import pkg from './package.json' with { type: 'json' }
 
 export default defineConfig({
-  base: '/borglike/',
+  base: process.env.VITE_BASE ?? '/borglike/',
   plugins: [vue()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),

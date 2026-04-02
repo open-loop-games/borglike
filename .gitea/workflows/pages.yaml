@@ -1,0 +1,41 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: linux
+    container:
+      image: node:22-alpine
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+        env:
+          VITE_BASE: /
+          NODE_OPTIONS: --max-old-space-size=512
+
+      - name: Deploy to Pages
+        run: |
+          wget -q https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
+          chmod +x /usr/local/bin/mc
+
+          REPO_NAME=$(echo "${{ gitea.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          BUCKET="pages-${REPO_NAME}"
+
+          mc alias set pages http://minio:9000 "${{ secrets.MINIO_PAGES_ACCESS_KEY }}" "${{ secrets.MINIO_PAGES_SECRET_KEY }}"
+          mc mb --ignore-existing "pages/${BUCKET}"
+          mc anonymous set download "pages/${BUCKET}"
+          mc mirror --overwrite --remove dist/ "pages/${BUCKET}/"
+
+          echo "Deployed to https://${REPO_NAME}.pages.gamebois.lol"
