@@ -33,7 +33,7 @@ jobs:
           REPO_NAME=$(echo "${{ gitea.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
           BUCKET="pages-${REPO_NAME}"
 
-          mc alias set pages http://minio:9000 "${{ secrets.MINIO_PAGES_ACCESS_KEY }}" "${{ secrets.MINIO_PAGES_SECRET_KEY }}"
+          mc alias set pages http://192.168.50.192:9000 "${{ secrets.MINIO_PAGES_ACCESS_KEY }}" "${{ secrets.MINIO_PAGES_SECRET_KEY }}"
           mc mb --ignore-existing "pages/${BUCKET}"
           mc anonymous set download "pages/${BUCKET}"
           mc mirror --overwrite --remove dist/ "pages/${BUCKET}/"
