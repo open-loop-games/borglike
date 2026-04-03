@@ -21,6 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   collapse: []
+  back: []
   restart: []
   dismiss: []
   kill: []
