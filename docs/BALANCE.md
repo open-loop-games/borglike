@@ -165,8 +165,8 @@ jq '.config' /tmp/borglike-diagnose/*baseline*.json  # check run config
 |--------|--------------|----------------|
 | `none` | (all disabled) | 5-10 (face-rush) |
 | `early` | town_1, farming, tactics_1, preparedness_1, targeting_1, retreat_1 | 15-20 |
-| `mid` | town_2, farming, tactics_2, preparedness_2, sweep_1, surf_1, kiting_1, targeting_2, retreat_2 | 25-35 |
-| `late` | town_3, farming, tactics_3, preparedness_3, sweep_2, surf_2, kiting_2, targeting_3, retreat_3 | 40-45 |
+| `mid` | town_2, farming, tactics_2, preparedness_2, surf_1, kiting_1, targeting_2, retreat_2 | 25-35 |
+| `late` | town_3, farming, tactics_3, preparedness_3, surf_2, kiting_2, targeting_3, retreat_3 | 40-45 |
 | `full` | (all maxed) | 45+ (endgame) |
 
 ### Interpreting Results
@@ -285,7 +285,7 @@ pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=
 
 **Success Criteria:**
 - town_3 remains the highest single-tier value (it is transformative)
-- Tactics/sweep/targeting/retreat show meaningful impact at mid-upgrade baseline
+- Tactics/targeting/retreat show meaningful impact at mid-upgrade baseline
 - No chain costs >5× another chain of equal measured impact
 
 ### Phase 5: Cross-Class Race Testing
@@ -334,35 +334,29 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 
 ## Baselines
 
-### Class Baseline @ `548a393` (100 runs, 50k turns, seed=1000, upgrades=full)
+### Class Baseline @ `228a8bf` (100 runs, 50k turns, seed=1000, upgrades=full)
 
-| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Morgoth | Status |
-|-------|-----------|-----------|---------|-----------|-------|---------|--------|
-| **Paladin** | 49.0 | 50 | 0% | 21808 | 655 | 3 | ✅ Endgame |
-| **Druid** | 48.8 | 50 | 0% | 23337 | 636 | 2 | ✅ Endgame |
-| **Priest** | 48.8 | 50 | 0% | 25742 | 797 | 2 | ✅ Endgame |
-| **Ranger** | 48.6 | 50 | 0% | 23083 | 630 | 6 | ✅ Endgame |
-| **Blackguard** | 48.5 | 50 | 0% | 16049 | 535 | 6 | ✅ Endgame |
-| **Mage** | 48.4 | 50 | 1% | 28793 | 639 | 2 | ✅ Endgame |
-| **Rogue** | 48.2 | 50 | 0% | 21763 | 600 | 1 | ✅ Endgame |
-| **Necromancer** | 48.0 | 50 | 3% | 24187 | 653 | 7 | ✅ Endgame |
-| **Warrior** | 47.6 | 50 | 0% | 15587 | 500 | 3 | ✅ Endgame |
-| **Berserker** | 47.4 | 50 | 0% | 14284 | 488 | 8 | ✅ Endgame |
-| **Archmage** | 46.6 | 50 | 3% | 27612 | 601 | 3 | ✅ Endgame |
+| Class | Avg Depth | Max Depth | CB Rate | Avg Turns | Kills | Victories | Status |
+|-------|-----------|-----------|---------|-----------|-------|-----------|--------|
+| **Paladin** | 49.4 | 50 | 0% | 21588 | 662 | 3 | ✅ Endgame |
+| **Druid** | 48.9 | 50 | 0% | 23084 | 639 | 3 | ✅ Endgame |
+| **Priest** | 48.7 | 50 | 0% | 25803 | 800 | 3 | ✅ Endgame |
+| **Blackguard** | 48.5 | 50 | 0% | 16058 | 534 | 8 | ✅ Endgame |
+| **Mage** | 48.5 | 50 | 1% | 24942 | 626 | 4 | ✅ Endgame |
+| **Rogue** | 48.3 | 50 | 0% | 22053 | 602 | 3 | ✅ Endgame |
+| **Ranger** | 48.2 | 50 | 0% | 22625 | 622 | 6 | ✅ Endgame |
+| **Necromancer** | 47.9 | 50 | 2% | 20871 | 636 | 5 | ✅ Endgame |
+| **Warrior** | 47.6 | 50 | 0% | 15244 | 498 | 3 | ✅ Endgame |
+| **Berserker** | 47.3 | 50 | 0% | 14289 | 487 | 8 | ✅ Endgame |
+| **Archmage** | 46.3 | 50 | 0% | 23458 | 579 | 2 | ✅ Endgame |
 
-**Summary:** All 11 classes endgame-viable. **43 Morgoth kills** (8 berserker, 7 necromancer, 6 ranger, 6 blackguard, 3 paladin, 3 warrior, 3 archmage, 2 druid, 2 priest, 2 mage, 1 rogue). CB rates: archmage 3%, necromancer 3%, mage 1%, all others 0%. Spread: 46.6-49.0 (2.4 depth). Runtime: 220s.
+**Summary:** All 11 classes endgame-viable. **48 victories** (8 berserker, 8 blackguard, 6 ranger, 5 necromancer, 4 mage, 3 paladin, 3 druid, 3 priest, 3 rogue, 3 warrior, 2 archmage). CB rates: necromancer 2%, mage 1%, all others 0%. Spread: 46.3-49.4 (3.1 depth). Runtime: 174s.
 
 **Tiers:**
-- **A:** Paladin (49.0), Druid (48.8), Priest (48.8), Ranger (48.6), Blackguard (48.5), Mage (48.4), Rogue (48.2), Necromancer (48.0)
-- **B:** Warrior (47.6), Berserker (47.4), Archmage (46.6)
+- **A:** Paladin (49.4), Druid (48.9), Priest (48.7), Blackguard (48.5), Mage (48.5), Rogue (48.3), Ranger (48.2)
+- **B:** Necromancer (47.9), Warrior (47.6), Berserker (47.3), Archmage (46.3)
 
-**Changes from `af3d305`:** S-tier nerfs compressed spread 3.3→2.4 depth. Former S-tier now A-tier:
-- **Paladin** 49.9→49.0 (-0.9): 80% heal potency + removed shield bash (warrior-only)
-- **Druid** 49.2→48.8 (-0.4): WIS +3→+2 (reduced spell scaling)
-- **Blackguard** 49.1→48.5 (-0.6): lifesteal 10%→8%
-- **Ranger** 48.9→48.6 (-0.3): FAST_SHOT cap 6→5, root shot slow 50%→40%
-- Untouched classes identical (priest, mage, rogue, necromancer, warrior, berserker, archmage)
-- Morgoth kills dropped 56→43 (paladin 9→3, ranger 9→6, blackguard 11→6, druid 1→2)
+**Changes from `548a393`:** Sweep capability chain removed (was 0% impact across all classes). All depths within noise (max delta ±0.4). Archmage CB dropped 3%→0%. Victories +5 (43→48) within normal variance. Spread widened slightly 2.4→3.1 due to paladin noise (+0.4) and archmage noise (-0.3).
 
 ---
 
@@ -412,7 +406,7 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 
 **Observations:**
 - Early tier regression nearly eliminated (-0.2, was -1.2) — noise level
-- Mid tier now meaningful (+2.6, was +0.7) — sweep/surf registering for warrior
+- Mid tier now meaningful (+2.6, was +0.7) — surf registering for warrior
 - Late tier strong (+7.9, was +5.9) — retreat/kiting tier still the big unlock
 - Full now exceeds late by +1.7 (was -0.3) — no more plateau, full caps matter
 - Total progression: +9.6 depth from none→full
@@ -442,7 +436,7 @@ pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=
 |--------|---------|------|-----------------|
 | `none` | 31.6 | 15.5 | -16.1 (mage struggles hard without capabilities) |
 | `early` | 31.4 | 15.6 | -15.8 (basic capabilities insufficient for either) |
-| `mid` | 34.2 | 25.1 | -9.1 (sweep/surf help mage more) |
+| `mid` | 34.2 | 25.1 | -9.1 (surf helps mage more) |
 | `late` | 39.5 | 40.6 | +1.1 (kiting equalizes, mage passes warrior) |
 | `full` | 41.2 | 45.9 | +4.7 (mage exceeds warrior at full) |
 
@@ -597,7 +591,7 @@ Measures per-capability-chain impact with per-tier marginal breakdown. For each 
 pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=50000
 ```
 
-**Cell layout:** 26 per class (1 baseline + 1 farming-off + 8 chains × 3 levels). Baseline = all caps full, max upgrades, bestiary=25.
+**Cell layout:** 23 per class (1 baseline + 1 farming-off + 7 chains × 3 levels). Baseline = all caps full, max upgrades, bestiary=25.
 
 **Reading the tables:**
 - `L0` = avg depth when chain entirely removed, all others at full
@@ -605,227 +599,230 @@ pnpm diagnose cap-sensitivity --classes=warrior,mage,ranger --seed=1000 --turns=
 - `Total` = full chain contribution (baseline − L0)
 - `Impact` = negative % = depth lost when chain removed
 
-### Cap Sensitivity @ `52c2237` (50 runs, 50k turns, seed=1000, upgrades=full)
+### Cap Sensitivity @ `228a8bf` (50 runs, 50k turns, seed=1000, upgrades=full)
 
 **Warrior (baseline: 49.3)**
 
-Farming: 49.3 → 48.8 (-0.5, -1.0%)
+Farming: 49.3 → 48.8 (-0.5, -1.0%) Vic: 9 → 3
 
-| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
-|------------------|------|------|------|------|--------|--------|
-| Town (portal/healer) | 47.2 | -0.0 | -1.0 | +3.1 | +2.1 | -4.3% |
-| Preparedness | 48.8 | -0.7 | +1.1 | +0.0 | +0.5 | -1.0% |
-| Surf (stair farm) | 49.3 | -0.1 | -0.4 | +0.6 | +0.0 | -0.1% |
-| Retreat (escape) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | -0.1% |
-| Sweep (floor %) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Kiting (ranged pos) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Targeting (AI) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Tactics (spell use) | 49.3 | -0.1 | +0.0 | +0.0 | -0.0 | +0.1% |
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact | Vic        |
+|------------------|------|------|------|------|--------|--------|------------|
+| Town (portal/healer) | 47.2 | -0.0 | -1.0 | +3.1 | +2.1 | -4.3% | 2/1/1/9 |
+| Preparedness | 48.8 | -0.7 | +1.1 | +0.0 | +0.5 | -1.0% | 3/7/9/9 |
+| Surf (stair farm) | 49.3 | -0.1 | -0.4 | +0.6 | +0.0 | -0.1% | 4/5/8/9 |
+| Retreat (escape) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | -0.1% | 10/10/10/9 |
+| Kiting (ranged pos) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% | 9/9/9/9 |
+| Targeting (AI) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% | 8/9/9/9 |
+| Tactics (spell use) | 49.3 | -0.1 | +0.0 | +0.0 | -0.0 | +0.1% | 2/7/9/9 |
 
-**Mage (baseline: 48.9)**
+**Mage (baseline: 49.3)**
 
-Farming: 48.9 → 47.8 (-1.1, -2.3%)
+Farming: 49.3 → 47.2 (-2.1, -4.3%) Vic: 4 → 2
 
-| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
-|------------------|------|------|------|------|--------|--------|
-| Town (portal/healer) | 42.8 | +0.0 | -2.3 | +8.4 | +6.1 | -12.5% |
-| Kiting (ranged pos) | 47.6 | -0.2 | +2.0 | -0.4 | +1.4 | -2.8% |
-| Preparedness | 47.8 | -8.9 | +9.7 | +0.3 | +1.1 | -2.3% |
-| Surf (stair farm) | 48.6 | +0.3 | +0.1 | -0.0 | +0.4 | -0.7% |
-| Targeting (AI) | 48.7 | +0.2 | +0.0 | +0.0 | +0.2 | -0.4% |
-| Retreat (escape) | 48.8 | -0.0 | +0.0 | +0.2 | +0.1 | -0.2% |
-| Tactics (spell use) | 49.2 | -0.9 | +0.7 | +0.0 | -0.2 | +0.4% |
-| Sweep (floor %) | 49.3 | -0.3 | +0.0 | +0.0 | -0.3 | +0.7% |
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact | Vic        |
+|------------------|------|------|------|------|--------|--------|------------|
+| Town (portal/healer) | 41.1 | +0.0 | -0.2 | +8.3 | +8.1 | -16.5% | 0/0/0/4 |
+| Kiting (ranged pos) | 46.6 | +0.1 | +2.8 | -0.2 | +2.6 | -5.4% | 0/0/4/4 |
+| Preparedness | 47.2 | +1.7 | +0.3 | +0.2 | +2.1 | -4.3% | 2/3/0/4 |
+| Surf (stair farm) | 48.8 | -0.8 | +0.2 | +1.0 | +0.4 | -0.9% | 0/0/2/4 |
+| Retreat (escape) | 49.0 | -0.1 | +0.0 | +0.4 | +0.3 | -0.6% | 2/0/0/4 |
+| Tactics (spell use) | 49.2 | -0.3 | +0.4 | +0.0 | +0.1 | -0.1% | 4/0/4/4 |
+| Targeting (AI) | 49.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% | 2/4/4/4 |
 
 **Ranger (baseline: 49.5)**
 
-Farming: 49.5 → 46.6 (-2.9, -5.9%)
+Farming: 49.5 → 46.6 (-2.9, -5.9%) Vic: 4 → 1
 
-| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
-|------------------|------|------|------|------|--------|--------|
-| Town (portal/healer) | 46.2 | +0.0 | +0.3 | +3.0 | +3.3 | -6.7% |
-| Preparedness | 46.6 | +3.2 | -0.3 | +0.0 | +2.9 | -5.9% |
-| Surf (stair farm) | 48.3 | +1.4 | -0.1 | +0.0 | +1.3 | -2.6% |
-| Kiting (ranged pos) | 48.9 | +0.0 | +0.6 | +0.0 | +0.6 | -1.2% |
-| Sweep (floor %) | 49.5 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Targeting (AI) | 49.5 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Tactics (spell use) | 49.6 | -0.0 | -0.1 | +0.0 | -0.1 | +0.2% |
-| Retreat (escape) | 49.7 | -0.2 | +0.0 | +0.0 | -0.2 | +0.3% |
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact | Vic        |
+|------------------|------|------|------|------|--------|--------|------------|
+| Town (portal/healer) | 46.2 | +0.0 | +0.3 | +3.0 | +3.3 | -6.7% | 0/0/1/4 |
+| Preparedness | 46.6 | +3.2 | -0.3 | +0.0 | +2.9 | -5.9% | 1/1/4/4 |
+| Surf (stair farm) | 48.3 | +1.4 | -0.1 | +0.0 | +1.3 | -2.6% | 0/2/4/4 |
+| Kiting (ranged pos) | 48.9 | +0.0 | +0.6 | +0.0 | +0.6 | -1.2% | 2/2/4/4 |
+| Targeting (AI) | 49.5 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% | 4/4/4/4 |
+| Tactics (spell use) | 49.6 | -0.0 | -0.1 | +0.0 | -0.1 | +0.2% | 0/1/4/4 |
+| Retreat (escape) | 49.7 | -0.2 | +0.0 | +0.0 | -0.2 | +0.3% | 1/2/2/4 |
 
 ### Cross-Class Summary
 
 | Chain               | Warrior | Mage   | Ranger |
 |---------------------|---------|--------|--------|
-| Farming (toggle)    | -1.0%   | -2.3%  | -5.9%  |
-| Town (portal/healer) | -4.3%  | -12.5% | -6.7%  |
-| Preparedness        | -1.0%   | -2.3%  | -5.9%  |
-| Kiting (ranged pos) | +0.0%   | -2.8%  | -1.2%  |
-| Surf (stair farm)   | -0.1%   | -0.7%  | -2.6%  |
-| Targeting (AI)      | +0.0%   | -0.4%  | +0.0%  |
-| Retreat (escape)    | -0.1%   | -0.2%  | +0.3%  |
-| Sweep (floor %)     | +0.0%   | +0.7%  | +0.0%  |
-| Tactics (spell use) | +0.1%   | +0.4%  | +0.2%  |
-| **Baseline**        | 49.3    | 48.9   | 49.5   |
+| Farming (toggle)    | -1.0%   | -4.3%  | -5.9%  |
+| Town (portal/healer) | -4.3%  | -16.5% | -6.7%  |
+| Preparedness        | -1.0%   | -4.3%  | -5.9%  |
+| Kiting (ranged pos) | +0.0%   | -5.4%  | -1.2%  |
+| Surf (stair farm)   | -0.1%   | -0.9%  | -2.6%  |
+| Retreat (escape)    | -0.1%   | -0.6%  | +0.3%  |
+| Targeting (AI)      | +0.0%   | +0.0%  | +0.0%  |
+| Tactics (spell use) | +0.1%   | -0.1%  | +0.2%  |
+| **Baseline**        | 49.3    | 49.3   | 49.5   |
 
 ### Tier Marginal Breakdown
 
 | Chain/Tier       | Warrior | Mage   | Ranger |
 |------------------|---------|--------|--------|
 | town_1           | -0.0    | +0.0   | +0.0   |
-| town_2           | -1.0    | -2.3   | +0.3   |
-| town_3           | +3.1    | +8.4   | +3.0   |
-| preparedness_1   | -0.7    | -8.9   | +3.2   |
-| preparedness_2   | +1.1    | +9.7   | -0.3   |
-| preparedness_3   | +0.0    | +0.3   | +0.0   |
-| kiting_1         | +0.0    | -0.2   | +0.0   |
-| kiting_2         | +0.0    | +2.0   | +0.6   |
-| kiting_3         | +0.0    | -0.4   | +0.0   |
-| surf_1           | -0.1    | +0.3   | +1.4   |
-| surf_2           | -0.4    | +0.1   | -0.1   |
-| surf_3           | +0.6    | -0.0   | +0.0   |
-| targeting_1      | +0.0    | +0.2   | +0.0   |
+| town_2           | -1.0    | -0.2   | +0.3   |
+| town_3           | +3.1    | +8.3   | +3.0   |
+| preparedness_1   | -0.7    | +1.7   | +3.2   |
+| preparedness_2   | +1.1    | +0.3   | -0.3   |
+| preparedness_3   | +0.0    | +0.2   | +0.0   |
+| kiting_1         | +0.0    | +0.1   | +0.0   |
+| kiting_2         | +0.0    | +2.8   | +0.6   |
+| kiting_3         | +0.0    | -0.2   | +0.0   |
+| surf_1           | -0.1    | -0.8   | +1.4   |
+| surf_2           | -0.4    | +0.2   | -0.1   |
+| surf_3           | +0.6    | +1.0   | +0.0   |
+| targeting_1      | +0.0    | +0.0   | +0.0   |
 | targeting_2      | +0.0    | +0.0   | +0.0   |
 | targeting_3      | +0.0    | +0.0   | +0.0   |
-| retreat_1        | +0.0    | -0.0   | -0.2   |
+| retreat_1        | +0.0    | -0.1   | -0.2   |
 | retreat_2        | +0.0    | +0.0   | +0.0   |
-| retreat_3        | +0.0    | +0.2   | +0.0   |
-| sweep_1          | +0.0    | -0.3   | +0.0   |
-| sweep_2          | +0.0    | +0.0   | +0.0   |
-| sweep_3          | +0.0    | +0.0   | +0.0   |
-| tactics_1        | -0.1    | -0.9   | -0.0   |
-| tactics_2        | +0.0    | +0.7   | -0.1   |
+| retreat_3        | +0.0    | +0.4   | +0.0   |
+| tactics_1        | -0.1    | -0.3   | -0.0   |
+| tactics_2        | +0.0    | +0.4   | -0.1   |
 | tactics_3        | +0.0    | +0.0   | +0.0   |
 
 ### Analysis
 
-**⚠️ Ceiling effect dominates:** All three classes are already at 49+ avg depth at full caps + full upgrades. This compresses individual chain deltas — chains collectively push mage from ~6 (none/none) to 49 (+43 depth), but removing any single chain at the margin rarely shows >3 depth impact because the others compensate. The low per-chain deltas here do **not** mean chains are weak — they mean the test is measuring marginal value at saturation, not total value.
+**⚠️ Ceiling effect dominates:** All three classes are already at 49+ avg depth at full caps + full upgrades. This compresses individual chain deltas — chains collectively push mage from ~6 (none/none) to 49 (+43 depth), but removing any single chain at the margin rarely shows >3 depth impact because the others compensate.
 
 **town_3 is the single most impactful individual tier across all tested classes:**
 - Warrior: +3.1 depth (the only meaningful warrior chain)
-- Mage: +8.4 depth (the biggest single-tier value anywhere in the dataset)
+- Mage: +8.3 depth (the biggest single-tier value anywhere in the full-upgrade dataset)
 - Ranger: +3.0 depth
-- town_1 and town_2 register near-zero or negative marginal value when tested against full baseline — their value is as prerequisites and at lower upgrade tiers, not at saturation
+- town_1 and town_2 register near-zero or negative marginal value at saturation — their value is as prerequisites and at lower upgrade tiers
 
-**Tactics, sweep, targeting, retreat: essentially 0 measurable impact at full baseline** — all show <1% across all 3 classes. These chains cost 200–250+ essence per tier (total: 1,208–1,510) but show no measurable value at full-cap full-upgrade baseline. This could mean: (1) their value is front-loaded and captured at partial upgrade tiers, or (2) they are genuinely low-value and overpriced.
+**Mage preparedness volatility resolved:** Was -8.9/+9.7 per tier at `52c2237` (L1 stalled, L2 rescued), now +1.7/+0.3 — calm monotonic progression. Sweep removal eliminated the interaction where sweep competed with preparedness-gated descent.
 
-**Preparedness shows a suspicious mage interaction** (preparedness_1 = -8.9, preparedness_2 = +9.7): capping at L1 alone sharply hurts mage (the bot refuses to descend without consumables, stalls), while L2 adds the gear-tier check that allows progression again. Total chain value is only +1.1 despite the volatile internals. This is real behavior, not noise.
+**Victory gating (Vic column = victories at L0/L1/L2/L3):**
+- Town gates all mage victories: 0/0/0/4 — zero wins without full town
+- Kiting_2 gates mage victories: 0/0/4/4 — the positioning threshold
+- Surf gates mage victories: 0/0/2/4 — surf_3 adds 2 more wins
+- Town gates most warrior victories: 2/1/1/9 — town_3 is the victory unlock
+- Ranger victories robust: preparedness_2 and surf_1 are the thresholds
 
-**Farming matters most for ranger** (-5.9%) and least for warrior (-1.0%). Ranger relies on gold-fueled gear progression; warrior can brute-force early floors without optimal equipment.
+**Farming matters most for ranger** (-5.9%) and mage (-4.3%, up from -2.3%). Mage farming dependence nearly doubled after sweep removal — mage now relies more on gold-funded progression without the (zero-value) sweep fallback.
 
-**Kiting's value is concentrated at kiting_2** for both mage (+2.0) and ranger (+0.6). Kiting_3 shows near-zero or slightly negative marginal value at full baseline — the "optimal positioning" tier appears redundant when all other caps are maxed.
+**Kiting stronger for mage:** -5.4% (up from -2.8%). Kiting_2 remains the value tier (+2.8 mage, +0.6 ranger).
+
+**Tactics, targeting, retreat: essentially 0 measurable impact at full baseline** — all show <1% across all 3 classes.
 
 ### Implications for Cost Structure
 
-This data should be interpreted **alongside** the capability progression baselines (Phase 2), not in isolation. The progression test shows kiting contributes +15.5 depth for mage at mid-upgrade tier (the "late" unlock); at full-upgrade saturation it contributes only ~1.6. Both are true — kiting is high-value in the progression window, near-zero at the ceiling.
+This data should be interpreted **alongside** the capability progression baselines (Phase 2), not in isolation. The progression test shows kiting contributes +15.5 depth for mage at mid-upgrade tier (the "late" unlock); at full-upgrade saturation it contributes only ~2.6. Both are true — kiting is high-value in the progression window, smaller at the ceiling.
 
 **Clearest actionable signals:**
 - **town_3 is severely underpriced** (225 essence, +3–8 depth marginal value at ceiling) — likely 5–10× too cheap
-- **Tactics/sweep/targeting/retreat chains may be overpriced** for their measurable impact — further testing at `--upgrades=mid` needed before cost changes
+- **Tactics/targeting/retreat chains may be overpriced** for their measurable impact — see mid-upgrade results for confirmation
 - **The fundamental imbalance is stat upgrades vs bot caps**: stat upgrades total ~322k essence for <4% marginal depth each; bot caps total ~9.4k for transformative gains in the progression window. Costs are inverted relative to value.
 
 See mid-upgrade results below for chain values in the progression window.
 
-### Cap Sensitivity @ `52c2237` (50 runs, 50k turns, seed=1000, upgrades=mid)
+### Cap Sensitivity @ `228a8bf` (50 runs, 50k turns, seed=1000, upgrades=mid)
 
 **Warrior (baseline: 47.3)**
 
-Farming: 47.3 → 45.0 (-2.4, -5.0%)
+Farming: 47.3 → 45.0 (-2.4, -5.0%) Vic: 5 → 1
 
-| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
-|------------------|------|------|------|------|--------|--------|
-| Town (portal/healer) | 41.7 | +0.3 | +2.7 | +2.6 | +5.7 | -12.0% |
-| Preparedness | 45.0 | +1.8 | +0.6 | +0.0 | +2.4 | -5.0% |
-| Surf (stair farm) | 45.1 | +1.9 | -0.4 | +0.6 | +2.2 | -4.6% |
-| Tactics (spell use) | 46.0 | -0.0 | +1.4 | +0.0 | +1.3 | -2.8% |
-| Retreat (escape) | 47.0 | +0.0 | +0.0 | +0.3 | +0.3 | -0.7% |
-| Sweep (floor %) | 47.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Kiting (ranged pos) | 47.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Targeting (AI) | 47.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact | Vic        |
+|------------------|------|------|------|------|--------|--------|------------|
+| Town (portal/healer) | 41.7 | +0.3 | +2.7 | +2.6 | +5.7 | -12.0% | 0/1/1/5 |
+| Preparedness | 45.0 | +1.8 | +0.6 | +0.0 | +2.4 | -5.0% | 1/4/5/5 |
+| Surf (stair farm) | 45.1 | +1.9 | -0.4 | +0.6 | +2.2 | -4.6% | 2/2/0/5 |
+| Tactics (spell use) | 46.0 | -0.0 | +1.4 | +0.0 | +1.3 | -2.8% | 4/3/5/5 |
+| Retreat (escape) | 47.0 | +0.0 | +0.0 | +0.3 | +0.3 | -0.7% | 6/6/6/5 |
+| Kiting (ranged pos) | 47.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% | 5/5/5/5 |
+| Targeting (AI) | 47.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% | 5/5/5/5 |
 
-**Mage (baseline: 45.7)**
+**Mage (baseline: 45.5)**
 
-Farming: 45.7 → 41.2 (-4.5, -9.8%)
+Farming: 45.5 → 37.9 (-7.6, -16.8%) Vic: 0 → 0
 
-| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
-|------------------|------|------|------|------|--------|--------|
-| Town (portal/healer) | 26.9 | +0.0 | +1.1 | +17.6 | +18.8 | -41.1% |
-| Preparedness | 41.2 | -20.8 | +25.7 | -0.4 | +4.5 | -9.8% |
-| Kiting (ranged pos) | 44.0 | -0.0 | +3.6 | -1.9 | +1.7 | -3.7% |
-| Surf (stair farm) | 44.8 | -0.8 | +3.1 | -1.4 | +0.8 | -1.8% |
-| Tactics (spell use) | 45.2 | +2.1 | -1.6 | +0.0 | +0.5 | -1.1% |
-| Sweep (floor %) | 45.5 | +0.2 | +0.0 | +0.0 | +0.2 | -0.4% |
-| Targeting (AI) | 45.7 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Retreat (escape) | 46.2 | -0.2 | +0.0 | -0.3 | -0.5 | +1.1% |
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact | Vic        |
+|------------------|------|------|------|------|--------|--------|------------|
+| Town (portal/healer) | 28.0 | +0.0 | +2.0 | +15.5 | +17.5 | -38.5% | 0/0/0/0 |
+| Surf (stair farm) | 37.0 | +8.7 | -0.3 | +0.1 | +8.5 | -18.6% | 0/0/0/0 |
+| Preparedness | 37.9 | +7.7 | +0.3 | -0.4 | +7.6 | -16.8% | 0/0/0/0 |
+| Kiting (ranged pos) | 43.6 | -0.3 | +4.2 | -1.9 | +1.9 | -4.2% | 0/0/0/0 |
+| Retreat (escape) | 45.4 | -0.1 | +0.0 | +0.2 | +0.1 | -0.1% | 1/0/0/0 |
+| Targeting (AI) | 45.6 | -0.1 | +0.0 | +0.0 | -0.1 | +0.2% | 0/0/0/0 |
+| Tactics (spell use) | 45.9 | +1.1 | -1.5 | +0.0 | -0.4 | +0.9% | 0/1/0/0 |
 
 **Ranger (baseline: 45.3)**
 
-Farming: 45.3 → 29.5 (-15.8, -34.9%)
+Farming: 45.3 → 29.5 (-15.8, -34.9%) Vic: 1 → 0
 
-| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact |
-|------------------|------|------|------|------|--------|--------|
-| Preparedness | 29.5 | +10.6 | +5.2 | +0.0 | +15.8 | -34.9% |
-| Surf (stair farm) | 30.2 | +16.4 | -0.6 | -0.8 | +15.1 | -33.3% |
-| Town (portal/healer) | 33.4 | -0.1 | +3.1 | +8.9 | +11.8 | -26.1% |
-| Tactics (spell use) | 45.3 | +0.3 | -0.3 | +0.0 | +0.0 | +0.0% |
-| Sweep (floor %) | 45.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Targeting (AI) | 45.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% |
-| Retreat (escape) | 46.3 | -0.3 | +0.0 | -0.7 | -1.0 | +2.3% |
-| Kiting (ranged pos) | 47.6 | +0.0 | -2.4 | +0.0 | -2.4 | +5.3% |
+| Chain            | L0   | +L1  | +L2  | +L3  | Total  | Impact | Vic        |
+|------------------|------|------|------|------|--------|--------|------------|
+| Preparedness | 29.5 | +10.6 | +5.2 | +0.0 | +15.8 | -34.9% | 0/2/1/1 |
+| Surf (stair farm) | 30.2 | +16.4 | -0.6 | -0.8 | +15.1 | -33.3% | 0/2/1/1 |
+| Town (portal/healer) | 33.4 | -0.1 | +3.1 | +8.9 | +11.8 | -26.1% | 0/0/0/1 |
+| Tactics (spell use) | 45.3 | +0.3 | -0.3 | +0.0 | +0.0 | +0.0% | 1/1/1/1 |
+| Targeting (AI) | 45.3 | +0.0 | +0.0 | +0.0 | +0.0 | +0.0% | 1/1/1/1 |
+| Retreat (escape) | 46.3 | -0.3 | +0.0 | -0.7 | -1.0 | +2.3% | 1/1/1/1 |
+| Kiting (ranged pos) | 47.6 | +0.0 | -2.4 | +0.0 | -2.4 | +5.3% | 2/2/1/1 |
 
 ### Cross-Class Summary (mid upgrades)
 
 | Chain               | Warrior | Mage   | Ranger |
 |---------------------|---------|--------|--------|
-| Farming (toggle)    | -5.0%   | -9.8%  | -34.9% |
-| Town (portal/healer) | -12.0% | -41.1% | -26.1% |
-| Preparedness        | -5.0%   | -9.8%  | -34.9% |
-| Surf (stair farm)   | -4.6%   | -1.8%  | -33.3% |
-| Tactics (spell use) | -2.8%   | -1.1%  | +0.0%  |
-| Kiting (ranged pos) | +0.0%   | -3.7%  | +5.3%  |
-| Sweep (floor %)     | +0.0%   | -0.4%  | +0.0%  |
-| Retreat (escape)    | -0.7%   | +1.1%  | +2.3%  |
-| Targeting (AI)      | +0.0%   | +0.0%  | +0.0%  |
-| **Baseline**        | 47.3    | 45.7   | 45.3   |
+| Farming (toggle)    | -5.0%   | -16.8% | -34.9% |
+| Town (portal/healer) | -12.0% | -38.5% | -26.1% |
+| Preparedness        | -5.0%   | -16.8% | -34.9% |
+| Surf (stair farm)   | -4.6%   | -18.6% | -33.3% |
+| Tactics (spell use) | -2.8%   | +0.9%  | +0.0%  |
+| Kiting (ranged pos) | +0.0%   | -4.2%  | +5.3%  |
+| Retreat (escape)    | -0.7%   | -0.1%  | +2.3%  |
+| Targeting (AI)      | +0.0%   | +0.2%  | +0.0%  |
+| **Baseline**        | 47.3    | 45.5   | 45.3   |
 
 ### Tier Marginal Breakdown (mid upgrades)
 
 | Chain/Tier       | Warrior | Mage   | Ranger |
 |------------------|---------|--------|--------|
 | town_1           | +0.3    | +0.0   | -0.1   |
-| town_2           | +2.7    | +1.1   | +3.1   |
-| town_3           | +2.6    | +17.6  | +8.9   |
-| preparedness_1   | +1.8    | -20.8  | +10.6  |
-| preparedness_2   | +0.6    | +25.7  | +5.2   |
+| town_2           | +2.7    | +2.0   | +3.1   |
+| town_3           | +2.6    | +15.5  | +8.9   |
+| preparedness_1   | +1.8    | +7.7   | +10.6  |
+| preparedness_2   | +0.6    | +0.3   | +5.2   |
 | preparedness_3   | +0.0    | -0.4   | +0.0   |
-| surf_1           | +1.9    | -0.8   | +16.4  |
-| surf_2           | -0.4    | +3.1   | -0.6   |
-| surf_3           | +0.6    | -1.4   | -0.8   |
-| tactics_1        | -0.0    | +2.1   | +0.3   |
-| tactics_2        | +1.4    | -1.6   | -0.3   |
+| surf_1           | +1.9    | +8.7   | +16.4  |
+| surf_2           | -0.4    | -0.3   | -0.6   |
+| surf_3           | +0.6    | +0.1   | -0.8   |
+| tactics_1        | -0.0    | +1.1   | +0.3   |
+| tactics_2        | +1.4    | -1.5   | -0.3   |
 | tactics_3        | +0.0    | +0.0   | +0.0   |
-| sweep_1          | +0.0    | +0.2   | +0.0   |
-| sweep_2          | +0.0    | +0.0   | +0.0   |
-| sweep_3          | +0.0    | +0.0   | +0.0   |
-| targeting_1      | +0.0    | +0.0   | +0.0   |
+| targeting_1      | +0.0    | -0.1   | +0.0   |
 | targeting_2      | +0.0    | +0.0   | +0.0   |
 | targeting_3      | +0.0    | +0.0   | +0.0   |
-| kiting_1         | +0.0    | -0.0   | +0.0   |
-| kiting_2         | +0.0    | +3.6   | -2.4   |
+| kiting_1         | +0.0    | -0.3   | +0.0   |
+| kiting_2         | +0.0    | +4.2   | -2.4   |
 | kiting_3         | +0.0    | -1.9   | +0.0   |
-| retreat_1        | +0.0    | -0.2   | -0.3   |
+| retreat_1        | +0.0    | -0.1   | -0.3   |
 | retreat_2        | +0.0    | +0.0   | +0.0   |
-| retreat_3        | +0.3    | -0.3   | -0.7   |
-| **Baseline**     | 47.3    | 45.7   | 45.3   |
+| retreat_3        | +0.3    | +0.2   | -0.7   |
+| **Baseline**     | 47.3    | 45.5   | 45.3   |
 
 ### Analysis (mid upgrades)
 
-**Ceiling effect lifted:** Baselines drop to 47.3/45.7/45.3 (vs 49.3/48.9/49.5 at full), and chain deltas expand dramatically. This is the progression window where players actually unlock caps.
+**Ceiling effect lifted:** Baselines drop to 47.3/45.5/45.3 (vs 49.3/49.3/49.5 at full), and chain deltas expand dramatically. This is the progression window where players actually unlock caps.
 
 **town_3 is the most impactful single tier in the dataset — and even stronger at mid upgrades:**
 - Warrior: +2.6 (similar to full)
-- Mage: +17.6 (vs +8.4 at full — doubles in importance as ceiling drops)
+- Mage: +15.5 (vs +8.3 at full — nearly doubles in importance as ceiling drops)
 - Ranger: +8.9 (vs +3.0 at full — triples)
-- town_1 and town_2 register near-zero or slightly negative — the chain's value is almost entirely in the final tier
+
+**Mage surf emerged as a major chain after sweep removal:**
+- Surf total: +8.5 depth (-18.6%) — was -1.8% at `52c2237`
+- surf_1 alone: +8.7 depth (37.0 → 45.7) — mage now relies heavily on stair surfing for farming at mid upgrades
+- This is real: removing sweep code eliminated the (zero-value) alternative path, and mage now funnels entirely through surf for level farming
+
+**Mage preparedness volatility resolved:**
+- Was -20.8/+25.7 per tier at `52c2237` (L1 stalled, L2 rescued with massive swing)
+- Now +7.7/+0.3 — calm monotonic progression
+- Sweep removal eliminated the interaction where partial preparedness competed with sweep-based exploration
+- Total chain value increased: +4.5 → +7.6 (now a top-3 mage chain)
 
 **Ranger is farming/surf/preparedness-gated at mid upgrades:**
 - Farming toggle: ranger drops 45.3 → 29.5 without it (-34.9%) — effectively nonfunctional
@@ -834,25 +831,21 @@ Farming: 45.3 → 29.5 (-15.8, -34.9%)
 - These three chains are must-haves for ranger in the progression window; without them, ranger is stuck ~30 avg depth
 
 **Mage is town-gated at mid upgrades:**
-- Town chain removal drops mage 45.7 → 26.9 (-41.1%) — barely functional
-- town_3 alone provides +17.6 depth — almost the entire chain's contribution is front-loaded here
-- Consistent with why capability `late` preset (which adds town_3) was the transformative step in progression testing
+- Town chain removal drops mage 45.5 → 28.0 (-38.5%) — barely functional
+- town_3 alone provides +15.5 depth — almost the entire chain's contribution
 
-**Mage preparedness volatile interaction is amplified at mid upgrades:**
-- preparedness_1 alone: mage drops to 20.4 (-20.8 vs baseline) — bot refuses to descend without consumables, stalls hard
-- preparedness_2 rescues: +25.7 recovery (vs +9.7 at full)
-- Total chain value is +4.5 despite volatile internals
-- Implication: preparedness_1 as a standalone unlock is harmful for mage. Players who unlock only tier 1 are worse off. Either fix the stall behavior for partial tier, or design the unlock tree to require L2 together.
+**Victory gating at mid upgrades:**
+- Mage: 0 victories at any configuration — mage needs full stat upgrades to reach victory-capable depth
+- Warrior: 5 victories at baseline, town gates hard (0 without town_3)
+- Ranger: 1 victory at baseline, farming gates (0 without farming toggle)
 
-**Tactics, sweep, targeting, retreat: confirmed low-value in the progression window:**
-- All show <3% impact across all 3 classes at mid upgrades — consistent with near-zero at full
-- Targeting and sweep: 0 measurable impact for all 3 classes
+**Tactics, targeting, retreat: confirmed low-value in the progression window:**
+- Targeting: 0 measurable impact for all 3 classes
 - Retreat: 0 or slightly negative (possibly counterproductive behavior at this tier)
-- Tactics: marginal for warrior (+1.3) and mage (+0.5), zero for ranger
-- These chains total 1,208–1,510 essence each and show no measurable value at the tier where players unlock them — confirmed overpriced relative to impact
+- Tactics: marginal for warrior (+1.3), zero or negative for mage and ranger
 
 **Kiting is class-specific:**
-- Mage: kiting_2 shows +3.6 at mid (meaningful positioning benefit)
+- Mage: kiting_2 shows +4.2 at mid (meaningful positioning benefit, up from +3.6)
 - Ranger: kiting_2 is -2.4 (negative — ranger doesn't benefit from kiting at mid upgrades, possibly actively harmful)
 - Warrior: 0 impact throughout
 
@@ -862,13 +855,13 @@ Both full and mid tests together provide clear cost calibration data:
 
 | Chain | Full Impact (best class) | Mid Impact (best class) | Assessment | Current Cost |
 |-------|--------------------------|-------------------------|------------|--------------|
-| town_3 | +8.4 depth (mage) | +17.6 depth (mage) | **Severely underpriced** | 225 essence |
+| town_3 | +8.3 depth (mage) | +15.5 depth (mage) | **Severely underpriced** | 225 essence |
 | farming | -5.9% ranger | -34.9% ranger | **Underpriced** | 350 essence |
-| surf_1 | +1.3 ranger | +16.4 ranger | **Underpriced** | ~150 essence |
+| surf_1 | +1.4 ranger | +16.4 ranger | **Underpriced** | ~150 essence |
 | preparedness_1 | +3.2 ranger | +10.6 ranger | **Underpriced** | ~150 essence |
-| kiting | -2.8% mage | -3.7% mage | Fair (class-specific) | ~600 essence |
-| tactics | <1% all classes | <3% all classes | **Overpriced** | ~500 essence |
-| sweep | 0% all classes | 0% all classes | **Overpriced** | ~500 essence |
+| surf (mage) | -0.9% | -18.6% | **Underpriced for mage** | ~150 essence |
+| kiting | -5.4% mage | -4.2% mage | Fair (class-specific) | ~600 essence |
+| tactics | <1% all classes | <3% warrior only | **Overpriced** | ~500 essence |
 | targeting | 0% all classes | 0% all classes | **Overpriced** | ~500 essence |
 | retreat | 0% all classes | 0-2% all classes | **Overpriced** | ~500 essence |
 
