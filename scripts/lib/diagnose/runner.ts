@@ -340,6 +340,7 @@ export function runBatchDiagnosis(config: BatchConfig): BatchResult {
       endReason: result.endReason,
       turns: result.finalState.turn,
       kills: result.finalState.kills,
+      gold: result.finalState.gold,
     })
   }
 
@@ -467,6 +468,7 @@ export function aggregateBatchResults(
       endReason: result.endReason,
       turns: result.finalState.turn,
       kills: result.finalState.kills,
+      gold: result.finalState.gold,
     })
   }
 

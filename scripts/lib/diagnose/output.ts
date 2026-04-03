@@ -15,6 +15,7 @@ import type { TurnLogEntry } from './runner'
 import type { BaselineResult, BaselineRaceResult } from './baseline'
 import type { SensitivityResult, MultiSensitivityResult, CapSensitivityResult, MultiCapSensitivityResult } from './sensitivity'
 import { SENSITIVITY_UPGRADES, GRADED_CHAINS } from './sensitivity'
+import type { ProgressionResult } from './progression'
 
 // ============================================================================
 // FORMATTING HELPERS
@@ -754,6 +755,89 @@ export function formatMultiCapSensitivityResults(result: MultiCapSensitivityResu
     }
   }
   lines.push('```')
+
+  return lines.join('\n')
+}
+
+// ============================================================================
+// PROGRESSION
+// ============================================================================
+
+function fmtTime(minutes: number): string {
+  if (minutes < 60) return `${minutes.toFixed(1)}m`
+  const hours = Math.floor(minutes / 60)
+  const mins = Math.round(minutes % 60)
+  return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`
+}
+
+export function formatProgressionResults(result: ProgressionResult): string {
+  const lines: string[] = []
+
+  lines.push(header(`PROGRESSION SIMULATION: ${result.classId}/${result.raceId}`))
+  lines.push(`Data collection: ${result.dataCollectionTime.toFixed(1)}s`)
+  lines.push('')
+
+  // Waypoint stats table
+  lines.push('## Waypoint Run Stats (measured)')
+  lines.push('')
+  lines.push('| Waypoint     | Med Depth | Med Kills | Med Gold | Med Turns | Ess/Death | Ess/Win | Vic |')
+  lines.push('|--------------|-----------|-----------|----------|-----------|-----------|---------|-----|')
+  for (const w of result.waypoints) {
+    lines.push(
+      `| ${w.name.padEnd(12)} | ${w.medianDepth.toFixed(1).padStart(9)} | ` +
+      `${w.medianKills.toFixed(0).padStart(9)} | ${w.medianGold.toFixed(0).padStart(8)} | ` +
+      `${w.medianTurns.toFixed(0).padStart(9)} | ${w.medianEssencePerDeath.toFixed(0).padStart(9)} | ` +
+      `${(w.medianEssencePerVictory || '-').toString().padStart(7)} | ${String(w.victories).padStart(3)} |`
+    )
+  }
+  lines.push('')
+
+  // Milestones table
+  lines.push('## Milestones')
+  lines.push('')
+  lines.push('| Milestone | Runs | Essence | Wall Time | Ess/min | Slots |')
+  lines.push('|-----------|------|---------|-----------|---------|-------|')
+  for (const m of result.milestones) {
+    lines.push(
+      `| ${m.label.padEnd(30)} | ${String(m.totalRuns).padStart(4)} | ` +
+      `${m.totalEssence.toFixed(0).padStart(7)} | ${fmtTime(m.wallMinutes).padStart(9)} | ` +
+      `${m.essenceRate.toFixed(1).padStart(7)} | ${String(m.slots).padStart(5)} |`
+    )
+  }
+  lines.push('')
+
+  // Summary
+  lines.push('## Summary')
+  lines.push('')
+  lines.push(`Total runs:    ${result.totalRuns}`)
+  lines.push(`Total essence: ${result.totalEssence.toFixed(0)}`)
+  lines.push(`Wall time:     ${fmtTime(result.totalWallMinutes)}`)
+  lines.push('')
+
+  // Buy order (condensed — show phase transitions, not every purchase)
+  lines.push('## Buy Order (first 30 + last 10)')
+  lines.push('')
+  const buyLen = result.buyOrder.length
+  const showFirst = Math.min(30, buyLen)
+  const showLast = Math.min(10, Math.max(0, buyLen - 30))
+
+  for (let i = 0; i < showFirst; i++) {
+    const b = result.buyOrder[i]!
+    lines.push(
+      `  ${String(i + 1).padStart(3)}. ${b.purchase.name.padEnd(24)} ` +
+      `${String(b.purchase.cost).padStart(6)} ess  @ run ${String(b.runsSoFar).padStart(5)}  ${fmtTime(b.wallMinutes)}`
+    )
+  }
+  if (showLast > 0 && buyLen > 30) {
+    lines.push(`  ... (${buyLen - 30 - showLast} more) ...`)
+    for (let i = buyLen - showLast; i < buyLen; i++) {
+      const b = result.buyOrder[i]!
+      lines.push(
+        `  ${String(i + 1).padStart(3)}. ${b.purchase.name.padEnd(24)} ` +
+        `${String(b.purchase.cost).padStart(6)} ess  @ run ${String(b.runsSoFar).padStart(5)}  ${fmtTime(b.wallMinutes)}`
+      )
+    }
+  }
 
   return lines.join('\n')
 }

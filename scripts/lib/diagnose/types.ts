@@ -158,6 +158,7 @@ export interface RunSummary {
   endReason: EndReason
   turns: number
   kills: number
+  gold: number
 }
 
 export interface BatchResult {

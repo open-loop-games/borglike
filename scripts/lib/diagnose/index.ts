@@ -29,6 +29,10 @@ export type { MatrixConfig, MatrixCell, MatrixCellResult, MatrixResult, MatrixAx
 export { runSensitivityTest, SENSITIVITY_UPGRADES, runCapSensitivityTest, GRADED_CHAINS, CHAIN_NAMES } from './sensitivity'
 export type { SensitivityConfig, SensitivityResult, MultiSensitivityResult, UpgradeImpact, CapSensitivityConfig, CapSensitivityResult, MultiCapSensitivityResult, CapChainData, GradedChain } from './sensitivity'
 
+// Progression simulation
+export { runProgression } from './progression'
+export type { ProgressionConfig, ProgressionResult, WaypointStats, Milestone } from './progression'
+
 // Types
 export type {
   Analyzer,
@@ -119,6 +123,7 @@ export {
   formatCapSensitivityResults,
   formatMultiCapSensitivityResults,
   formatFindResults,
+  formatProgressionResults,
 } from './output'
 export type { TurnLogOptions } from './output'
 

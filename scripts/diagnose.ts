@@ -62,9 +62,11 @@ import {
   formatCapSensitivityResults,
   formatMultiCapSensitivityResults,
   formatFindResults,
+  formatProgressionResults,
   destroyPool,
   runMatrix,
   formatMatrixSummary,
+  runProgression,
   BASELINE_CLASSES,
   BASELINE_RACES,
   ALL_CAPABILITY_TIERS,
@@ -83,7 +85,7 @@ import type { BotPersonality } from '@game/types'
 // ============================================================================
 
 interface Args {
-  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'baseline-races' | 'sensitivity' | 'cap-sensitivity' | 'matrix' | 'help'
+  mode: 'deep' | 'quick' | 'batch' | 'find' | 'compare' | 'baseline' | 'baseline-races' | 'sensitivity' | 'cap-sensitivity' | 'matrix' | 'progression' | 'help'
   seed?: number
   runs: number
   turns: number
@@ -233,6 +235,7 @@ function parseArgs(): Args {
     mode === 'sensitivity' ||
     mode === 'cap-sensitivity' ||
     mode === 'matrix' ||
+    mode === 'progression' ||
     mode === 'help'
   ) {
     result.mode = mode
@@ -384,6 +387,7 @@ MODES:
   sensitivity     Test per-upgrade impact on performance (supports --classes)
   cap-sensitivity Test per-capability-chain impact with tier breakdown (supports --classes)
   matrix          Run cartesian product of classes/races/tiers (shared pool)
+  progression     Simulate full progression: zero to all-purchased + first victory
   help            Show this help message
 
 OPTIONS:
@@ -487,6 +491,12 @@ EXAMPLES:
 
   # Matrix: all classes (equivalent to baseline, single pool)
   pnpm diagnose matrix --classes=all --runs=100 --turns=50000
+
+  # Progression simulation: how long from zero to full buy + first win
+  pnpm diagnose progression --class=warrior --seed=1000 --turns=50000
+
+  # Progression for mage (different essence curve)
+  pnpm diagnose progression --class=mage --seed=1000
 
 ANALYZERS:
   stuck       - Detects repeated actions, waits, twitch counter issues
@@ -784,6 +794,40 @@ async function main(): Promise<void> {
     } else {
       console.log(text)
     }
+    return
+  }
+
+  // Handle progression mode
+  if (args.mode === 'progression') {
+    const result = await runProgression({
+      classId: args.classId,
+      raceId: args.race,
+      runs: args.runs !== 50 ? args.runs : 30,
+      turns: args.turns !== 20000 ? args.turns : undefined,
+      seed: args.seed,
+      threads: args.userSetThreads ? args.threads : 20,
+      boosters: args.boosters,
+      balance: {
+        monsterHpPercent: args.monsterHp,
+        monsterDamagePercent: args.monsterDamage,
+        startingPotions: args.startPotions,
+        potionRatePercent: args.potionRate,
+        regenPer10Turns: args.regen,
+        armorPenetration: args.armorPen,
+        enchantRatePercent: args.enchantRate,
+        itemRatePercent: args.itemRate,
+        levelupHpPercent: args.levelupHp,
+        xpRatePercent: args.xpRate,
+        upgradePowerPercent: args.upgradePower,
+        bestiaryBonusPercent: args.bestiary,
+        baseHpFraction: args.hpFraction / 100,
+      },
+    })
+    const text = formatProgressionResults(result)
+    outputResult(args, 'progression', text, result, {
+      classId: args.classId,
+      race: args.race,
+    })
     return
   }
 
