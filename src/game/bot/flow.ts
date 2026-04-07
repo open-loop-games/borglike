@@ -34,7 +34,6 @@ export interface FlowGrid {
   height: number
 }
 
-
 /** Danger-grid avoidance for flow computation (replaces Set<string> avoid) */
 export interface FlowAvoidance {
   /** Danger grid (Int16Array-backed) */

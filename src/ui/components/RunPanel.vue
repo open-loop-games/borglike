@@ -22,7 +22,9 @@ const activeBoosters = computed(() => {
   return ids.map((id) => getBoosterById(id)).filter((b) => b !== undefined)
 })
 
-const personalityDisplay = computed(() => PERSONALITY_DISPLAY[props.run.config.personality ?? 'cautious'])
+const personalityDisplay = computed(
+  () => PERSONALITY_DISPLAY[props.run.config.personality ?? 'cautious']
+)
 
 function formatBoosterEffect(effect: BoosterEffect): string {
   switch (effect.type) {
@@ -145,12 +147,23 @@ function handleDismiss() {
       <div class="run-info">
         <span class="run-class">{{ run.config.class }}</span>
         <span class="run-race">{{ run.config.race }}</span>
-        <GameTooltip tag="span" class="run-personality" :style="{ color: personalityDisplay.color }" :text="`${personalityDisplay.name} — ${personalityDisplay.desc}`">
+        <GameTooltip
+          tag="span"
+          class="run-personality"
+          :style="{ color: personalityDisplay.color }"
+          :text="`${personalityDisplay.name} — ${personalityDisplay.desc}`"
+        >
           {{ personalityDisplay.label }}
         </GameTooltip>
       </div>
       <div v-if="activeBoosters.length > 0" class="run-boosters">
-        <GameTooltip v-for="b in activeBoosters" :key="b!.id" tag="span" class="booster-badge" :text="`${b!.name} — ${b!.description}`">
+        <GameTooltip
+          v-for="b in activeBoosters"
+          :key="b!.id"
+          tag="span"
+          class="booster-badge"
+          :text="`${b!.name} — ${b!.description}`"
+        >
           {{ b!.icon }}
           <template #extended>
             <div class="tt-row">
@@ -169,16 +182,42 @@ function handleDismiss() {
         <span class="depth-value">{{ run.depth }}</span>
       </div>
       <div class="run-controls">
-        <GameTooltip tag="button" class="control-btn turbo" :class="{ active: run.turbo }" :text="run.turbo ? 'Turbo: ON — Key: T' : 'Turbo: OFF — Key: T'" position="bottom" @click="handleToggleTurbo">
+        <GameTooltip
+          tag="button"
+          class="control-btn turbo"
+          :class="{ active: run.turbo }"
+          :text="run.turbo ? 'Turbo: ON — Key: T' : 'Turbo: OFF — Key: T'"
+          position="bottom"
+          @click="handleToggleTurbo"
+        >
           ▶▶
           <template #extended>
             <span class="tt-muted">Fast-forwards this run. Uses more CPU.</span>
           </template>
         </GameTooltip>
-        <GameTooltip tag="button" class="control-btn expand" text="Expand to full view — Key: 1-4" position="bottom" @click="handleExpand">
+        <GameTooltip
+          tag="button"
+          class="control-btn expand"
+          text="Expand to full view — Key: 1-4"
+          position="bottom"
+          @click="handleExpand"
+        >
           ⛶
         </GameTooltip>
-        <GameTooltip tag="button" class="control-btn kill" :class="{ holding: killHoldProgress > 0, disabled: runEnded }" :disabled="runEnded" text="Hold to kill run" position="bottom" @mousedown="startKillHold" @mouseup="cancelKillHold" @mouseleave="cancelKillHold" @touchstart.prevent="startKillHold" @touchend="cancelKillHold" @touchcancel="cancelKillHold">
+        <GameTooltip
+          tag="button"
+          class="control-btn kill"
+          :class="{ holding: killHoldProgress > 0, disabled: runEnded }"
+          :disabled="runEnded"
+          text="Hold to kill run"
+          position="bottom"
+          @mousedown="startKillHold"
+          @mouseup="cancelKillHold"
+          @mouseleave="cancelKillHold"
+          @touchstart.prevent="startKillHold"
+          @touchend="cancelKillHold"
+          @touchcancel="cancelKillHold"
+        >
           <span class="kill-icon">✗</span>
           <span
             v-if="killHoldProgress > 0"
@@ -232,10 +271,16 @@ function handleDismiss() {
 
     <DungeonGrid :grid="run.grid" :cursor-x="run.cursorX" :cursor-y="run.cursorY" />
 
-    <div v-if="runEnded" class="death-overlay" :class="{ 'victory-overlay': isVictory, 'flash-in': isVictory }">
+    <div
+      v-if="runEnded"
+      class="death-overlay"
+      :class="{ 'victory-overlay': isVictory, 'flash-in': isVictory }"
+    >
       <span v-if="isFirstVictory" class="first-victory-badge">FIRST VICTORY!</span>
       <span v-if="isNewBest" class="new-best-badge">NEW BEST!</span>
-      <span class="death-text" :class="{ 'victory-text': isVictory }">{{ isVictory ? 'VICTORIOUS' : 'DEFEATED' }}</span>
+      <span class="death-text" :class="{ 'victory-text': isVictory }">{{
+        isVictory ? 'VICTORIOUS' : 'DEFEATED'
+      }}</span>
       <div class="death-character">
         <span class="char-race">{{ run.config.race }}</span>
         <span class="char-class">{{ run.config.class }}</span>
@@ -244,7 +289,11 @@ function handleDismiss() {
         }}</span>
       </div>
       <span class="death-cause">{{
-        isVictory ? 'Morgoth, Lord of Darkness has been slain!' : killerMonster ? `Slain by ${killerMonster}` : deathCause
+        isVictory
+          ? 'Morgoth, Lord of Darkness has been slain!'
+          : killerMonster
+            ? `Slain by ${killerMonster}`
+            : deathCause
       }}</span>
       <div class="death-metrics">
         <div class="metric">
@@ -718,7 +767,9 @@ function handleDismiss() {
 
 .victory-text {
   color: var(--amber) !important;
-  text-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 40px rgba(245, 158, 11, 0.4) !important;
+  text-shadow:
+    0 0 20px rgba(245, 158, 11, 0.8),
+    0 0 40px rgba(245, 158, 11, 0.4) !important;
 }
 
 .first-victory-badge {

@@ -40,11 +40,10 @@ const emit = defineEmits<{
         <h3>Core Loop</h3>
         <ol>
           <li>
-            <strong>Configure</strong> &mdash; Select a race, class, boosters, bot config for your bot.
+            <strong>Configure</strong> &mdash; Select a race, class, boosters, bot config for your
+            bot.
           </li>
-          <li>
-            <strong>Run</strong> &mdash; A bot enters the dungeon with your build.
-          </li>
+          <li><strong>Run</strong> &mdash; A bot enters the dungeon with your build.</li>
           <li><strong>Watch</strong> &mdash; Bots explore, fight, and loot automatically</li>
           <li><strong>Die</strong> &mdash; Death is inevitable (and profitable)</li>
           <li><strong>Earn</strong> &mdash; Gain essence from each run</li>
@@ -96,7 +95,9 @@ const emit = defineEmits<{
           </div>
           <div class="control-item">
             <span class="control-key">📖 Bestiary</span>
-            <span class="control-desc">Monsters encountered; high kill counts unlock knowledge</span>
+            <span class="control-desc"
+              >Monsters encountered; high kill counts unlock knowledge</span
+            >
           </div>
           <div class="control-item">
             <span class="control-key">📦 Armory</span>

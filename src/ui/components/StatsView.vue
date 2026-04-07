@@ -104,7 +104,11 @@ const nemesis = computed(() => {
             (progression.globalStats.totalFloorsVisited ?? 0).toLocaleString()
           }}</span>
         </GameTooltip>
-        <GameTooltip tag="div" class="stat-row" text="Lifetime essence earned (not current balance)">
+        <GameTooltip
+          tag="div"
+          class="stat-row"
+          text="Lifetime essence earned (not current balance)"
+        >
           <span class="stat-label">Essence Earned</span>
           <span class="stat-val essence">{{
             progression.globalStats.totalEssence.toLocaleString()
@@ -114,7 +118,9 @@ const nemesis = computed(() => {
     </section>
 
     <section v-if="recentStats" class="section">
-      <GameTooltip tag="h2" :text="`Averages from last ${recentStats.count} runs`">Recent Runs</GameTooltip>
+      <GameTooltip tag="h2" :text="`Averages from last ${recentStats.count} runs`"
+        >Recent Runs</GameTooltip
+      >
       <div class="stat-rows">
         <div class="stat-row">
           <span class="stat-label">Avg Depth</span>
@@ -128,11 +134,14 @@ const nemesis = computed(() => {
           <span class="stat-label">Avg Turns</span>
           <span class="stat-val">{{ recentStats.avgTurns.toLocaleString() }}</span>
         </div>
-        <GameTooltip v-if="nemesis" tag="div" class="stat-row nemesis-row" text="Monster that has killed you the most">
+        <GameTooltip
+          v-if="nemesis"
+          tag="div"
+          class="stat-row nemesis-row"
+          text="Monster that has killed you the most"
+        >
           <span class="stat-label">Nemesis</span>
-          <span class="stat-val kills nemesis-name"
-            >{{ nemesis.name }} ({{ nemesis.deaths }})</span
-          >
+          <span class="stat-val kills nemesis-name">{{ nemesis.name }} ({{ nemesis.deaths }})</span>
         </GameTooltip>
       </div>
     </section>
@@ -146,9 +155,7 @@ const nemesis = computed(() => {
         </div>
         <div class="stat-row">
           <span class="stat-label">Races</span>
-          <span class="stat-val"
-            >{{ progression.availableRaces.length }} / {{ totalRaces }}</span
-          >
+          <span class="stat-val">{{ progression.availableRaces.length }} / {{ totalRaces }}</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Classes</span>

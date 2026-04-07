@@ -14,11 +14,7 @@ import type {
   AltarState,
   MerchantState,
 } from '../types'
-import type {
-  BotCapabilities,
-  BotToggles,
-  SurfLevelRange,
-} from '@/types/progression'
+import type { BotCapabilities, BotToggles, SurfLevelRange } from '@/types/progression'
 import type { ClassBehaviorProfile } from './class-profiles'
 import type { FlowGrid } from './flow'
 

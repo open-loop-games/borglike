@@ -36,14 +36,24 @@ export const FONT_OPTIONS: FontOption[] = [
     css: "'IBM Plex Mono', monospace",
     googleFamily: 'IBM+Plex+Mono',
   },
-  { id: 'inconsolata', label: 'Inconsolata', css: "'Inconsolata', monospace", googleFamily: 'Inconsolata' },
+  {
+    id: 'inconsolata',
+    label: 'Inconsolata',
+    css: "'Inconsolata', monospace",
+    googleFamily: 'Inconsolata',
+  },
   {
     id: 'roboto-mono',
     label: 'Roboto Mono',
     css: "'Roboto Mono', monospace",
     googleFamily: 'Roboto+Mono',
   },
-  { id: 'space-mono', label: 'Space Mono', css: "'Space Mono', monospace", googleFamily: 'Space+Mono' },
+  {
+    id: 'space-mono',
+    label: 'Space Mono',
+    css: "'Space Mono', monospace",
+    googleFamily: 'Space+Mono',
+  },
   { id: 'system', label: 'System Mono', css: 'monospace' },
 ]
 

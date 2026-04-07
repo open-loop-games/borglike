@@ -111,7 +111,13 @@ const emit = defineEmits<{
           <span class="tt-muted">Automatically starts new runs when slots empty.</span>
         </template>
       </GameTooltip>
-      <GameTooltip tag="button" class="header-btn" text="Run History" position="bottom" @click="emit('openRunHistory')">
+      <GameTooltip
+        tag="button"
+        class="header-btn"
+        text="Run History"
+        position="bottom"
+        @click="emit('openRunHistory')"
+      >
         <span>≡</span>
       </GameTooltip>
       <GameTooltip
@@ -124,28 +130,54 @@ const emit = defineEmits<{
         <span>🏆</span>
         <span v-if="progression.hasNewAchievements" class="notification-dot"></span>
         <template #content>
-          <span class="game-tooltip-text">Achievements — {{ progression.achievementStats.unlocked }}/{{ progression.achievementStats.total }}</span>
+          <span class="game-tooltip-text"
+            >Achievements — {{ progression.achievementStats.unlocked }}/{{
+              progression.achievementStats.total
+            }}</span
+          >
         </template>
       </GameTooltip>
       <GameTooltip tag="button" class="header-btn" position="bottom" @click="emit('openBestiary')">
         <span>📖</span>
         <template #content>
-          <span class="game-tooltip-text">Bestiary — {{ progression.bestiaryStats.discovered }} discovered</span>
+          <span class="game-tooltip-text"
+            >Bestiary — {{ progression.bestiaryStats.discovered }} discovered</span
+          >
         </template>
       </GameTooltip>
       <GameTooltip tag="button" class="header-btn" position="bottom" @click="emit('openArmory')">
         <span>📦</span>
         <template #content>
-          <span class="game-tooltip-text">Armory — {{ progression.armoryStats.discovered }} discovered</span>
+          <span class="game-tooltip-text"
+            >Armory — {{ progression.armoryStats.discovered }} discovered</span
+          >
         </template>
       </GameTooltip>
-      <GameTooltip tag="button" class="header-btn" text="Codex — Races &amp; Classes" position="bottom" @click="emit('openCodex')">
+      <GameTooltip
+        tag="button"
+        class="header-btn"
+        text="Codex — Races &amp; Classes"
+        position="bottom"
+        @click="emit('openCodex')"
+      >
         <span>📜</span>
       </GameTooltip>
-      <GameTooltip tag="button" class="header-btn" text="Settings" position="bottom" @click="emit('openSettings')">
+      <GameTooltip
+        tag="button"
+        class="header-btn"
+        text="Settings"
+        position="bottom"
+        @click="emit('openSettings')"
+      >
         <span>⚙</span>
       </GameTooltip>
-      <GameTooltip tag="button" class="header-btn" text="Help" position="bottom" @click="emit('openHelp')">
+      <GameTooltip
+        tag="button"
+        class="header-btn"
+        text="Help"
+        position="bottom"
+        @click="emit('openHelp')"
+      >
         <span>?</span>
       </GameTooltip>
     </div>

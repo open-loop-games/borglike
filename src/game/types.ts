@@ -942,7 +942,6 @@ export type BotPersonality =
   | 'speedrunner' // Beelines for stairs
   | 'custom' // Player-tuned sliders
 
-
 // ============================================================================
 // BALANCE OVERRIDES (for A/B testing)
 // ============================================================================

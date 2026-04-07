@@ -5,11 +5,7 @@
  */
 
 import type { GameState, BotPersonality, Point, AltarState } from '../types'
-import type {
-  BotCapabilities,
-  BotToggles,
-  SurfLevelRange,
-} from '../../types/progression'
+import type { BotCapabilities, BotToggles, SurfLevelRange } from '../../types/progression'
 import { FULL_BOT_CAPABILITIES, DEFAULT_BOT_TOGGLES } from '../../types/progression'
 import { getDefaultSurfLevelRange } from './types'
 

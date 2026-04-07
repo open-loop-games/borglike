@@ -23,11 +23,36 @@ export type AngbandEvent =
  * Personality display constants and type
  */
 export const PERSONALITY_DISPLAY = {
-  cautious: { label: 'CAU', color: 'var(--blue)', name: 'Cautious', desc: 'Retreats early, uses items freely' },
-  aggressive: { label: 'AGG', color: 'var(--red)', name: 'Aggressive', desc: 'Fights to low HP, hoards items' },
-  greedy: { label: 'GRD', color: 'var(--amber)', name: 'Greedy', desc: 'Prioritizes gold/items over safety' },
-  speedrunner: { label: 'SPD', color: 'var(--cyan)', name: 'Speedrunner', desc: 'Beelines for stairs' },
-  custom: { label: 'CUS', color: 'var(--purple)', name: 'Custom', desc: 'Fine-tuned behavior sliders' },
+  cautious: {
+    label: 'CAU',
+    color: 'var(--blue)',
+    name: 'Cautious',
+    desc: 'Retreats early, uses items freely',
+  },
+  aggressive: {
+    label: 'AGG',
+    color: 'var(--red)',
+    name: 'Aggressive',
+    desc: 'Fights to low HP, hoards items',
+  },
+  greedy: {
+    label: 'GRD',
+    color: 'var(--amber)',
+    name: 'Greedy',
+    desc: 'Prioritizes gold/items over safety',
+  },
+  speedrunner: {
+    label: 'SPD',
+    color: 'var(--cyan)',
+    name: 'Speedrunner',
+    desc: 'Beelines for stairs',
+  },
+  custom: {
+    label: 'CUS',
+    color: 'var(--purple)',
+    name: 'Custom',
+    desc: 'Fine-tuned behavior sliders',
+  },
 } as const
 
 export type Personality = keyof typeof PERSONALITY_DISPLAY

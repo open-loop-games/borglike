@@ -148,7 +148,9 @@ const hasExtendedStats = computed(() => {
   <div class="run-summary">
     <header class="summary-header">
       <div class="header-content">
-        <h2 :class="{ 'victory-header': isVictory }">{{ isVictory ? 'Victory!' : 'Run Complete' }}</h2>
+        <h2 :class="{ 'victory-header': isVictory }">
+          {{ isVictory ? 'Victory!' : 'Run Complete' }}
+        </h2>
         <span v-if="isFirstVictory" class="first-victory-badge">FIRST VICTORY!</span>
         <span v-if="isNewBest" class="new-best-badge">NEW BEST!</span>
       </div>

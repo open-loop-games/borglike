@@ -27,7 +27,7 @@ const props = withDefaults(
     hideDelay: 100,
     tag: 'div',
     maxWidth: 280,
-  },
+  }
 )
 
 const slots = useSlots()
@@ -188,11 +188,7 @@ const tooltipStyle = computed(() => ({
   position: fixed;
   z-index: 9999;
   padding: var(--space-2) var(--space-3);
-  background: linear-gradient(
-    135deg,
-    rgba(26, 26, 46, 0.98) 0%,
-    rgba(15, 15, 26, 0.99) 100%
-  );
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.98) 0%, rgba(15, 15, 26, 0.99) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);

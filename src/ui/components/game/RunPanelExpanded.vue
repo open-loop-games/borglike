@@ -52,7 +52,9 @@ const RESIST_CONFIG: Record<string, { label: string; color: string }> = {
 const isVictory = computed(() => props.run.state === 'victory')
 const runEnded = computed(() => isRunEnded(props.run.state))
 
-const personalityDisplay = computed(() => PERSONALITY_DISPLAY[props.run.config.personality ?? 'cautious'])
+const personalityDisplay = computed(
+  () => PERSONALITY_DISPLAY[props.run.config.personality ?? 'cautious']
+)
 
 // Computed: active resistances for display
 const activeResistances = computed(() => {
@@ -66,19 +68,45 @@ const activeResistances = computed(() => {
 })
 
 // Status effect display config
-const STATUS_CONFIG: Record<string, { label: string; color: string; name: string; desc: string }> = {
-  speed: { label: 'SPD', color: '#06b6d4', name: 'Haste', desc: 'Increased action speed' },
-  heroism: { label: 'HERO', color: '#f59e0b', name: 'Heroism', desc: 'Bonus to-hit and damage, resist fear' },
-  berserk: { label: 'BRSRK', color: '#ef4444', name: 'Berserk', desc: 'Large damage bonus, reduced defense' },
-  blessing: { label: 'BLESS', color: '#fbbf24', name: 'Blessing', desc: 'Bonus to-hit and armor class' },
-  protection: { label: 'PROT', color: '#3b82f6', name: 'Protection', desc: 'Increased armor class' },
-}
+const STATUS_CONFIG: Record<string, { label: string; color: string; name: string; desc: string }> =
+  {
+    speed: { label: 'SPD', color: '#06b6d4', name: 'Haste', desc: 'Increased action speed' },
+    heroism: {
+      label: 'HERO',
+      color: '#f59e0b',
+      name: 'Heroism',
+      desc: 'Bonus to-hit and damage, resist fear',
+    },
+    berserk: {
+      label: 'BRSRK',
+      color: '#ef4444',
+      name: 'Berserk',
+      desc: 'Large damage bonus, reduced defense',
+    },
+    blessing: {
+      label: 'BLESS',
+      color: '#fbbf24',
+      name: 'Blessing',
+      desc: 'Bonus to-hit and armor class',
+    },
+    protection: {
+      label: 'PROT',
+      color: '#3b82f6',
+      name: 'Protection',
+      desc: 'Increased armor class',
+    },
+  }
 
 // Computed: formatted status effects
 const activeStatuses = computed(() => {
   return props.run.statusEffects.map((effect) => ({
     ...effect,
-    ...(STATUS_CONFIG[effect.type] || { label: effect.type.toUpperCase(), color: '#94a3b8', name: effect.type, desc: effect.type }),
+    ...(STATUS_CONFIG[effect.type] || {
+      label: effect.type.toUpperCase(),
+      color: '#94a3b8',
+      name: effect.type,
+      desc: effect.type,
+    }),
   }))
 })
 
@@ -99,13 +127,13 @@ const showResistSection = computed(
   () =>
     activeResistances.value.length > 0 ||
     (lastResistActiveTurn.value > 0 &&
-      props.run.turns - lastResistActiveTurn.value < SECTION_LINGER_TURNS),
+      props.run.turns - lastResistActiveTurn.value < SECTION_LINGER_TURNS)
 )
 const showStatusSection = computed(
   () =>
     activeStatuses.value.length > 0 ||
     (lastStatusActiveTurn.value > 0 &&
-      props.run.turns - lastStatusActiveTurn.value < SECTION_LINGER_TURNS),
+      props.run.turns - lastStatusActiveTurn.value < SECTION_LINGER_TURNS)
 )
 
 // Get personal best for comparison in RunSummary (uses cached value from store)
@@ -288,7 +316,9 @@ function formatGoal(goal: string | undefined): string {
         <div class="run-identity">
           <span class="run-class">{{ run.config.class }}</span>
           <span class="run-race">{{ run.config.race }}</span>
-          <span class="run-personality" :style="{ color: personalityDisplay.color }">{{ personalityDisplay.label }}</span>
+          <span class="run-personality" :style="{ color: personalityDisplay.color }">{{
+            personalityDisplay.label
+          }}</span>
         </div>
       </div>
 
@@ -433,7 +463,9 @@ function formatGoal(goal: string | undefined): string {
               <span class="combat-label">AC</span>
               <span class="combat-val armor">{{ run.combat.armor }}</span>
               <template #extended>
-                <span class="tt-muted">Higher is better. Each point reduces incoming melee damage.</span>
+                <span class="tt-muted"
+                  >Higher is better. Each point reduces incoming melee damage.</span
+                >
               </template>
             </GameTooltip>
             <GameTooltip
@@ -443,7 +475,9 @@ function formatGoal(goal: string | undefined): string {
               <span class="combat-label">EVA</span>
               <span class="combat-val evasion">{{ run.combat.evasion }}</span>
               <template #extended>
-                <span class="tt-muted">Compared against attacker's accuracy. Higher evasion means more dodges.</span>
+                <span class="tt-muted"
+                  >Compared against attacker's accuracy. Higher evasion means more dodges.</span
+                >
               </template>
             </GameTooltip>
             <GameTooltip
@@ -453,7 +487,9 @@ function formatGoal(goal: string | undefined): string {
               <span class="combat-label">DMG</span>
               <span class="combat-val damage">{{ run.combat.meleeDamage }}</span>
               <template #extended>
-                <span class="tt-muted">Combined weapon damage + strength bonus. Shown as average per hit.</span>
+                <span class="tt-muted"
+                  >Combined weapon damage + strength bonus. Shown as average per hit.</span
+                >
               </template>
             </GameTooltip>
             <GameTooltip
@@ -463,7 +499,9 @@ function formatGoal(goal: string | undefined): string {
               <span class="combat-label">ACC</span>
               <span class="combat-val accuracy">{{ run.combat.accuracy }}</span>
               <template #extended>
-                <span class="tt-muted">Compared against target's evasion. Higher accuracy means fewer misses.</span>
+                <span class="tt-muted"
+                  >Compared against target's evasion. Higher accuracy means fewer misses.</span
+                >
               </template>
             </GameTooltip>
             <GameTooltip
@@ -478,7 +516,9 @@ function formatGoal(goal: string | undefined): string {
                 {{ run.combat.speed }}
               </span>
               <template #extended>
-                <span class="tt-muted">100 = normal. Each +10 means ~10% more actions per turn cycle.</span>
+                <span class="tt-muted"
+                  >100 = normal. Each +10 means ~10% more actions per turn cycle.</span
+                >
               </template>
             </GameTooltip>
           </div>
@@ -493,11 +533,7 @@ function formatGoal(goal: string | undefined): string {
           @toggle="togglePanel('resist')"
         >
           <div class="resist-grid">
-            <GameTooltip
-              v-for="resist in activeResistances"
-              :key="resist.type"
-              class="resist-item"
-            >
+            <GameTooltip v-for="resist in activeResistances" :key="resist.type" class="resist-item">
               <span class="resist-label" :style="{ color: resist.color }">{{ resist.label }}</span>
               <span
                 class="resist-val"
@@ -506,9 +542,17 @@ function formatGoal(goal: string | undefined): string {
                 {{ resist.value }}
               </span>
               <template #content>
-                <div class="tt-header">{{ RESIST_FULL_NAMES[resist.type] ?? resist.type }} Resistance</div>
+                <div class="tt-header">
+                  {{ RESIST_FULL_NAMES[resist.type] ?? resist.type }} Resistance
+                </div>
                 <span class="game-tooltip-text">
-                  {{ resist.value >= 100 ? 'Immune to' : resist.value < 0 ? `Vulnerable to` : `Reduces` }}
+                  {{
+                    resist.value >= 100
+                      ? 'Immune to'
+                      : resist.value < 0
+                        ? `Vulnerable to`
+                        : `Reduces`
+                  }}
                   {{ (RESIST_FULL_NAMES[resist.type] ?? resist.type).toLowerCase() }}
                   damage{{ resist.value >= 100 || resist.value < 0 ? '' : ` by ${resist.value}%` }}
                 </span>
@@ -535,7 +579,9 @@ function formatGoal(goal: string | undefined): string {
               <span class="status-name" :style="{ color: status.color }">{{ status.label }}</span>
               <span class="status-turns">{{ status.turnsRemaining }}</span>
               <template #content>
-                <div class="tt-header" :style="{ color: status.color }">{{ status.name ?? status.type }}</div>
+                <div class="tt-header" :style="{ color: status.color }">
+                  {{ status.name ?? status.type }}
+                </div>
                 <span class="game-tooltip-text">{{ status.desc ?? status.type }}</span>
               </template>
               <template #extended>
@@ -569,12 +615,18 @@ function formatGoal(goal: string | undefined): string {
                 <div class="tt-header">{{ SLOT_NAMES[slot.id] ?? slot.id }}</div>
                 <template v-if="run.equipment[slot.id as EquipSlot]">
                   <span
-                    :class="{ 'equip-tt-artifact': run.equipment[slot.id as EquipSlot]!.isArtifact }"
+                    :class="{
+                      'equip-tt-artifact': run.equipment[slot.id as EquipSlot]!.isArtifact,
+                    }"
                   >
                     {{ formatItemName(run.equipment[slot.id as EquipSlot]!) }}
                   </span>
                   <div class="tt-muted">
-                    {{ run.equipment[slot.id as EquipSlot]!.isArtifact ? 'Artifact' : `Tier ${run.equipment[slot.id as EquipSlot]!.tier}` }}
+                    {{
+                      run.equipment[slot.id as EquipSlot]!.isArtifact
+                        ? 'Artifact'
+                        : `Tier ${run.equipment[slot.id as EquipSlot]!.tier}`
+                    }}
                   </div>
                 </template>
                 <span v-else class="tt-muted">Empty</span>
@@ -582,7 +634,9 @@ function formatGoal(goal: string | undefined): string {
               <template v-if="run.equipment[slot.id as EquipSlot]" #extended>
                 <div v-if="run.equipment[slot.id as EquipSlot]!.enchantment > 0" class="tt-row">
                   <span class="tt-label">Enchantment</span>
-                  <span class="tt-val">+{{ run.equipment[slot.id as EquipSlot]!.enchantment }}</span>
+                  <span class="tt-val"
+                    >+{{ run.equipment[slot.id as EquipSlot]!.enchantment }}</span
+                  >
                 </div>
                 <div class="tt-row">
                   <span class="tt-label">Tier</span>
@@ -644,7 +698,15 @@ function formatGoal(goal: string | undefined): string {
         <!-- Run Status Badge -->
         <div class="run-status-badges">
           <span class="status-badge" :class="run.state">
-            {{ run.state === 'victory' ? 'VICTORY' : run.state === 'dead' ? 'DEAD' : run.state === 'running' ? 'ACTIVE' : 'STARTING' }}
+            {{
+              run.state === 'victory'
+                ? 'VICTORY'
+                : run.state === 'dead'
+                  ? 'DEAD'
+                  : run.state === 'running'
+                    ? 'ACTIVE'
+                    : 'STARTING'
+            }}
           </span>
           <span v-if="run.turbo" class="status-badge turbo">TURBO</span>
         </div>
@@ -662,7 +724,11 @@ function formatGoal(goal: string | undefined): string {
     </div>
 
     <!-- Death/Victory Overlay with RunSummary -->
-    <div v-if="runEnded" class="death-overlay" :class="{ 'victory-overlay': isVictory, 'flash-in': isVictory }">
+    <div
+      v-if="runEnded"
+      class="death-overlay"
+      :class="{ 'victory-overlay': isVictory, 'flash-in': isVictory }"
+    >
       <RunSummary
         v-if="run.finalStats"
         :run="run.finalStats"

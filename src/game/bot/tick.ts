@@ -12,11 +12,7 @@
  */
 
 import type { GameState, GameAction, BotPersonality } from '../types'
-import type {
-  BotCapabilities,
-  BotToggles,
-  SurfLevelRange,
-} from '@/types/progression'
+import type { BotCapabilities, BotToggles, SurfLevelRange } from '@/types/progression'
 import { getTile, countExploredTiles } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
 

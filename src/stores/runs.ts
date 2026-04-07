@@ -104,7 +104,6 @@ export interface DisplayItem {
   tier: number
 }
 
-
 function createEmptyGrid(): GridCell[][] {
   return Array.from({ length: 24 }, () =>
     Array.from({ length: 80 }, () => ({ char: ' ', color: 0xffffff }))

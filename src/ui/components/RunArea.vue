@@ -91,11 +91,7 @@ function handleCloseLoadout() {
   loadoutSlot.value = null
 }
 
-function handleLoadoutStart(config: {
-  race: string
-  class: string
-  personality: Personality
-}) {
+function handleLoadoutStart(config: { race: string; class: string; personality: Personality }) {
   if (loadoutSlot.value !== null) {
     handleStartRun(loadoutSlot.value, config)
   }

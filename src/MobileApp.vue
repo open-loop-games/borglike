@@ -149,10 +149,7 @@ function handleMoreNavigate(target: string) {
       </div>
 
       <!-- More tab -->
-      <MobileMoreMenu
-        v-else-if="activeTab === 'more'"
-        @navigate="handleMoreNavigate"
-      />
+      <MobileMoreMenu v-else-if="activeTab === 'more'" @navigate="handleMoreNavigate" />
     </main>
 
     <MobileTabBar :active-tab="activeTab" @tab-change="handleTabChange" />

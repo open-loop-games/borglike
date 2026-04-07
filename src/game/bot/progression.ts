@@ -29,11 +29,7 @@ import {
 } from './exploration'
 import { getDepthReadiness, getUniqueBlocker, isUnderLeveled } from './preparation'
 import { monsters as MONSTERS, VICTORY_BOSS_NAME } from '../data/monsters'
-import {
-  handleActiveFarmingLoop,
-  initiateFarmingLoop,
-  getFlipNavigationGoal,
-} from './farming'
+import { handleActiveFarmingLoop, initiateFarmingLoop, getFlipNavigationGoal } from './farming'
 
 // ============================================================================
 // HELPERS

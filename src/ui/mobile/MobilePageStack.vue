@@ -54,7 +54,13 @@ function handleClose() {
         </button>
       </div>
       <div class="page-content">
-        <component :is="topPage.component" v-bind="topPage.props" @close="handleClose" @collapse="handleClose" @back="handleClose" />
+        <component
+          :is="topPage.component"
+          v-bind="topPage.props"
+          @close="handleClose"
+          @collapse="handleClose"
+          @back="handleClose"
+        />
       </div>
     </div>
   </Transition>

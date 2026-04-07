@@ -116,7 +116,9 @@ function getBoosterInfo(id: string | null) {
   return getBoosterById(id)
 }
 
-const personalities = (Object.entries(PERSONALITY_DISPLAY) as [Personality, typeof PERSONALITY_DISPLAY[Personality]][])
+const personalities = (
+  Object.entries(PERSONALITY_DISPLAY) as [Personality, (typeof PERSONALITY_DISPLAY)[Personality]][]
+)
   .filter(([id]) => id !== 'custom')
   .map(([id, p]) => ({ id, name: p.name, desc: p.desc }))
 
@@ -626,11 +628,7 @@ function handleCancel() {
             </div>
             <!-- No controls message -->
             <div
-              v-if="
-                !globalCaps.farming &&
-                globalCaps.surf === 0 &&
-                globalCaps.preparedness < 2
-              "
+              v-if="!globalCaps.farming && globalCaps.surf === 0 && globalCaps.preparedness < 2"
               class="no-controls"
             >
               Purchase bot upgrades in Upgrades → Bot
