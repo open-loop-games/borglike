@@ -821,12 +821,10 @@ function formatGoal(goal: string | undefined): string {
 
 .run-class {
   color: var(--success);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 .run-race {
   color: var(--info);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--info) 50%, transparent);
 }
 
 .run-personality {

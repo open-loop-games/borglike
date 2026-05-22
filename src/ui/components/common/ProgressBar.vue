@@ -31,7 +31,14 @@ const variantClass = computed(() => {
 <template>
   <div class="progress-bar" :class="[variantClass, size || 'md']">
     <div class="progress-fill" :style="{ width: percentage + '%' }" />
-    <span v-if="showText" class="progress-text"> {{ current }}/{{ max }} </span>
+    <template v-if="showText">
+      <span class="progress-text outside">{{ current }}/{{ max }}</span>
+      <span
+        class="progress-text inside"
+        :style="{ clipPath: `inset(0 ${100 - percentage}% 0 0)` }"
+        >{{ current }}/{{ max }}</span
+      >
+    </template>
   </div>
 </template>
 
@@ -101,7 +108,17 @@ const variantClass = computed(() => {
   align-items: center;
   justify-content: center;
   font-size: var(--text-base);
+  pointer-events: none;
+}
+
+.progress-text.outside {
   color: var(--text-primary);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Clipped to the filled portion; uses page bg color so it reads against
+   saturated bar fills the same way the fill reads against the panel. */
+.progress-text.inside {
+  color: var(--bg);
+  font-weight: 600;
 }
 </style>

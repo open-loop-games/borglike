@@ -207,7 +207,6 @@ const emit = defineEmits<{
   font-weight: bold;
   margin: 0;
   color: var(--essence);
-  text-shadow: 0 0 12px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .tagline {
@@ -245,7 +244,6 @@ const emit = defineEmits<{
 .essence-icon {
   font-size: var(--text-xl);
   color: var(--essence);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 70%, transparent);
 }
 
 .essence-display.animating .essence-icon {
@@ -256,7 +254,6 @@ const emit = defineEmits<{
   font-size: var(--text-xl);
   font-weight: bold;
   color: var(--essence);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .essence-display.animating .essence-value {

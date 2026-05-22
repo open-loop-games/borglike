@@ -30,7 +30,7 @@ const activeTab = ref<Tab>('upgrades')
         :class="{ active: activeTab === 'stats' }"
         @click="activeTab = 'stats'"
       >
-        Stats
+        Statistics
       </button>
     </div>
 

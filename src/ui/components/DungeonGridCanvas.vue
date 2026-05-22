@@ -102,13 +102,19 @@ function calculateSize() {
   }
 }
 
+function resolveBgColor(): string {
+  if (!canvasRef.value) return '#0a0a12'
+  const bg = getComputedStyle(canvasRef.value).getPropertyValue('--bg').trim()
+  return bg || '#0a0a12'
+}
+
 function render() {
   if (!ctx || !canvasRef.value) return
 
   const canvas = canvasRef.value
 
   // Clear
-  ctx.fillStyle = '#0a0a12'
+  ctx.fillStyle = resolveBgColor()
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
   // Draw cells
@@ -138,6 +144,8 @@ function render() {
 
 // Resize observer for responsive sizing
 let resizeObserver: ResizeObserver | null = null
+// Theme observer — repaint canvas bg when [data-theme] changes
+let themeObserver: MutationObserver | null = null
 
 onMounted(async () => {
   await document.fonts.ready
@@ -151,10 +159,17 @@ onMounted(async () => {
     })
     resizeObserver.observe(containerRef.value)
   }
+
+  themeObserver = new MutationObserver(() => scheduleRender())
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  })
 })
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
+  themeObserver?.disconnect()
 })
 
 // Debounced render using requestAnimationFrame

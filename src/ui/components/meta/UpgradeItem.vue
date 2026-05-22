@@ -193,12 +193,10 @@ function handlePurchase() {
 
 .can-afford .upgrade-icon {
   color: var(--essence);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 60%, transparent);
 }
 
 .is-maxed .upgrade-icon {
   color: var(--success);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--success) 60%, transparent);
 }
 
 .upgrade-info {
