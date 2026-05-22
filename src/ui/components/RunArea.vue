@@ -8,6 +8,7 @@ import type { Personality } from '@/types/events'
 import RunPanel from './RunPanel.vue'
 import PanelFrame from './common/PanelFrame.vue'
 import EmptySlot from './game/EmptySlot.vue'
+import LockedSlot from './game/LockedSlot.vue'
 import RunPanelExpanded from './game/RunPanelExpanded.vue'
 import LoadoutEditor from './game/LoadoutEditor.vue'
 
@@ -34,16 +35,18 @@ const allSlots = computed(() => {
   return arr
 })
 
-// Only show unlocked slots in grid
+// Show all unlocked slots plus a single locked teaser for the next slot.
+// This keeps the grid from having an unexplained empty quadrant.
 const visibleSlots = computed(() => {
-  return allSlots.value.filter((s) => s.isUnlocked)
+  const max = maxSlots.value
+  return allSlots.value.slice(0, Math.min(4, max + 1))
 })
 
 const gridClass = computed(() => {
   // When focused or editing loadout, use full-width layout
   if (runs.focusedSlot !== null || loadoutSlot.value !== null) return 'grid-focused'
 
-  const slotCount = maxSlots.value
+  const slotCount = visibleSlots.value.length
   switch (slotCount) {
     case 1:
       return 'grid-1'
@@ -180,9 +183,12 @@ function handleKillExpanded() {
     <template v-else>
       <template v-for="slot in visibleSlots" :key="slot.index">
         <PanelFrame class="run-slot" :focused="slot.run?.state === 'running'" :no-padding="true">
+          <!-- Locked Slot (not yet purchased) -->
+          <LockedSlot v-if="!slot.isUnlocked" :slot="slot.index" />
+
           <!-- Active Run -->
           <RunPanel
-            v-if="slot.run"
+            v-else-if="slot.run"
             :run="slot.run"
             @expand="handleExpand(slot.index)"
             @restart="handleRestart(slot.index)"

@@ -816,7 +816,7 @@ function handleGameEndSync(runId: string, result: RunResult, slot: number): Prom
     feed.addSystemMessage(`${raceName} ${className} has defeated Morgoth!`, 'victory')
   }
 
-  const { completion, savePromise } = handleRunCompletionSync(result)
+  const { completion, savePromise } = handleRunCompletionSync(result, slot)
 
   // Store the completion result for the UI (RunSummary component)
   const run = runs.getRun(runId)

@@ -50,12 +50,12 @@ export interface SyncCompletionResult {
  * Returns the completion result and a deferred save promise the caller can await later.
  * Used during catch-up to avoid awaiting in a tight loop.
  */
-export function handleRunCompletionSync(result: RunResult): SyncCompletionResult {
+export function handleRunCompletionSync(result: RunResult, slot?: number): SyncCompletionResult {
   const progression = useProgressionStore()
   const isVictory = result.reason === 'victory'
 
   // Convert RunResult to RunStats for storage
-  const runStats = convertToRunStats(result, isVictory)
+  const runStats = convertToRunStats(result, isVictory, slot)
 
   // Calculate essence reward using the formula-based calculation
   let essenceEarned = progression.calculateEssenceReward(runStats, isVictory)
@@ -113,8 +113,11 @@ export function handleRunCompletionSync(result: RunResult): SyncCompletionResult
  *
  * Wraps handleRunCompletionSync and awaits the IndexedDB save.
  */
-export async function handleRunCompletion(result: RunResult): Promise<RunCompletionResult> {
-  const { completion, savePromise } = handleRunCompletionSync(result)
+export async function handleRunCompletion(
+  result: RunResult,
+  slot?: number
+): Promise<RunCompletionResult> {
+  const { completion, savePromise } = handleRunCompletionSync(result, slot)
   await savePromise
   return completion
 }
@@ -126,7 +129,7 @@ export async function handleRunCompletion(result: RunResult): Promise<RunComplet
 /**
  * Convert a game-runner RunResult to a progression store RunStats
  */
-function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
+function convertToRunStats(result: RunResult, isVictory: boolean, slot?: number): RunStats {
   const game = result.game
   const char = game.character
 
@@ -189,6 +192,8 @@ function convertToRunStats(result: RunResult, isVictory: boolean): RunStats {
     deathDepth: isVictory ? undefined : char.depth,
     // Loadout
     boosters,
+    // Originating slot
+    slot,
     // Victory flag
     isVictory: isVictory || undefined,
     // Extended stats (v2)

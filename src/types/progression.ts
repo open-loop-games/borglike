@@ -185,6 +185,8 @@ export interface RunStats {
   deathDepth?: number // Depth where death occurred (may differ from maxDepth)
   // Loadout
   boosters?: string[] // Booster names used this run
+  // Originating slot index (0..3). Used to derive last-run-per-slot.
+  slot?: number
   // Victory flag
   isVictory?: boolean
 

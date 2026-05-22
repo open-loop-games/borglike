@@ -30,6 +30,19 @@ const boosterNames = computed(() => {
   return names
 })
 
+const lastRun = computed(() => progression.lastRunBySlot[props.slot] ?? null)
+
+const lastRunSummary = computed(() => {
+  const run = lastRun.value
+  if (!run) return null
+  return {
+    depth: run.maxDepth,
+    cause: run.isVictory ? 'Slew Morgoth' : (run.deathCause ?? 'Unknown'),
+    turns: run.turns ?? 0,
+    victory: !!run.isVictory,
+  }
+})
+
 function handleQuickStart() {
   const savedConfig = slotConfig.value
   // Set active boosters from saved slot config
@@ -71,6 +84,21 @@ function handleOpenLoadout() {
         </div>
 
         <button class="config-btn" @click="handleOpenLoadout">Configure Run</button>
+
+        <div v-if="lastRunSummary" class="last-run" :class="{ victory: lastRunSummary.victory }">
+          <div class="last-run-label">Last Run</div>
+          <div class="last-run-stats">
+            <span class="last-run-stat">
+              <span class="stat-label">Depth</span>
+              <span class="stat-value">{{ lastRunSummary.depth }}</span>
+            </span>
+            <span class="last-run-stat">
+              <span class="stat-label">Turns</span>
+              <span class="stat-value">{{ lastRunSummary.turns.toLocaleString() }}</span>
+            </span>
+          </div>
+          <div class="last-run-cause">{{ lastRunSummary.cause }}</div>
+        </div>
       </div>
     </div>
 
@@ -186,6 +214,68 @@ function handleOpenLoadout() {
 .config-btn:hover {
   border-color: var(--text-secondary);
   color: var(--text-secondary);
+}
+
+.last-run {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg-highlight) 60%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 220px;
+}
+
+.last-run.victory {
+  border-color: color-mix(in srgb, var(--success) 60%, transparent);
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+}
+
+.last-run-label {
+  font-size: var(--text-xs, var(--text-base));
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.last-run-stats {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.last-run-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.last-run-stat .stat-label {
+  font-size: var(--text-xs, var(--text-base));
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.last-run-stat .stat-value {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.last-run-cause {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+  max-width: 240px;
+}
+
+.last-run.victory .last-run-cause {
+  color: var(--success);
+  font-style: normal;
 }
 
 .slot-decoration {

@@ -144,6 +144,17 @@ export const useProgressionStore = defineStore('progression', () => {
     return runHistory.value.reduce((best, run) => (run.maxDepth > best.maxDepth ? run : best))
   })
 
+  // Most recent completed run per slot. runHistory is ordered newest-first, so the
+  // first hit for a given slot is the most recent.
+  const lastRunBySlot = computed<Record<number, RunStats>>(() => {
+    const map: Record<number, RunStats> = {}
+    for (const run of runHistory.value) {
+      if (run.slot === undefined) continue
+      if (map[run.slot] === undefined) map[run.slot] = run
+    }
+    return map
+  })
+
   // Bestiary computed stats
   const bestiaryStats = computed(() => {
     const entries = Object.values(bestiary.value)
@@ -1010,6 +1021,7 @@ export const useProgressionStore = defineStore('progression', () => {
     canPrestige,
     currentPrestigeMultiplier,
     bestRunByDepth,
+    lastRunBySlot,
     bestiaryStats,
     armoryStats,
 
