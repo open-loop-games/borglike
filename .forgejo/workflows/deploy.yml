@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: 22
 
-      - run: corepack enable && pnpm install && pnpm build
+      - run: corepack enable && pnpm install --allow-build=esbuild && pnpm build
 
       - uses: actions/git-pages@v2
         with:
