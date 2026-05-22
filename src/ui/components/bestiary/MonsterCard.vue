@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import type { MonsterTemplate } from '@game/data/monsters'
 import type { BestiaryEntry } from '@/types/progression'
 import { getKnowledgeBonus } from '@game/knowledge-effects'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 
 interface Props {
   monster: MonsterTemplate
@@ -96,7 +98,7 @@ const monsterColor = computed(() => {
     </div>
 
     <div v-if="isFullyUnlocked" class="unlocked-badge">
-      <span>✓</span>
+      <Icon :name="Icons.check" />
     </div>
   </div>
 </template>

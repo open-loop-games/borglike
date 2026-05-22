@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Race } from '@game/data/races'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 
 interface Props {
   race: Race
@@ -96,12 +98,12 @@ const statPreview = computed(() => {
 
     <!-- Unlocked badge -->
     <div v-if="unlocked" class="unlocked-badge">
-      <span>✓</span>
+      <Icon :name="Icons.check" />
     </div>
 
     <!-- Lock icon for locked -->
     <div v-if="!unlocked" class="lock-icon">
-      <span>🔒</span>
+      <Icon :name="Icons.lock" />
     </div>
   </div>
 </template>

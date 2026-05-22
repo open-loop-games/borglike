@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Icons } from '@/ui/icons'
 import ProgressBar from '../common/ProgressBar.vue'
 import GameTooltip from '../common/GameTooltip.vue'
+import Icon from '../common/Icon.vue'
 
 const props = defineProps<{
   id: string
@@ -72,7 +74,7 @@ function handlePurchase() {
     position="left"
     :max-width="260"
   >
-    <div class="upgrade-icon">{{ icon }}</div>
+    <div class="upgrade-icon"><Icon :name="icon" /></div>
 
     <div class="upgrade-info">
       <div class="upgrade-header">
@@ -90,7 +92,7 @@ function handlePurchase() {
     <div class="upgrade-action">
       <div class="effect-value">{{ effectText }}</div>
       <button class="purchase-btn" :disabled="isMaxed || !canAfford" @click="handlePurchase">
-        <span v-if="!isMaxed" class="cost-icon">◆</span>
+        <Icon v-if="!isMaxed" class="cost-icon" :name="Icons.essence" />
         <span class="cost-text">{{ costText }}</span>
       </button>
     </div>
@@ -122,7 +124,9 @@ function handlePurchase() {
         </div>
         <div v-if="nextNextCost !== null" class="tt-row">
           <span class="tt-label">After that</span>
-          <span class="tt-val">◆ {{ nextNextCost.toLocaleString() }}</span>
+          <span class="tt-val"
+            ><Icon :name="Icons.essence" /> {{ nextNextCost.toLocaleString() }}</span
+          >
         </div>
       </template>
     </template>

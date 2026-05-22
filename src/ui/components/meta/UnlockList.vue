@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById } from '@game/data/boosters'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 import UnlockItem from './UnlockItem.vue'
 
 const progression = useProgressionStore()
@@ -79,7 +81,7 @@ function getPrereqNames(boosterId: string): string[] {
         :class="{ active: activeTab === 'races' }"
         @click="activeTab = 'races'"
       >
-        <span class="tab-icon">☺</span>
+        <Icon class="tab-icon" :name="Icons.races" />
         <span class="tab-label">Races</span>
       </button>
       <button
@@ -87,7 +89,7 @@ function getPrereqNames(boosterId: string): string[] {
         :class="{ active: activeTab === 'classes' }"
         @click="activeTab = 'classes'"
       >
-        <span class="tab-icon">⚔</span>
+        <Icon class="tab-icon" :name="Icons.classes" />
         <span class="tab-label">Classes</span>
       </button>
       <button
@@ -95,7 +97,7 @@ function getPrereqNames(boosterId: string): string[] {
         :class="{ active: activeTab === 'boosters' }"
         @click="activeTab = 'boosters'"
       >
-        <span class="tab-icon">★</span>
+        <Icon class="tab-icon" :name="Icons.boosters" />
         <span class="tab-label">Boosters</span>
       </button>
     </div>
@@ -103,7 +105,7 @@ function getPrereqNames(boosterId: string): string[] {
     <div class="unlock-header">
       <span class="header-text">{{ unlockedCount }} / {{ totalCount }} Unlocked</span>
       <span v-if="activeTab !== 'boosters'" class="codex-hint">
-        <span class="codex-icon">📜</span>
+        <Icon class="codex-icon" :name="Icons.codex" />
         Codex has details
       </span>
     </div>
@@ -157,7 +159,7 @@ function getPrereqNames(boosterId: string): string[] {
             }"
             @click="booster.canUnlock && handleBoosterUnlock(booster.id)"
           >
-            <span class="booster-icon">{{ booster.icon }}</span>
+            <Icon class="booster-icon" :name="booster.icon" />
             <div class="booster-info">
               <div class="booster-name">{{ booster.name }}</div>
               <div class="booster-desc">{{ booster.description }}</div>
@@ -166,9 +168,9 @@ function getPrereqNames(boosterId: string): string[] {
               </div>
             </div>
             <div class="booster-status">
-              <span v-if="booster.isUnlocked" class="status-unlocked">✓</span>
+              <Icon v-if="booster.isUnlocked" class="status-unlocked" :name="Icons.check" />
               <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <span class="cost-icon">◆</span>
+                <Icon class="cost-icon" :name="Icons.essence" />
                 {{ booster.cost.toLocaleString() }}
               </button>
             </div>
@@ -189,7 +191,7 @@ function getPrereqNames(boosterId: string): string[] {
             }"
             @click="booster.canUnlock && handleBoosterUnlock(booster.id)"
           >
-            <span class="booster-icon">{{ booster.icon }}</span>
+            <Icon class="booster-icon" :name="booster.icon" />
             <div class="booster-info">
               <div class="booster-name">{{ booster.name }}</div>
               <div class="booster-desc">{{ booster.description }}</div>
@@ -198,9 +200,9 @@ function getPrereqNames(boosterId: string): string[] {
               </div>
             </div>
             <div class="booster-status">
-              <span v-if="booster.isUnlocked" class="status-unlocked">✓</span>
+              <Icon v-if="booster.isUnlocked" class="status-unlocked" :name="Icons.check" />
               <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <span class="cost-icon">◆</span>
+                <Icon class="cost-icon" :name="Icons.essence" />
                 {{ booster.cost.toLocaleString() }}
               </button>
             </div>
@@ -221,15 +223,15 @@ function getPrereqNames(boosterId: string): string[] {
             }"
             @click="booster.canUnlock && handleBoosterUnlock(booster.id)"
           >
-            <span class="booster-icon">{{ booster.icon }}</span>
+            <Icon class="booster-icon" :name="booster.icon" />
             <div class="booster-info">
               <div class="booster-name">{{ booster.name }}</div>
               <div class="booster-desc">{{ booster.description }}</div>
             </div>
             <div class="booster-status">
-              <span v-if="booster.isUnlocked" class="status-unlocked">✓</span>
+              <Icon v-if="booster.isUnlocked" class="status-unlocked" :name="Icons.check" />
               <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <span class="cost-icon">◆</span>
+                <Icon class="cost-icon" :name="Icons.essence" />
                 {{ booster.cost.toLocaleString() }}
               </button>
             </div>

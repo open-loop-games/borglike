@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { FeedEvent, FeedEventType } from '@/stores/feed'
+import { Icons } from '@/ui/icons'
 import PanelFrame from '../common/PanelFrame.vue'
+import Icon from '../common/Icon.vue'
 
 const props = defineProps<{
   events: FeedEvent[]
@@ -89,7 +91,7 @@ function formatTimestamp(timestamp: number): string {
     <PanelFrame class="feed-modal" @click.stop>
       <header class="modal-header">
         <h2>Event Log</h2>
-        <button class="close-btn" @click="emit('close')">✕</button>
+        <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
       </header>
 
       <div class="filters">

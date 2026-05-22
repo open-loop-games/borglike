@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { Icons } from '@/ui/icons'
 import PanelFrame from '../common/PanelFrame.vue'
+import Icon from '../common/Icon.vue'
 
 const emit = defineEmits<{
   close: []
@@ -10,7 +12,7 @@ const emit = defineEmits<{
   <div class="help-modal">
     <header class="help-header">
       <h2>Borglike</h2>
-      <button class="close-btn" @click="emit('close')">✕</button>
+      <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
     </header>
 
     <div class="help-content">
@@ -64,19 +66,19 @@ const emit = defineEmits<{
         <h3>Controls</h3>
         <div class="controls-grid">
           <div class="control-item">
-            <span class="control-key">Expand (⛶)</span>
+            <span class="control-key">Expand <Icon :name="Icons.expand" /></span>
             <span class="control-desc">Expand run to detailed view</span>
           </div>
           <div class="control-item">
-            <span class="control-key">Turbo (⏩)</span>
+            <span class="control-key">Turbo <Icon :name="Icons.turbo" /></span>
             <span class="control-desc">Faster simulation, no cost</span>
           </div>
           <div class="control-item">
-            <span class="control-key">Auto (↻)</span>
+            <span class="control-key">Auto <Icon :name="Icons.autoRestart" /></span>
             <span class="control-desc">Auto-restart on death (upgrade required)</span>
           </div>
           <div class="control-item">
-            <span class="control-key">Pause (⏸)</span>
+            <span class="control-key">Pause <Icon :name="Icons.pause" /></span>
             <span class="control-desc">Pause/resume all runs</span>
           </div>
         </div>
@@ -86,29 +88,29 @@ const emit = defineEmits<{
         <h3>Header Bar</h3>
         <div class="controls-grid">
           <div class="control-item">
-            <span class="control-key">≡ History</span>
+            <span class="control-key"><Icon :name="Icons.history" /> History</span>
             <span class="control-desc">Past runs with depth, kills, and essence earned</span>
           </div>
           <div class="control-item">
-            <span class="control-key">🏆 Achievements</span>
+            <span class="control-key"><Icon :name="Icons.achievements" /> Achievements</span>
             <span class="control-desc">Milestones with essence rewards to claim</span>
           </div>
           <div class="control-item">
-            <span class="control-key">📖 Bestiary</span>
+            <span class="control-key"><Icon :name="Icons.bestiary" /> Bestiary</span>
             <span class="control-desc"
               >Monsters encountered; high kill counts unlock knowledge</span
             >
           </div>
           <div class="control-item">
-            <span class="control-key">📦 Armory</span>
+            <span class="control-key"><Icon :name="Icons.armory" /> Armory</span>
             <span class="control-desc">Equipment discovered across all runs</span>
           </div>
           <div class="control-item">
-            <span class="control-key">📜 Codex</span>
+            <span class="control-key"><Icon :name="Icons.codex" /> Codex</span>
             <span class="control-desc">Race and class details with unlock status</span>
           </div>
           <div class="control-item">
-            <span class="control-key">⚙ Settings</span>
+            <span class="control-key"><Icon :name="Icons.settings" /> Settings</span>
             <span class="control-desc">Game configuration and display options</span>
           </div>
         </div>

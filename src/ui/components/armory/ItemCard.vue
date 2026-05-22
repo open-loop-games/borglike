@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import type { ItemTemplate } from '@game/data/items'
 import type { ArtifactTemplate } from '@game/data/artifacts'
 import type { ArmoryEntry } from '@/types/progression'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 
 interface Props {
   item: ItemTemplate | ArtifactTemplate
@@ -94,7 +96,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
     </div>
 
     <div v-if="isDiscovered" class="discovered-badge">
-      <span>✓</span>
+      <Icon :name="Icons.check" />
     </div>
   </div>
 </template>

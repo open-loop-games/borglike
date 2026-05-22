@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { StatModifiers, RaceAbility } from '@game/data/races'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 
 const props = defineProps<{
   id: string
@@ -91,18 +93,18 @@ function handleUnlock() {
     @mouseleave="handleMouseLeave"
   >
     <div class="unlock-badge">
-      <span v-if="isUnlocked" class="badge-icon unlocked">✓</span>
-      <span v-else-if="meetsCondition === false" class="badge-icon locked">🔒</span>
-      <span v-else-if="prestige" class="badge-icon prestige">★</span>
-      <span v-else class="badge-icon locked">●</span>
+      <Icon v-if="isUnlocked" class="badge-icon unlocked" :name="Icons.check" />
+      <Icon v-else-if="meetsCondition === false" class="badge-icon locked" :name="Icons.lock" />
+      <Icon v-else-if="prestige" class="badge-icon prestige" :name="Icons.prestige" />
+      <Icon v-else class="badge-icon locked" :name="Icons.lockedCondition" />
     </div>
 
     <div class="unlock-info">
       <div class="unlock-status">
-        <span v-if="isUnlocked" class="status-unlocked">✓</span>
+        <Icon v-if="isUnlocked" class="status-unlocked" :name="Icons.check" />
         <template v-else>
           <button class="unlock-btn" :disabled="!canUnlock">
-            <span class="cost-icon">◆</span>
+            <Icon class="cost-icon" :name="Icons.essence" />
             <span>{{ cost.toLocaleString() }}</span>
           </button>
         </template>

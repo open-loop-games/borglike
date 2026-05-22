@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, useSlots, computed, nextTick, watch, onBeforeUnmount } from 'vue'
 import { useShiftHeld } from '@/ui/composables/use-shift-held'
+import { Icons } from '@/ui/icons'
+import Icon from './Icon.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -174,7 +176,7 @@ const tooltipStyle = computed(() => ({
             </div>
           </template>
           <div v-else-if="hasExtendedSlot" class="tt-shift-hint">
-            <span class="tt-shift-key">⇧</span> Shift
+            <Icon class="tt-shift-key" :name="Icons.shiftKey" /> Shift
           </div>
         </div>
       </Transition>

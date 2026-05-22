@@ -2,8 +2,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { achievements, type Achievement } from '@game/data/achievements'
+import { Icons } from '@/ui/icons'
 import AchievementCard from './AchievementCard.vue'
 import MasteryGrid from './MasteryGrid.vue'
+import Icon from '../common/Icon.vue'
 
 const progression = useProgressionStore()
 
@@ -166,15 +168,15 @@ function claimById(id: string) {
         <h2>Achievements</h2>
         <span class="achievement-count"> {{ stats.unlocked }}/{{ stats.total }} Unlocked </span>
         <span class="essence-earned">
-          <span class="essence-icon">◆</span>
+          <Icon class="essence-icon" :name="Icons.essence" />
           {{ stats.essenceCollected }} earned
         </span>
         <span v-if="stats.essencePending > 0" class="essence-pending">
-          <span class="essence-icon">◆</span>
+          <Icon class="essence-icon" :name="Icons.essence" />
           {{ stats.essencePending }} to claim
         </span>
       </div>
-      <button class="close-btn" @click="emit('close')">&times;</button>
+      <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
     </header>
 
     <div class="filter-bar">

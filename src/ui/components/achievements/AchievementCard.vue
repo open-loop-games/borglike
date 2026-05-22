@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Achievement } from '@game/data/achievements'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 
 interface Props {
   achievement: Achievement
@@ -67,7 +69,7 @@ const categoryColor = computed(() => {
   >
     <div class="card-content">
       <div class="achievement-icon" :class="{ unlocked: isUnlocked }">
-        {{ isHidden ? '?' : achievement.icon }}
+        <Icon :name="isHidden ? Icons.help : achievement.icon" />
       </div>
       <div class="achievement-info">
         <div class="achievement-name">
@@ -78,7 +80,7 @@ const categoryColor = computed(() => {
         </div>
       </div>
       <div v-if="!isHidden" class="achievement-reward">
-        <span class="reward-icon">◆</span>
+        <Icon class="reward-icon" :name="Icons.essence" />
         <span class="reward-value">{{ achievement.reward }}</span>
       </div>
     </div>
@@ -97,7 +99,7 @@ const categoryColor = computed(() => {
     <!-- Claim button overlay for uncollected achievements -->
     <div v-if="canClaim" class="claim-overlay" @click.stop="emit('claim')">
       <button class="claim-btn">
-        <span class="claim-icon">◆</span>
+        <Icon class="claim-icon" :name="Icons.essence" />
         Claim {{ achievement.reward }}
       </button>
     </div>

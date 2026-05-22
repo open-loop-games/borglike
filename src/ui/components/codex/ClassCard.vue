@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { GameClass } from '@game/data/classes'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 
 interface Props {
   gameClass: GameClass
@@ -21,25 +23,29 @@ const category = computed(() => {
   return 'unlockable'
 })
 
-// Class symbols based on archetype
 const classSymbols: Record<string, string> = {
-  warrior: '\u2694', // Crossed swords
-  mage: '\u2728', // Sparkles
-  rogue: '\uD83D\uDDE1', // Dagger (🗡)
-  priest: '\u271D', // Latin cross
-  ranger: '\uD83C\uDFF9', // Bow and arrow (🏹)
-  paladin: '\u2638', // Wheel of dharma (shield-like)
-  necromancer: '\uD83D\uDC80', // Skull (💀)
-  berserker: '\uD83D\uDCA2', // Anger symbol (💢)
-  archmage: '\u2728', // Sparkles
-  druid: '\uD83C\uDF3F', // Herb (🌿)
-  blackguard: '\u26AB', // Black circle
+  warrior: Icons.classWarrior,
+  mage: Icons.classMage,
+  rogue: Icons.classRogue,
+  priest: Icons.classPriest,
+  ranger: Icons.classRanger,
+  paladin: Icons.classPaladin,
+  necromancer: Icons.classNecromancer,
+  berserker: Icons.classBerserker,
+  archmage: Icons.classArchmage,
+  druid: Icons.classDruid,
+  blackguard: Icons.classBlackguard,
 }
 
-// Get display symbol
-const symbol = computed(() => {
-  if (!props.unlocked) return '?'
-  return classSymbols[props.gameClass.id] ?? props.gameClass.name.charAt(0).toUpperCase()
+// Iconify ID for the class symbol when unlocked, or null to fall back to a plaintext glyph.
+const symbolIcon = computed<string | null>(() => {
+  if (!props.unlocked) return Icons.classUnknown
+  return classSymbols[props.gameClass.id] ?? null
+})
+
+const symbolFallback = computed(() => {
+  if (!props.unlocked || symbolIcon.value) return null
+  return props.gameClass.name.charAt(0).toUpperCase()
 })
 
 // Get color based on category and magic
@@ -95,7 +101,8 @@ const primaryStat = computed(() => {
 
     <div class="card-content">
       <div class="class-symbol" :style="{ color }">
-        {{ symbol }}
+        <Icon v-if="symbolIcon" :name="symbolIcon" />
+        <template v-else>{{ symbolFallback }}</template>
       </div>
       <div class="class-name">
         {{ gameClass.name }}
@@ -118,12 +125,12 @@ const primaryStat = computed(() => {
 
     <!-- Unlocked badge -->
     <div v-if="unlocked" class="unlocked-badge">
-      <span>✓</span>
+      <Icon :name="Icons.check" />
     </div>
 
     <!-- Lock icon for locked -->
     <div v-if="!unlocked" class="lock-icon">
-      <span>🔒</span>
+      <Icon :name="Icons.lock" />
     </div>
   </div>
 </template>

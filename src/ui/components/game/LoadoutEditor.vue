@@ -13,6 +13,8 @@ import {
   getPersonalityConfig,
   summarizePersonality,
 } from '@game/bot/personality'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 import PanelFrame from '../common/PanelFrame.vue'
 
 const props = defineProps<{
@@ -409,7 +411,7 @@ function handleCancel() {
                   :value="b.id"
                   :disabled="b.id === boosterSlot1"
                 >
-                  {{ b.icon }} {{ b.name }}
+                  {{ b.name }}
                 </option>
               </select>
               <span v-if="getBoosterInfo(boosterSlot0)" class="booster-desc">
@@ -426,7 +428,7 @@ function handleCancel() {
                   :value="b.id"
                   :disabled="b.id === boosterSlot0"
                 >
-                  {{ b.icon }} {{ b.name }}
+                  {{ b.name }}
                 </option>
               </select>
               <span v-if="getBoosterInfo(boosterSlot1)" class="booster-desc">
@@ -467,7 +469,9 @@ function handleCancel() {
                 <span class="perf-label">avg</span>
               </div>
               <div class="perf-stat">
-                <span class="perf-value">◆{{ configPerformance.avgEssence.toFixed(0) }}</span>
+                <span class="perf-value"
+                  ><Icon :name="Icons.essence" />{{ configPerformance.avgEssence.toFixed(0) }}</span
+                >
                 <span class="perf-label">avg</span>
               </div>
               <div class="perf-stat best">
@@ -641,7 +645,7 @@ function handleCancel() {
     <footer class="editor-footer">
       <button class="cancel-btn" @click="handleCancel">Cancel</button>
       <button class="start-btn" @click="handleStart">
-        <span class="start-icon">▶</span>
+        <Icon class="start-icon" :name="Icons.play" />
         Start Run
       </button>
     </footer>

@@ -2,8 +2,10 @@
 import { computed } from 'vue'
 import type { RunStats } from '@/types/progression'
 import { useProgressionStore } from '@/stores/progression'
+import { Icons } from '@/ui/icons'
 import PanelFrame from '../common/PanelFrame.vue'
 import ProgressBar from '../common/ProgressBar.vue'
+import Icon from '../common/Icon.vue'
 
 const props = defineProps<{
   run: RunStats
@@ -154,7 +156,7 @@ const hasExtendedStats = computed(() => {
         <span v-if="isFirstVictory" class="first-victory-badge">FIRST VICTORY!</span>
         <span v-if="isNewBest" class="new-best-badge">NEW BEST!</span>
       </div>
-      <button class="close-btn" @click="emit('close')">✕</button>
+      <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
     </header>
 
     <div class="summary-content">
@@ -331,7 +333,7 @@ const hasExtendedStats = computed(() => {
       <PanelFrame class="essence-section">
         <div class="essence-header">
           <span class="essence-label">Essence Earned</span>
-          <span class="essence-icon">◆</span>
+          <Icon class="essence-icon" :name="Icons.essence" />
         </div>
         <div class="essence-value">+{{ run.essenceEarned.toLocaleString() }}</div>
         <ProgressBar
@@ -350,7 +352,7 @@ const hasExtendedStats = computed(() => {
     <footer class="summary-footer">
       <button class="action-btn secondary" @click="emit('close')">Return to Grid</button>
       <button class="action-btn primary" @click="emit('restart')">
-        <span class="btn-icon">▶</span>
+        <Icon class="btn-icon" :name="Icons.play" />
         Start New Run
       </button>
     </footer>

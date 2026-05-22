@@ -9,11 +9,13 @@ import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore, type PanelStates } from '@/stores/settings'
 import { useRunDuration } from '@/ui/composables/use-run-duration'
 import { useKillHoldButton } from '@/ui/composables/use-kill-hold'
+import { Icons } from '@/ui/icons'
 import DungeonGrid from '../DungeonGridCanvas.vue'
 import ProgressBar from '../common/ProgressBar.vue'
 import CollapsibleSection from '../common/CollapsibleSection.vue'
 import RunSummary from '../analytics/RunSummary.vue'
 import GameTooltip from '../common/GameTooltip.vue'
+import Icon from '../common/Icon.vue'
 
 const props = defineProps<{
   run: ActiveRun
@@ -311,7 +313,7 @@ function formatGoal(goal: string | undefined): string {
     <header class="expanded-header">
       <div class="header-left">
         <button class="collapse-btn" title="Return to grid view" @click="handleCollapse">
-          <span>✖</span>
+          <Icon :name="Icons.close" />
         </button>
         <div class="run-identity">
           <span class="run-class">{{ run.config.class }}</span>
@@ -329,7 +331,7 @@ function formatGoal(goal: string | undefined): string {
 
       <div class="header-right">
         <button class="turbo-btn" :class="{ active: run.turbo }" @click="handleToggleTurbo">
-          <span class="turbo-icon">▶▶</span>
+          <Icon class="turbo-icon" :name="Icons.turbo" />
           Turbo
         </button>
         <button
@@ -344,7 +346,7 @@ function formatGoal(goal: string | undefined): string {
           @touchend="killHold.cancel"
           @touchcancel="killHold.cancel"
         >
-          <span class="kill-icon">✗</span>
+          <Icon class="kill-icon" :name="Icons.killRun" />
           Kill
           <span
             v-if="killHold.progress.value > 0"
@@ -738,7 +740,7 @@ function formatGoal(goal: string | undefined): string {
       />
       <!-- Fallback if no finalStats (shouldn't happen normally) -->
       <div v-else class="death-content">
-        <span class="death-icon">☠</span>
+        <Icon class="death-icon" :name="Icons.death" />
         <span class="death-text">DEFEATED</span>
         <div class="death-stats">
           <span>Reached Depth {{ run.depth }}</span>
@@ -747,7 +749,7 @@ function formatGoal(goal: string | undefined): string {
         </div>
         <div class="death-actions">
           <button class="action-btn primary" @click="handleRestart">
-            <span>↻</span> Restart Run
+            <Icon :name="Icons.restart" /> Restart Run
           </button>
           <button class="action-btn secondary" @click="handleDismiss">Dismiss</button>
           <button class="action-btn secondary" @click="handleCollapse">Return to Grid</button>

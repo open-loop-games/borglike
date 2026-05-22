@@ -4,7 +4,9 @@ import { useProgressionStore } from '@/stores/progression'
 import { useSettingsStore } from '@/stores/settings'
 import { useEngineStateStore } from '@/stores/engine-state'
 import { togglePause } from '@/engine/instance-manager'
+import { Icons } from '@/ui/icons'
 import GameTooltip from '../common/GameTooltip.vue'
+import Icon from '../common/Icon.vue'
 
 const progression = useProgressionStore()
 const settings = useSettingsStore()
@@ -58,7 +60,7 @@ const emit = defineEmits<{
 
     <div class="header-center">
       <div class="essence-display" :class="{ animating: isAnimating }">
-        <span class="essence-icon">◆</span>
+        <Icon class="essence-icon" :name="Icons.essence" />
         <span class="essence-value">{{ progression.currency.essence.toLocaleString() }}</span>
         <span class="essence-label">Essence</span>
       </div>
@@ -82,7 +84,7 @@ const emit = defineEmits<{
         position="bottom"
         @click="togglePause()"
       >
-        <span class="toggle-icon">{{ engineState.isPaused ? '▶' : '⏸' }}</span>
+        <Icon class="toggle-icon" :name="engineState.isPaused ? Icons.play : Icons.pause" />
         <span class="toggle-label">{{ engineState.isPaused ? 'Play' : 'Pause' }}</span>
         <template #extended>
           <span class="tt-muted">Pauses all runs. Offline progress still accumulates.</span>
@@ -105,7 +107,7 @@ const emit = defineEmits<{
         position="bottom"
         @click="toggleAutoRestart"
       >
-        <span class="toggle-icon">↻</span>
+        <Icon class="toggle-icon" :name="Icons.autoRestart" />
         <span class="toggle-label">Auto</span>
         <template #extended>
           <span class="tt-muted">Automatically starts new runs when slots empty.</span>
@@ -118,7 +120,7 @@ const emit = defineEmits<{
         position="bottom"
         @click="emit('openRunHistory')"
       >
-        <span>≡</span>
+        <Icon :name="Icons.history" />
       </GameTooltip>
       <GameTooltip
         tag="button"
@@ -127,7 +129,7 @@ const emit = defineEmits<{
         position="bottom"
         @click="emit('openAchievements')"
       >
-        <span>🏆</span>
+        <Icon :name="Icons.achievements" />
         <span v-if="progression.hasNewAchievements" class="notification-dot"></span>
         <template #content>
           <span class="game-tooltip-text"
@@ -138,7 +140,7 @@ const emit = defineEmits<{
         </template>
       </GameTooltip>
       <GameTooltip tag="button" class="header-btn" position="bottom" @click="emit('openBestiary')">
-        <span>📖</span>
+        <Icon :name="Icons.bestiary" />
         <template #content>
           <span class="game-tooltip-text"
             >Bestiary — {{ progression.bestiaryStats.discovered }} discovered</span
@@ -146,7 +148,7 @@ const emit = defineEmits<{
         </template>
       </GameTooltip>
       <GameTooltip tag="button" class="header-btn" position="bottom" @click="emit('openArmory')">
-        <span>📦</span>
+        <Icon :name="Icons.armory" />
         <template #content>
           <span class="game-tooltip-text"
             >Armory — {{ progression.armoryStats.discovered }} discovered</span
@@ -160,7 +162,7 @@ const emit = defineEmits<{
         position="bottom"
         @click="emit('openCodex')"
       >
-        <span>📜</span>
+        <Icon :name="Icons.codex" />
       </GameTooltip>
       <GameTooltip
         tag="button"
@@ -169,7 +171,7 @@ const emit = defineEmits<{
         position="bottom"
         @click="emit('openSettings')"
       >
-        <span>⚙</span>
+        <Icon :name="Icons.settings" />
       </GameTooltip>
       <GameTooltip
         tag="button"
@@ -178,7 +180,7 @@ const emit = defineEmits<{
         position="bottom"
         @click="emit('openHelp')"
       >
-        <span>?</span>
+        <Icon :name="Icons.help" />
       </GameTooltip>
     </div>
   </header>

@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { PERSONALITY_DISPLAY } from '@/types/events'
 import type { RunStats } from '@/types/progression'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 
 interface Props {
   run: RunStats
@@ -121,16 +123,18 @@ const processedInventory = computed(() => {
         >{{ run.goldEarned }} gold</span
       >
       <span class="essence" :title="`Essence earned: ${run.essenceEarned}`">
-        <span class="essence-icon">◆</span>
+        <Icon class="essence-icon" :name="Icons.essence" />
         {{ run.essenceEarned }}
       </span>
       <span v-if="run.deathCause" class="death-cause" :title="fullDeathCause">
         {{ run.deathCause.slice(0, 30) }}{{ run.deathCause.length > 30 ? '...' : '' }}
       </span>
       <span v-else class="victory" title="Defeated Morgoth!">Victory!</span>
-      <span class="expand-icon" :title="expanded ? 'Collapse details' : 'Expand details'">{{
-        expanded ? '▼' : '▶'
-      }}</span>
+      <Icon
+        class="expand-icon"
+        :title="expanded ? 'Collapse details' : 'Expand details'"
+        :name="expanded ? Icons.caretDown : Icons.caretRight"
+      />
     </div>
 
     <div v-if="expanded" class="row-expanded">

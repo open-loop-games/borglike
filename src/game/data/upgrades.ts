@@ -21,7 +21,8 @@ export interface UpgradeDefinition {
     baseValue: number // Value at level 1
     perLevel: number // Additional value per level
   }
-  icon: string // ASCII character for display
+  /** Iconify ID (e.g. 'game-icons:health-normal'); must be registered in src/ui/icons.ts */
+  icon: string
 }
 
 // =============================================================================
@@ -42,7 +43,7 @@ const vitality: UpgradeDefinition = {
     baseValue: 15,
     perLevel: 10,
   },
-  icon: '♥',
+  icon: 'game-icons:health-normal',
 }
 
 const might: UpgradeDefinition = {
@@ -59,7 +60,7 @@ const might: UpgradeDefinition = {
     baseValue: 2,
     perLevel: 2,
   },
-  icon: '⚔',
+  icon: 'game-icons:crossed-swords',
 }
 
 const resilience: UpgradeDefinition = {
@@ -76,7 +77,7 @@ const resilience: UpgradeDefinition = {
     baseValue: 2,
     perLevel: 2,
   },
-  icon: '◆',
+  icon: 'game-icons:shield',
 }
 
 const reflexes: UpgradeDefinition = {
@@ -93,7 +94,7 @@ const reflexes: UpgradeDefinition = {
     baseValue: 2,
     perLevel: 2,
   },
-  icon: '»',
+  icon: 'game-icons:wingfoot',
 }
 
 const precision: UpgradeDefinition = {
@@ -110,7 +111,7 @@ const precision: UpgradeDefinition = {
     baseValue: 1,
     perLevel: 1,
   },
-  icon: '◎',
+  icon: 'game-icons:targeted',
 }
 
 const swiftness: UpgradeDefinition = {
@@ -127,7 +128,7 @@ const swiftness: UpgradeDefinition = {
     baseValue: 2,
     perLevel: 2,
   },
-  icon: '⚡',
+  icon: 'game-icons:lightning-storm',
 }
 
 // =============================================================================
@@ -148,7 +149,7 @@ const essenceBoost: UpgradeDefinition = {
     baseValue: 10,
     perLevel: 10,
   },
-  icon: '◆',
+  icon: 'game-icons:cut-diamond',
 }
 
 const goldDigger: UpgradeDefinition = {
@@ -165,7 +166,7 @@ const goldDigger: UpgradeDefinition = {
     baseValue: 15,
     perLevel: 15,
   },
-  icon: '$',
+  icon: 'game-icons:gold-bar',
 }
 
 const fastLearner: UpgradeDefinition = {
@@ -182,7 +183,7 @@ const fastLearner: UpgradeDefinition = {
     baseValue: 5,
     perLevel: 5,
   },
-  icon: '★',
+  icon: 'game-icons:stars-stack',
 }
 
 const haggler: UpgradeDefinition = {
@@ -199,7 +200,7 @@ const haggler: UpgradeDefinition = {
     baseValue: 5,
     perLevel: 5,
   },
-  icon: '⚖',
+  icon: 'game-icons:scales',
 }
 
 const bestiaryMastery: UpgradeDefinition = {
@@ -216,7 +217,7 @@ const bestiaryMastery: UpgradeDefinition = {
     baseValue: 5,
     perLevel: 5,
   },
-  icon: '📖',
+  icon: 'game-icons:spell-book',
 }
 
 const townStock: UpgradeDefinition = {
@@ -233,7 +234,7 @@ const townStock: UpgradeDefinition = {
     baseValue: 1,
     perLevel: 1,
   },
-  icon: '$',
+  icon: 'game-icons:village',
 }
 
 // =============================================================================
@@ -254,7 +255,7 @@ const turboMode: UpgradeDefinition = {
     baseValue: 25,
     perLevel: 25,
   },
-  icon: '▶',
+  icon: 'game-icons:rocket',
 }
 
 const autoRestart: UpgradeDefinition = {
@@ -270,7 +271,7 @@ const autoRestart: UpgradeDefinition = {
     baseValue: 1,
     perLevel: 0,
   },
-  icon: '↺',
+  icon: 'ph:arrow-counter-clockwise',
 }
 
 const runSlot2: UpgradeDefinition = {
@@ -287,7 +288,7 @@ const runSlot2: UpgradeDefinition = {
     baseValue: 2,
     perLevel: 0,
   },
-  icon: '②',
+  icon: 'ph:number-circle-two',
 }
 
 const runSlot3: UpgradeDefinition = {
@@ -304,7 +305,7 @@ const runSlot3: UpgradeDefinition = {
     baseValue: 3,
     perLevel: 0,
   },
-  icon: '③',
+  icon: 'ph:number-circle-three',
 }
 
 const runSlot4: UpgradeDefinition = {
@@ -321,7 +322,7 @@ const runSlot4: UpgradeDefinition = {
     baseValue: 4,
     perLevel: 0,
   },
-  icon: '④',
+  icon: 'ph:number-circle-four',
 }
 
 // =============================================================================

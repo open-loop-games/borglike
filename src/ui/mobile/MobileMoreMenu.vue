@@ -1,16 +1,19 @@
 <script setup lang="ts">
+import { Icons } from '@/ui/icons'
+import Icon from '@/ui/components/common/Icon.vue'
+
 const emit = defineEmits<{
   navigate: [target: string]
 }>()
 
 const items = [
-  { id: 'achievements', icon: '\uD83C\uDFC6', label: 'Achievements' },
-  { id: 'bestiary', icon: '\uD83D\uDCD6', label: 'Bestiary' },
-  { id: 'armory', icon: '\uD83D\uDCE6', label: 'Armory' },
-  { id: 'codex', icon: '\uD83D\uDCDC', label: 'Codex' },
-  { id: 'history', icon: '\u2261', label: 'History' },
-  { id: 'settings', icon: '\u2699', label: 'Settings' },
-  { id: 'help', icon: '?', label: 'Help' },
+  { id: 'achievements', icon: Icons.achievements, label: 'Achievements' },
+  { id: 'bestiary', icon: Icons.bestiary, label: 'Bestiary' },
+  { id: 'armory', icon: Icons.armory, label: 'Armory' },
+  { id: 'codex', icon: Icons.codex, label: 'Codex' },
+  { id: 'history', icon: Icons.history, label: 'History' },
+  { id: 'settings', icon: Icons.settings, label: 'Settings' },
+  { id: 'help', icon: Icons.help, label: 'Help' },
 ]
 </script>
 
@@ -22,7 +25,7 @@ const items = [
       class="menu-item"
       @click="emit('navigate', item.id)"
     >
-      <span class="menu-icon">{{ item.icon }}</span>
+      <Icon class="menu-icon" :name="item.icon" />
       <span class="menu-label">{{ item.label }}</span>
     </button>
   </div>

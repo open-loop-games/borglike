@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById } from '@game/data/boosters'
 import type { Personality } from '@/types/events'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 
 const props = defineProps<{
   slot: number
@@ -54,7 +56,7 @@ function handleOpenLoadout() {
     <div class="slot-content">
       <div class="quick-start">
         <button class="start-btn" @click="handleQuickStart">
-          <span class="btn-icon">▶</span>
+          <Icon class="btn-icon" :name="Icons.play" />
           <span>Quick Start</span>
         </button>
 

@@ -8,6 +8,8 @@ import {
   type BotUpgradeId,
   type GradedCapabilityField,
 } from '@game/data/bot-upgrades'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 import UpgradeItem from './UpgradeItem.vue'
 
 const progression = useProgressionStore()
@@ -17,10 +19,10 @@ type Category = 'stats' | 'meta' | 'qol' | 'bot'
 const activeCategory = ref<Category>('stats')
 
 const categories: { id: Category; label: string; icon: string }[] = [
-  { id: 'stats', label: 'Stats', icon: '♥' },
-  { id: 'bot', label: 'Bot', icon: '⚙' },
-  { id: 'meta', label: 'Meta', icon: '◆' },
-  { id: 'qol', label: 'QoL', icon: '▶' },
+  { id: 'stats', label: 'Stats', icon: Icons.categoryStats },
+  { id: 'bot', label: 'Bot', icon: Icons.categoryBot },
+  { id: 'meta', label: 'Meta', icon: Icons.categoryMeta },
+  { id: 'qol', label: 'QoL', icon: Icons.categoryQol },
 ]
 
 const currentUpgrades = computed(() => {
@@ -29,13 +31,13 @@ const currentUpgrades = computed(() => {
 
 // Bot upgrade chains mapped to UpgradeItem shape (one card per capability)
 const gradedChains: { field: GradedCapabilityField; name: string; icon: string }[] = [
-  { field: 'town', name: 'Town', icon: '⌂' },
-  { field: 'tactics', name: 'Tactics', icon: '⚔' },
-  { field: 'targeting', name: 'Targeting', icon: '◎' },
-  { field: 'retreat', name: 'Retreat', icon: '←' },
-  { field: 'kiting', name: 'Kiting', icon: '→' },
-  { field: 'preparedness', name: 'Preparedness', icon: '✓' },
-  { field: 'surf', name: 'Surf Farming', icon: '≈' },
+  { field: 'town', name: 'Town', icon: Icons.capTown },
+  { field: 'tactics', name: 'Tactics', icon: Icons.capTactics },
+  { field: 'targeting', name: 'Targeting', icon: Icons.capTargeting },
+  { field: 'retreat', name: 'Retreat', icon: Icons.capRetreat },
+  { field: 'kiting', name: 'Kiting', icon: Icons.capKiting },
+  { field: 'preparedness', name: 'Preparedness', icon: Icons.capPreparedness },
+  { field: 'surf', name: 'Surf Farming', icon: Icons.capSurf },
 ]
 
 const botUpgradeItems = computed(() => {
@@ -62,7 +64,7 @@ const botUpgradeItems = computed(() => {
     id: 'farming',
     name: 'Resource Farming',
     description: 'Farms gold/XP when under-leveled for descent',
-    icon: '$',
+    icon: Icons.capFarming,
     currentLevel: farmingUnlocked ? 1 : 0,
     maxLevel: 1,
     cost: farmingUnlocked ? 0 : (getBotUpgradeById('farming')?.cost ?? 200),
@@ -126,7 +128,7 @@ function handlePurchase(upgradeId: string) {
         :class="{ active: activeCategory === cat.id }"
         @click="activeCategory = cat.id"
       >
-        <span class="tab-icon">{{ cat.icon }}</span>
+        <Icon class="tab-icon" :name="cat.icon" />
         <span class="tab-label">{{ cat.label }}</span>
       </button>
     </div>

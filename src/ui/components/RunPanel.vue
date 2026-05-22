@@ -6,9 +6,11 @@ import { PERSONALITY_DISPLAY } from '@/types/events'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById, type BoosterEffect } from '@game/data/boosters'
+import { Icons } from '@/ui/icons'
 import DungeonGrid from './DungeonGridCanvas.vue'
 import ProgressBar from './common/ProgressBar.vue'
 import GameTooltip from './common/GameTooltip.vue'
+import Icon from './common/Icon.vue'
 
 const props = defineProps<{
   run: ActiveRun
@@ -164,7 +166,7 @@ function handleDismiss() {
           class="booster-badge"
           :text="`${b!.name} — ${b!.description}`"
         >
-          {{ b!.icon }}
+          <Icon :name="b!.icon" />
           <template #extended>
             <div class="tt-row">
               <span class="tt-label">Effect</span>
@@ -190,7 +192,7 @@ function handleDismiss() {
           position="bottom"
           @click="handleToggleTurbo"
         >
-          ▶▶
+          <Icon :name="Icons.turbo" />
           <template #extended>
             <span class="tt-muted">Fast-forwards this run. Uses more CPU.</span>
           </template>
@@ -202,7 +204,7 @@ function handleDismiss() {
           position="bottom"
           @click="handleExpand"
         >
-          ⛶
+          <Icon :name="Icons.expand" />
         </GameTooltip>
         <GameTooltip
           tag="button"
@@ -218,7 +220,7 @@ function handleDismiss() {
           @touchend="cancelKillHold"
           @touchcancel="cancelKillHold"
         >
-          <span class="kill-icon">✗</span>
+          <Icon class="kill-icon" :name="Icons.killRun" />
           <span
             v-if="killHoldProgress > 0"
             class="kill-progress"
@@ -255,15 +257,15 @@ function handleDismiss() {
       </div>
       <div class="stat-group">
         <span class="stat kills">
-          <span class="stat-icon">⚔</span>
+          <Icon class="stat-icon" :name="Icons.kills" />
           {{ run.kills }}
         </span>
         <span class="stat gold">
-          <span class="stat-icon">$</span>
+          <Icon class="stat-icon" :name="Icons.gold" />
           {{ run.gold }}
         </span>
         <span class="stat xp">
-          <span class="stat-icon">★</span>
+          <Icon class="stat-icon" :name="Icons.xp" />
           {{ run.xp }}
         </span>
       </div>
@@ -318,18 +320,20 @@ function handleDismiss() {
         </div>
       </div>
       <div v-if="essenceEarned > 0" class="essence-earned">
-        <span class="essence-icon">✦</span>
+        <Icon class="essence-icon" :name="Icons.essence" />
         <span class="essence-value">+{{ essenceEarned }}</span>
         <span class="essence-label">essence</span>
       </div>
       <div class="death-actions">
         <button class="death-btn expand" title="View full stats" @click="emit('expand')">
-          <span>⛶</span> Details
+          <Icon :name="Icons.expand" /> Details
         </button>
         <button class="death-btn configure" title="Change loadout" @click="emit('configure')">
-          <span>✎</span> Config
+          <Icon :name="Icons.configure" /> Config
         </button>
-        <button class="death-btn restart" @click="handleRestart"><span>↻</span> Restart</button>
+        <button class="death-btn restart" @click="handleRestart">
+          <Icon :name="Icons.restart" /> Restart
+        </button>
         <button class="death-btn dismiss" @click="handleDismiss">Dismiss</button>
       </div>
     </div>

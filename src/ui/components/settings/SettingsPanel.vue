@@ -4,6 +4,8 @@ import { useSettingsStore, FONT_OPTIONS, THEME_OPTIONS, type ThemeId } from '@/s
 import { useProgressionStore } from '@/stores/progression'
 import { clearData } from '@/ui/composables/use-persistence'
 import { cleanupPersistence } from '@/stores/persistence'
+import { Icons } from '@/ui/icons'
+import Icon from '../common/Icon.vue'
 import PanelFrame from '../common/PanelFrame.vue'
 
 const emit = defineEmits<{
@@ -22,9 +24,9 @@ const showExportSuccess = ref(false)
 
 // Tab definitions
 const tabs = [
-  { id: 'appearance', label: 'Appearance', icon: '🎨' },
-  { id: 'gameplay', label: 'Gameplay', icon: '🎮' },
-  { id: 'data', label: 'Data', icon: '💾' },
+  { id: 'appearance', label: 'Appearance', icon: Icons.appearance },
+  { id: 'gameplay', label: 'Gameplay', icon: Icons.gameplay },
+  { id: 'data', label: 'Data', icon: Icons.data },
 ] as const
 
 // Stats for data tab
@@ -99,7 +101,7 @@ function cancelReset() {
       <h2>
         Settings <span class="version-tag">v{{ appVersion }}</span>
       </h2>
-      <button class="close-btn" @click="emit('close')">✕</button>
+      <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
     </header>
 
     <!-- Tabs -->
@@ -111,7 +113,7 @@ function cancelReset() {
         :class="{ active: activeTab === tab.id }"
         @click="activeTab = tab.id"
       >
-        <span class="tab-icon">{{ tab.icon }}</span>
+        <Icon class="tab-icon" :name="tab.icon" />
         <span class="tab-label">{{ tab.label }}</span>
       </button>
     </nav>
@@ -360,11 +362,11 @@ function cancelReset() {
 
           <div class="data-actions">
             <button class="data-btn" @click="handleExportData">
-              <span class="btn-icon">📥</span>
+              <Icon class="btn-icon" :name="Icons.exportSave" />
               Export Save
             </button>
             <button class="data-btn">
-              <span class="btn-icon">📤</span>
+              <Icon class="btn-icon" :name="Icons.importSave" />
               Import Save
             </button>
           </div>
