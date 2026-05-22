@@ -1,0 +1,29 @@
+:root[data-theme='dracula'] {
+  /* Backgrounds */
+  --bg: #282a36;
+  --bg-panel: #343746;
+  --bg-elevated: #3d4154;
+  --bg-highlight: #44475a;
+  --border: #4a4d63;
+  --border-light: #6272a4;
+
+  /* Accents */
+  --accent: #bd93f9;
+  --accent-hover: #a47de0;
+  --essence: #ff79c6;
+  --essence-light: #ffb1da;
+  --info: #8be9fd;
+  --success: #50fa7b;
+  --warning: #ffb86c;
+  --danger: #ff5555;
+  --danger-hover: #e04444;
+
+  /* Rarity tiers */
+  --rare: #8be9fd;
+  --legendary: #f1fa8c;
+
+  /* Text */
+  --text-primary: #f8f8f2;
+  --text-secondary: #c4c4be;
+  --text-dim: #6272a4;
+}

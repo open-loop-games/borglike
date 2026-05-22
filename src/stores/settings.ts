@@ -57,6 +57,40 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'system', label: 'System Mono', css: 'monospace' },
 ]
 
+export type ThemeId =
+  | 'tokyo-night'
+  | 'dark-indigo'
+  | 'catppuccin-mocha'
+  | 'dracula'
+  | 'nord'
+  | 'solarized-dark'
+  | 'gruvbox-dark'
+  | 'rose-pine'
+  | 'forest'
+  | 'cherry'
+  | 'amber-crt'
+  | 'high-contrast'
+
+export interface ThemeOption {
+  id: ThemeId
+  label: string
+}
+
+export const THEME_OPTIONS: ThemeOption[] = [
+  { id: 'tokyo-night', label: 'Tokyo Night' },
+  { id: 'dark-indigo', label: 'Dark Indigo' },
+  { id: 'catppuccin-mocha', label: 'Catppuccin Mocha' },
+  { id: 'dracula', label: 'Dracula' },
+  { id: 'nord', label: 'Nord' },
+  { id: 'solarized-dark', label: 'Solarized Dark' },
+  { id: 'gruvbox-dark', label: 'Gruvbox Dark' },
+  { id: 'rose-pine', label: 'Rosé Pine' },
+  { id: 'forest', label: 'Forest' },
+  { id: 'cherry', label: 'Cherry' },
+  { id: 'amber-crt', label: 'Amber CRT' },
+  { id: 'high-contrast', label: 'High Contrast' },
+]
+
 export interface GameSettings {
   // Display
   showGrid: boolean
@@ -64,6 +98,7 @@ export interface GameSettings {
   animationSpeed: 'slow' | 'normal' | 'fast' | 'instant'
   fontSize: 'small' | 'medium' | 'large'
   fontFamily: FontFamily
+  theme: ThemeId
 
   // Gameplay
   defaultPersonality: 'cautious' | 'aggressive' | 'greedy' | 'speedrunner'
@@ -114,6 +149,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   animationSpeed: 'normal',
   fontSize: 'medium',
   fontFamily: 'jetbrains-mono',
+  theme: 'tokyo-night',
   defaultPersonality: 'cautious',
   autoRestart: false,
   pauseOnVictory: true,
@@ -224,10 +260,15 @@ export const useSettingsStore = defineStore('settings', () => {
     document.documentElement.style.setProperty('--font-mono', option.css)
   }
 
+  function applyTheme() {
+    document.documentElement.dataset.theme = settings.value.theme
+  }
+
   // Watch for changes and auto-save (single source of truth for persistence)
   watch(settings, saveSettings, { deep: true })
   watch(() => settings.value.fontSize, applyFontScale)
   watch(() => settings.value.fontFamily, applyFontFamily)
+  watch(() => settings.value.theme, applyTheme)
   watch(panelStates, savePanelStates, { deep: true })
 
   // Load on init
@@ -235,6 +276,7 @@ export const useSettingsStore = defineStore('settings', () => {
   loadPanelStates()
   applyFontScale()
   applyFontFamily()
+  applyTheme()
 
   return {
     settings,

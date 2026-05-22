@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useSettingsStore, FONT_OPTIONS } from '@/stores/settings'
+import { useSettingsStore, FONT_OPTIONS, THEME_OPTIONS, type ThemeId } from '@/stores/settings'
 import { useProgressionStore } from '@/stores/progression'
 import { clearData } from '@/ui/composables/use-persistence'
 import { cleanupPersistence } from '@/stores/persistence'
@@ -14,7 +14,7 @@ const settingsStore = useSettingsStore()
 const progression = useProgressionStore()
 
 const appVersion = __APP_VERSION__
-const activeTab = ref<'gameplay' | 'data'>('gameplay')
+const activeTab = ref<'appearance' | 'gameplay' | 'data'>('appearance')
 
 // Confirmation dialog state
 const showResetConfirm = ref(false)
@@ -22,6 +22,7 @@ const showExportSuccess = ref(false)
 
 // Tab definitions
 const tabs = [
+  { id: 'appearance', label: 'Appearance', icon: '🎨' },
   { id: 'gameplay', label: 'Gameplay', icon: '🎮' },
   { id: 'data', label: 'Data', icon: '💾' },
 ] as const
@@ -116,8 +117,35 @@ function cancelReset() {
     </nav>
 
     <div class="settings-content">
-      <!-- Gameplay Settings -->
-      <div v-if="activeTab === 'gameplay'" class="settings-section">
+      <!-- Appearance Settings -->
+      <div v-if="activeTab === 'appearance'" class="settings-section">
+        <PanelFrame class="setting-group">
+          <h3>Theme</h3>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Color Theme</span>
+              <span class="setting-desc"
+                >Affects panels, accents, and text (not the dungeon grid)</span
+              >
+            </div>
+            <select
+              :value="settingsStore.settings.theme"
+              class="setting-select"
+              @change="
+                settingsStore.updateSetting(
+                  'theme',
+                  ($event.target as HTMLSelectElement).value as ThemeId
+                )
+              "
+            >
+              <option v-for="t in THEME_OPTIONS" :key="t.id" :value="t.id">
+                {{ t.label }}
+              </option>
+            </select>
+          </div>
+        </PanelFrame>
+
         <PanelFrame class="setting-group">
           <h3>Display</h3>
 
@@ -160,7 +188,10 @@ function cancelReset() {
             </select>
           </div>
         </PanelFrame>
+      </div>
 
+      <!-- Gameplay Settings -->
+      <div v-if="activeTab === 'gameplay'" class="settings-section">
         <PanelFrame class="setting-group">
           <h3>Run Settings</h3>
 
@@ -371,7 +402,7 @@ function cancelReset() {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--panel);
+  background: var(--bg-panel);
 }
 
 .settings-header {
@@ -379,7 +410,7 @@ function cancelReset() {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-4) var(--space-5);
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
 }
 
@@ -402,7 +433,7 @@ function cancelReset() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
@@ -412,14 +443,14 @@ function cancelReset() {
 }
 
 .close-btn:hover {
-  background: var(--red);
-  border-color: var(--red);
+  background: var(--danger);
+  border-color: var(--danger);
   color: white;
 }
 
 .settings-tabs {
   display: flex;
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
 }
 
@@ -441,12 +472,12 @@ function cancelReset() {
 
 .tab-btn:hover {
   color: var(--text-primary);
-  background: rgba(99, 102, 241, 0.05);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .tab-btn.active {
-  color: var(--indigo);
-  border-bottom-color: var(--indigo);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .tab-icon {
@@ -510,12 +541,12 @@ function cancelReset() {
 }
 
 .locked-desc {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .setting-select {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -525,14 +556,14 @@ function cancelReset() {
 
 .setting-select:focus {
   outline: none;
-  border-color: var(--indigo);
+  border-color: var(--accent);
 }
 
 /* Font Size Picker */
 .font-size-picker {
   display: flex;
   gap: 2px;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   padding: 2px;
 }
@@ -553,9 +584,9 @@ function cancelReset() {
 }
 
 .font-size-btn.active {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: var(--indigo);
-  color: var(--indigo);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Toggle Switch */
@@ -579,7 +610,7 @@ function cancelReset() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   transition: 0.3s;
@@ -598,13 +629,13 @@ function cancelReset() {
 }
 
 .toggle input:checked + .toggle-slider {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: var(--indigo);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  border-color: var(--accent);
 }
 
 .toggle input:checked + .toggle-slider:before {
   transform: translateX(20px);
-  background: var(--indigo);
+  background: var(--accent);
 }
 
 /* Stats Grid */
@@ -619,7 +650,7 @@ function cancelReset() {
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
@@ -636,7 +667,7 @@ function cancelReset() {
 }
 
 .stat-item .stat-value.essence {
-  color: var(--purple);
+  color: var(--essence);
 }
 
 /* Data Actions */
@@ -652,7 +683,7 @@ function cancelReset() {
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -673,21 +704,21 @@ function cancelReset() {
 .export-success {
   margin-top: var(--space-3);
   padding: var(--space-3);
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid var(--green);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  border: 1px solid var(--success);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
-  color: var(--green);
+  color: var(--success);
   text-align: center;
 }
 
 /* Danger Zone */
 .setting-group.danger {
-  border-color: var(--red);
+  border-color: var(--danger);
 }
 
 .setting-group.danger h3 {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .danger-warning {
@@ -700,17 +731,17 @@ function cancelReset() {
 .reset-btn {
   width: 100%;
   padding: var(--space-3) var(--space-4);
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid var(--red);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid var(--danger);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
-  color: var(--red);
+  color: var(--danger);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .reset-btn:hover {
-  background: var(--red);
+  background: var(--danger);
   color: white;
 }
 
@@ -718,7 +749,7 @@ function cancelReset() {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 18, 0.9);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -733,7 +764,7 @@ function cancelReset() {
 
 .confirm-modal h3 {
   font-size: var(--text-xl);
-  color: var(--red);
+  color: var(--danger);
   margin: 0 0 var(--space-3);
 }
 
@@ -759,7 +790,7 @@ function cancelReset() {
 }
 
 .modal-btn.cancel {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
 }
@@ -770,12 +801,12 @@ function cancelReset() {
 }
 
 .modal-btn.danger {
-  background: var(--red);
-  border: 1px solid var(--red);
+  background: var(--danger);
+  border: 1px solid var(--danger);
   color: white;
 }
 
 .modal-btn.danger:hover {
-  background: var(--red-hover);
+  background: var(--danger-hover);
 }
 </style>

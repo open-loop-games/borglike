@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import './style.css'
+import './styles/index.css'
 
 const isMobile = window.matchMedia('(max-width: 768px)').matches && 'ontouchstart' in window
 

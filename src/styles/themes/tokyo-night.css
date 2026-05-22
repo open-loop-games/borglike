@@ -1,0 +1,30 @@
+:root,
+:root[data-theme='tokyo-night'] {
+  /* Backgrounds */
+  --bg: #1a1b26;
+  --bg-panel: #1f2233;
+  --bg-elevated: #24283b;
+  --bg-highlight: #2c3147;
+  --border: #3b4261;
+  --border-light: #545c7e;
+
+  /* Accents */
+  --accent: #7aa2f7;
+  --accent-hover: #5d87e0;
+  --essence: #bb9af7;
+  --essence-light: #d2b8ff;
+  --info: #7dcfff;
+  --success: #9ece6a;
+  --warning: #e0af68;
+  --danger: #f7768e;
+  --danger-hover: #db5876;
+
+  /* Rarity tiers */
+  --rare: #7aa2f7;
+  --legendary: #ff9e64;
+
+  /* Text */
+  --text-primary: #c0caf5;
+  --text-secondary: #a9b1d6;
+  --text-dim: #565f89;
+}

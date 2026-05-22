@@ -1,0 +1,29 @@
+:root[data-theme='high-contrast'] {
+  /* Backgrounds */
+  --bg: #000000;
+  --bg-panel: #050505;
+  --bg-elevated: #0a0a0a;
+  --bg-highlight: #161616;
+  --border: #444444;
+  --border-light: #666666;
+
+  /* Accents */
+  --accent: #00e5ff;
+  --accent-hover: #00b8cc;
+  --essence: #ff00aa;
+  --essence-light: #ff66cc;
+  --info: #00e5ff;
+  --success: #00ff66;
+  --warning: #ffcc00;
+  --danger: #ff2222;
+  --danger-hover: #cc1818;
+
+  /* Rarity tiers */
+  --rare: #00aaff;
+  --legendary: #ffee00;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-dim: #888888;
+}

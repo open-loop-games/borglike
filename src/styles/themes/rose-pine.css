@@ -1,0 +1,29 @@
+:root[data-theme='rose-pine'] {
+  /* Backgrounds */
+  --bg: #191724;
+  --bg-panel: #1f1d2e;
+  --bg-elevated: #26233a;
+  --bg-highlight: #2a273f;
+  --border: #393552;
+  --border-light: #45406b;
+
+  /* Accents */
+  --accent: #ebbcba;
+  --accent-hover: #d6a5a3;
+  --essence: #c4a7e7;
+  --essence-light: #d9c4ee;
+  --info: #9ccfd8;
+  --success: #95b1ac;
+  --warning: #f6c177;
+  --danger: #eb6f92;
+  --danger-hover: #d65a7d;
+
+  /* Rarity tiers */
+  --rare: #31748f;
+  --legendary: #f6c177;
+
+  /* Text */
+  --text-primary: #e0def4;
+  --text-secondary: #c4c0d4;
+  --text-dim: #6e6a86;
+}

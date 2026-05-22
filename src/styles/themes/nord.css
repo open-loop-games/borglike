@@ -1,0 +1,29 @@
+:root[data-theme='nord'] {
+  /* Backgrounds */
+  --bg: #2e3440;
+  --bg-panel: #353c4a;
+  --bg-elevated: #3b4252;
+  --bg-highlight: #434c5e;
+  --border: #4c566a;
+  --border-light: #5e6779;
+
+  /* Accents */
+  --accent: #88c0d0;
+  --accent-hover: #6fa9bb;
+  --essence: #b48ead;
+  --essence-light: #c8a0c0;
+  --info: #81a1c1;
+  --success: #a3be8c;
+  --warning: #ebcb8b;
+  --danger: #bf616a;
+  --danger-hover: #a85058;
+
+  /* Rarity tiers */
+  --rare: #81a1c1;
+  --legendary: #d08770;
+
+  /* Text */
+  --text-primary: #eceff4;
+  --text-secondary: #d8dee9;
+  --text-dim: #8893a5;
+}

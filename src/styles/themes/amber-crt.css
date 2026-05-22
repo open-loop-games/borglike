@@ -1,0 +1,29 @@
+:root[data-theme='amber-crt'] {
+  /* Backgrounds */
+  --bg: #0a0703;
+  --bg-panel: #15100a;
+  --bg-elevated: #1d1610;
+  --bg-highlight: #2a1f14;
+  --border: #4a3520;
+  --border-light: #6b4a2c;
+
+  /* Accents */
+  --accent: #ffb000;
+  --accent-hover: #e09b00;
+  --essence: #ff8800;
+  --essence-light: #ffa340;
+  --info: #ffdd66;
+  --success: #ccff66;
+  --warning: #ff9933;
+  --danger: #ff4422;
+  --danger-hover: #e03515;
+
+  /* Rarity tiers */
+  --rare: #ffcc44;
+  --legendary: #fff066;
+
+  /* Text */
+  --text-primary: #ffc870;
+  --text-secondary: #c89758;
+  --text-dim: #7a5a30;
+}
