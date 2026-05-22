@@ -122,12 +122,12 @@ src/
 
 **Remotes:**
 - `gitea` (primary) - Local Gitea, daily development target, configured as `remote.pushDefault`, full commit history
-- `github` (public) - https://github.com/Namahanna/borglike.git, clean snapshot releases only (always 1 orphan commit)
+- `codeberg` (public) - https://codeberg.org/namahanna/borglike.git, clean snapshot releases only (always 1 orphan commit)
 
 **Architecture:**
 ```
-gitea/main:  [full commits of dev history] → [continuous development]
-github/main: [Single orphan commit: "Release v0.1.x"] ← always force-pushed
+gitea/main:    [full commits of dev history] → [continuous development]
+codeberg/main: [Single orphan commit: "Release v0.1.x"] ← always force-pushed
 ```
 
 **Daily workflow:**
@@ -141,27 +141,27 @@ git push              # → gitea (default), full history preserved
 pnpm version patch                    # → creates v0.1.x tag on main (gitea history)
 git push gitea main --follow-tags     # → push to gitea with tag
 
-# 2. Create clean orphan for github
-git checkout --orphan github-release
+# 2. Create clean orphan for codeberg
+git checkout --orphan codeberg-release
 git add -A
 git commit -m "Release v0.1.x"
-git push github github-release:main --force
+git push codeberg codeberg-release:main --force
 
 # 3. Push tag and cleanup
-git push github v0.1.x
+git push codeberg v0.1.x
 git checkout main
-git branch -D github-release
+git branch -D codeberg-release
 ```
 
-**Result:** GitHub always shows single clean snapshot commit, no development history. Tags tell the version story.
+**Result:** Codeberg always shows single clean snapshot commit, no development history. Tags tell the version story.
 
-**GitHub Pages:** Auto-deploys when tag matching `v*` is pushed (see `.github/workflows/deploy.yml`).
+**Pages:** Codeberg Pages serves the published snapshot at `https://namahanna.codeberg.page/borglike`. CI/deploy automation for Codeberg (Woodpecker) is TBD — the legacy `.github/workflows/deploy.yml` is obsolete and slated for replacement.
 
 **Agent guidance:**
 - Default `git push` always goes to gitea
-- NEVER push main branch or development history to github
+- NEVER push main branch or development history to codeberg
 - When asked to "release" or "publish version", follow the 3-step orphan workflow above
-- GitHub is public-facing snapshot only, gitea preserves full lineage
+- Codeberg is public-facing snapshot only, gitea preserves full lineage
 
 ## Versioning
 

@@ -8,9 +8,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Namahanna/borglike.git"
+    "url": "https://codeberg.org/namahanna/borglike.git"
   },
-  "homepage": "https://namahanna.github.io/borglike",
+  "homepage": "https://namahanna.codeberg.page/borglike",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",

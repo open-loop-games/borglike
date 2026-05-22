@@ -2,7 +2,7 @@
 
 Idle/incremental game featuring an auto-playing roguelike.
 
-**Play now:** https://namahanna.github.io/borglike
+**Play now:** https://namahanna.codeberg.page/borglike
 
 ## What is this?
 
