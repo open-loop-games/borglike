@@ -71,7 +71,7 @@ function handleClose() {
   position: fixed;
   inset: 0;
   z-index: 900;
-  background: var(--void);
+  background: var(--bg);
   display: flex;
   flex-direction: column;
 }
@@ -81,7 +81,7 @@ function handleClose() {
   align-items: center;
   padding: 0 var(--space-3);
   height: 44px;
-  background: var(--panel);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -92,7 +92,7 @@ function handleClose() {
   gap: var(--space-2);
   background: transparent;
   border: none;
-  color: var(--purple);
+  color: var(--essence);
   font-size: var(--text-base);
   cursor: pointer;
   padding: var(--space-2);

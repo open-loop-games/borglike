@@ -190,7 +190,7 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-4);
-  background: var(--panel);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
 }
 
@@ -204,8 +204,8 @@ const emit = defineEmits<{
   font-size: var(--text-3xl);
   font-weight: bold;
   margin: 0;
-  color: var(--purple);
-  text-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  color: var(--essence);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .tagline {
@@ -224,22 +224,26 @@ const emit = defineEmits<{
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--essence) 15%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 10%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--essence) 30%, transparent);
   border-radius: var(--radius-md);
   transition: all 0.3s ease;
 }
 
 .essence-display.animating {
   transform: scale(1.05);
-  border-color: var(--purple);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+  border-color: var(--essence);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .essence-icon {
   font-size: var(--text-xl);
-  color: var(--purple);
-  text-shadow: 0 0 8px rgba(139, 92, 246, 0.7);
+  color: var(--essence);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 70%, transparent);
 }
 
 .essence-display.animating .essence-icon {
@@ -249,13 +253,13 @@ const emit = defineEmits<{
 .essence-value {
   font-size: var(--text-xl);
   font-weight: bold;
-  color: var(--purple);
-  text-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
+  color: var(--essence);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .essence-display.animating .essence-value {
   color: #fff;
-  text-shadow: 0 0 12px rgba(139, 92, 246, 0.8);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--essence) 80%, transparent);
 }
 
 .essence-label {
@@ -266,18 +270,18 @@ const emit = defineEmits<{
 
 .cheat-btn {
   padding: var(--space-1) var(--space-3);
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid var(--amber);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  border: 1px solid var(--warning);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
   font-weight: bold;
-  color: var(--amber);
+  color: var(--warning);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .cheat-btn:hover {
-  background: rgba(245, 158, 11, 0.3);
+  background: color-mix(in srgb, var(--warning) 30%, transparent);
 }
 
 .header-right {
@@ -291,7 +295,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -306,9 +310,9 @@ const emit = defineEmits<{
 }
 
 .auto-run-toggle.active {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: var(--green);
-  color: var(--green);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  border-color: var(--success);
+  color: var(--success);
 }
 
 .auto-run-toggle.active .toggle-icon {
@@ -325,7 +329,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -340,9 +344,9 @@ const emit = defineEmits<{
 }
 
 .pause-toggle.active {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: var(--amber);
-  color: var(--amber);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  border-color: var(--warning);
+  color: var(--warning);
 }
 
 .pause-toggle:disabled {
@@ -369,7 +373,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
@@ -381,7 +385,7 @@ const emit = defineEmits<{
 .header-btn:hover {
   background: var(--border);
   color: var(--text-primary);
-  border-color: var(--indigo);
+  border-color: var(--accent);
 }
 
 .header-btn.has-notification {
@@ -394,20 +398,20 @@ const emit = defineEmits<{
   right: 2px;
   width: 8px;
   height: 8px;
-  background: var(--green);
+  background: var(--success);
   border-radius: 50%;
   animation: notification-pulse 1.5s infinite;
 }
 
 @keyframes notification-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 70%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--success) 0%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 0%, transparent);
   }
 }
 

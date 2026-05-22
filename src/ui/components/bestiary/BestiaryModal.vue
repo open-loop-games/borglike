@@ -153,7 +153,7 @@ function closeDetail() {
 
 <style scoped>
 .bestiary-modal {
-  background: var(--panel);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   display: flex;
@@ -187,7 +187,7 @@ function closeDetail() {
   font-size: var(--text-md);
   color: var(--text-secondary);
   padding: var(--space-1) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
@@ -207,7 +207,7 @@ function closeDetail() {
 }
 
 .close-btn:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
@@ -216,12 +216,12 @@ function closeDetail() {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .filter-select {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -231,13 +231,13 @@ function closeDetail() {
 
 .filter-select:focus {
   outline: none;
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .search-input {
   flex: 1;
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -246,7 +246,7 @@ function closeDetail() {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .search-input::placeholder {
@@ -268,7 +268,7 @@ function closeDetail() {
 .detail-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(10, 10, 18, 0.8);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;

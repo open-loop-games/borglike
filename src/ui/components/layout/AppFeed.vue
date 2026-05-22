@@ -25,7 +25,7 @@ function closeModal() {
 function getSlotColor(slot: number): string {
   // -1 is system message
   if (slot < 0) return 'var(--text-dim)'
-  const colors = ['var(--cyan)', 'var(--green)', 'var(--amber)', 'var(--purple)']
+  const colors = ['var(--info)', 'var(--success)', 'var(--warning)', 'var(--essence)']
   return colors[slot % colors.length] ?? 'var(--text-secondary)'
 }
 
@@ -81,7 +81,7 @@ function formatTimestamp(timestamp: number): string {
   align-items: center;
   gap: var(--space-3);
   padding: 0 var(--space-4);
-  background: var(--panel);
+  background: var(--bg-panel);
   border-top: 1px solid var(--border);
   overflow: hidden;
 }
@@ -126,34 +126,34 @@ function formatTimestamp(timestamp: number): string {
 }
 
 .event-combat .event-message {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .event-item .event-message {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .event-level .event-message {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .event-death .event-message {
-  color: var(--red);
-  text-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+  color: var(--danger);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--danger) 50%, transparent);
 }
 
 .event-good .event-message {
-  color: var(--green);
+  color: var(--success);
 }
 
 .event-danger .event-message {
-  color: var(--red);
+  color: var(--danger);
   font-weight: bold;
 }
 
 .event-victory .event-message {
-  color: var(--amber);
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  color: var(--warning);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warning) 60%, transparent);
   font-weight: bold;
 }
 
@@ -180,7 +180,7 @@ function formatTimestamp(timestamp: number): string {
 }
 
 .feed-expand-btn:hover {
-  background: var(--bg-dark);
+  background: var(--bg);
   color: var(--text-primary);
   border-color: var(--text-dim);
 }

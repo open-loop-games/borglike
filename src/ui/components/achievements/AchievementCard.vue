@@ -40,13 +40,13 @@ const progressText = computed(() => {
 const categoryColor = computed(() => {
   switch (props.achievement.category) {
     case 'progress':
-      return 'var(--blue)'
+      return 'var(--rare)'
     case 'challenge':
-      return 'var(--orange)'
+      return 'var(--warning)'
     case 'cumulative':
-      return 'var(--purple)'
+      return 'var(--essence)'
     case 'mastery':
-      return 'var(--gold)'
+      return 'var(--legendary)'
     default:
       return 'var(--text-dim)'
   }
@@ -106,7 +106,7 @@ const categoryColor = computed(() => {
 
 <style scoped>
 .achievement-card {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-3);
@@ -131,23 +131,23 @@ const categoryColor = computed(() => {
 }
 
 .achievement-card.unlocked.collected {
-  border-color: var(--green);
+  border-color: var(--success);
   opacity: 0.7;
 }
 
 .achievement-card.claimable {
-  border-color: var(--purple);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+  border-color: var(--essence);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--essence) 40%, transparent);
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--essence) 30%, transparent);
   }
   50% {
-    box-shadow: 0 0 16px rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--essence) 60%, transparent);
   }
 }
 
@@ -165,15 +165,15 @@ const categoryColor = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--void);
+  background: var(--bg);
   border-radius: var(--radius-md);
   color: var(--text-dim);
 }
 
 .achievement-icon.unlocked {
-  color: var(--green);
-  text-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
-  background: rgba(34, 197, 94, 0.1);
+  color: var(--success);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--success) 70%, transparent);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
 }
 
 .achievement-info {
@@ -209,19 +209,19 @@ const categoryColor = computed(() => {
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  background: rgba(139, 92, 246, 0.15);
+  background: color-mix(in srgb, var(--essence) 15%, transparent);
   border-radius: var(--radius-md);
 }
 
 .reward-icon {
   font-size: var(--text-base);
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .reward-value {
   font-size: var(--text-base);
   font-weight: bold;
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .progress-bar {
@@ -230,12 +230,12 @@ const categoryColor = computed(() => {
   left: 0;
   right: 0;
   height: 4px;
-  background: var(--void);
+  background: var(--bg);
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--purple);
+  background: var(--essence);
   transition: width 0.3s ease;
 }
 
@@ -270,7 +270,11 @@ const categoryColor = computed(() => {
   align-items: center;
   justify-content: flex-end;
   padding-right: var(--space-3);
-  background: linear-gradient(90deg, transparent 40%, rgba(139, 92, 246, 0.15) 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 40%,
+    color-mix(in srgb, var(--essence) 15%, transparent) 100%
+  );
 }
 
 .claim-btn {
@@ -278,7 +282,7 @@ const categoryColor = computed(() => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
-  background: var(--purple);
+  background: var(--essence);
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -286,11 +290,11 @@ const categoryColor = computed(() => {
   color: white;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--essence) 40%, transparent);
 }
 
 .claim-btn:hover {
-  background: var(--violet);
+  background: var(--essence-light);
   transform: scale(1.05);
 }
 

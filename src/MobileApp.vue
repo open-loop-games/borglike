@@ -187,7 +187,7 @@ function handleMoreNavigate(target: string) {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: var(--void);
+  background: var(--bg);
 }
 
 .loading-content {
@@ -211,7 +211,7 @@ function handleMoreNavigate(target: string) {
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background: var(--void);
+  background: var(--bg);
 }
 
 .mobile-content {
@@ -236,7 +236,7 @@ function handleMoreNavigate(target: string) {
   position: fixed;
   inset: 0;
   z-index: 950;
-  background: var(--void);
+  background: var(--bg);
   display: flex;
   flex-direction: column;
 }
@@ -246,7 +246,7 @@ function handleMoreNavigate(target: string) {
   align-items: center;
   padding: 0 var(--space-3);
   height: 44px;
-  background: var(--panel);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -257,7 +257,7 @@ function handleMoreNavigate(target: string) {
   gap: var(--space-2);
   background: transparent;
   border: none;
-  color: var(--purple);
+  color: var(--essence);
   font-size: var(--text-base);
   cursor: pointer;
   padding: var(--space-2);

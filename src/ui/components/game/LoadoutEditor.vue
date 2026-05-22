@@ -655,7 +655,7 @@ function handleCancel() {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: var(--panel);
+  background: var(--bg-panel);
 }
 
 .editor-header {
@@ -663,7 +663,7 @@ function handleCancel() {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-4) var(--space-5);
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
 }
 
@@ -677,7 +677,7 @@ function handleCancel() {
 .slot-badge {
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
@@ -728,7 +728,7 @@ function handleCancel() {
 
 .option-btn {
   padding: var(--space-2) var(--space-4);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -738,15 +738,15 @@ function handleCancel() {
 }
 
 .option-btn:hover {
-  border-color: var(--indigo);
+  border-color: var(--accent);
   color: var(--text-primary);
 }
 
 .option-btn.active {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: var(--indigo);
-  color: var(--indigo);
-  text-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .option-btn.random-btn {
@@ -769,7 +769,7 @@ function handleCancel() {
 .pool-tag {
   font-size: var(--text-base);
   padding: 2px var(--space-2);
-  background: rgba(99, 102, 241, 0.1);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
@@ -791,11 +791,11 @@ function handleCancel() {
 }
 
 .stat-positive {
-  color: var(--green);
+  color: var(--success);
 }
 
 .stat-negative {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .stat-neutral {
@@ -803,17 +803,17 @@ function handleCancel() {
 }
 
 .stat-info {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .stat-xp {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .stat-magic {
-  color: var(--purple);
+  color: var(--essence);
   padding: 1px var(--space-1);
-  background: rgba(139, 92, 246, 0.15);
+  background: color-mix(in srgb, var(--essence) 15%, transparent);
   border-radius: var(--radius-sm);
 }
 
@@ -833,16 +833,16 @@ function handleCancel() {
 .ability-tag {
   font-size: var(--text-base);
   padding: 3px 6px;
-  background: rgba(6, 182, 212, 0.1);
-  border: 1px solid rgba(6, 182, 212, 0.3);
+  background: color-mix(in srgb, var(--info) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 30%, transparent);
   border-radius: var(--radius-md);
-  color: var(--cyan);
+  color: var(--info);
   cursor: help;
 }
 
 .ability-tag:hover {
-  background: rgba(6, 182, 212, 0.2);
-  border-color: var(--cyan);
+  background: color-mix(in srgb, var(--info) 20%, transparent);
+  border-color: var(--info);
 }
 
 .details-behavior {
@@ -852,7 +852,7 @@ function handleCancel() {
 }
 
 .behavior-label {
-  color: var(--purple);
+  color: var(--essence);
   font-weight: bold;
 }
 
@@ -868,7 +868,7 @@ function handleCancel() {
   align-items: flex-start;
   gap: 2px;
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -877,12 +877,12 @@ function handleCancel() {
 }
 
 .personality-btn:hover {
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .personality-btn.active {
-  background: rgba(139, 92, 246, 0.15);
-  border-color: var(--purple);
+  background: color-mix(in srgb, var(--essence) 15%, transparent);
+  border-color: var(--essence);
 }
 
 .personality-name {
@@ -892,8 +892,8 @@ function handleCancel() {
 }
 
 .personality-btn.active .personality-name {
-  color: var(--purple);
-  text-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
+  color: var(--essence);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--essence) 40%, transparent);
 }
 
 .personality-desc {
@@ -910,7 +910,7 @@ function handleCancel() {
 
 .preset-seed-btn {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -920,9 +920,9 @@ function handleCancel() {
 }
 
 .preset-seed-btn:hover {
-  border-color: var(--purple);
+  border-color: var(--essence);
   color: var(--text-primary);
-  background: rgba(139, 92, 246, 0.1);
+  background: color-mix(in srgb, var(--essence) 10%, transparent);
 }
 
 .bonuses-section {
@@ -963,8 +963,8 @@ function handleCancel() {
 .bonus-value {
   font-size: var(--text-base);
   font-weight: bold;
-  color: var(--green);
-  text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+  color: var(--success);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 40%, transparent);
 }
 
 .no-bonuses {
@@ -1007,11 +1007,11 @@ function handleCancel() {
 .perf-value {
   font-size: var(--text-lg);
   font-weight: bold;
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .perf-stat.best .perf-value {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .perf-label {
@@ -1025,13 +1025,13 @@ function handleCancel() {
   justify-content: flex-end;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-5);
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-top: 1px solid var(--border);
 }
 
 .cancel-btn {
   padding: var(--space-3) var(--space-5);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-md);
@@ -1050,8 +1050,8 @@ function handleCancel() {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-6);
-  background: var(--indigo);
-  border: 1px solid var(--indigo);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: var(--radius-md);
   font-size: var(--text-md);
   font-weight: bold;
@@ -1061,8 +1061,8 @@ function handleCancel() {
 }
 
 .start-btn:hover {
-  background: var(--indigo-hover);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+  background: var(--accent-hover);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .start-icon {
@@ -1102,7 +1102,7 @@ function handleCancel() {
 
 .booster-select {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -1112,17 +1112,17 @@ function handleCancel() {
 }
 
 .booster-select:hover {
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .booster-select:focus {
   outline: none;
-  border-color: var(--purple);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+  border-color: var(--essence);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--essence) 30%, transparent);
 }
 
 .booster-select option {
-  background: var(--panel);
+  background: var(--bg-panel);
   color: var(--text-primary);
 }
 
@@ -1132,7 +1132,7 @@ function handleCancel() {
 
 .booster-desc {
   font-size: var(--text-base);
-  color: var(--purple);
+  color: var(--essence);
   font-style: italic;
 }
 
@@ -1188,9 +1188,9 @@ function handleCancel() {
 }
 
 .toggle-btn.active {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: var(--green);
-  color: var(--green);
+  background: color-mix(in srgb, var(--success) 20%, transparent);
+  border-color: var(--success);
+  color: var(--success);
 }
 
 .toggle-btn:hover {
@@ -1207,7 +1207,7 @@ function handleCancel() {
   min-width: 32px;
   height: 26px;
   padding: 2px var(--space-1);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: var(--text-base);
@@ -1222,9 +1222,9 @@ function handleCancel() {
 }
 
 .level-btn.selected {
-  background: rgba(6, 182, 212, 0.2);
-  border-color: var(--cyan);
-  color: var(--cyan);
+  background: color-mix(in srgb, var(--info) 20%, transparent);
+  border-color: var(--info);
+  color: var(--info);
 }
 
 .no-controls {
@@ -1267,7 +1267,7 @@ function handleCancel() {
 
 .param-slider {
   flex: 1;
-  accent-color: var(--purple);
+  accent-color: var(--essence);
   cursor: pointer;
 }
 
@@ -1277,7 +1277,7 @@ function handleCancel() {
 
 .slider-value {
   font-size: var(--text-base);
-  color: var(--cyan);
+  color: var(--info);
   min-width: 50px;
   text-align: right;
 }
@@ -1318,16 +1318,16 @@ function handleCancel() {
 }
 
 .depth-gate-value.gate-reckless {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .depth-gate-value.gate-cautious {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .depth-gate-slider {
   width: 100%;
-  accent-color: var(--indigo);
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -1356,7 +1356,7 @@ function handleCancel() {
 .range-input {
   width: 48px;
   padding: 2px var(--space-1);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: var(--text-base);
@@ -1366,7 +1366,7 @@ function handleCancel() {
 
 .range-input:focus {
   outline: none;
-  border-color: var(--cyan);
+  border-color: var(--info);
 }
 
 .range-sep {

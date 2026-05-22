@@ -29,7 +29,11 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 
 <style scoped>
 .collapsible-section {
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
+  );
   border: 1px solid var(--border);
   border-top-color: var(--border-light);
   border-left-color: var(--border-light);
@@ -73,7 +77,7 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 }
 
 .section-header:hover .chevron {
-  color: var(--indigo);
+  color: var(--accent);
 }
 
 .title {
@@ -84,7 +88,7 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 .badge {
   font-size: var(--text-sm);
   padding: 1px 5px;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);

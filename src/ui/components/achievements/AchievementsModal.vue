@@ -223,7 +223,7 @@ function claimById(id: string) {
 
 <style scoped>
 .achievements-modal {
-  background: var(--panel);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   display: flex;
@@ -257,7 +257,7 @@ function claimById(id: string) {
   font-size: var(--text-md);
   color: var(--text-secondary);
   padding: var(--space-1) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
@@ -266,9 +266,9 @@ function claimById(id: string) {
   align-items: center;
   gap: var(--space-1);
   font-size: var(--text-md);
-  color: var(--purple);
+  color: var(--essence);
   padding: var(--space-1) var(--space-3);
-  background: rgba(139, 92, 246, 0.15);
+  background: color-mix(in srgb, var(--essence) 15%, transparent);
   border-radius: var(--radius-md);
 }
 
@@ -278,9 +278,9 @@ function claimById(id: string) {
   gap: var(--space-1);
   font-size: var(--text-md);
   font-weight: bold;
-  color: var(--gold);
+  color: var(--legendary);
   padding: var(--space-1) var(--space-3);
-  background: rgba(234, 179, 8, 0.15);
+  background: color-mix(in srgb, var(--legendary) 15%, transparent);
   border-radius: var(--radius-md);
   animation: pulse-pending 1.5s ease-in-out infinite;
 }
@@ -315,7 +315,7 @@ function claimById(id: string) {
 }
 
 .close-btn:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
@@ -324,12 +324,12 @@ function claimById(id: string) {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .filter-select {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -339,13 +339,13 @@ function claimById(id: string) {
 
 .filter-select:focus {
   outline: none;
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .search-input {
   flex: 1;
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -354,7 +354,7 @@ function claimById(id: string) {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .search-input::placeholder {

@@ -62,7 +62,7 @@ const activeTab = ref<Tab>('upgrades')
 
 .sidebar-tabs {
   display: flex;
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -80,13 +80,13 @@ const activeTab = ref<Tab>('upgrades')
 }
 
 .sidebar-tab:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
 .sidebar-tab.active {
-  color: var(--purple);
-  border-bottom-color: var(--purple);
+  color: var(--essence);
+  border-bottom-color: var(--essence);
 }
 
 .sidebar-content {

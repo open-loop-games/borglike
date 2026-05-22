@@ -251,7 +251,7 @@ function getPrereqNames(boosterId: string): string[] {
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1);
-  background: var(--panel);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
 }
 
@@ -270,12 +270,12 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .unlock-tab:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
 }
 
 .unlock-tab.active {
-  background: var(--highlight);
-  border-bottom: 2px solid var(--cyan);
+  background: var(--bg-highlight);
+  border-bottom: 2px solid var(--info);
 }
 
 .tab-icon {
@@ -284,8 +284,8 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .unlock-tab.active .tab-icon {
-  color: var(--cyan);
-  text-shadow: 0 0 6px rgba(6, 182, 212, 0.5);
+  color: var(--info);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--info) 50%, transparent);
 }
 
 .tab-label {
@@ -336,7 +336,7 @@ function getPrereqNames(boosterId: string): string[] {
 .no-unlocks {
   text-align: center;
   padding: var(--space-6);
-  color: var(--green);
+  color: var(--success);
   font-style: italic;
   font-size: var(--text-base);
 }
@@ -348,7 +348,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .category-header {
   font-size: var(--text-base);
-  color: var(--purple);
+  color: var(--essence);
   text-transform: uppercase;
   letter-spacing: 1px;
   padding: var(--space-2) 0;
@@ -362,7 +362,11 @@ function getPrereqNames(boosterId: string): string[] {
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-1);
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
+  );
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   transition: all 0.2s;
@@ -370,12 +374,16 @@ function getPrereqNames(boosterId: string): string[] {
 
 .booster-item.can-unlock {
   cursor: pointer;
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .booster-item.can-unlock:hover {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(26, 26, 46, 0.95) 100%);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--essence) 10%, transparent) 0%,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 100%
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--essence) 20%, transparent);
 }
 
 .booster-item.is-unlocked {
@@ -401,7 +409,7 @@ function getPrereqNames(boosterId: string): string[] {
   align-items: center;
   justify-content: center;
   font-size: var(--text-xl);
-  color: var(--purple);
+  color: var(--essence);
   flex-shrink: 0;
 }
 
@@ -428,7 +436,7 @@ function getPrereqNames(boosterId: string): string[] {
 
 .booster-prereq {
   font-size: var(--text-sm);
-  color: var(--amber);
+  color: var(--warning);
   font-style: italic;
   margin-top: 2px;
 }
@@ -438,9 +446,9 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .booster-status .status-unlocked {
-  color: var(--green);
+  color: var(--success);
   font-size: var(--text-xl);
-  text-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 .booster-status .unlock-btn {
@@ -448,7 +456,7 @@ function getPrereqNames(boosterId: string): string[] {
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -458,8 +466,8 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .booster-status .unlock-btn:not(:disabled):hover {
-  background: var(--purple);
-  border-color: var(--purple);
+  background: var(--essence);
+  border-color: var(--essence);
   color: white;
 }
 
@@ -469,7 +477,7 @@ function getPrereqNames(boosterId: string): string[] {
 }
 
 .booster-status .cost-icon {
-  color: var(--purple);
+  color: var(--essence);
   font-size: var(--text-sm);
 }
 

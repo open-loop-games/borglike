@@ -188,7 +188,11 @@ const tooltipStyle = computed(() => ({
   position: fixed;
   z-index: 9999;
   padding: var(--space-2) var(--space-3);
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.98) 0%, rgba(15, 15, 26, 0.99) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-elevated) 98%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 99%, transparent) 100%
+  );
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
@@ -201,10 +205,10 @@ const tooltipStyle = computed(() => ({
 
 .game-tooltip--extended {
   pointer-events: auto;
-  border-color: var(--purple);
+  border-color: var(--essence);
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.5),
-    0 0 8px rgba(139, 92, 246, 0.15);
+    0 0 8px color-mix(in srgb, var(--essence) 15%, transparent);
 }
 
 .game-tooltip-text {
@@ -256,7 +260,7 @@ const tooltipStyle = computed(() => ({
 }
 
 .game-tooltip .tt-shift-key {
-  color: var(--purple);
+  color: var(--essence);
   opacity: 1;
 }
 

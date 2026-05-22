@@ -66,7 +66,7 @@ const filteredEvents = computed(() => {
 
 function getSlotColor(slot: number): string {
   if (slot < 0) return 'var(--text-dim)'
-  const colors = ['var(--cyan)', 'var(--green)', 'var(--amber)', 'var(--purple)']
+  const colors = ['var(--info)', 'var(--success)', 'var(--warning)', 'var(--essence)']
   return colors[slot % colors.length] ?? 'var(--text-secondary)'
 }
 
@@ -199,7 +199,7 @@ function formatTimestamp(timestamp: number): string {
   flex: 1;
   min-width: 150px;
   padding: var(--space-2) var(--space-3);
-  background: var(--bg-dark);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -208,12 +208,12 @@ function formatTimestamp(timestamp: number): string {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--cyan);
+  border-color: var(--info);
 }
 
 .filter-select {
   padding: var(--space-2) var(--space-3);
-  background: var(--bg-dark);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -263,34 +263,34 @@ function formatTimestamp(timestamp: number): string {
 }
 
 .event-combat .event-message {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .event-item .event-message {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .event-level .event-message {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .event-death .event-message {
-  color: var(--red);
-  text-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+  color: var(--danger);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--danger) 50%, transparent);
 }
 
 .event-good .event-message {
-  color: var(--green);
+  color: var(--success);
 }
 
 .event-danger .event-message {
-  color: var(--red);
+  color: var(--danger);
   font-weight: bold;
 }
 
 .event-victory .event-message {
-  color: var(--amber);
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  color: var(--warning);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warning) 60%, transparent);
   font-weight: bold;
 }
 

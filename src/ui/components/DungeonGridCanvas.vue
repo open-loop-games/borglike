@@ -35,8 +35,8 @@ let fontSize = 14
 let ctx: CanvasRenderingContext2D | null = null
 
 // Colors
-const CURSOR_BG = 'rgba(99, 102, 241, 0.3)'
-const PLAYER_CURSOR_BG = 'rgba(34, 197, 94, 0.2)'
+const CURSOR_BG = 'color-mix(in srgb, var(--accent) 30%, transparent)'
+const PLAYER_CURSOR_BG = 'color-mix(in srgb, var(--success) 20%, transparent)'
 
 function colorToHex(color: number): string {
   if (color === 0) return '#475569'
@@ -195,7 +195,7 @@ watch(fontCss, async () => {
   width: 100%;
   height: 100%;
   min-height: 0; /* Important for flex children to shrink */
-  background: var(--bg-dark);
+  background: var(--bg);
   display: flex;
   justify-content: center;
   align-items: center;

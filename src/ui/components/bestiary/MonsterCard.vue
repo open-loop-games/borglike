@@ -103,7 +103,7 @@ const monsterColor = computed(() => {
 
 <style scoped>
 .monster-card {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-3);
@@ -124,8 +124,8 @@ const monsterColor = computed(() => {
 }
 
 .monster-card.unlocked {
-  border-color: var(--purple);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+  border-color: var(--essence);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--essence) 30%, transparent);
 }
 
 .card-content {
@@ -166,7 +166,7 @@ const monsterColor = computed(() => {
 
 .stat {
   padding: 1px var(--space-1);
-  background: var(--void);
+  background: var(--bg);
   border-radius: var(--radius-sm);
 }
 
@@ -179,8 +179,8 @@ const monsterColor = computed(() => {
 .knowledge-badge {
   font-size: var(--text-base);
   font-weight: bold;
-  color: var(--green);
-  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
   padding: 2px var(--space-2);
   border-radius: var(--radius-md);
   margin-top: var(--space-1);
@@ -192,12 +192,12 @@ const monsterColor = computed(() => {
   left: 0;
   right: 0;
   height: 4px;
-  background: var(--void);
+  background: var(--bg);
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--purple);
+  background: var(--essence);
   transition: width 0.3s ease;
 }
 
@@ -215,7 +215,7 @@ const monsterColor = computed(() => {
   right: var(--space-1);
   width: 18px;
   height: 18px;
-  background: var(--purple);
+  background: var(--essence);
   border-radius: 50%;
   display: flex;
   align-items: center;

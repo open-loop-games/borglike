@@ -6,7 +6,7 @@ import { skipCatchUp } from '@/engine/instance-manager'
 const engineState = useEngineStateStore()
 const tickerRef = ref<HTMLElement | null>(null)
 
-const SLOT_COLORS = ['var(--cyan)', 'var(--green)', 'var(--amber)', 'var(--purple)']
+const SLOT_COLORS = ['var(--info)', 'var(--success)', 'var(--warning)', 'var(--essence)']
 
 const targetSeconds = computed(() => Math.round(engineState.catchUpTargetMs / 1000))
 const overallPercent = computed(() => Math.round(engineState.overallProgress * 100))
@@ -129,7 +129,7 @@ watch(
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(10, 10, 18, 0.95);
+  background: color-mix(in srgb, var(--bg) 95%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,14 +172,14 @@ watch(
 .progress-bar-track {
   flex: 1;
   height: 12px;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: var(--indigo);
+  background: var(--accent);
   border-radius: var(--radius-sm);
   transition: width 0.15s ease;
 }
@@ -193,7 +193,7 @@ watch(
 
 .slot-deaths {
   font-size: var(--text-sm);
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .overall-section {
@@ -217,7 +217,7 @@ watch(
 }
 
 .overall-fill {
-  background: linear-gradient(90deg, var(--indigo), var(--purple));
+  background: linear-gradient(90deg, var(--accent), var(--essence));
 }
 
 .overall-percent {
@@ -239,14 +239,14 @@ watch(
 
 .eta-timer {
   font-size: var(--text-sm);
-  color: var(--indigo);
+  color: var(--accent);
   font-weight: 500;
 }
 
 .skip-btn {
   margin-top: var(--space-3);
   padding: var(--space-2) var(--space-5);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -258,7 +258,7 @@ watch(
 .skip-btn:hover {
   background: var(--border);
   color: var(--text-primary);
-  border-color: var(--indigo);
+  border-color: var(--accent);
 }
 
 .completion-ticker {
@@ -295,7 +295,7 @@ watch(
 }
 
 .ticker-essence {
-  color: var(--purple);
+  color: var(--essence);
   min-width: 40px;
   text-align: right;
 }

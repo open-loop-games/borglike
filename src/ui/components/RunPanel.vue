@@ -357,7 +357,7 @@ function handleDismiss() {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-2) var(--space-3);
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
   font-size: var(--text-base);
 }
@@ -368,13 +368,13 @@ function handleDismiss() {
 }
 
 .run-class {
-  color: var(--green);
-  text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+  color: var(--success);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 .run-race {
-  color: var(--cyan);
-  text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+  color: var(--info);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--info) 50%, transparent);
 }
 
 .run-personality {
@@ -393,10 +393,10 @@ function handleDismiss() {
 .booster-badge {
   font-size: var(--text-base);
   padding: 2px var(--space-1);
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid var(--purple);
+  background: color-mix(in srgb, var(--essence) 15%, transparent);
+  border: 1px solid var(--essence);
   border-radius: var(--radius-md);
-  color: var(--purple);
+  color: var(--essence);
   cursor: default;
 }
 
@@ -411,9 +411,9 @@ function handleDismiss() {
 }
 
 .depth-value {
-  color: var(--purple);
+  color: var(--essence);
   font-weight: bold;
-  text-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .run-controls {
@@ -427,7 +427,7 @@ function handleDismiss() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: var(--text-base);
@@ -442,15 +442,15 @@ function handleDismiss() {
 }
 
 .control-btn.turbo.active {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: var(--amber);
-  color: var(--amber);
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  border-color: var(--warning);
+  color: var(--warning);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
 .control-btn.expand:hover {
-  border-color: var(--indigo);
-  color: var(--indigo);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .control-btn.kill {
@@ -459,13 +459,13 @@ function handleDismiss() {
 }
 
 .control-btn.kill:hover:not(.disabled) {
-  border-color: var(--red);
-  color: var(--red);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .control-btn.kill.holding {
-  border-color: var(--red);
-  color: var(--red);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .control-btn.kill.disabled {
@@ -483,7 +483,7 @@ function handleDismiss() {
   left: 0;
   top: 0;
   height: 100%;
-  background: rgba(239, 68, 68, 0.3);
+  background: color-mix(in srgb, var(--danger) 30%, transparent);
   transition: width 0.05s linear;
 }
 
@@ -492,7 +492,7 @@ function handleDismiss() {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-2) var(--space-3);
-  background: var(--panel);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   font-size: var(--text-base);
 }
@@ -541,15 +541,15 @@ function handleDismiss() {
 }
 
 .stat.kills {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .stat.gold {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .stat.xp {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .death-overlay {
@@ -560,19 +560,19 @@ function handleDismiss() {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  background: rgba(10, 10, 18, 0.9);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
 }
 
 .new-best-badge {
   font-size: var(--text-base);
   font-weight: bold;
-  color: var(--amber);
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid var(--amber);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  border: 1px solid var(--warning);
   padding: 2px var(--space-2);
   border-radius: var(--radius-md);
   letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warning) 60%, transparent);
   animation: pulse-best 1.5s ease-in-out infinite;
 }
 
@@ -580,19 +580,19 @@ function handleDismiss() {
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--warning) 40%, transparent);
   }
   50% {
     opacity: 0.8;
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--warning) 60%, transparent);
   }
 }
 
 .death-text {
   font-size: var(--text-2xl);
   font-weight: bold;
-  color: var(--red);
-  text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+  color: var(--danger);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--danger) 80%, transparent);
   letter-spacing: 2px;
 }
 
@@ -603,11 +603,11 @@ function handleDismiss() {
 }
 
 .char-race {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .char-class {
-  color: var(--green);
+  color: var(--success);
 }
 
 .char-personality {
@@ -641,23 +641,23 @@ function handleDismiss() {
 }
 
 .metric-value.depth {
-  color: var(--purple);
-  text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+  color: var(--essence);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .metric-value.level {
-  color: var(--cyan);
-  text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+  color: var(--info);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--info) 50%, transparent);
 }
 
 .metric-value.kills {
-  color: var(--red);
-  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  color: var(--danger);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
 .metric-value.gold {
-  color: var(--amber);
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  color: var(--warning);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
 .metric-value.time {
@@ -676,22 +676,22 @@ function handleDismiss() {
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-3);
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: color-mix(in srgb, var(--essence) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--essence) 30%, transparent);
   border-radius: var(--radius-md);
   margin-top: 2px;
 }
 
 .essence-icon {
-  color: var(--purple);
-  text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  color: var(--essence);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 60%, transparent);
 }
 
 .essence-value {
   font-size: var(--text-md);
   font-weight: bold;
-  color: var(--purple);
-  text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+  color: var(--essence);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .essence-label {
@@ -717,40 +717,40 @@ function handleDismiss() {
 }
 
 .death-btn.expand {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
 }
 
 .death-btn.expand:hover {
-  border-color: var(--purple);
-  color: var(--purple);
+  border-color: var(--essence);
+  color: var(--essence);
 }
 
 .death-btn.configure {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
 }
 
 .death-btn.configure:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
+  border-color: var(--info);
+  color: var(--info);
 }
 
 .death-btn.restart {
-  background: var(--indigo);
-  border: 1px solid var(--indigo);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: white;
 }
 
 .death-btn.restart:hover {
-  background: var(--indigo-hover);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+  background: var(--accent-hover);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .death-btn.dismiss {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
 }
@@ -762,39 +762,39 @@ function handleDismiss() {
 
 /* Victory styles */
 .victory-overlay {
-  background: rgba(10, 10, 18, 0.92) !important;
+  background: color-mix(in srgb, var(--bg) 92%, transparent) !important;
 }
 
 .victory-text {
-  color: var(--amber) !important;
+  color: var(--warning) !important;
   text-shadow:
-    0 0 20px rgba(245, 158, 11, 0.8),
-    0 0 40px rgba(245, 158, 11, 0.4) !important;
+    0 0 20px color-mix(in srgb, var(--warning) 80%, transparent),
+    0 0 40px color-mix(in srgb, var(--warning) 40%, transparent) !important;
 }
 
 .first-victory-badge {
   font-size: var(--text-base);
   font-weight: bold;
-  color: var(--amber);
-  background: rgba(245, 158, 11, 0.2);
-  border: 1px solid var(--amber);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  border: 1px solid var(--warning);
   padding: 2px var(--space-2);
   border-radius: var(--radius-md);
   letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warning) 60%, transparent);
   animation: pulse-best 1.5s ease-in-out infinite;
 }
 
 @keyframes flash-in {
   0% {
-    background: rgba(245, 158, 11, 0.5);
+    background: color-mix(in srgb, var(--warning) 50%, transparent);
     opacity: 0;
   }
   15% {
     opacity: 1;
   }
   100% {
-    background: rgba(10, 10, 18, 0.92);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
   }
 }
 

@@ -245,28 +245,28 @@ const nemesis = computed(() => {
 }
 
 .stat-val {
-  color: var(--cyan);
+  color: var(--info);
   text-align: right;
 }
 
 .stat-val.depth {
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .stat-val.kills {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .stat-val.gold {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .stat-val.essence {
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .stat-val.victory {
-  color: var(--green);
+  color: var(--success);
 }
 
 .nemesis-row {

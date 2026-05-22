@@ -130,7 +130,7 @@ const primaryStat = computed(() => {
 
 <style scoped>
 .class-card {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-3);
@@ -151,11 +151,11 @@ const primaryStat = computed(() => {
 }
 
 .class-card.prestige {
-  border-color: rgba(245, 158, 11, 0.5);
+  border-color: color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
 .class-card.prestige:not(.locked) {
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--warning) 20%, transparent);
 }
 
 .category-badge {
@@ -168,23 +168,23 @@ const primaryStat = computed(() => {
   letter-spacing: 0.5px;
   padding: 2px 0;
   text-align: center;
-  background: var(--void);
+  background: var(--bg);
   color: var(--text-dim);
 }
 
 .category-badge.starter {
-  color: var(--green);
-  background: rgba(34, 197, 94, 0.1);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
 }
 
 .category-badge.unlockable {
-  color: var(--blue);
-  background: rgba(59, 130, 246, 0.1);
+  color: var(--rare);
+  background: color-mix(in srgb, var(--rare) 10%, transparent);
 }
 
 .category-badge.prestige {
-  color: var(--amber);
-  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
 }
 
 .card-content {
@@ -223,8 +223,8 @@ const primaryStat = computed(() => {
 
 .magic-badge {
   font-size: var(--text-2xs);
-  color: var(--violet);
-  background: rgba(167, 139, 250, 0.15);
+  color: var(--essence-light);
+  background: color-mix(in srgb, var(--essence-light) 15%, transparent);
   padding: 1px var(--space-1);
   border-radius: var(--radius-sm);
 }
@@ -232,7 +232,7 @@ const primaryStat = computed(() => {
 .primary-stat {
   font-size: var(--text-2xs);
   color: var(--text-secondary);
-  background: var(--void);
+  background: var(--bg);
   padding: 1px var(--space-1);
   border-radius: var(--radius-sm);
 }
@@ -251,10 +251,10 @@ const primaryStat = computed(() => {
 
 .win-count {
   font-size: var(--text-base);
-  color: var(--green);
+  color: var(--success);
   margin-top: var(--space-1);
   padding: 2px var(--space-2);
-  background: rgba(34, 197, 94, 0.1);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
   border-radius: var(--radius-md);
 }
 
@@ -264,7 +264,7 @@ const primaryStat = computed(() => {
   right: var(--space-1);
   width: 16px;
   height: 16px;
-  background: var(--green);
+  background: var(--success);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -274,7 +274,7 @@ const primaryStat = computed(() => {
 }
 
 .class-card.prestige .unlocked-badge {
-  background: var(--amber);
+  background: var(--warning);
 }
 
 .lock-icon {

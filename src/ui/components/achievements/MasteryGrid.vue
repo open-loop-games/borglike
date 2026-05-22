@@ -167,7 +167,7 @@ const metaAchievements = computed(() => {
 }
 
 .mastery-section {
-  background: var(--void);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
@@ -187,7 +187,7 @@ const metaAchievements = computed(() => {
   font-weight: normal;
   color: var(--text-secondary);
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
@@ -220,7 +220,7 @@ const metaAchievements = computed(() => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -236,8 +236,8 @@ const metaAchievements = computed(() => {
 
 .mastery-cell.won {
   color: var(--text-primary);
-  border-color: var(--green);
-  background: rgba(34, 197, 94, 0.08);
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, transparent);
 }
 
 .mastery-cell.won.collected {
@@ -245,33 +245,33 @@ const metaAchievements = computed(() => {
 }
 
 .mastery-cell.claimable {
-  border-color: var(--purple);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.35);
+  border-color: var(--essence);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--essence) 35%, transparent);
   cursor: pointer;
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .mastery-cell.prestige {
-  border-color: var(--gold);
+  border-color: var(--legendary);
 }
 
 .mastery-cell.prestige.won {
-  border-color: var(--green);
-  box-shadow: 0 0 6px rgba(234, 179, 8, 0.2);
+  border-color: var(--success);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--legendary) 20%, transparent);
 }
 
 .mastery-cell.prestige.claimable {
-  border-color: var(--purple);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.35);
+  border-color: var(--essence);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--essence) 35%, transparent);
 }
 
 @keyframes pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--essence) 30%, transparent);
   }
   50% {
-    box-shadow: 0 0 16px rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--essence) 60%, transparent);
   }
 }
 
@@ -284,7 +284,7 @@ const metaAchievements = computed(() => {
 }
 
 .mastery-cell.won .cell-icon {
-  color: var(--green);
+  color: var(--success);
 }
 
 .cell-name {
@@ -293,7 +293,7 @@ const metaAchievements = computed(() => {
 }
 
 .cell-check {
-  color: var(--green);
+  color: var(--success);
   font-weight: bold;
   font-size: var(--text-base);
 }
@@ -303,7 +303,7 @@ const metaAchievements = computed(() => {
   top: -2px;
   right: -2px;
   font-size: var(--text-2xs);
-  color: var(--gold);
+  color: var(--legendary);
 }
 
 .meta-section {

@@ -38,7 +38,7 @@ const variantClass = computed(() => {
 <style scoped>
 .progress-bar {
   position: relative;
-  background: var(--panel);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -60,38 +60,38 @@ const variantClass = computed(() => {
 }
 
 .hp-full .progress-fill {
-  background: var(--green);
-  box-shadow: 0 0 4px rgba(34, 197, 94, 0.4);
+  background: var(--success);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--success) 40%, transparent);
 }
 
 .hp-mid .progress-fill {
-  background: var(--amber);
-  box-shadow: 0 0 4px rgba(245, 158, 11, 0.4);
+  background: var(--warning);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--warning) 40%, transparent);
 }
 
 .hp-low .progress-fill {
-  background: var(--red);
-  box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+  background: var(--danger);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
 .mp .progress-fill {
-  background: var(--indigo);
-  box-shadow: 0 0 4px rgba(99, 102, 241, 0.4);
+  background: var(--accent);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .xp .progress-fill {
-  background: var(--cyan);
-  box-shadow: 0 0 4px rgba(6, 182, 212, 0.4);
+  background: var(--info);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--info) 40%, transparent);
 }
 
 .upgrade .progress-fill {
-  background: var(--purple);
-  box-shadow: 0 0 4px rgba(139, 92, 246, 0.4);
+  background: var(--essence);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--essence) 40%, transparent);
 }
 
 .essence .progress-fill {
-  background: linear-gradient(90deg, var(--purple), var(--indigo));
-  box-shadow: 0 0 4px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(90deg, var(--essence), var(--accent));
+  box-shadow: 0 0 4px color-mix(in srgb, var(--essence) 40%, transparent);
 }
 
 .progress-text {

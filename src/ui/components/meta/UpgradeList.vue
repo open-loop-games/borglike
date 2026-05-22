@@ -157,7 +157,7 @@ function handlePurchase(upgradeId: string) {
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1);
-  background: var(--panel);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
 }
 
@@ -176,12 +176,12 @@ function handlePurchase(upgradeId: string) {
 }
 
 .category-tab:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
 }
 
 .category-tab.active {
-  background: var(--highlight);
-  border-bottom: 2px solid var(--purple);
+  background: var(--bg-highlight);
+  border-bottom: 2px solid var(--essence);
 }
 
 .tab-icon {
@@ -190,8 +190,8 @@ function handlePurchase(upgradeId: string) {
 }
 
 .category-tab.active .tab-icon {
-  color: var(--purple);
-  text-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
+  color: var(--essence);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .tab-label {

@@ -290,7 +290,7 @@ const processedInventory = computed(() => {
 
 <style scoped>
 .run-row {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -302,8 +302,8 @@ const processedInventory = computed(() => {
 }
 
 .run-row.expanded {
-  background: var(--void);
-  border-color: var(--purple);
+  background: var(--bg);
+  border-color: var(--essence);
 }
 
 .row-collapsed {
@@ -317,7 +317,7 @@ const processedInventory = computed(() => {
 .rank {
   width: 24px;
   font-weight: bold;
-  color: var(--gold);
+  color: var(--legendary);
 }
 
 .time-ago {
@@ -333,30 +333,30 @@ const processedInventory = computed(() => {
 
 .personality {
   width: 32px;
-  color: var(--cyan);
+  color: var(--info);
   font-weight: bold;
   font-size: var(--text-base);
 }
 
 .depth {
   width: 40px;
-  color: var(--indigo);
+  color: var(--accent);
   font-weight: bold;
 }
 
 .kills {
   width: 70px;
-  color: var(--red);
+  color: var(--danger);
 }
 
 .gold {
   width: 70px;
-  color: var(--gold);
+  color: var(--legendary);
 }
 
 .essence {
   width: 60px;
-  color: var(--purple);
+  color: var(--essence);
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -376,7 +376,7 @@ const processedInventory = computed(() => {
 
 .victory {
   flex: 1;
-  color: var(--green);
+  color: var(--success);
   font-weight: bold;
 }
 
@@ -427,41 +427,41 @@ const processedInventory = computed(() => {
 }
 
 .detail .value.seed {
-  color: var(--indigo);
+  color: var(--accent);
 }
 
 .detail .value.personality-value {
-  color: var(--cyan);
+  color: var(--info);
   font-weight: bold;
 }
 
 .detail .value.level-value {
-  color: var(--gold);
+  color: var(--legendary);
   font-weight: bold;
 }
 
 .detail .value.damage-dealt {
-  color: var(--green);
+  color: var(--success);
 }
 
 .detail .value.damage-taken {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .detail .value.spells {
-  color: var(--indigo);
+  color: var(--accent);
 }
 
 .detail .value.abilities {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .detail .value.gold-earned {
-  color: var(--gold);
+  color: var(--legendary);
 }
 
 .detail .value.gold-spent {
-  color: var(--orange);
+  color: var(--warning);
 }
 
 .personality-full {
@@ -475,7 +475,7 @@ const processedInventory = computed(() => {
 }
 
 .killer-name {
-  color: var(--red);
+  color: var(--danger);
   font-weight: bold;
 }
 
@@ -499,10 +499,10 @@ const processedInventory = computed(() => {
 .booster-item {
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   border-radius: var(--radius-md);
-  color: var(--indigo);
+  color: var(--accent);
 }
 
 .equipment-grid {
@@ -516,13 +516,13 @@ const processedInventory = computed(() => {
   gap: var(--space-2);
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
 .equipment-item.artifact {
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: color-mix(in srgb, var(--essence) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--essence) 30%, transparent);
 }
 
 .slot-name {
@@ -535,11 +535,11 @@ const processedInventory = computed(() => {
 }
 
 .equipment-item.artifact .item-name {
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .enchant {
-  color: var(--green);
+  color: var(--success);
   font-size: var(--text-base);
 }
 
@@ -552,7 +552,7 @@ const processedInventory = computed(() => {
 .inventory-item {
   font-size: var(--text-base);
   padding: 2px var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
 }

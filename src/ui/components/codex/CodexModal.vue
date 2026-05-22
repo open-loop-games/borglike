@@ -276,7 +276,7 @@ function switchTab(tab: 'races' | 'classes') {
 
 <style scoped>
 .codex-modal {
-  background: var(--panel);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   display: flex;
@@ -315,13 +315,13 @@ function switchTab(tab: 'races' | 'classes') {
   font-size: var(--text-base);
   color: var(--text-secondary);
   padding: var(--space-1) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
 .discovery-count.class {
-  color: var(--violet);
-  background: rgba(167, 139, 250, 0.15);
+  color: var(--essence-light);
+  background: color-mix(in srgb, var(--essence-light) 15%, transparent);
 }
 
 .close-btn {
@@ -340,7 +340,7 @@ function switchTab(tab: 'races' | 'classes') {
 }
 
 .close-btn:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
@@ -349,7 +349,7 @@ function switchTab(tab: 'races' | 'classes') {
   gap: 0;
   padding: 0 var(--space-5);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .tab-btn {
@@ -368,8 +368,8 @@ function switchTab(tab: 'races' | 'classes') {
 }
 
 .tab-btn.active {
-  color: var(--purple);
-  border-bottom-color: var(--purple);
+  color: var(--essence);
+  border-bottom-color: var(--essence);
 }
 
 .filter-bar {
@@ -377,12 +377,12 @@ function switchTab(tab: 'races' | 'classes') {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .filter-select {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -392,13 +392,13 @@ function switchTab(tab: 'races' | 'classes') {
 
 .filter-select:focus {
   outline: none;
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .search-input {
   flex: 1;
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -407,7 +407,7 @@ function switchTab(tab: 'races' | 'classes') {
 
 .search-input:focus {
   outline: none;
-  border-color: var(--purple);
+  border-color: var(--essence);
 }
 
 .search-input::placeholder {
@@ -435,12 +435,12 @@ function switchTab(tab: 'races' | 'classes') {
 /* Selected card highlight */
 .card-grid :deep(.race-card.selected),
 .card-grid :deep(.class-card.selected) {
-  outline: 2px solid var(--purple);
+  outline: 2px solid var(--essence);
   outline-offset: -2px;
 }
 
 .card-grid :deep(.race-card.selected.prestige),
 .card-grid :deep(.class-card.selected.prestige) {
-  outline-color: var(--amber);
+  outline-color: var(--warning);
 }
 </style>

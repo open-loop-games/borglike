@@ -763,7 +763,7 @@ function formatGoal(goal: string | undefined): string {
   flex-direction: column;
   height: 100%;
   position: relative;
-  background: var(--void);
+  background: var(--bg);
 }
 
 .run-expanded.dead {
@@ -780,7 +780,7 @@ function formatGoal(goal: string | undefined): string {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-3) var(--space-4);
-  background: var(--panel);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
 }
 
@@ -796,7 +796,7 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
@@ -806,8 +806,8 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .collapse-btn:hover {
-  background: var(--red);
-  border-color: var(--red);
+  background: var(--danger);
+  border-color: var(--danger);
   color: white;
 }
 
@@ -818,13 +818,13 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .run-class {
-  color: var(--green);
-  text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+  color: var(--success);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 .run-race {
-  color: var(--cyan);
-  text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+  color: var(--info);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--info) 50%, transparent);
 }
 
 .run-personality {
@@ -841,7 +841,7 @@ function formatGoal(goal: string | undefined): string {
 .slot-badge {
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
@@ -864,7 +864,7 @@ function formatGoal(goal: string | undefined): string {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) 14px;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -874,15 +874,15 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .turbo-btn:hover {
-  border-color: var(--amber);
-  color: var(--amber);
+  border-color: var(--warning);
+  color: var(--warning);
 }
 
 .turbo-btn.active {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: var(--amber);
-  color: var(--amber);
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  border-color: var(--warning);
+  color: var(--warning);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
 .turbo-icon {
@@ -894,7 +894,7 @@ function formatGoal(goal: string | undefined): string {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) 14px;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -906,13 +906,13 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .kill-btn:hover:not(.disabled) {
-  border-color: var(--red);
-  color: var(--red);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .kill-btn.holding {
-  border-color: var(--red);
-  color: var(--red);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .kill-btn.disabled {
@@ -930,7 +930,7 @@ function formatGoal(goal: string | undefined): string {
   left: 0;
   top: 0;
   height: 100%;
-  background: rgba(239, 68, 68, 0.3);
+  background: color-mix(in srgb, var(--danger) 30%, transparent);
   transition: width 0.05s linear;
 }
 
@@ -945,7 +945,7 @@ function formatGoal(goal: string | undefined): string {
 /* AI Status */
 .ai-status {
   padding: var(--space-2) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -966,7 +966,7 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .ai-line.prep {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .ai-label {
@@ -978,7 +978,7 @@ function formatGoal(goal: string | undefined): string {
 .stats-panel {
   width: 220px;
   padding: var(--space-2);
-  background: var(--panel);
+  background: var(--bg-panel);
   border-right: 1px solid var(--border);
   overflow-y: auto;
   display: flex;
@@ -1033,19 +1033,19 @@ function formatGoal(goal: string | undefined): string {
   color: var(--text-primary);
 }
 .stat-item .val.depth {
-  color: var(--purple);
+  color: var(--essence);
 }
 .stat-item .val.kills {
-  color: var(--red);
+  color: var(--danger);
 }
 .stat-item .val.gold {
-  color: var(--amber);
+  color: var(--warning);
 }
 .stat-item .val.xp {
-  color: var(--cyan);
+  color: var(--info);
 }
 .stat-item .val.level {
-  color: var(--green);
+  color: var(--success);
 }
 
 /* Equipment grid */
@@ -1060,7 +1060,7 @@ function formatGoal(goal: string | undefined): string {
   flex-direction: column;
   align-items: center;
   padding: var(--space-1) 2px;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
 }
@@ -1103,8 +1103,8 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .item-name.artifact {
-  color: var(--amber);
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+  color: var(--warning);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--warning) 40%, transparent);
 }
 
 .inv-empty,
@@ -1148,33 +1148,33 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .status-badge.running {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid var(--green);
-  color: var(--green);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  border: 1px solid var(--success);
+  color: var(--success);
 }
 
 .status-badge.starting {
-  background: rgba(6, 182, 212, 0.15);
-  border: 1px solid var(--cyan);
-  color: var(--cyan);
+  background: color-mix(in srgb, var(--info) 15%, transparent);
+  border: 1px solid var(--info);
+  color: var(--info);
 }
 
 .status-badge.dead {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid var(--red);
-  color: var(--red);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  border: 1px solid var(--danger);
+  color: var(--danger);
 }
 
 .status-badge.victory {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid var(--amber);
-  color: var(--amber);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  border: 1px solid var(--warning);
+  color: var(--warning);
 }
 
 .status-badge.turbo {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid var(--amber);
-  color: var(--amber);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  border: 1px solid var(--warning);
+  color: var(--warning);
 }
 
 /* Run status badges at bottom of panel */
@@ -1183,7 +1183,7 @@ function formatGoal(goal: string | undefined): string {
   flex-wrap: wrap;
   gap: var(--space-2);
   padding: var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
@@ -1228,19 +1228,19 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .core-val.str {
-  color: var(--red);
+  color: var(--danger);
 }
 .core-val.dex {
-  color: var(--green);
+  color: var(--success);
 }
 .core-val.con {
-  color: var(--amber);
+  color: var(--warning);
 }
 .core-val.int {
-  color: var(--cyan);
+  color: var(--info);
 }
 .core-val.wis {
-  color: var(--purple);
+  color: var(--essence);
 }
 
 /* Combat Stats Grid (2-column like core stats) */
@@ -1266,25 +1266,25 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .combat-val.armor {
-  color: var(--cyan);
+  color: var(--info);
 }
 .combat-val.evasion {
-  color: var(--green);
+  color: var(--success);
 }
 .combat-val.damage {
-  color: var(--red);
+  color: var(--danger);
 }
 .combat-val.accuracy {
-  color: var(--amber);
+  color: var(--warning);
 }
 .combat-val.speed {
   color: var(--text-secondary);
 }
 .combat-val.speed.buffed {
-  color: var(--green);
+  color: var(--success);
 }
 .combat-val.speed.debuffed {
-  color: var(--red);
+  color: var(--danger);
 }
 
 /* Resistances Grid */
@@ -1309,12 +1309,12 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .resist-val.immune {
-  color: var(--green);
-  text-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+  color: var(--success);
+  text-shadow: 0 0 4px color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 .resist-val.vuln {
-  color: var(--red);
+  color: var(--danger);
 }
 
 /* Status Effects */
@@ -1329,7 +1329,7 @@ function formatGoal(goal: string | undefined): string {
   align-items: center;
   gap: var(--space-1);
   padding: 2px 6px;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid;
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -1364,7 +1364,7 @@ function formatGoal(goal: string | undefined): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 18, 0.85);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
   z-index: 10;
 }
 
@@ -1384,8 +1384,8 @@ function formatGoal(goal: string | undefined): string {
 .death-text {
   font-size: var(--text-5xl);
   font-weight: bold;
-  color: var(--red);
-  text-shadow: 0 0 24px rgba(239, 68, 68, 0.6);
+  color: var(--danger);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--danger) 60%, transparent);
   letter-spacing: 6px;
 }
 
@@ -1414,19 +1414,19 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .action-btn.primary {
-  background: var(--indigo);
-  border: 1px solid var(--indigo);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: white;
   font-weight: bold;
 }
 
 .action-btn.primary:hover {
-  background: var(--indigo-hover);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+  background: var(--accent-hover);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .action-btn.secondary {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
 }
@@ -1434,24 +1434,24 @@ function formatGoal(goal: string | undefined): string {
 .action-btn.secondary:hover {
   background: var(--border);
   color: var(--text-primary);
-  border-color: var(--indigo);
+  border-color: var(--accent);
 }
 
 /* Victory overlay */
 .victory-overlay {
-  background: rgba(10, 10, 18, 0.92) !important;
+  background: color-mix(in srgb, var(--bg) 92%, transparent) !important;
 }
 
 @keyframes flash-in {
   0% {
-    background: rgba(245, 158, 11, 0.5);
+    background: color-mix(in srgb, var(--warning) 50%, transparent);
     opacity: 0;
   }
   15% {
     opacity: 1;
   }
   100% {
-    background: rgba(10, 10, 18, 0.92);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
   }
 }
 
@@ -1463,7 +1463,7 @@ function formatGoal(goal: string | undefined): string {
 <!-- Tooltip artifact name glow (global since tooltip is teleported) -->
 <style>
 .equip-tt-artifact {
-  color: var(--amber);
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+  color: var(--warning);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--warning) 40%, transparent);
 }
 </style>

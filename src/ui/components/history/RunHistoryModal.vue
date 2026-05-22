@@ -146,7 +146,7 @@ function formatTimeAgo(timestamp: number): string {
 
 <style scoped>
 .run-history-modal {
-  background: var(--panel);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   display: flex;
@@ -184,7 +184,7 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 .close-btn:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
@@ -193,7 +193,7 @@ function formatTimeAgo(timestamp: number): string {
   gap: var(--space-1);
   padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .modal-tabs button {
@@ -208,14 +208,14 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 .modal-tabs button:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
 .modal-tabs button.active {
-  background: var(--highlight);
-  border-color: var(--purple);
-  color: var(--purple);
+  background: var(--bg-highlight);
+  border-color: var(--essence);
+  color: var(--essence);
 }
 
 .modal-content {

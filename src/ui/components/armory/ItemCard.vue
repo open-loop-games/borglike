@@ -101,7 +101,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
 
 <style scoped>
 .item-card {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-3);
@@ -122,7 +122,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
 }
 
 .item-card.artifact {
-  border-color: var(--gold);
+  border-color: var(--legendary);
   box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
 }
 
@@ -165,7 +165,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
 
 .depth {
   padding: 1px var(--space-1);
-  background: var(--void);
+  background: var(--bg);
   border-radius: var(--radius-sm);
 }
 
@@ -183,17 +183,17 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
 }
 
 .tier-badge.tier-2 {
-  color: var(--green);
-  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
 }
 
 .tier-badge.tier-3 {
-  color: var(--blue);
-  background: rgba(59, 130, 246, 0.15);
+  color: var(--rare);
+  background: color-mix(in srgb, var(--rare) 15%, transparent);
 }
 
 .tier-badge.tier-4 {
-  color: var(--purple);
+  color: var(--essence);
   background: rgba(168, 85, 247, 0.15);
 }
 
@@ -203,7 +203,7 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
   right: var(--space-1);
   width: 18px;
   height: 18px;
-  background: var(--green);
+  background: var(--success);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -213,6 +213,6 @@ const tier = computed(() => (props.item as ItemTemplate).tier ?? 4)
 }
 
 .item-card.artifact .discovered-badge {
-  background: var(--gold);
+  background: var(--legendary);
 }
 </style>

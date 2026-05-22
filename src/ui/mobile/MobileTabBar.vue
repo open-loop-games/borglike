@@ -36,7 +36,7 @@ const tabs: Array<{ id: MobileTab; icon: string; label: string }> = [
 <style scoped>
 .tab-bar {
   display: flex;
-  background: var(--panel);
+  background: var(--bg-panel);
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
   flex-shrink: 0;
@@ -57,7 +57,7 @@ const tabs: Array<{ id: MobileTab; icon: string; label: string }> = [
 }
 
 .tab-item.active {
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .tab-icon {

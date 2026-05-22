@@ -159,7 +159,7 @@ const stats = computed(() => [
 
 <style scoped>
 .detail-panel {
-  background: var(--panel);
+  background: var(--bg-panel);
   border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -170,7 +170,7 @@ const stats = computed(() => [
 }
 
 .detail-panel.prestige {
-  border-left-color: rgba(245, 158, 11, 0.5);
+  border-left-color: color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
 .panel-header {
@@ -179,7 +179,7 @@ const stats = computed(() => [
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .panel-header h3 {
@@ -204,7 +204,7 @@ const stats = computed(() => [
 }
 
 .back-btn:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
@@ -233,7 +233,7 @@ const stats = computed(() => [
   text-align: center;
   margin-bottom: var(--space-3);
   padding: var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-lg);
   border: 1px dashed var(--border);
 }
@@ -244,8 +244,8 @@ const stats = computed(() => [
   font-weight: bold;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
-  color: var(--red);
-  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
   margin-bottom: var(--space-2);
 }
 
@@ -310,7 +310,7 @@ h4 {
   position: relative;
   width: 100%;
   height: 100%;
-  background: var(--void);
+  background: var(--bg);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
@@ -350,7 +350,7 @@ h4 {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
 }
@@ -364,7 +364,7 @@ h4 {
 }
 
 .property-value.penalty {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .ability-list {
@@ -375,9 +375,9 @@ h4 {
 
 .ability-item {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
-  border-left: 3px solid var(--purple);
+  border-left: 3px solid var(--essence);
 }
 
 .ability-name {
@@ -403,7 +403,7 @@ h4 {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
 }
@@ -416,6 +416,6 @@ h4 {
 }
 
 .history-value.wins {
-  color: var(--green);
+  color: var(--success);
 }
 </style>

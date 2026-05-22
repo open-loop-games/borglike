@@ -78,10 +78,10 @@ const primaryStatName = computed(() => {
 
 // Spell school color mapping
 const schoolColors: Record<string, string> = {
-  arcane: 'var(--purple)',
-  divine: 'var(--gold)',
-  nature: 'var(--green)',
-  shadow: 'var(--violet)',
+  arcane: 'var(--essence)',
+  divine: 'var(--legendary)',
+  nature: 'var(--success)',
+  shadow: 'var(--essence-light)',
 }
 
 // Class spell list with resolved spell data
@@ -295,7 +295,7 @@ const specialAbilities = computed(() => {
 
 <style scoped>
 .detail-panel {
-  background: var(--panel);
+  background: var(--bg-panel);
   border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -306,7 +306,7 @@ const specialAbilities = computed(() => {
 }
 
 .detail-panel.prestige {
-  border-left-color: rgba(245, 158, 11, 0.5);
+  border-left-color: color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
 .panel-header {
@@ -315,7 +315,7 @@ const specialAbilities = computed(() => {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .panel-header h3 {
@@ -340,7 +340,7 @@ const specialAbilities = computed(() => {
 }
 
 .back-btn:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
@@ -380,25 +380,25 @@ const specialAbilities = computed(() => {
 }
 
 .tag.magic {
-  color: var(--violet);
-  background: rgba(167, 139, 250, 0.15);
+  color: var(--essence-light);
+  background: color-mix(in srgb, var(--essence-light) 15%, transparent);
 }
 
 .tag.melee {
-  color: var(--red);
-  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
 }
 
 .tag.primary {
   color: var(--text-secondary);
-  background: var(--highlight);
+  background: var(--bg-highlight);
 }
 
 .locked-section {
   text-align: center;
   margin-bottom: var(--space-3);
   padding: var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-lg);
   border: 1px dashed var(--border);
 }
@@ -409,8 +409,8 @@ const specialAbilities = computed(() => {
   font-weight: bold;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
-  color: var(--red);
-  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
   margin-bottom: var(--space-2);
 }
 
@@ -477,7 +477,7 @@ h4 {
   position: relative;
   width: 100%;
   height: 100%;
-  background: var(--void);
+  background: var(--bg);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
@@ -517,7 +517,7 @@ h4 {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
 }
@@ -531,7 +531,7 @@ h4 {
 }
 
 .property-value.negative {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .ability-list {
@@ -542,9 +542,9 @@ h4 {
 
 .ability-item {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
-  border-left: 3px solid var(--purple);
+  border-left: 3px solid var(--essence);
 }
 
 .ability-name {
@@ -605,7 +605,7 @@ h4 {
 }
 
 .spell-mana {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .behavior-text {
@@ -614,9 +614,9 @@ h4 {
   color: var(--text-secondary);
   line-height: 1.5;
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
-  border-left: 3px solid var(--blue);
+  border-left: 3px solid var(--rare);
 }
 
 .history-grid {
@@ -630,7 +630,7 @@ h4 {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
 }
@@ -643,6 +643,6 @@ h4 {
 }
 
 .history-value.wins {
-  color: var(--green);
+  color: var(--success);
 }
 </style>

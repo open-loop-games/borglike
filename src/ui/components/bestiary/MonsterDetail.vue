@@ -205,7 +205,7 @@ const nextUnlock = computed(() => {
 
 <style scoped>
 .monster-detail {
-  background: var(--panel);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   overflow: hidden;
@@ -214,12 +214,12 @@ const nextUnlock = computed(() => {
 .detail-header {
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .back-btn {
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -266,7 +266,7 @@ const nextUnlock = computed(() => {
 .stat-box {
   text-align: center;
   padding: var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-lg);
 }
 
@@ -277,11 +277,11 @@ const nextUnlock = computed(() => {
 }
 
 .stat-box.kills .count {
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .stat-box.deaths .count {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .stat-box .label {
@@ -291,7 +291,7 @@ const nextUnlock = computed(() => {
 
 .knowledge-section {
   padding: var(--space-4);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-4);
 }
@@ -313,12 +313,12 @@ const nextUnlock = computed(() => {
 .knowledge-value {
   font-size: var(--text-2xl);
   font-weight: bold;
-  color: var(--green);
+  color: var(--success);
 }
 
 .knowledge-bar {
   height: 8px;
-  background: var(--void);
+  background: var(--bg);
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: var(--space-2);
@@ -326,7 +326,7 @@ const nextUnlock = computed(() => {
 
 .knowledge-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--green) 0%, var(--purple) 100%);
+  background: linear-gradient(90deg, var(--success) 0%, var(--essence) 100%);
   transition: width 0.3s ease;
 }
 
@@ -339,7 +339,7 @@ const nextUnlock = computed(() => {
 }
 
 .knowledge-tiers span.active {
-  color: var(--green);
+  color: var(--success);
   font-weight: bold;
 }
 
@@ -381,7 +381,7 @@ const nextUnlock = computed(() => {
 .stat-item {
   text-align: center;
   padding: var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
@@ -408,20 +408,20 @@ const nextUnlock = computed(() => {
 
 .ability-tag {
   padding: var(--space-1) var(--space-3);
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
-  color: var(--red);
+  color: var(--danger);
 }
 
 .flag-tag {
   padding: var(--space-1) var(--space-3);
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: color-mix(in srgb, var(--essence) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--essence) 30%, transparent);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .no-abilities,
@@ -441,7 +441,7 @@ const nextUnlock = computed(() => {
 .info-item {
   text-align: center;
   padding: var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
@@ -461,7 +461,7 @@ const nextUnlock = computed(() => {
 
 .unlock-hint {
   padding: var(--space-4);
-  background: var(--void);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   text-align: center;
@@ -475,13 +475,13 @@ const nextUnlock = computed(() => {
 
 .hint-desc {
   font-size: var(--text-lg);
-  color: var(--purple);
+  color: var(--essence);
   margin-bottom: var(--space-3);
 }
 
 .progress-bar {
   height: 6px;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: var(--space-2);
@@ -489,7 +489,7 @@ const nextUnlock = computed(() => {
 
 .progress-fill {
   height: 100%;
-  background: var(--purple);
+  background: var(--essence);
   transition: width 0.3s ease;
 }
 

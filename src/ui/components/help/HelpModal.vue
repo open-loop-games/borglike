@@ -131,7 +131,7 @@ const emit = defineEmits<{
   flex-direction: column;
   height: 100%;
   max-height: 80vh;
-  background: var(--panel);
+  background: var(--bg-panel);
 }
 
 .help-header {
@@ -139,7 +139,7 @@ const emit = defineEmits<{
   justify-content: space-between;
   align-items: center;
   padding: var(--space-4) var(--space-5);
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -147,7 +147,7 @@ const emit = defineEmits<{
 .help-header h2 {
   font-size: var(--text-2xl);
   font-weight: bold;
-  color: var(--purple);
+  color: var(--essence);
   margin: 0;
 }
 
@@ -157,7 +157,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
@@ -167,8 +167,8 @@ const emit = defineEmits<{
 }
 
 .close-btn:hover {
-  background: var(--red);
-  border-color: var(--red);
+  background: var(--danger);
+  border-color: var(--danger);
   color: white;
 }
 
@@ -187,7 +187,7 @@ const emit = defineEmits<{
 
 .help-section h3 {
   font-size: var(--text-md);
-  color: var(--cyan);
+  color: var(--info);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0 0 var(--space-3);
@@ -217,12 +217,12 @@ const emit = defineEmits<{
 }
 
 .essence {
-  color: var(--purple);
+  color: var(--essence);
   font-weight: bold;
 }
 
 .boss {
-  color: var(--red);
+  color: var(--danger);
   font-weight: bold;
 }
 
@@ -237,13 +237,13 @@ const emit = defineEmits<{
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 
 .control-key {
   font-size: var(--text-base);
-  color: var(--amber);
+  color: var(--warning);
   min-width: 100px;
 }
 

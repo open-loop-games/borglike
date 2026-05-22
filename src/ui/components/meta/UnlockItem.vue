@@ -209,7 +209,11 @@ function handleUnlock() {
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
+  );
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   transition: all 0.2s;
@@ -217,12 +221,16 @@ function handleUnlock() {
 
 .unlock-item.can-afford {
   cursor: pointer;
-  border-color: var(--cyan);
+  border-color: var(--info);
 }
 
 .unlock-item.can-afford:hover {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(26, 26, 46, 0.95) 100%);
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--info) 10%, transparent) 0%,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 100%
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--info) 20%, transparent);
 }
 
 .unlock-item.is-unlocked {
@@ -242,12 +250,16 @@ function handleUnlock() {
 }
 
 .unlock-item.is-prestige {
-  border-color: var(--amber);
+  border-color: var(--warning);
 }
 
 .unlock-item.is-prestige.can-afford:hover {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(26, 26, 46, 0.95) 100%);
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--warning) 10%, transparent) 0%,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 100%
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--warning) 20%, transparent);
 }
 
 .unlock-badge {
@@ -265,13 +277,13 @@ function handleUnlock() {
 }
 
 .badge-icon.unlocked {
-  color: var(--green);
-  text-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  color: var(--success);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 60%, transparent);
 }
 
 .badge-icon.prestige {
-  color: var(--amber);
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+  color: var(--warning);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--warning) 60%, transparent);
 }
 
 .badge-icon.locked {
@@ -303,10 +315,10 @@ function handleUnlock() {
 .prestige-tag {
   font-size: var(--text-2xs);
   padding: 1px var(--space-1);
-  background: rgba(245, 158, 11, 0.2);
-  border: 1px solid var(--amber);
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  border: 1px solid var(--warning);
   border-radius: var(--radius-sm);
-  color: var(--amber);
+  color: var(--warning);
   text-transform: uppercase;
 }
 
@@ -318,7 +330,7 @@ function handleUnlock() {
 
 .unlock-condition {
   font-size: var(--text-sm);
-  color: var(--amber);
+  color: var(--warning);
   margin-top: 2px;
   font-style: italic;
   opacity: 0.8;
@@ -340,9 +352,9 @@ function handleUnlock() {
 }
 
 .status-unlocked {
-  color: var(--green);
+  color: var(--success);
   font-size: var(--text-xl);
-  text-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 .unlock-btn {
@@ -350,7 +362,7 @@ function handleUnlock() {
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -360,14 +372,14 @@ function handleUnlock() {
 }
 
 .unlock-btn:not(:disabled):hover {
-  background: var(--cyan);
-  border-color: var(--cyan);
+  background: var(--info);
+  border-color: var(--info);
   color: white;
 }
 
 .is-prestige .unlock-btn:not(:disabled):hover {
-  background: var(--amber);
-  border-color: var(--amber);
+  background: var(--warning);
+  border-color: var(--warning);
 }
 
 .unlock-btn:disabled {
@@ -376,7 +388,7 @@ function handleUnlock() {
 }
 
 .cost-icon {
-  color: var(--purple);
+  color: var(--essence);
   font-size: var(--text-sm);
 }
 
@@ -391,7 +403,11 @@ function handleUnlock() {
   min-width: 220px;
   max-width: 280px;
   padding: var(--space-3);
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.98) 0%, rgba(15, 15, 26, 0.99) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-elevated) 98%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 99%, transparent) 100%
+  );
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
@@ -416,10 +432,10 @@ function handleUnlock() {
 .tooltip-prestige {
   font-size: var(--text-sm);
   padding: 2px var(--space-1);
-  background: rgba(245, 158, 11, 0.2);
-  border: 1px solid var(--amber);
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  border: 1px solid var(--warning);
   border-radius: var(--radius-sm);
-  color: var(--amber);
+  color: var(--warning);
   text-transform: uppercase;
 }
 
@@ -429,17 +445,17 @@ function handleUnlock() {
   gap: var(--space-2) var(--space-3);
   margin-bottom: var(--space-3);
   padding: var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
 }
 
 .stat-positive {
-  color: var(--green);
+  color: var(--success);
 }
 
 .stat-negative {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .stat-neutral {
@@ -463,11 +479,11 @@ function handleUnlock() {
 }
 
 .xp-penalty {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .primary-stat {
-  color: var(--cyan);
+  color: var(--info);
   font-weight: bold;
 }
 
@@ -479,7 +495,7 @@ function handleUnlock() {
 
 .abilities-header {
   font-size: var(--text-sm);
-  color: var(--purple);
+  color: var(--essence);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: var(--space-2);
@@ -498,7 +514,7 @@ function handleUnlock() {
 .ability-name {
   font-size: var(--text-base);
   font-weight: bold;
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .ability-desc {
@@ -515,7 +531,7 @@ function handleUnlock() {
 
 .behavior-header {
   font-size: var(--text-sm);
-  color: var(--purple);
+  color: var(--essence);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: var(--space-1);
@@ -530,11 +546,11 @@ function handleUnlock() {
 .tooltip-unlock {
   margin-top: var(--space-3);
   padding: var(--space-2) var(--space-2);
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
-  color: var(--amber);
+  color: var(--warning);
   font-style: italic;
 }
 </style>

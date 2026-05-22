@@ -78,7 +78,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-3);
-  background: var(--panel);
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   height: 44px;
   flex-shrink: 0;
@@ -88,8 +88,8 @@ watch(
   font-size: var(--text-xl);
   font-weight: bold;
   margin: 0;
-  color: var(--purple);
-  text-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  color: var(--essence);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .header-controls {
@@ -103,37 +103,41 @@ watch(
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--essence) 15%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 10%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--essence) 30%, transparent);
   border-radius: var(--radius-md);
   transition: all 0.3s ease;
 }
 
 .essence-display.animating {
   transform: scale(1.05);
-  border-color: var(--purple);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  border-color: var(--essence);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .essence-icon {
   font-size: var(--text-base);
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .essence-value {
   font-size: var(--text-base);
   font-weight: bold;
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .cheat-btn {
   padding: var(--space-1) var(--space-2);
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid var(--amber);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  border: 1px solid var(--warning);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: bold;
-  color: var(--amber);
+  color: var(--warning);
   cursor: pointer;
 }
 
@@ -143,7 +147,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
@@ -153,9 +157,9 @@ watch(
 }
 
 .control-btn.active {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: var(--green);
-  color: var(--green);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  border-color: var(--success);
+  color: var(--success);
 }
 
 .control-btn.locked {

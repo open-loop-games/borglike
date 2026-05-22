@@ -49,11 +49,11 @@ const isNewBest = computed(() => {
 // Performance grades
 const depthGrade = computed(() => {
   const depth = props.run.maxDepth
-  if (depth >= 50) return { grade: 'S', color: 'var(--purple)' }
-  if (depth >= 30) return { grade: 'A', color: 'var(--green)' }
-  if (depth >= 20) return { grade: 'B', color: 'var(--cyan)' }
-  if (depth >= 10) return { grade: 'C', color: 'var(--amber)' }
-  return { grade: 'D', color: 'var(--red)' }
+  if (depth >= 50) return { grade: 'S', color: 'var(--essence)' }
+  if (depth >= 30) return { grade: 'A', color: 'var(--success)' }
+  if (depth >= 20) return { grade: 'B', color: 'var(--info)' }
+  if (depth >= 10) return { grade: 'C', color: 'var(--warning)' }
+  return { grade: 'D', color: 'var(--danger)' }
 })
 
 function formatDiff(value: number): string {
@@ -362,7 +362,7 @@ const hasExtendedStats = computed(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--panel);
+  background: var(--bg-panel);
 }
 
 .summary-header {
@@ -370,7 +370,7 @@ const hasExtendedStats = computed(() => {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-4) var(--space-5);
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
 }
 
@@ -390,10 +390,10 @@ const hasExtendedStats = computed(() => {
 .new-best-badge {
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
-  background: rgba(139, 92, 246, 0.2);
-  border: 1px solid var(--purple);
+  background: color-mix(in srgb, var(--essence) 20%, transparent);
+  border: 1px solid var(--essence);
   border-radius: var(--radius-md);
-  color: var(--purple);
+  color: var(--essence);
   text-transform: uppercase;
   letter-spacing: 1px;
   animation: pulse 2s ease-in-out infinite;
@@ -415,7 +415,7 @@ const hasExtendedStats = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
@@ -425,27 +425,27 @@ const hasExtendedStats = computed(() => {
 }
 
 .close-btn:hover {
-  background: var(--red);
-  border-color: var(--red);
+  background: var(--danger);
+  border-color: var(--danger);
   color: white;
 }
 
 .victory-header {
-  color: var(--amber) !important;
-  text-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+  color: var(--warning) !important;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--warning) 60%, transparent);
 }
 
 .first-victory-badge {
   font-size: var(--text-base);
   padding: var(--space-1) var(--space-3);
-  background: rgba(245, 158, 11, 0.2);
-  border: 1px solid var(--amber);
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  border: 1px solid var(--warning);
   border-radius: var(--radius-md);
-  color: var(--amber);
+  color: var(--warning);
   text-transform: uppercase;
   letter-spacing: 1px;
   animation: pulse 2s ease-in-out infinite;
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warning) 60%, transparent);
 }
 
 .victory-cause {
@@ -457,7 +457,7 @@ const hasExtendedStats = computed(() => {
 
 .victory-label {
   font-size: var(--text-base);
-  color: var(--amber);
+  color: var(--warning);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: var(--space-2);
@@ -465,8 +465,8 @@ const hasExtendedStats = computed(() => {
 
 .victory-message {
   font-size: var(--text-lg);
-  color: var(--amber);
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  color: var(--warning);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
 .summary-content {
@@ -487,13 +487,13 @@ const hasExtendedStats = computed(() => {
 }
 
 .char-race {
-  color: var(--cyan);
-  text-shadow: 0 0 6px rgba(6, 182, 212, 0.4);
+  color: var(--info);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--info) 40%, transparent);
 }
 
 .char-class {
-  color: var(--green);
-  text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+  color: var(--success);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 40%, transparent);
 }
 
 .char-time {
@@ -501,10 +501,10 @@ const hasExtendedStats = computed(() => {
 }
 
 .char-damage-type {
-  color: var(--amber);
+  color: var(--warning);
   font-size: var(--text-base);
   padding: 2px var(--space-2);
-  background: rgba(245, 158, 11, 0.15);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
   border-radius: var(--radius-md);
 }
 
@@ -556,21 +556,21 @@ const hasExtendedStats = computed(() => {
 }
 
 .stat-value.depth {
-  color: var(--purple);
-  text-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+  color: var(--essence);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 40%, transparent);
 }
 
 .stat-value.kills {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .stat-value.gold {
-  color: var(--amber);
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+  color: var(--warning);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warning) 40%, transparent);
 }
 
 .stat-value.xp {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .stat-diff {
@@ -579,11 +579,11 @@ const hasExtendedStats = computed(() => {
 }
 
 .stat-diff.positive {
-  color: var(--green);
+  color: var(--success);
 }
 
 .stat-diff.negative {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .stat-diff.neutral {
@@ -607,7 +607,7 @@ const hasExtendedStats = computed(() => {
 
 .death-text {
   font-size: var(--text-lg);
-  color: var(--red);
+  color: var(--danger);
 }
 
 .essence-section {
@@ -633,15 +633,15 @@ const hasExtendedStats = computed(() => {
 }
 
 .essence-icon {
-  color: var(--purple);
+  color: var(--essence);
   font-size: var(--text-lg);
 }
 
 .essence-value {
   font-size: var(--text-5xl);
   font-weight: bold;
-  color: var(--purple);
-  text-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  color: var(--essence);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--essence) 50%, transparent);
   margin-bottom: var(--space-3);
 }
 
@@ -654,11 +654,11 @@ const hasExtendedStats = computed(() => {
 }
 
 .essence-diff.positive {
-  color: var(--green);
+  color: var(--success);
 }
 
 .essence-diff.negative {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .essence-diff.neutral {
@@ -670,7 +670,7 @@ const hasExtendedStats = computed(() => {
   justify-content: center;
   gap: var(--space-4);
   padding: var(--space-5);
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border-top: 1px solid var(--border);
 }
 
@@ -686,7 +686,7 @@ const hasExtendedStats = computed(() => {
 }
 
 .action-btn.secondary {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
 }
@@ -697,15 +697,15 @@ const hasExtendedStats = computed(() => {
 }
 
 .action-btn.primary {
-  background: var(--indigo);
-  border: 1px solid var(--indigo);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: white;
   font-weight: bold;
 }
 
 .action-btn.primary:hover {
-  background: var(--indigo-hover);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+  background: var(--accent-hover);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .btn-icon {
@@ -753,23 +753,23 @@ const hasExtendedStats = computed(() => {
 }
 
 .combat-value.dealt {
-  color: var(--green);
+  color: var(--success);
 }
 
 .combat-value.taken {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .combat-value.crit {
-  color: var(--amber);
+  color: var(--warning);
 }
 
 .combat-value.heal {
-  color: var(--green);
+  color: var(--success);
 }
 
 .combat-value.danger {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .source-list {
@@ -790,15 +790,15 @@ const hasExtendedStats = computed(() => {
 }
 
 .source-name.spell {
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .source-name.ability {
-  color: var(--purple);
+  color: var(--essence);
 }
 
 .source-name.threat {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .source-damage {
@@ -808,6 +808,6 @@ const hasExtendedStats = computed(() => {
 }
 
 .source-damage.threat {
-  color: var(--red);
+  color: var(--danger);
 }
 </style>

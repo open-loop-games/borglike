@@ -135,20 +135,28 @@ function handlePurchase() {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2);
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
+  );
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   transition: all 0.2s;
 }
 
 .upgrade-item.can-afford {
-  border-color: var(--purple);
+  border-color: var(--essence);
   cursor: pointer;
 }
 
 .upgrade-item.can-afford:hover {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(26, 26, 46, 0.95) 100%);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--essence) 10%, transparent) 0%,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 100%
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--essence) 20%, transparent);
 }
 
 .upgrade-item.is-maxed {
@@ -174,19 +182,19 @@ function handlePurchase() {
   align-items: center;
   justify-content: center;
   font-size: var(--text-2xl);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 
 .can-afford .upgrade-icon {
-  color: var(--purple);
-  text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  color: var(--essence);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 60%, transparent);
 }
 
 .is-maxed .upgrade-icon {
-  color: var(--green);
-  text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+  color: var(--success);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--success) 60%, transparent);
 }
 
 .upgrade-info {
@@ -232,12 +240,12 @@ function handlePurchase() {
 
 .effect-value {
   font-size: var(--text-base);
-  color: var(--cyan);
+  color: var(--info);
 }
 
 .is-maxed .effect-value {
-  color: var(--green);
-  text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+  color: var(--success);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 40%, transparent);
 }
 
 .purchase-btn {
@@ -245,7 +253,7 @@ function handlePurchase() {
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
@@ -255,8 +263,8 @@ function handlePurchase() {
 }
 
 .purchase-btn:not(:disabled):hover {
-  background: var(--purple);
-  border-color: var(--purple);
+  background: var(--essence);
+  border-color: var(--essence);
   color: white;
 }
 
@@ -265,7 +273,7 @@ function handlePurchase() {
 }
 
 .cost-icon {
-  color: var(--purple);
+  color: var(--essence);
   font-size: var(--text-base);
 }
 
@@ -279,8 +287,8 @@ function handlePurchase() {
 }
 
 .is-maxed .purchase-btn {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: var(--green);
-  color: var(--green);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  border-color: var(--success);
+  color: var(--success);
 }
 </style>

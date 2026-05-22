@@ -237,7 +237,7 @@ const bonuses = computed(() => {
 
 <style scoped>
 .detail-panel {
-  background: var(--panel);
+  background: var(--bg-panel);
   border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -247,7 +247,7 @@ const bonuses = computed(() => {
 }
 
 .detail-panel.artifact {
-  border-left-color: var(--gold);
+  border-left-color: var(--legendary);
 }
 
 .panel-header {
@@ -256,7 +256,7 @@ const bonuses = computed(() => {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
-  background: var(--void);
+  background: var(--bg);
 }
 
 .panel-header h3 {
@@ -281,7 +281,7 @@ const bonuses = computed(() => {
 }
 
 .back-btn:hover {
-  background: var(--highlight);
+  background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
@@ -342,17 +342,17 @@ const bonuses = computed(() => {
 }
 
 .tier-badge.tier-2 {
-  color: var(--green);
-  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
 }
 
 .tier-badge.tier-3 {
-  color: var(--blue);
-  background: rgba(59, 130, 246, 0.15);
+  color: var(--rare);
+  background: color-mix(in srgb, var(--rare) 15%, transparent);
 }
 
 .tier-badge.tier-4 {
-  color: var(--purple);
+  color: var(--essence);
   background: rgba(168, 85, 247, 0.15);
 }
 
@@ -362,7 +362,7 @@ const bonuses = computed(() => {
   font-weight: bold;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
-  color: var(--gold);
+  color: var(--legendary);
   background: rgba(251, 191, 36, 0.15);
 }
 
@@ -395,7 +395,7 @@ h4 {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
 }
@@ -409,11 +409,11 @@ h4 {
 }
 
 .stat-value.damage {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .stat-value.protection {
-  color: var(--blue);
+  color: var(--rare);
 }
 
 .bonus-grid {
@@ -437,7 +437,7 @@ h4 {
 }
 
 .bonus-value {
-  color: var(--gold);
+  color: var(--legendary);
 }
 
 .abilities-list {
@@ -471,7 +471,7 @@ h4 {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-1) var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
 }
@@ -481,7 +481,7 @@ h4 {
 }
 
 .discovery-value {
-  color: var(--green);
+  color: var(--success);
 }
 
 .undiscovered-text {
@@ -491,7 +491,7 @@ h4 {
   font-style: italic;
   text-align: center;
   padding: var(--space-4);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border-radius: var(--radius-md);
 }
 </style>

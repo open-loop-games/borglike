@@ -85,7 +85,11 @@ function handleOpenLoadout() {
   align-items: center;
   justify-content: center;
   height: 100%;
-  background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--accent) 5%, transparent) 0%,
+    transparent 70%
+  );
   position: relative;
 }
 
@@ -138,7 +142,7 @@ function handleOpenLoadout() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  background: var(--highlight);
+  background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-primary);
   padding: var(--space-3) var(--space-6);
@@ -150,20 +154,20 @@ function handleOpenLoadout() {
 
 .start-btn:hover {
   background: var(--border);
-  border-color: var(--indigo);
-  color: var(--cyan);
-  text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+  border-color: var(--accent);
+  color: var(--info);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--info) 50%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .btn-icon {
   font-size: var(--text-base);
-  color: var(--green);
+  color: var(--success);
 }
 
 .start-btn:hover .btn-icon {
-  color: var(--cyan);
-  text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+  color: var(--info);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--info) 60%, transparent);
 }
 
 .config-btn {
@@ -191,6 +195,6 @@ function handleOpenLoadout() {
 
 .deco-char {
   font-size: 120px;
-  color: var(--indigo);
+  color: var(--accent);
 }
 </style>

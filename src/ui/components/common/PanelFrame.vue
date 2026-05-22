@@ -16,7 +16,11 @@ defineProps<{
 
 <style scoped>
 .panel-frame {
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(18, 18, 31, 0.98) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
+  );
   border: 1px solid var(--border);
   border-top-color: var(--border-light);
   border-left-color: var(--border-light);
@@ -32,10 +36,10 @@ defineProps<{
 }
 
 .panel-frame--focused {
-  border-color: var(--indigo);
+  border-color: var(--accent);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 4px 12px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(99, 102, 241, 0.15);
+    0 0 20px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 </style>

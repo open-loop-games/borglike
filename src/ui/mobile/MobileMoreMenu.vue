@@ -42,7 +42,7 @@ const items = [
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-4) var(--space-2);
-  background: var(--elevated);
+  background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   color: var(--text-secondary);
@@ -51,8 +51,8 @@ const items = [
 }
 
 .menu-item:active {
-  background: var(--highlight);
-  border-color: var(--indigo);
+  background: var(--bg-highlight);
+  border-color: var(--accent);
   color: var(--text-primary);
 }
 

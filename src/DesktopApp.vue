@@ -213,7 +213,7 @@ function handleCloseHelp() {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: var(--void);
+  background: var(--bg);
 }
 
 .loading-content {
@@ -251,13 +251,13 @@ function handleCloseHelp() {
 
 .game {
   grid-area: game;
-  background: var(--void);
+  background: var(--bg);
   overflow: hidden;
 }
 
 .sidebar {
   grid-area: sidebar;
-  background: var(--panel);
+  background: var(--bg-panel);
   overflow-y: auto;
 }
 
@@ -291,7 +291,7 @@ function handleCloseHelp() {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 18, 0.9);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;

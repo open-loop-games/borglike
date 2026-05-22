@@ -25,31 +25,31 @@ export type AngbandEvent =
 export const PERSONALITY_DISPLAY = {
   cautious: {
     label: 'CAU',
-    color: 'var(--blue)',
+    color: 'var(--rare)',
     name: 'Cautious',
     desc: 'Retreats early, uses items freely',
   },
   aggressive: {
     label: 'AGG',
-    color: 'var(--red)',
+    color: 'var(--danger)',
     name: 'Aggressive',
     desc: 'Fights to low HP, hoards items',
   },
   greedy: {
     label: 'GRD',
-    color: 'var(--amber)',
+    color: 'var(--warning)',
     name: 'Greedy',
     desc: 'Prioritizes gold/items over safety',
   },
   speedrunner: {
     label: 'SPD',
-    color: 'var(--cyan)',
+    color: 'var(--info)',
     name: 'Speedrunner',
     desc: 'Beelines for stairs',
   },
   custom: {
     label: 'CUS',
-    color: 'var(--purple)',
+    color: 'var(--essence)',
     name: 'Custom',
     desc: 'Fine-tuned behavior sliders',
   },
