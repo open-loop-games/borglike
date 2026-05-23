@@ -84,7 +84,9 @@ export default tseslint.config(
         HTMLElement: 'readonly',
         CanvasRenderingContext2D: 'readonly',
         ResizeObserver: 'readonly',
+        MutationObserver: 'readonly',
         MouseEvent: 'readonly',
+        getComputedStyle: 'readonly',
       },
     },
     rules: {

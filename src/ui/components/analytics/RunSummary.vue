@@ -421,7 +421,7 @@ const hasExtendedStats = computed(() => {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: var(--text-lg);
+  font-size: var(--text-2xl);
   cursor: pointer;
   transition: all 0.2s;
 }

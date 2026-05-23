@@ -802,7 +802,7 @@ function formatGoal(goal: string | undefined): string {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: var(--text-lg);
+  font-size: var(--text-3xl);
   cursor: pointer;
   transition: all 0.2s;
 }
