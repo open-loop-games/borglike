@@ -64,7 +64,12 @@ let ctx: CanvasRenderingContext2D | null = null
 
 // Colors
 const CURSOR_BG = 'color-mix(in srgb, var(--accent) 30%, transparent)'
-const PLAYER_CURSOR_BG = 'color-mix(in srgb, var(--success) 20%, transparent)'
+
+function resolveSuccessColor(): string {
+  if (!canvasRef.value) return '#22c55e'
+  const c = getComputedStyle(canvasRef.value).getPropertyValue('--success').trim()
+  return c || '#22c55e'
+}
 
 function colorToHex(color: number): string {
   if (color === 0) return '#475569'
@@ -191,6 +196,12 @@ function render() {
   lastStartX = startX
   lastStartY = startY
 
+  const successColor = resolveSuccessColor()
+  const glowBlur = cellHeight * 0.6
+  // Defer the player glyph so the radial glow paints over neighbours rather
+  // than getting overwritten by later cells. Painted as a final pass below.
+  let playerDraw: { px: number; py: number; char: string; color: string } | null = null
+
   for (let vy = 0; vy < visibleRows; vy++) {
     const y = startY + vy
     const row = props.grid[y]
@@ -203,17 +214,35 @@ function render() {
 
       const px = vx * cellWidth
       const py = vy * cellHeight
+      const isPlayer = x === props.cursorX && y === props.cursorY && cell.char === '@'
 
-      // Draw cursor background
-      if (x === props.cursorX && y === props.cursorY) {
-        ctx.fillStyle = cell.char === '@' ? PLAYER_CURSOR_BG : CURSOR_BG
+      // Draw cursor background (non-player tiles only — player gets a glow instead)
+      if (x === props.cursorX && y === props.cursorY && !isPlayer) {
+        ctx.fillStyle = CURSOR_BG
         ctx.fillRect(px, py, cellWidth, cellHeight)
+      }
+
+      if (isPlayer) {
+        playerDraw = { px, py, char: cell.char, color: colorToHex(cell.color) }
+        continue
       }
 
       // Draw character
       ctx.fillStyle = colorToHex(cell.color)
       ctx.fillText(cell.char, px + cellWidth / 2, py + cellHeight / 2)
     }
+  }
+
+  if (playerDraw) {
+    ctx.save()
+    ctx.shadowColor = successColor
+    ctx.shadowBlur = glowBlur
+    ctx.fillStyle = playerDraw.color
+    // Two passes so the glow accumulates to a visible halo without making the
+    // glyph itself look fuzzy — shadowBlur softens fast at moderate radii.
+    ctx.fillText(playerDraw.char, playerDraw.px + cellWidth / 2, playerDraw.py + cellHeight / 2)
+    ctx.fillText(playerDraw.char, playerDraw.px + cellWidth / 2, playerDraw.py + cellHeight / 2)
+    ctx.restore()
   }
 }
 
