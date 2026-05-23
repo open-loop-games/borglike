@@ -10,7 +10,7 @@ const progression = useProgressionStore()
 
 type Tab = 'races' | 'classes' | 'boosters'
 
-const activeTab = ref<Tab>('races')
+const activeTab = ref<Tab>('boosters')
 
 // Use store's precomputed canAfford, just add type tag
 const currentUnlocks = computed(() => {
@@ -78,6 +78,14 @@ function getPrereqNames(boosterId: string): string[] {
     <div class="unlock-tabs">
       <button
         class="unlock-tab"
+        :class="{ active: activeTab === 'boosters' }"
+        @click="activeTab = 'boosters'"
+      >
+        <Icon class="tab-icon" :name="Icons.boosters" />
+        <span class="tab-label">Boosters</span>
+      </button>
+      <button
+        class="unlock-tab"
         :class="{ active: activeTab === 'races' }"
         @click="activeTab = 'races'"
       >
@@ -91,14 +99,6 @@ function getPrereqNames(boosterId: string): string[] {
       >
         <Icon class="tab-icon" :name="Icons.classes" />
         <span class="tab-label">Classes</span>
-      </button>
-      <button
-        class="unlock-tab"
-        :class="{ active: activeTab === 'boosters' }"
-        @click="activeTab = 'boosters'"
-      >
-        <Icon class="tab-icon" :name="Icons.boosters" />
-        <span class="tab-label">Boosters</span>
       </button>
     </div>
 
