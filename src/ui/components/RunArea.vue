@@ -77,6 +77,14 @@ function handleStartRun(
 ) {
   try {
     setSlotConfiguring(slot, false)
+    // Queue mode: slot still has a live run, so the editor was opened mid-run.
+    // LoadoutEditor has already persisted slot config; let the current run
+    // finish and auto-restart will pick up the new values.
+    const existing = runs.getRunBySlot(slot)
+    if (existing && !isRunEnded(existing.state)) {
+      loadoutSlot.value = null
+      return
+    }
     startRun(slot, config)
     loadoutSlot.value = null
   } catch (err) {
@@ -134,7 +142,9 @@ function handleDismiss(slot: number) {
 function handleConfigure(slot: number) {
   setSlotConfiguring(slot, true)
   const run = runs.getRunBySlot(slot)
-  if (run) {
+  // Only clear ended runs; an active run keeps going while the user edits the
+  // slot config — auto-restart picks up the new values on its next cycle.
+  if (run && isRunEnded(run.state)) {
     runs.removeRun(run.id)
   }
   loadoutSlot.value = slot

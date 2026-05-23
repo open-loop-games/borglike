@@ -207,6 +207,16 @@ function handleDismiss() {
           <Icon :name="Icons.expand" />
         </GameTooltip>
         <GameTooltip
+          v-if="!runEnded"
+          tag="button"
+          class="control-btn configure"
+          text="Edit loadout — applies to next auto-restart"
+          position="bottom"
+          @click="emit('configure')"
+        >
+          <Icon :name="Icons.configure" />
+        </GameTooltip>
+        <GameTooltip
           tag="button"
           class="control-btn kill"
           :class="{ holding: killHoldProgress > 0, disabled: runEnded }"
@@ -431,7 +441,7 @@ function handleDismiss() {
   background: var(--bg-highlight);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  font-size: var(--text-base);
+  font-size: var(--text-2xl);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: all 0.2s;
@@ -452,6 +462,11 @@ function handleDismiss() {
 .control-btn.expand:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.control-btn.configure:hover {
+  border-color: var(--info);
+  color: var(--info);
 }
 
 .control-btn.kill {

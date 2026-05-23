@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
+import { useRunsStore, isRunEnded } from '@/stores/runs'
 import { getBoosterById } from '@game/data/boosters'
 import { races, type Race } from '@game/data/races'
 import { classes, type GameClass } from '@game/data/classes'
@@ -27,6 +28,14 @@ const emit = defineEmits<{
 }>()
 
 const progression = useProgressionStore()
+const runs = useRunsStore()
+
+// True when the slot already has a live run — editing then queues new config
+// for the next auto-restart instead of starting immediately.
+const isQueueMode = computed(() => {
+  const run = runs.getRunBySlot(props.slot)
+  return run !== undefined && !isRunEnded(run.state)
+})
 
 // Load saved config for this slot (with fallbacks)
 const savedConfig = progression.getSlotConfig(props.slot)
@@ -645,8 +654,8 @@ function handleCancel() {
     <footer class="editor-footer">
       <button class="cancel-btn" @click="handleCancel">Cancel</button>
       <button class="start-btn" @click="handleStart">
-        <Icon class="start-icon" :name="Icons.play" />
-        Start Run
+        <Icon class="start-icon" :name="isQueueMode ? Icons.autoRestart : Icons.play" />
+        {{ isQueueMode ? 'Queue for next run' : 'Start Run' }}
       </button>
     </footer>
   </div>
