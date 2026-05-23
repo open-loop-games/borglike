@@ -7,6 +7,7 @@ import type { Personality } from '@/types/events'
 import RunPanel from '@/ui/components/RunPanel.vue'
 import PanelFrame from '@/ui/components/common/PanelFrame.vue'
 import EmptySlot from '@/ui/components/game/EmptySlot.vue'
+import LockedSlot from '@/ui/components/game/LockedSlot.vue'
 
 const runs = useRunsStore()
 const progression = useProgressionStore()
@@ -18,12 +19,18 @@ const emit = defineEmits<{
 
 const maxSlots = computed(() => progression.maxRunSlots)
 
+// Show all unlocked slots plus a single locked teaser for the next slot,
+// matching the desktop RunArea pattern.
 const visibleSlots = computed(() => {
+  const max = maxSlots.value
+  const count = Math.min(4, max + 1)
   const arr = []
-  for (let i = 0; i < maxSlots.value; i++) {
+  for (let i = 0; i < count; i++) {
+    const isUnlocked = i < max
     arr.push({
       index: i,
-      run: runs.getRunBySlot(i),
+      isUnlocked,
+      run: isUnlocked ? runs.getRunBySlot(i) : null,
     })
   }
   return arr
@@ -89,8 +96,9 @@ function handleKill(slot: number) {
   <div class="run-list">
     <div v-for="slot in visibleSlots" :key="slot.index" class="run-card-wrapper">
       <PanelFrame :focused="slot.run?.state === 'running'" :no-padding="true">
+        <LockedSlot v-if="!slot.isUnlocked" :slot="slot.index" />
         <RunPanel
-          v-if="slot.run"
+          v-else-if="slot.run"
           :run="slot.run"
           @expand="handleExpand(slot.index)"
           @restart="handleRestart(slot.index)"
