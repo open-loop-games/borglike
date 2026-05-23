@@ -50,6 +50,17 @@ const showCodex = ref(false)
 const showAchievements = ref(false)
 const showHelp = ref(false)
 
+// Sidebar drawer state — overlay drawer kicks in below 1400px (see CSS).
+// State is harmless above the breakpoint because the .sidebar-open class
+// only affects layout inside the @media block.
+const sidebarOpen = ref(false)
+function handleToggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value
+}
+function handleCloseSidebar() {
+  sidebarOpen.value = false
+}
+
 function handleOpenSettings() {
   showSettings.value = true
 }
@@ -131,7 +142,20 @@ function handleCloseHelp() {
     <main class="game">
       <RunArea />
     </main>
-    <aside class="sidebar">
+    <div
+      class="sidebar-backdrop"
+      :class="{ visible: sidebarOpen }"
+      @click="handleCloseSidebar"
+    ></div>
+    <aside class="sidebar" :class="{ open: sidebarOpen }">
+      <button
+        class="sidebar-handle"
+        :class="{ open: sidebarOpen }"
+        :aria-label="sidebarOpen ? 'Close upgrades panel' : 'Open upgrades panel'"
+        @click="handleToggleSidebar"
+      >
+        <span class="sidebar-handle-label">Upgrades</span>
+      </button>
       <Sidebar />
     </aside>
     <AppFeed class="feed" />
@@ -265,15 +289,20 @@ function handleCloseHelp() {
   grid-area: feed;
 }
 
-/* Responsive: narrower screens */
-@media (max-width: 1199px) {
-  .app-layout {
-    grid-template-columns: 1fr 260px;
-  }
+.sidebar-backdrop {
+  display: none;
 }
 
-/* Mobile: hide sidebar */
-@media (max-width: 768px) {
+/* Handle is sidebar-attached but hidden above breakpoint. */
+.sidebar-handle {
+  display: none;
+}
+
+/* Below 1400px: sidebar becomes an overlay drawer.
+   Drops out of grid, runs get the full width. Slides in from the right.
+   The handle stays anchored to the drawer's left edge — when the drawer is
+   closed, it pokes out past the viewport edge as the only affordance to open. */
+@media (max-width: 1399px) {
   .app-layout {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -283,7 +312,76 @@ function handleCloseHelp() {
   }
 
   .sidebar {
-    display: none;
+    position: fixed;
+    top: 48px;
+    right: 0;
+    bottom: 48px;
+    width: min(360px, 90vw);
+    z-index: 900;
+    border-left: 1px solid var(--border);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+    /* Allow the handle to render outside the drawer's left edge when closed */
+    overflow-y: visible;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 25%;
+    left: -28px;
+    width: 28px;
+    height: 140px;
+    padding: 0;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    color: var(--essence);
+    cursor: pointer;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
+    transition:
+      background 0.2s,
+      color 0.2s,
+      border-color 0.2s;
+  }
+
+  .sidebar-handle:hover {
+    background: var(--bg-highlight);
+    border-color: var(--essence);
+  }
+
+  .sidebar-handle-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: var(--text-base);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: bold;
+    user-select: none;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 48px 0 48px 0;
+    background: color-mix(in srgb, var(--bg) 60%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 800;
+  }
+
+  .sidebar-backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
