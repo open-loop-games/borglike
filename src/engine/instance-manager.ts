@@ -419,9 +419,12 @@ function updateRunFromGame(runId: string, game: GameState, botState?: BotState):
   }
 }
 
-// Viewport dimensions
+// Viewport dimensions. Must match createEmptyGrid() in stores/runs.ts and the
+// COLS/ROWS defaults in DungeonGridCanvas.vue — the displayed grid is sized
+// here. HEIGHT < level.height (DEFAULT_HEIGHT = 40) leaves room for the
+// vertical camera; WIDTH matches level.width so no horizontal scroll engine-side.
 const VIEWPORT_WIDTH = 80
-const VIEWPORT_HEIGHT = 24
+const VIEWPORT_HEIGHT = 32
 
 /**
  * Calculate viewport offset to center on player

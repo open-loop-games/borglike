@@ -76,7 +76,7 @@ export interface ActiveRun {
   equipment: Partial<Record<EquipSlot, DisplayItem>>
   inventory: DisplayItem[]
 
-  // Grid state (80x24)
+  // Grid state (80x32 — engine viewport, see VIEWPORT_* in instance-manager.ts)
   grid: GridCell[][]
   cursorX: number
   cursorY: number
@@ -105,7 +105,8 @@ export interface DisplayItem {
 }
 
 function createEmptyGrid(): GridCell[][] {
-  return Array.from({ length: 24 }, () =>
+  // Must match VIEWPORT_WIDTH/HEIGHT in engine/instance-manager.ts
+  return Array.from({ length: 32 }, () =>
     Array.from({ length: 80 }, () => ({ char: ' ', color: 0xffffff }))
   )
 }
@@ -219,7 +220,7 @@ export const useRunsStore = defineStore('runs', () => {
   function updateCell(runId: string, row: number, col: number, char: string, color: number) {
     const run = runs.value.get(runId)
     if (!run) return
-    if (row < 0 || row >= 24 || col < 0 || col >= 80) return
+    if (row < 0 || row >= 32 || col < 0 || col >= 80) return
     const gridRow = run.grid[row]
     if (gridRow) {
       gridRow[col] = { char, color }
