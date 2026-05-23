@@ -155,10 +155,12 @@ function handleMoreNavigate(target: string) {
           <span class="back-arrow">&larr;</span>
           <span>Back</span>
         </button>
+        <span class="loadout-header-title">Slot {{ loadoutSlot + 1 }} · Configure</span>
       </div>
       <div class="loadout-content">
         <LoadoutEditor
           :slot="loadoutSlot"
+          variant="mobile"
           @start="handleLoadoutStart"
           @cancel="handleLoadoutCancel"
         />
@@ -235,11 +237,21 @@ function handleMoreNavigate(target: string) {
 .loadout-header {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
   padding: 0 var(--space-3);
   height: 44px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.loadout-header-title {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .back-btn {
@@ -260,6 +272,9 @@ function handleMoreNavigate(target: string) {
 
 .loadout-content {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 </style>

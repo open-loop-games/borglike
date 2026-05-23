@@ -18,14 +18,36 @@ import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
 import PanelFrame from '../common/PanelFrame.vue'
 
-const props = defineProps<{
-  slot: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    slot: number
+    variant?: 'desktop' | 'mobile'
+  }>(),
+  { variant: 'desktop' }
+)
 
 const emit = defineEmits<{
   start: [config: { race: string; class: string; personality: Personality }]
   cancel: []
 }>()
+
+const isMobile = computed(() => props.variant === 'mobile')
+
+type SectionId = 'race' | 'class' | 'boosters' | 'bonuses' | 'personality' | 'controls'
+const expanded = ref<Record<SectionId, boolean>>({
+  race: true,
+  class: false,
+  boosters: false,
+  bonuses: false,
+  personality: false,
+  controls: false,
+})
+function toggleSection(id: SectionId) {
+  expanded.value[id] = !expanded.value[id]
+}
+function isOpen(id: SectionId): boolean {
+  return !isMobile.value || expanded.value[id]
+}
 
 const progression = useProgressionStore()
 const runs = useRunsStore()
@@ -184,6 +206,48 @@ const personalitySummary = computed(() =>
   selectedPersonality.value === 'custom' ? summarizePersonality(customPersonality.value) : ''
 )
 
+// Section summaries for collapsed accordion headers on mobile
+const raceHeaderSummary = computed(() => {
+  if (selectedRace.value === 'Random') return `Random · ${randomPoolRaces.value.length} in pool`
+  return selectedRace.value
+})
+
+const classHeaderSummary = computed(() => {
+  if (selectedClass.value === 'Random') return `Random · ${randomPoolClasses.value.length} in pool`
+  return selectedClass.value
+})
+
+const boostersHeaderSummary = computed(() => {
+  const names = [boosterSlot0.value, boosterSlot1.value]
+    .map((id) => (id ? getBoosterById(id)?.name : null))
+    .filter((n): n is string => !!n)
+  return names.length > 0 ? names.join(' · ') : 'None'
+})
+
+const bonusesHeaderSummary = computed(() => {
+  const count = activeBonuses.value.length
+  const hasPerf = configPerformance.value && configPerformance.value.runCount >= 3
+  if (count === 0 && !hasPerf) return 'None'
+  if (count === 0) return `History · ${configPerformance.value?.runCount} runs`
+  return `${count} bonus${count === 1 ? '' : 'es'}`
+})
+
+const personalityHeaderSummary = computed(() => {
+  if (selectedPersonality.value === 'custom') return 'Custom'
+  return PERSONALITY_DISPLAY[selectedPersonality.value]?.name ?? selectedPersonality.value
+})
+
+const controlsHeaderSummary = computed(() => {
+  const parts: string[] = []
+  if (globalCaps.value.preparedness >= 2 && depthGateOffset.value !== 0) {
+    parts.push(`Gate ${depthGateOffset.value > 0 ? '+' : ''}${depthGateOffset.value}`)
+  }
+  if (globalCaps.value.surf > 0 && (surfRangeStart.value > 0 || surfRangeEnd.value > 0)) {
+    parts.push(`Surf ${surfRangeStart.value}–${surfRangeEnd.value}`)
+  }
+  return parts.length > 0 ? parts.join(' · ') : 'Defaults'
+})
+
 // Config performance from run history
 const configPerformance = computed(() => {
   return progression.getConfigPerformance(
@@ -280,169 +344,219 @@ function handleCancel() {
       <!-- Left Column: Character Config -->
       <div class="config-column">
         <!-- Race Selection -->
-        <PanelFrame class="selection-section">
-          <h3>Race</h3>
-          <div class="option-grid">
-            <button
-              class="option-btn random-btn"
-              :class="{ active: selectedRace === 'Random' }"
-              @click="selectedRace = 'Random'"
-            >
-              ? Random
-            </button>
-            <button
-              v-for="race in chooseableRaces"
-              :key="race"
-              class="option-btn"
-              :class="{ active: selectedRace === race }"
-              @click="selectedRace = race"
-            >
-              {{ race }}
-            </button>
-          </div>
-          <!-- Random Pool Info -->
-          <div v-if="selectedRace === 'Random'" class="selection-details">
-            <div class="details-desc">Randomly picks from the pool each run.</div>
-            <div class="pool-list">
-              <span class="pool-label">Pool:</span>
-              <span v-for="name in randomPoolRaces" :key="name" class="pool-tag">{{ name }}</span>
+        <PanelFrame
+          class="selection-section"
+          :class="{ collapsible: isMobile, collapsed: isMobile && !isOpen('race') }"
+        >
+          <button
+            v-if="isMobile"
+            type="button"
+            class="section-toggle"
+            @click="toggleSection('race')"
+          >
+            <span class="section-title">Race</span>
+            <span v-if="!isOpen('race')" class="section-summary">{{ raceHeaderSummary }}</span>
+            <span class="section-chevron" :class="{ open: isOpen('race') }">›</span>
+          </button>
+          <h3 v-else>Race</h3>
+          <div v-show="isOpen('race')" class="section-body">
+            <div class="option-grid">
+              <button
+                class="option-btn random-btn"
+                :class="{ active: selectedRace === 'Random' }"
+                @click="selectedRace = 'Random'"
+              >
+                ? Random
+              </button>
+              <button
+                v-for="race in chooseableRaces"
+                :key="race"
+                class="option-btn"
+                :class="{ active: selectedRace === race }"
+                @click="selectedRace = race"
+              >
+                {{ race }}
+              </button>
             </div>
-          </div>
-          <!-- Race Description -->
-          <div v-else-if="selectedRaceData" class="selection-details">
-            <div class="details-stats">
-              <span :class="formatStatClass(selectedRaceData.stats.str)"
-                >STR {{ formatStat(selectedRaceData.stats.str) }}</span
-              >
-              <span :class="formatStatClass(selectedRaceData.stats.int)"
-                >INT {{ formatStat(selectedRaceData.stats.int) }}</span
-              >
-              <span :class="formatStatClass(selectedRaceData.stats.wis)"
-                >WIS {{ formatStat(selectedRaceData.stats.wis) }}</span
-              >
-              <span :class="formatStatClass(selectedRaceData.stats.dex)"
-                >DEX {{ formatStat(selectedRaceData.stats.dex) }}</span
-              >
-              <span :class="formatStatClass(selectedRaceData.stats.con)"
-                >CON {{ formatStat(selectedRaceData.stats.con) }}</span
-              >
-              <span class="stat-info">HD +{{ selectedRaceData.hitdie }}</span>
-              <span v-if="selectedRaceData.expPenalty !== 100" class="stat-xp"
-                >XP {{ selectedRaceData.expPenalty }}%</span
-              >
+            <!-- Random Pool Info -->
+            <div v-if="selectedRace === 'Random'" class="selection-details">
+              <div class="details-desc">Randomly picks from the pool each run.</div>
+              <div class="pool-list">
+                <span class="pool-label">Pool:</span>
+                <span v-for="name in randomPoolRaces" :key="name" class="pool-tag">{{ name }}</span>
+              </div>
             </div>
-            <div class="details-desc">{{ selectedRaceData.description }}</div>
-            <div v-if="selectedRaceData.abilities.length > 0" class="details-abilities">
-              <span
-                v-for="ability in selectedRaceData.abilities"
-                :key="ability.id"
-                class="ability-tag"
-                :title="ability.description"
-              >
-                {{ ability.name }}
-              </span>
+            <!-- Race Description -->
+            <div v-else-if="selectedRaceData" class="selection-details">
+              <div class="details-stats">
+                <span :class="formatStatClass(selectedRaceData.stats.str)"
+                  >STR {{ formatStat(selectedRaceData.stats.str) }}</span
+                >
+                <span :class="formatStatClass(selectedRaceData.stats.int)"
+                  >INT {{ formatStat(selectedRaceData.stats.int) }}</span
+                >
+                <span :class="formatStatClass(selectedRaceData.stats.wis)"
+                  >WIS {{ formatStat(selectedRaceData.stats.wis) }}</span
+                >
+                <span :class="formatStatClass(selectedRaceData.stats.dex)"
+                  >DEX {{ formatStat(selectedRaceData.stats.dex) }}</span
+                >
+                <span :class="formatStatClass(selectedRaceData.stats.con)"
+                  >CON {{ formatStat(selectedRaceData.stats.con) }}</span
+                >
+                <span class="stat-info">HD +{{ selectedRaceData.hitdie }}</span>
+                <span v-if="selectedRaceData.expPenalty !== 100" class="stat-xp"
+                  >XP {{ selectedRaceData.expPenalty }}%</span
+                >
+              </div>
+              <div class="details-desc">{{ selectedRaceData.description }}</div>
+              <div v-if="selectedRaceData.abilities.length > 0" class="details-abilities">
+                <span
+                  v-for="ability in selectedRaceData.abilities"
+                  :key="ability.id"
+                  class="ability-tag"
+                  :title="ability.description"
+                >
+                  {{ ability.name }}
+                </span>
+              </div>
             </div>
           </div>
         </PanelFrame>
 
         <!-- Class Selection -->
-        <PanelFrame class="selection-section">
-          <h3>Class</h3>
-          <div class="option-grid">
-            <button
-              class="option-btn random-btn"
-              :class="{ active: selectedClass === 'Random' }"
-              @click="selectedClass = 'Random'"
-            >
-              ? Random
-            </button>
-            <button
-              v-for="cls in chooseableClasses"
-              :key="cls"
-              class="option-btn"
-              :class="{ active: selectedClass === cls }"
-              @click="selectedClass = cls"
-            >
-              {{ cls }}
-            </button>
-          </div>
-          <!-- Random Pool Info -->
-          <div v-if="selectedClass === 'Random'" class="selection-details">
-            <div class="details-desc">Randomly picks from the pool each run.</div>
-            <div class="pool-list">
-              <span class="pool-label">Pool:</span>
-              <span v-for="name in randomPoolClasses" :key="name" class="pool-tag">{{ name }}</span>
+        <PanelFrame
+          class="selection-section"
+          :class="{ collapsible: isMobile, collapsed: isMobile && !isOpen('class') }"
+        >
+          <button
+            v-if="isMobile"
+            type="button"
+            class="section-toggle"
+            @click="toggleSection('class')"
+          >
+            <span class="section-title">Class</span>
+            <span v-if="!isOpen('class')" class="section-summary">{{ classHeaderSummary }}</span>
+            <span class="section-chevron" :class="{ open: isOpen('class') }">›</span>
+          </button>
+          <h3 v-else>Class</h3>
+          <div v-show="isOpen('class')" class="section-body">
+            <div class="option-grid">
+              <button
+                class="option-btn random-btn"
+                :class="{ active: selectedClass === 'Random' }"
+                @click="selectedClass = 'Random'"
+              >
+                ? Random
+              </button>
+              <button
+                v-for="cls in chooseableClasses"
+                :key="cls"
+                class="option-btn"
+                :class="{ active: selectedClass === cls }"
+                @click="selectedClass = cls"
+              >
+                {{ cls }}
+              </button>
             </div>
-          </div>
-          <!-- Class Description -->
-          <div v-else-if="selectedClassData" class="selection-details">
-            <div class="details-stats">
-              <span :class="formatStatClass(selectedClassData.stats.str)"
-                >STR {{ formatStat(selectedClassData.stats.str) }}</span
-              >
-              <span :class="formatStatClass(selectedClassData.stats.int)"
-                >INT {{ formatStat(selectedClassData.stats.int) }}</span
-              >
-              <span :class="formatStatClass(selectedClassData.stats.wis)"
-                >WIS {{ formatStat(selectedClassData.stats.wis) }}</span
-              >
-              <span :class="formatStatClass(selectedClassData.stats.dex)"
-                >DEX {{ formatStat(selectedClassData.stats.dex) }}</span
-              >
-              <span :class="formatStatClass(selectedClassData.stats.con)"
-                >CON {{ formatStat(selectedClassData.stats.con) }}</span
-              >
-              <span class="stat-info"
-                >HD {{ selectedClassData.hitdie >= 0 ? '+' : ''
-                }}{{ selectedClassData.hitdie }}</span
-              >
-              <span class="stat-info">{{ selectedClassData.maxAttacks }} atk</span>
-              <span v-if="selectedClassData.usesMagic" class="stat-magic">Magic</span>
+            <!-- Random Pool Info -->
+            <div v-if="selectedClass === 'Random'" class="selection-details">
+              <div class="details-desc">Randomly picks from the pool each run.</div>
+              <div class="pool-list">
+                <span class="pool-label">Pool:</span>
+                <span v-for="name in randomPoolClasses" :key="name" class="pool-tag">{{
+                  name
+                }}</span>
+              </div>
             </div>
-            <div class="details-desc">{{ selectedClassData.description }}</div>
-            <div class="details-behavior">
-              <span class="behavior-label">AI:</span> {{ selectedClassData.botBehavior }}
+            <!-- Class Description -->
+            <div v-else-if="selectedClassData" class="selection-details">
+              <div class="details-stats">
+                <span :class="formatStatClass(selectedClassData.stats.str)"
+                  >STR {{ formatStat(selectedClassData.stats.str) }}</span
+                >
+                <span :class="formatStatClass(selectedClassData.stats.int)"
+                  >INT {{ formatStat(selectedClassData.stats.int) }}</span
+                >
+                <span :class="formatStatClass(selectedClassData.stats.wis)"
+                  >WIS {{ formatStat(selectedClassData.stats.wis) }}</span
+                >
+                <span :class="formatStatClass(selectedClassData.stats.dex)"
+                  >DEX {{ formatStat(selectedClassData.stats.dex) }}</span
+                >
+                <span :class="formatStatClass(selectedClassData.stats.con)"
+                  >CON {{ formatStat(selectedClassData.stats.con) }}</span
+                >
+                <span class="stat-info"
+                  >HD {{ selectedClassData.hitdie >= 0 ? '+' : ''
+                  }}{{ selectedClassData.hitdie }}</span
+                >
+                <span class="stat-info">{{ selectedClassData.maxAttacks }} atk</span>
+                <span v-if="selectedClassData.usesMagic" class="stat-magic">Magic</span>
+              </div>
+              <div class="details-desc">{{ selectedClassData.description }}</div>
+              <div class="details-behavior">
+                <span class="behavior-label">AI:</span> {{ selectedClassData.botBehavior }}
+              </div>
             </div>
           </div>
         </PanelFrame>
 
         <!-- Booster Selection -->
-        <PanelFrame v-if="unlockedBoosters.length > 0" class="selection-section booster-section">
-          <h3>Boosters <span class="booster-hint">(max 2)</span></h3>
-          <div class="booster-slots">
-            <div class="booster-slot">
-              <span class="slot-label">Slot 1</span>
-              <select v-model="boosterSlot0" class="booster-select">
-                <option :value="null">-- None --</option>
-                <option
-                  v-for="b in unlockedBoosters"
-                  :key="b.id"
-                  :value="b.id"
-                  :disabled="b.id === boosterSlot1"
-                >
-                  {{ b.name }}
-                </option>
-              </select>
-              <span v-if="getBoosterInfo(boosterSlot0)" class="booster-desc">
-                {{ getBoosterInfo(boosterSlot0)?.description }}
-              </span>
-            </div>
-            <div class="booster-slot">
-              <span class="slot-label">Slot 2</span>
-              <select v-model="boosterSlot1" class="booster-select">
-                <option :value="null">-- None --</option>
-                <option
-                  v-for="b in unlockedBoosters"
-                  :key="b.id"
-                  :value="b.id"
-                  :disabled="b.id === boosterSlot0"
-                >
-                  {{ b.name }}
-                </option>
-              </select>
-              <span v-if="getBoosterInfo(boosterSlot1)" class="booster-desc">
-                {{ getBoosterInfo(boosterSlot1)?.description }}
-              </span>
+        <PanelFrame
+          v-if="unlockedBoosters.length > 0"
+          class="selection-section booster-section"
+          :class="{ collapsible: isMobile, collapsed: isMobile && !isOpen('boosters') }"
+        >
+          <button
+            v-if="isMobile"
+            type="button"
+            class="section-toggle"
+            @click="toggleSection('boosters')"
+          >
+            <span class="section-title">Boosters <span class="booster-hint">(max 2)</span></span>
+            <span v-if="!isOpen('boosters')" class="section-summary">{{
+              boostersHeaderSummary
+            }}</span>
+            <span class="section-chevron" :class="{ open: isOpen('boosters') }">›</span>
+          </button>
+          <h3 v-else>Boosters <span class="booster-hint">(max 2)</span></h3>
+          <div v-show="isOpen('boosters')" class="section-body">
+            <div class="booster-slots">
+              <div class="booster-slot">
+                <span class="slot-label">Slot 1</span>
+                <select v-model="boosterSlot0" class="booster-select">
+                  <option :value="null">-- None --</option>
+                  <option
+                    v-for="b in unlockedBoosters"
+                    :key="b.id"
+                    :value="b.id"
+                    :disabled="b.id === boosterSlot1"
+                  >
+                    {{ b.name }}
+                  </option>
+                </select>
+                <span v-if="getBoosterInfo(boosterSlot0)" class="booster-desc">
+                  {{ getBoosterInfo(boosterSlot0)?.description }}
+                </span>
+              </div>
+              <div class="booster-slot">
+                <span class="slot-label">Slot 2</span>
+                <select v-model="boosterSlot1" class="booster-select">
+                  <option :value="null">-- None --</option>
+                  <option
+                    v-for="b in unlockedBoosters"
+                    :key="b.id"
+                    :value="b.id"
+                    :disabled="b.id === boosterSlot0"
+                  >
+                    {{ b.name }}
+                  </option>
+                </select>
+                <span v-if="getBoosterInfo(boosterSlot1)" class="booster-desc">
+                  {{ getBoosterInfo(boosterSlot1)?.description }}
+                </span>
+              </div>
             </div>
           </div>
         </PanelFrame>
@@ -451,41 +565,58 @@ function handleCancel() {
         <PanelFrame
           v-if="activeBonuses.length > 0 || (configPerformance && configPerformance.runCount >= 3)"
           class="bonuses-section"
+          :class="{ collapsible: isMobile, collapsed: isMobile && !isOpen('bonuses') }"
         >
-          <h3>Active Bonuses</h3>
-          <div v-if="activeBonuses.length > 0" class="bonus-list">
-            <div v-for="bonus in activeBonuses" :key="bonus.name" class="bonus-item">
-              <span class="bonus-name">{{ bonus.name }}</span>
-              <span class="bonus-value">{{ bonus.value }}</span>
-            </div>
-          </div>
-          <div v-else class="no-bonuses">No upgrade bonuses active</div>
-
-          <!-- Config Performance Stats -->
-          <div
-            v-if="configPerformance && configPerformance.runCount >= 3"
-            class="config-performance"
+          <button
+            v-if="isMobile"
+            type="button"
+            class="section-toggle"
+            @click="toggleSection('bonuses')"
           >
-            <div class="perf-divider"></div>
-            <h4>Config History</h4>
-            <div class="perf-grid">
-              <div class="perf-stat">
-                <span class="perf-value">{{ configPerformance.runCount }}</span>
-                <span class="perf-label">runs</span>
+            <span class="section-title">Active Bonuses</span>
+            <span v-if="!isOpen('bonuses')" class="section-summary">{{
+              bonusesHeaderSummary
+            }}</span>
+            <span class="section-chevron" :class="{ open: isOpen('bonuses') }">›</span>
+          </button>
+          <h3 v-else>Active Bonuses</h3>
+          <div v-show="isOpen('bonuses')" class="section-body">
+            <div v-if="activeBonuses.length > 0" class="bonus-list">
+              <div v-for="bonus in activeBonuses" :key="bonus.name" class="bonus-item">
+                <span class="bonus-name">{{ bonus.name }}</span>
+                <span class="bonus-value">{{ bonus.value }}</span>
               </div>
-              <div class="perf-stat">
-                <span class="perf-value">D:{{ configPerformance.avgDepth.toFixed(1) }}</span>
-                <span class="perf-label">avg</span>
-              </div>
-              <div class="perf-stat">
-                <span class="perf-value"
-                  ><Icon :name="Icons.essence" />{{ configPerformance.avgEssence.toFixed(0) }}</span
-                >
-                <span class="perf-label">avg</span>
-              </div>
-              <div class="perf-stat best">
-                <span class="perf-value">D:{{ configPerformance.bestDepth }}</span>
-                <span class="perf-label">best</span>
+            </div>
+            <div v-else class="no-bonuses">No upgrade bonuses active</div>
+
+            <!-- Config Performance Stats -->
+            <div
+              v-if="configPerformance && configPerformance.runCount >= 3"
+              class="config-performance"
+            >
+              <div class="perf-divider"></div>
+              <h4>Config History</h4>
+              <div class="perf-grid">
+                <div class="perf-stat">
+                  <span class="perf-value">{{ configPerformance.runCount }}</span>
+                  <span class="perf-label">runs</span>
+                </div>
+                <div class="perf-stat">
+                  <span class="perf-value">D:{{ configPerformance.avgDepth.toFixed(1) }}</span>
+                  <span class="perf-label">avg</span>
+                </div>
+                <div class="perf-stat">
+                  <span class="perf-value"
+                    ><Icon :name="Icons.essence" />{{
+                      configPerformance.avgEssence.toFixed(0)
+                    }}</span
+                  >
+                  <span class="perf-label">avg</span>
+                </div>
+                <div class="perf-stat best">
+                  <span class="perf-value">D:{{ configPerformance.bestDepth }}</span>
+                  <span class="perf-label">best</span>
+                </div>
               </div>
             </div>
           </div>
@@ -495,156 +626,192 @@ function handleCancel() {
       <!-- Right Column: Personality + Bot Training -->
       <div class="training-column">
         <!-- Personality Selection -->
-        <PanelFrame class="selection-section">
-          <h3>Bot Personality</h3>
-          <div class="personality-list">
-            <!-- Compact 2x2 preset grid when Custom is active -->
-            <div v-if="selectedPersonality === 'custom'" class="preset-grid">
+        <PanelFrame
+          class="selection-section"
+          :class="{ collapsible: isMobile, collapsed: isMobile && !isOpen('personality') }"
+        >
+          <button
+            v-if="isMobile"
+            type="button"
+            class="section-toggle"
+            @click="toggleSection('personality')"
+          >
+            <span class="section-title">Bot Personality</span>
+            <span v-if="!isOpen('personality')" class="section-summary">{{
+              personalityHeaderSummary
+            }}</span>
+            <span class="section-chevron" :class="{ open: isOpen('personality') }">›</span>
+          </button>
+          <h3 v-else>Bot Personality</h3>
+          <div v-show="isOpen('personality')" class="section-body">
+            <div class="personality-list">
+              <!-- Compact 2x2 preset grid when Custom is active -->
+              <div v-if="selectedPersonality === 'custom'" class="preset-grid">
+                <button
+                  v-for="p in personalities"
+                  :key="p.id"
+                  class="preset-seed-btn"
+                  @click="seedFromPreset(p.id)"
+                >
+                  {{ p.name }}
+                </button>
+              </div>
+              <!-- Full preset list when not in Custom mode -->
+              <template v-else>
+                <button
+                  v-for="p in personalities"
+                  :key="p.id"
+                  class="personality-btn"
+                  :class="{ active: selectedPersonality === p.id }"
+                  @click="selectPersonality(p.id)"
+                >
+                  <span class="personality-name">{{ p.name }}</span>
+                  <span class="personality-desc">{{ p.desc }}</span>
+                </button>
+              </template>
               <button
-                v-for="p in personalities"
-                :key="p.id"
-                class="preset-seed-btn"
-                @click="seedFromPreset(p.id)"
+                v-if="hasAnySlider"
+                class="personality-btn custom-btn"
+                :class="{ active: selectedPersonality === 'custom' }"
+                @click="selectPersonality('custom')"
               >
-                {{ p.name }}
+                <span class="personality-name">Custom</span>
+                <span class="personality-desc">Player-tuned sliders</span>
               </button>
             </div>
-            <!-- Full preset list when not in Custom mode -->
-            <template v-else>
-              <button
-                v-for="p in personalities"
-                :key="p.id"
-                class="personality-btn"
-                :class="{ active: selectedPersonality === p.id }"
-                @click="selectPersonality(p.id)"
-              >
-                <span class="personality-name">{{ p.name }}</span>
-                <span class="personality-desc">{{ p.desc }}</span>
-              </button>
-            </template>
-            <button
-              v-if="hasAnySlider"
-              class="personality-btn custom-btn"
-              :class="{ active: selectedPersonality === 'custom' }"
-              @click="selectPersonality('custom')"
-            >
-              <span class="personality-name">Custom</span>
-              <span class="personality-desc">Player-tuned sliders</span>
-            </button>
-          </div>
 
-          <!-- Custom Personality Sliders -->
-          <div v-if="selectedPersonality === 'custom'" class="custom-sliders">
-            <div
-              v-for="key in allSliderKeys"
-              :key="key"
-              class="slider-row"
-              :class="{ locked: !isSliderUnlocked(key) }"
-            >
-              <span class="slider-label">{{ PARAMETER_INFO[key].name }}</span>
-              <input
-                v-if="isSliderUnlocked(key)"
-                type="range"
-                class="param-slider"
-                :min="PARAMETER_INFO[key].min"
-                :max="PARAMETER_INFO[key].max"
-                :value="customPersonality[key]"
-                @input="customPersonality[key] = Number(($event.target as HTMLInputElement).value)"
-              />
-              <input
-                v-else
-                type="range"
-                class="param-slider"
-                :min="PARAMETER_INFO[key].min"
-                :max="PARAMETER_INFO[key].max"
-                :value="customPersonality[key]"
-                disabled
-              />
-              <span class="slider-value">
-                {{ customPersonality[key] }}{{ PARAMETER_INFO[key].unit }}
-              </span>
-              <span v-if="!isSliderUnlocked(key)" class="slider-lock-hint">
-                {{ getSliderGateHint(key) }}
-              </span>
-            </div>
-            <div v-if="personalitySummary" class="personality-summary">
-              {{ personalitySummary }}
+            <!-- Custom Personality Sliders -->
+            <div v-if="selectedPersonality === 'custom'" class="custom-sliders">
+              <div
+                v-for="key in allSliderKeys"
+                :key="key"
+                class="slider-row"
+                :class="{ locked: !isSliderUnlocked(key) }"
+              >
+                <span class="slider-label">{{ PARAMETER_INFO[key].name }}</span>
+                <input
+                  v-if="isSliderUnlocked(key)"
+                  type="range"
+                  class="param-slider"
+                  :min="PARAMETER_INFO[key].min"
+                  :max="PARAMETER_INFO[key].max"
+                  :value="customPersonality[key]"
+                  @input="
+                    customPersonality[key] = Number(($event.target as HTMLInputElement).value)
+                  "
+                />
+                <input
+                  v-else
+                  type="range"
+                  class="param-slider"
+                  :min="PARAMETER_INFO[key].min"
+                  :max="PARAMETER_INFO[key].max"
+                  :value="customPersonality[key]"
+                  disabled
+                />
+                <span class="slider-value">
+                  {{ customPersonality[key] }}{{ PARAMETER_INFO[key].unit }}
+                </span>
+                <span v-if="!isSliderUnlocked(key)" class="slider-lock-hint">
+                  {{ getSliderGateHint(key) }}
+                </span>
+              </div>
+              <div v-if="personalitySummary" class="personality-summary">
+                {{ personalitySummary }}
+              </div>
             </div>
           </div>
         </PanelFrame>
 
         <!-- Per-slot Bot Controls -->
-        <PanelFrame class="selection-section">
-          <h3>Bot Controls</h3>
-          <div class="slot-controls">
-            <!-- Depth Gate Offset (visible when preparedness >= 2) -->
-            <div v-if="globalCaps.preparedness >= 2" class="depth-gate-row">
-              <div class="depth-gate-header">
-                <span class="control-label">Depth Gate</span>
-                <span class="depth-gate-value" :class="depthGateClass">
-                  {{ depthGateLabel }}
-                </span>
-              </div>
-              <input
-                v-model.number="depthGateOffset"
-                type="range"
-                class="depth-gate-slider"
-                min="-5"
-                max="5"
-                step="1"
-              />
-              <div class="depth-gate-labels">
-                <span>Reckless</span>
-                <span>Normal</span>
-                <span>Cautious</span>
-              </div>
-            </div>
-            <!-- Surf Farming -->
-            <div v-if="globalCaps.surf > 0" class="control-row">
-              <span class="control-label">Surf Farming</span>
-              <span class="control-hint">Flip depths for respawns, farm near stairs</span>
-            </div>
-            <!-- Surf Level Range -->
-            <div v-if="globalCaps.surf > 0" class="range-row">
-              <span class="control-label">Surf Range</span>
-              <div class="range-inputs">
+        <PanelFrame
+          class="selection-section"
+          :class="{ collapsible: isMobile, collapsed: isMobile && !isOpen('controls') }"
+        >
+          <button
+            v-if="isMobile"
+            type="button"
+            class="section-toggle"
+            @click="toggleSection('controls')"
+          >
+            <span class="section-title">Bot Controls</span>
+            <span v-if="!isOpen('controls')" class="section-summary">{{
+              controlsHeaderSummary
+            }}</span>
+            <span class="section-chevron" :class="{ open: isOpen('controls') }">›</span>
+          </button>
+          <h3 v-else>Bot Controls</h3>
+          <div v-show="isOpen('controls')" class="section-body">
+            <div class="slot-controls">
+              <!-- Depth Gate Offset (visible when preparedness >= 2) -->
+              <div v-if="globalCaps.preparedness >= 2" class="depth-gate-row">
+                <div class="depth-gate-header">
+                  <span class="control-label">Depth Gate</span>
+                  <span class="depth-gate-value" :class="depthGateClass">
+                    {{ depthGateLabel }}
+                  </span>
+                </div>
                 <input
-                  v-model.number="surfRangeStart"
-                  type="number"
-                  class="range-input"
-                  min="0"
-                  max="50"
-                  placeholder="0"
+                  v-model.number="depthGateOffset"
+                  type="range"
+                  class="depth-gate-slider"
+                  min="-5"
+                  max="5"
+                  step="1"
                 />
-                <span class="range-sep">-</span>
-                <input
-                  v-model.number="surfRangeEnd"
-                  type="number"
-                  class="range-input"
-                  min="0"
-                  max="50"
-                  placeholder="0"
-                />
+                <div class="depth-gate-labels">
+                  <span>Reckless</span>
+                  <span>Normal</span>
+                  <span>Cautious</span>
+                </div>
               </div>
-              <span class="range-hint">Char levels (0-0 = always)</span>
-              <div class="level-selector">
-                <button
-                  v-for="n in globalCaps.surf"
-                  :key="n"
-                  class="level-btn"
-                  :class="{ selected: activeSurfLevel === n }"
-                  @click="setActiveSurf(n)"
-                >
-                  {{ surfLabels[n] }}
-                </button>
+              <!-- Surf Farming -->
+              <div v-if="globalCaps.surf > 0" class="control-row">
+                <span class="control-label">Surf Farming</span>
+                <span class="control-hint">Flip depths for respawns, farm near stairs</span>
               </div>
-            </div>
-            <!-- No controls message -->
-            <div
-              v-if="!globalCaps.farming && globalCaps.surf === 0 && globalCaps.preparedness < 2"
-              class="no-controls"
-            >
-              Purchase bot upgrades in Upgrades → Bot
+              <!-- Surf Level Range -->
+              <div v-if="globalCaps.surf > 0" class="range-row">
+                <span class="control-label">Surf Range</span>
+                <div class="range-inputs">
+                  <input
+                    v-model.number="surfRangeStart"
+                    type="number"
+                    class="range-input"
+                    min="0"
+                    max="50"
+                    placeholder="0"
+                  />
+                  <span class="range-sep">-</span>
+                  <input
+                    v-model.number="surfRangeEnd"
+                    type="number"
+                    class="range-input"
+                    min="0"
+                    max="50"
+                    placeholder="0"
+                  />
+                </div>
+                <span class="range-hint">Char levels (0-0 = always)</span>
+                <div class="level-selector">
+                  <button
+                    v-for="n in globalCaps.surf"
+                    :key="n"
+                    class="level-btn"
+                    :class="{ selected: activeSurfLevel === n }"
+                    @click="setActiveSurf(n)"
+                  >
+                    {{ surfLabels[n] }}
+                  </button>
+                </div>
+              </div>
+              <!-- No controls message -->
+              <div
+                v-if="!globalCaps.farming && globalCaps.surf === 0 && globalCaps.preparedness < 2"
+                class="no-controls"
+              >
+                Purchase bot upgrades in Upgrades → Bot
+              </div>
             </div>
           </div>
         </PanelFrame>
@@ -1389,5 +1556,145 @@ function handleCancel() {
 .range-hint {
   font-size: var(--text-base);
   color: var(--text-dim);
+}
+
+/* Accordion (mobile variant) */
+.section-body {
+  display: contents;
+}
+
+.section-toggle {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0 0 var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: var(--text-base);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.section-toggle .section-title {
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.section-toggle .section-summary {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.section-toggle .section-chevron {
+  flex-shrink: 0;
+  font-size: var(--text-lg);
+  color: var(--text-dim);
+  transition: transform 0.15s;
+  display: inline-block;
+}
+
+.section-toggle .section-chevron.open {
+  transform: rotate(90deg);
+}
+
+.collapsible .section-body {
+  display: block;
+}
+
+.collapsed {
+  padding-bottom: var(--space-3) !important;
+}
+
+.collapsed .section-toggle {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .editor-header {
+    display: none;
+  }
+
+  .editor-content {
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .config-column,
+  .training-column {
+    flex: initial;
+    gap: var(--space-3);
+  }
+
+  .selection-section,
+  .bonuses-section {
+    padding: var(--space-3) !important;
+  }
+
+  .section-toggle {
+    display: flex;
+  }
+
+  .editor-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: var(--space-3);
+    padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .cancel-btn {
+    display: none;
+  }
+
+  .start-btn {
+    flex: 1;
+    justify-content: center;
+    padding: var(--space-3);
+  }
+
+  /* Custom slider rows: keep lock hint inline below */
+  .slider-row {
+    flex-wrap: wrap;
+  }
+
+  .slider-lock-hint {
+    position: static;
+    width: 100%;
+    flex-basis: 100%;
+    text-align: right;
+  }
+
+  /* Booster slots stack vertically on narrow screens */
+  .booster-slots {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  /* Config performance grid wraps */
+  .perf-grid {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  /* Option grid touch targets */
+  .option-btn {
+    padding: var(--space-2) var(--space-3);
+    min-height: 36px;
+  }
 }
 </style>
