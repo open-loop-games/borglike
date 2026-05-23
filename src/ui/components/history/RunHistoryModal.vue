@@ -5,10 +5,6 @@ import RunHistoryRow from './RunHistoryRow.vue'
 
 const progression = useProgressionStore()
 
-const emit = defineEmits<{
-  close: []
-}>()
-
 // Tab state
 const activeTab = ref<'recent' | 'wins' | 'top'>('recent')
 
@@ -41,13 +37,8 @@ function formatTimeAgo(timestamp: number): string {
 </script>
 
 <template>
-  <div class="run-history-modal">
-    <header class="modal-header">
-      <h2>Run History</h2>
-      <button class="close-btn" @click="emit('close')">&times;</button>
-    </header>
-
-    <nav class="modal-tabs">
+  <div class="run-history-panel">
+    <nav class="subtab-bar">
       <button :class="{ active: activeTab === 'recent' }" @click="activeTab = 'recent'">
         Recent ({{ recentRuns.length }})
       </button>
@@ -57,7 +48,7 @@ function formatTimeAgo(timestamp: number): string {
       <button :class="{ active: activeTab === 'top' }" @click="activeTab = 'top'">Top Runs</button>
     </nav>
 
-    <div class="modal-content">
+    <div class="panel-body">
       <!-- Recent tab -->
       <div v-if="activeTab === 'recent'" class="recent-runs">
         <div v-if="recentRuns.length === 0" class="empty-state">
@@ -145,50 +136,14 @@ function formatTimeAgo(timestamp: number): string {
 </template>
 
 <style scoped>
-.run-history-modal {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+.run-history-panel {
   display: flex;
   flex-direction: column;
-  max-height: 80vh;
+  height: 100%;
+  min-height: 0;
 }
 
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: var(--text-2xl);
-  color: var(--text-primary);
-}
-
-.close-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: var(--text-3xl);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: var(--bg-highlight);
-  color: var(--text-primary);
-}
-
-.modal-tabs {
+.subtab-bar {
   display: flex;
   gap: var(--space-1);
   padding: var(--space-3) var(--space-5);
@@ -196,7 +151,7 @@ function formatTimeAgo(timestamp: number): string {
   background: var(--bg);
 }
 
-.modal-tabs button {
+.subtab-bar button {
   padding: var(--space-2) var(--space-4);
   background: transparent;
   border: 1px solid transparent;
@@ -207,18 +162,18 @@ function formatTimeAgo(timestamp: number): string {
   transition: all 0.2s;
 }
 
-.modal-tabs button:hover {
+.subtab-bar button:hover {
   background: var(--bg-highlight);
   color: var(--text-primary);
 }
 
-.modal-tabs button.active {
+.subtab-bar button.active {
   background: var(--bg-highlight);
   border-color: var(--essence);
   color: var(--essence);
 }
 
-.modal-content {
+.panel-body {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-4);

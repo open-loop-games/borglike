@@ -2,21 +2,12 @@
 import { Icons } from '@/ui/icons'
 import PanelFrame from '../common/PanelFrame.vue'
 import Icon from '../common/Icon.vue'
-
-const emit = defineEmits<{
-  close: []
-}>()
 </script>
 
 <template>
-  <div class="help-modal">
-    <header class="help-header">
-      <h2>Borglike</h2>
-      <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
-    </header>
-
-    <div class="help-content">
-      <PanelFrame class="help-section">
+  <div class="guide-panel">
+    <div class="guide-content">
+      <PanelFrame class="guide-section">
         <h3>What is Borglike?</h3>
         <p>
           An idle roguelike inspired by Angband. Watch automated bots descend through 50 floors of a
@@ -29,7 +20,7 @@ const emit = defineEmits<{
         </p>
       </PanelFrame>
 
-      <PanelFrame class="help-section">
+      <PanelFrame class="guide-section">
         <h3>Getting Started</h3>
         <p>
           Your first bot picks a random race and class and dives in. Let it die &mdash; that's the
@@ -38,7 +29,7 @@ const emit = defineEmits<{
         </p>
       </PanelFrame>
 
-      <PanelFrame class="help-section">
+      <PanelFrame class="guide-section">
         <h3>Core Loop</h3>
         <ol>
           <li>
@@ -54,7 +45,7 @@ const emit = defineEmits<{
         </ol>
       </PanelFrame>
 
-      <PanelFrame class="help-section">
+      <PanelFrame class="guide-section">
         <h3>Upgrades &amp; Unlocks</h3>
         <p>
           Essence buys permanent upgrades: more run slots, smarter bots, race/class selection, and
@@ -62,8 +53,8 @@ const emit = defineEmits<{
         </p>
       </PanelFrame>
 
-      <PanelFrame class="help-section">
-        <h3>Controls</h3>
+      <PanelFrame class="guide-section">
+        <h3>Run Controls</h3>
         <div class="controls-grid">
           <div class="control-item">
             <span class="control-key">Expand <Icon :name="Icons.expand" /></span>
@@ -84,8 +75,12 @@ const emit = defineEmits<{
         </div>
       </PanelFrame>
 
-      <PanelFrame class="help-section">
-        <h3>Header Bar</h3>
+      <PanelFrame class="guide-section">
+        <h3>Compendium Tabs</h3>
+        <p>
+          You're reading the <strong>Guide</strong> tab now. The other Compendium tabs collect
+          everything you've discovered or earned across runs.
+        </p>
         <div class="controls-grid">
           <div class="control-item">
             <span class="control-key"><Icon :name="Icons.history" /> History</span>
@@ -106,17 +101,13 @@ const emit = defineEmits<{
             <span class="control-desc">Equipment discovered across all runs</span>
           </div>
           <div class="control-item">
-            <span class="control-key"><Icon :name="Icons.codex" /> Codex</span>
-            <span class="control-desc">Race and class details with unlock status</span>
-          </div>
-          <div class="control-item">
-            <span class="control-key"><Icon :name="Icons.settings" /> Settings</span>
-            <span class="control-desc">Game configuration and display options</span>
+            <span class="control-key"><Icon :name="Icons.heroes" /> Heroes</span>
+            <span class="control-desc">Races and classes with unlock status</span>
           </div>
         </div>
       </PanelFrame>
 
-      <PanelFrame class="help-section">
+      <PanelFrame class="guide-section">
         <h3>Goal</h3>
         <p>
           Reach floor 50 and defeat <span class="boss">Morgoth, Lord of Darkness</span> to achieve
@@ -128,53 +119,15 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.help-modal {
+.guide-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-height: 80vh;
+  min-height: 0;
   background: var(--bg-panel);
 }
 
-.help-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-4) var(--space-5);
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.help-header h2 {
-  font-size: var(--text-2xl);
-  font-weight: bold;
-  color: var(--essence);
-  margin: 0;
-}
-
-.close-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-highlight);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: var(--text-2xl);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: white;
-}
-
-.help-content {
+.guide-content {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-4);
@@ -183,11 +136,11 @@ const emit = defineEmits<{
   gap: var(--space-3);
 }
 
-.help-section {
+.guide-section {
   padding: var(--space-4) !important;
 }
 
-.help-section h3 {
+.guide-section h3 {
   font-size: var(--text-md);
   color: var(--info);
   text-transform: uppercase;
@@ -195,18 +148,18 @@ const emit = defineEmits<{
   margin: 0 0 var(--space-3);
 }
 
-.help-section p {
+.guide-section p {
   font-size: var(--text-md);
   color: var(--text-secondary);
   line-height: 1.5;
   margin: 0 0 var(--space-2);
 }
 
-.help-section p:last-child {
+.guide-section p:last-child {
   margin-bottom: 0;
 }
 
-.help-section ol {
+.guide-section ol {
   margin: 0;
   padding-left: var(--space-5);
   color: var(--text-secondary);
@@ -214,7 +167,7 @@ const emit = defineEmits<{
   line-height: 1.8;
 }
 
-.help-section li strong {
+.guide-section li strong {
   color: var(--text-primary);
 }
 

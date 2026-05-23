@@ -10,16 +10,10 @@ import UnlockList from './ui/components/meta/UnlockList.vue'
 import StatsView from './ui/components/StatsView.vue'
 import RunPanelExpanded from './ui/components/game/RunPanelExpanded.vue'
 import LoadoutEditor from './ui/components/game/LoadoutEditor.vue'
-import AchievementsModal from './ui/components/achievements/AchievementsModal.vue'
-import BestiaryModal from './ui/components/bestiary/BestiaryModal.vue'
-import ItemArmoryModal from './ui/components/armory/ItemArmoryModal.vue'
-import CodexModal from './ui/components/codex/CodexModal.vue'
-import RunHistoryModal from './ui/components/history/RunHistoryModal.vue'
+import CompendiumModal, { type CompendiumTab } from './ui/components/compendium/CompendiumModal.vue'
 import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
-import HelpModal from './ui/components/help/HelpModal.vue'
 import CatchUpOverlay from './ui/components/overlay/CatchUpOverlay.vue'
 import { useEngineStateStore } from './stores/engine-state'
-import { useProgressionStore } from './stores/progression'
 import { useRunsStore } from './stores/runs'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
@@ -32,16 +26,11 @@ const isLoaded = ref(false)
 useKeyboard()
 useGameTitle()
 const engineState = useEngineStateStore()
-const progression = useProgressionStore()
 const runs = useRunsStore()
 
 onMounted(async () => {
   await initPersistence()
   isLoaded.value = true
-
-  if (progression.globalStats.totalRuns === 0) {
-    pushPage(HelpModal)
-  }
 })
 
 // Tab state
@@ -96,20 +85,22 @@ function handleLoadoutCancel() {
 }
 
 // More menu navigation
-const moreComponents: Record<string, Component> = {
-  achievements: AchievementsModal,
-  bestiary: BestiaryModal,
-  armory: ItemArmoryModal,
-  codex: CodexModal,
-  history: RunHistoryModal,
-  settings: SettingsPanel,
-  help: HelpModal,
-}
+const COMPENDIUM_TABS: readonly CompendiumTab[] = [
+  'history',
+  'achievements',
+  'bestiary',
+  'armory',
+  'heroes',
+  'guide',
+]
 
 function handleMoreNavigate(target: string) {
-  const component = moreComponents[target]
-  if (component) {
-    pushPage(component)
+  if (target === 'settings') {
+    pushPage(SettingsPanel)
+    return
+  }
+  if ((COMPENDIUM_TABS as readonly string[]).includes(target)) {
+    pushPage(CompendiumModal, { initialTab: target as CompendiumTab })
   }
 }
 </script>

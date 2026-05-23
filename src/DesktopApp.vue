@@ -5,15 +5,9 @@ import AppFeed from './ui/components/layout/AppFeed.vue'
 import Sidebar from './ui/components/Sidebar.vue'
 import RunArea from './ui/components/RunArea.vue'
 import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
-import RunHistoryModal from './ui/components/history/RunHistoryModal.vue'
-import BestiaryModal from './ui/components/bestiary/BestiaryModal.vue'
-import ItemArmoryModal from './ui/components/armory/ItemArmoryModal.vue'
-import CodexModal from './ui/components/codex/CodexModal.vue'
-import AchievementsModal from './ui/components/achievements/AchievementsModal.vue'
-import HelpModal from './ui/components/help/HelpModal.vue'
+import CompendiumModal, { type CompendiumTab } from './ui/components/compendium/CompendiumModal.vue'
 import CatchUpOverlay from './ui/components/overlay/CatchUpOverlay.vue'
 import { useEngineStateStore } from './stores/engine-state'
-import { useProgressionStore } from './stores/progression'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
 import { useGameTitle } from './ui/composables/use-game-title'
@@ -26,7 +20,6 @@ const isLoaded = ref(false)
 useKeyboard()
 useGameTitle()
 const engineState = useEngineStateStore()
-const progression = useProgressionStore()
 
 // Initialize persistence on mount
 onMounted(async () => {
@@ -34,21 +27,12 @@ onMounted(async () => {
   // This prevents race conditions where components try to write before data loads
   await initPersistence()
   isLoaded.value = true
-
-  // Show help on first launch
-  if (progression.globalStats.totalRuns === 0) {
-    showHelp.value = true
-  }
 })
 
 // Modal state
 const showSettings = ref(false)
-const showRunHistory = ref(false)
-const showBestiary = ref(false)
-const showArmory = ref(false)
-const showCodex = ref(false)
-const showAchievements = ref(false)
-const showHelp = ref(false)
+const showCompendium = ref(false)
+const compendiumTab = ref<CompendiumTab>('history')
 
 // Sidebar drawer state — overlay drawer kicks in below 1400px (see CSS).
 // State is harmless above the breakpoint because the .sidebar-open class
@@ -69,52 +53,13 @@ function handleCloseSettings() {
   showSettings.value = false
 }
 
-function handleOpenRunHistory() {
-  showRunHistory.value = true
+function handleOpenCompendium(tab?: CompendiumTab) {
+  compendiumTab.value = tab ?? 'history'
+  showCompendium.value = true
 }
 
-function handleCloseRunHistory() {
-  showRunHistory.value = false
-}
-
-function handleOpenBestiary() {
-  showBestiary.value = true
-}
-
-function handleCloseBestiary() {
-  showBestiary.value = false
-}
-
-function handleOpenArmory() {
-  showArmory.value = true
-}
-
-function handleCloseArmory() {
-  showArmory.value = false
-}
-
-function handleOpenCodex() {
-  showCodex.value = true
-}
-
-function handleCloseCodex() {
-  showCodex.value = false
-}
-
-function handleOpenAchievements() {
-  showAchievements.value = true
-}
-
-function handleCloseAchievements() {
-  showAchievements.value = false
-}
-
-function handleOpenHelp() {
-  showHelp.value = true
-}
-
-function handleCloseHelp() {
-  showHelp.value = false
+function handleCloseCompendium() {
+  showCompendium.value = false
 }
 </script>
 
@@ -132,12 +77,7 @@ function handleCloseHelp() {
     <AppHeader
       class="header"
       @open-settings="handleOpenSettings"
-      @open-help="handleOpenHelp"
-      @open-run-history="handleOpenRunHistory"
-      @open-bestiary="handleOpenBestiary"
-      @open-armory="handleOpenArmory"
-      @open-codex="handleOpenCodex"
-      @open-achievements="handleOpenAchievements"
+      @open-compendium="handleOpenCompendium"
     />
     <main class="game">
       <RunArea />
@@ -169,56 +109,11 @@ function handleCloseHelp() {
       </div>
     </Teleport>
 
-    <!-- Run History Modal -->
+    <!-- Compendium Modal -->
     <Teleport to="body">
-      <div v-if="showRunHistory" class="modal-overlay" @click="handleCloseRunHistory">
+      <div v-if="showCompendium" class="modal-overlay" @click="handleCloseCompendium">
         <div class="modal-container modal-lg" @click.stop>
-          <RunHistoryModal @close="handleCloseRunHistory" />
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Bestiary Modal -->
-    <Teleport to="body">
-      <div v-if="showBestiary" class="modal-overlay" @click="handleCloseBestiary">
-        <div class="modal-container modal-lg" @click.stop>
-          <BestiaryModal @close="handleCloseBestiary" />
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Item Armory Modal -->
-    <Teleport to="body">
-      <div v-if="showArmory" class="modal-overlay" @click="handleCloseArmory">
-        <div class="modal-container modal-lg" @click.stop>
-          <ItemArmoryModal @close="handleCloseArmory" />
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Codex Modal -->
-    <Teleport to="body">
-      <div v-if="showCodex" class="modal-overlay" @click="handleCloseCodex">
-        <div class="modal-container modal-lg" @click.stop>
-          <CodexModal @close="handleCloseCodex" />
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Achievements Modal -->
-    <Teleport to="body">
-      <div v-if="showAchievements" class="modal-overlay" @click="handleCloseAchievements">
-        <div class="modal-container modal-lg" @click.stop>
-          <AchievementsModal @close="handleCloseAchievements" />
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Help Modal -->
-    <Teleport to="body">
-      <div v-if="showHelp" class="modal-overlay" @click="handleCloseHelp">
-        <div class="modal-container" @click.stop>
-          <HelpModal @close="handleCloseHelp" />
+          <CompendiumModal :initial-tab="compendiumTab" @close="handleCloseCompendium" />
         </div>
       </div>
     </Teleport>

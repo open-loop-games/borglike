@@ -105,8 +105,8 @@ function getPrereqNames(boosterId: string): string[] {
     <div class="unlock-header">
       <span class="header-text">{{ unlockedCount }} / {{ totalCount }} Unlocked</span>
       <span v-if="activeTab !== 'boosters'" class="codex-hint">
-        <Icon class="codex-icon" :name="Icons.codex" />
-        Codex has details
+        <Icon class="codex-icon" :name="Icons.heroes" />
+        Heroes tab has details
       </span>
     </div>
 

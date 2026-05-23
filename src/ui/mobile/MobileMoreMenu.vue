@@ -7,13 +7,13 @@ const emit = defineEmits<{
 }>()
 
 const items = [
+  { id: 'history', icon: Icons.history, label: 'History' },
   { id: 'achievements', icon: Icons.achievements, label: 'Achievements' },
   { id: 'bestiary', icon: Icons.bestiary, label: 'Bestiary' },
   { id: 'armory', icon: Icons.armory, label: 'Armory' },
-  { id: 'codex', icon: Icons.codex, label: 'Codex' },
-  { id: 'history', icon: Icons.history, label: 'History' },
+  { id: 'heroes', icon: Icons.heroes, label: 'Heroes' },
+  { id: 'guide', icon: Icons.help, label: 'Guide' },
   { id: 'settings', icon: Icons.settings, label: 'Settings' },
-  { id: 'help', icon: Icons.help, label: 'Help' },
 ]
 </script>
 

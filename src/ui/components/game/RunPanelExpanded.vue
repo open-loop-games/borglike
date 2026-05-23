@@ -113,7 +113,7 @@ const activeStatuses = computed(() => {
 })
 
 // Linger sections for N turns after content disappears (prevents layout thrash on buff cycling)
-const SECTION_LINGER_TURNS = 15
+const SECTION_LINGER_TURNS = 25
 
 const lastResistActiveTurn = ref(0)
 const lastStatusActiveTurn = ref(0)

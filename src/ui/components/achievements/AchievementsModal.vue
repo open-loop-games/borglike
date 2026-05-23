@@ -9,11 +9,7 @@ import Icon from '../common/Icon.vue'
 
 const progression = useProgressionStore()
 
-const emit = defineEmits<{
-  close: []
-}>()
-
-// Clear new achievement notifications when modal is opened
+// Clear new achievement notifications when panel is opened
 onMounted(() => {
   progression.clearNewAchievements()
 })
@@ -162,22 +158,18 @@ function claimById(id: string) {
 </script>
 
 <template>
-  <div class="achievements-modal">
-    <header class="modal-header">
-      <div class="header-title">
-        <h2>Achievements</h2>
-        <span class="achievement-count"> {{ stats.unlocked }}/{{ stats.total }} Unlocked </span>
-        <span class="essence-earned">
-          <Icon class="essence-icon" :name="Icons.essence" />
-          {{ stats.essenceCollected }} earned
-        </span>
-        <span v-if="stats.essencePending > 0" class="essence-pending">
-          <Icon class="essence-icon" :name="Icons.essence" />
-          {{ stats.essencePending }} to claim
-        </span>
-      </div>
-      <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
-    </header>
+  <div class="achievements-panel">
+    <div class="panel-stats">
+      <span>{{ stats.unlocked }} / {{ stats.total }} unlocked</span>
+      <span class="essence-earned">
+        <Icon class="essence-icon" :name="Icons.essence" />
+        {{ stats.essenceCollected }} earned
+      </span>
+      <span v-if="stats.essencePending > 0" class="essence-pending">
+        <Icon class="essence-icon" :name="Icons.essence" />
+        {{ stats.essencePending }} to claim
+      </span>
+    </div>
 
     <div class="filter-bar">
       <select v-model="categoryFilter" class="filter-select">
@@ -198,7 +190,7 @@ function claimById(id: string) {
       />
     </div>
 
-    <div class="modal-content">
+    <div class="panel-body">
       <!-- Regular achievements as cards -->
       <div v-if="filteredAchievements.length > 0" class="achievement-grid">
         <AchievementCard
@@ -224,50 +216,30 @@ function claimById(id: string) {
 </template>
 
 <style scoped>
-.achievements-modal {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+.achievements-panel {
   display: flex;
   flex-direction: column;
-  max-height: 80vh;
+  height: 100%;
+  min-height: 0;
   position: relative;
   overflow: hidden;
 }
 
-.modal-header {
+.panel-stats {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border);
-}
-
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: var(--text-2xl);
-  color: var(--text-primary);
-}
-
-.achievement-count {
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
   font-size: var(--text-md);
   color: var(--text-secondary);
-  padding: var(--space-1) var(--space-3);
-  background: var(--bg-highlight);
-  border-radius: var(--radius-md);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .essence-earned {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--text-md);
   color: var(--essence);
   padding: var(--space-1) var(--space-3);
   background: color-mix(in srgb, var(--essence) 15%, transparent);
@@ -278,7 +250,6 @@ function claimById(id: string) {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--text-md);
   font-weight: bold;
   color: var(--legendary);
   padding: var(--space-1) var(--space-3);
@@ -299,26 +270,6 @@ function claimById(id: string) {
 
 .essence-icon {
   font-size: var(--text-base);
-}
-
-.close-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: var(--text-3xl);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: var(--bg-highlight);
-  color: var(--text-primary);
 }
 
 .filter-bar {
@@ -363,7 +314,7 @@ function claimById(id: string) {
   color: var(--text-dim);
 }
 
-.modal-content {
+.panel-body {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-4);

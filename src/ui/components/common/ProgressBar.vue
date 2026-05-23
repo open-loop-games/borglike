@@ -33,9 +33,7 @@ const variantClass = computed(() => {
     <div class="progress-fill" :style="{ width: percentage + '%' }" />
     <template v-if="showText">
       <span class="progress-text outside">{{ current }}/{{ max }}</span>
-      <span
-        class="progress-text inside"
-        :style="{ clipPath: `inset(0 ${100 - percentage}% 0 0)` }"
+      <span class="progress-text inside" :style="{ clipPath: `inset(0 ${100 - percentage}% 0 0)` }"
         >{{ current }}/{{ max }}</span
       >
     </template>

@@ -42,12 +42,7 @@ watch(
 
 const emit = defineEmits<{
   openSettings: []
-  openHelp: []
-  openRunHistory: []
-  openBestiary: []
-  openArmory: []
-  openCodex: []
-  openAchievements: []
+  openCompendium: [tab?: 'history' | 'achievements' | 'bestiary' | 'armory' | 'heroes' | 'guide']
 }>()
 </script>
 
@@ -116,53 +111,17 @@ const emit = defineEmits<{
       <GameTooltip
         tag="button"
         class="header-btn"
-        text="Run History"
-        position="bottom"
-        @click="emit('openRunHistory')"
-      >
-        <Icon :name="Icons.history" />
-      </GameTooltip>
-      <GameTooltip
-        tag="button"
-        class="header-btn"
         :class="{ 'has-notification': progression.hasNewAchievements }"
         position="bottom"
-        @click="emit('openAchievements')"
+        @click="emit('openCompendium')"
       >
-        <Icon :name="Icons.achievements" />
+        <Icon :name="Icons.compendium" />
         <span v-if="progression.hasNewAchievements" class="notification-dot"></span>
         <template #content>
-          <span class="game-tooltip-text"
-            >Achievements — {{ progression.achievementStats.unlocked }}/{{
-              progression.achievementStats.total
-            }}</span
-          >
+          <span class="game-tooltip-text">
+            Compendium — History, Achievements, Bestiary, Armory, Heroes, Guide
+          </span>
         </template>
-      </GameTooltip>
-      <GameTooltip tag="button" class="header-btn" position="bottom" @click="emit('openBestiary')">
-        <Icon :name="Icons.bestiary" />
-        <template #content>
-          <span class="game-tooltip-text"
-            >Bestiary — {{ progression.bestiaryStats.discovered }} discovered</span
-          >
-        </template>
-      </GameTooltip>
-      <GameTooltip tag="button" class="header-btn" position="bottom" @click="emit('openArmory')">
-        <Icon :name="Icons.armory" />
-        <template #content>
-          <span class="game-tooltip-text"
-            >Armory — {{ progression.armoryStats.discovered }} discovered</span
-          >
-        </template>
-      </GameTooltip>
-      <GameTooltip
-        tag="button"
-        class="header-btn"
-        text="Codex — Races &amp; Classes"
-        position="bottom"
-        @click="emit('openCodex')"
-      >
-        <Icon :name="Icons.codex" />
       </GameTooltip>
       <GameTooltip
         tag="button"
@@ -172,15 +131,6 @@ const emit = defineEmits<{
         @click="emit('openSettings')"
       >
         <Icon :name="Icons.settings" />
-      </GameTooltip>
-      <GameTooltip
-        tag="button"
-        class="header-btn"
-        text="Help"
-        position="bottom"
-        @click="emit('openHelp')"
-      >
-        <Icon :name="Icons.help" />
       </GameTooltip>
     </div>
   </header>

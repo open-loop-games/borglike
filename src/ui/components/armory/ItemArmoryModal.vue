@@ -8,10 +8,6 @@ import ItemDetailPanel from './ItemDetailPanel.vue'
 
 const progression = useProgressionStore()
 
-const emit = defineEmits<{
-  close: []
-}>()
-
 // Filter state
 const categoryFilter = ref<string>('all')
 const sortBy = ref<'tier' | 'name' | 'found'>('tier')
@@ -132,32 +128,17 @@ const artifactStats = computed(() => {
 </script>
 
 <template>
-  <div class="catalog-modal">
-    <header class="modal-header">
-      <div class="header-title">
-        <h2>Armory</h2>
-        <div class="discovery-counts">
-          <span class="discovery-count">
-            {{ itemStats.discovered }}/{{ itemStats.total }} Items
-          </span>
-          <span class="discovery-count artifact">
-            {{ artifactStats.discovered }}/{{ artifactStats.total }} Artifacts
-          </span>
-        </div>
-      </div>
-      <button class="close-btn" @click="emit('close')">&times;</button>
-    </header>
-
-    <div class="tab-bar">
+  <div class="armory-panel">
+    <div class="subtab-bar">
       <button
-        class="tab-btn"
+        class="subtab-btn"
         :class="{ active: activeTab === 'items' }"
         @click="activeTab = 'items'"
       >
         Items ({{ itemStats.discovered }}/{{ itemStats.total }})
       </button>
       <button
-        class="tab-btn"
+        class="subtab-btn"
         :class="{ active: activeTab === 'artifacts' }"
         @click="activeTab = 'artifacts'"
       >
@@ -184,8 +165,8 @@ const artifactStats = computed(() => {
       />
     </div>
 
-    <div class="modal-body">
-      <div class="modal-content">
+    <div class="panel-body">
+      <div class="panel-content">
         <!-- Items Grid -->
         <div v-if="activeTab === 'items'" class="item-grid">
           <ItemCard
@@ -226,76 +207,16 @@ const artifactStats = computed(() => {
 </template>
 
 <style scoped>
-.catalog-modal {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+.armory-panel {
   display: flex;
   flex-direction: column;
-  max-height: 80vh;
+  height: 100%;
+  min-height: 0;
   position: relative;
   overflow: hidden;
 }
 
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border);
-}
-
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: var(--text-2xl);
-  color: var(--text-primary);
-}
-
-.discovery-counts {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.discovery-count {
-  font-size: var(--text-base);
-  color: var(--text-secondary);
-  padding: var(--space-1) var(--space-3);
-  background: var(--bg-highlight);
-  border-radius: var(--radius-md);
-}
-
-.discovery-count.artifact {
-  color: var(--legendary);
-  background: rgba(251, 191, 36, 0.15);
-}
-
-.close-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: var(--text-3xl);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: var(--bg-highlight);
-  color: var(--text-primary);
-}
-
-.tab-bar {
+.subtab-bar {
   display: flex;
   gap: 0;
   padding: 0 var(--space-5);
@@ -303,7 +224,7 @@ const artifactStats = computed(() => {
   background: var(--bg);
 }
 
-.tab-btn {
+.subtab-btn {
   padding: var(--space-3) var(--space-5);
   background: transparent;
   border: none;
@@ -314,11 +235,11 @@ const artifactStats = computed(() => {
   transition: all 0.2s;
 }
 
-.tab-btn:hover {
+.subtab-btn:hover {
   color: var(--text-primary);
 }
 
-.tab-btn.active {
+.subtab-btn.active {
   color: var(--essence);
   border-bottom-color: var(--essence);
 }
@@ -365,13 +286,13 @@ const artifactStats = computed(() => {
   color: var(--text-dim);
 }
 
-.modal-body {
+.panel-body {
   flex: 1;
   display: flex;
   overflow: hidden;
 }
 
-.modal-content {
+.panel-content {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-4);
