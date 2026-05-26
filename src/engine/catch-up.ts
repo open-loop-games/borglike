@@ -38,9 +38,8 @@ let catchUpActive = false
  * the DOM-only app tsconfig without pulling in @types/node.
  */
 function yieldToEventLoop(callback: () => void): void {
-  const nodeSetImmediate = (
-    globalThis as { setImmediate?: (cb: () => void) => unknown }
-  ).setImmediate
+  const nodeSetImmediate = (globalThis as { setImmediate?: (cb: () => void) => unknown })
+    .setImmediate
   if (typeof nodeSetImmediate === 'function') {
     nodeSetImmediate(callback)
     return

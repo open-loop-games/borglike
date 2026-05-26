@@ -13,5 +13,4 @@
  */
 
 import pkg from '../../package.json' with { type: 'json' }
-
 ;(globalThis as { __APP_VERSION__?: string }).__APP_VERSION__ = pkg.version

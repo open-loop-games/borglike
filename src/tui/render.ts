@@ -1,16 +1,23 @@
 /**
  * Blessed Renderer
  *
- * Single-focused-slot layout: top header, dungeon grid (80x32 + border) on the
- * left, stats sidebar on the right, message feed across the bottom. Subscribes
- * to the runs store via @vue/reactivity's watch — each store mutation triggers
- * a re-render of the affected widget plus screen.render().
+ * Hybrid layout: thumbnail strip across the top showing all four slots at a
+ * glance, focused-slot dungeon + stats below, message feed under that, and a
+ * keybinding legend always visible at the bottom.
  *
- * Step 5: rendering only. Step 6 will add input handling (pause / speed /
- * slot-cycle / start-run). For now Ctrl-C / q quits.
+ *   Row 0..2    thumbnails (bordered, content row in the middle)
+ *   Row 3..36   dungeon (left, fixed 80×32+border) + stats sidebar (right)
+ *   Row 37..-2  feed (flexible — grows on taller terminals)
+ *   Row -1      status bar (single line)
  *
- * Terminal sizing: needs ~112 cols × 45 rows minimum to show the full grid
- * + stats + feed without clipping. Blessed clips gracefully if smaller.
+ * Subscribes to the runs store, progression store, feed store via
+ * @vue/reactivity's watch. Focused slot is a TUI-local ref (state.ts) so
+ * cycling keybinds can mutate it; watchers re-derive against it.
+ *
+ * Input handling lives here too (it's tied to the screen instance), with
+ * action targets dispatching to instance-manager / Pinia stores. The kill-
+ * confirm flow uses a 2s timer plus a reactive flag that the status bar
+ * watches to swap its hint legend.
  */
 
 import blessed from 'blessed'
@@ -20,25 +27,26 @@ import type { ActiveRun, GridCell } from '@/stores/runs'
 import { useRunsStore } from '@/stores/runs'
 import { useProgressionStore } from '@/stores/progression'
 import { useFeedStore, type FeedEvent } from '@/stores/feed'
+import { useEngineStateStore } from '@/stores/engine-state'
+import { startRun, killRun, togglePause } from '@/engine/instance-manager'
+
+import { focusedSlot, helpVisible, killConfirmSlot, KILL_CONFIRM_WINDOW_MS } from './state'
 
 const GRID_COLS = 80
 const GRID_ROWS = 32
+const THUMBNAIL_HEIGHT = 3 // border + 1 content + border
+const FEED_BOTTOM_OFFSET = 1 // reserve a row for the status bar
 
 export interface RendererHandle {
   /** Tear down screen + watchers. Called on shutdown. */
   destroy(): void
 }
 
-/**
- * Create the blessed screen, wire reactive subscriptions, return a handle.
- *
- * @param focusedSlot The slot whose run is rendered in the dungeon pane.
- *                    Step 6 will let this change at runtime.
- */
-export function createRenderer(focusedSlot: number): RendererHandle {
+export function createRenderer(): RendererHandle {
   const runs = useRunsStore()
   const progression = useProgressionStore()
   const feed = useFeedStore()
+  const engineState = useEngineStateStore()
 
   const screen = blessed.screen({
     smartCSR: true,
@@ -46,19 +54,20 @@ export function createRenderer(focusedSlot: number): RendererHandle {
     fullUnicode: true,
   })
 
-  const header = blessed.box({
+  const thumbnails = blessed.box({
     parent: screen,
     top: 0,
     left: 0,
     right: 0,
-    height: 1,
+    height: THUMBNAIL_HEIGHT,
+    border: 'line',
     tags: true,
-    style: { fg: 'white', bg: 'blue' },
+    style: { border: { fg: 'gray' } },
   })
 
   const dungeon = blessed.box({
     parent: screen,
-    top: 1,
+    top: THUMBNAIL_HEIGHT,
     left: 0,
     width: GRID_COLS + 2,
     height: GRID_ROWS + 2,
@@ -69,7 +78,7 @@ export function createRenderer(focusedSlot: number): RendererHandle {
 
   const stats = blessed.box({
     parent: screen,
-    top: 1,
+    top: THUMBNAIL_HEIGHT,
     left: GRID_COLS + 2,
     right: 0,
     height: GRID_ROWS + 2,
@@ -81,10 +90,10 @@ export function createRenderer(focusedSlot: number): RendererHandle {
 
   const feedBox = blessed.log({
     parent: screen,
-    top: GRID_ROWS + 3,
+    top: THUMBNAIL_HEIGHT + GRID_ROWS + 2,
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: FEED_BOTTOM_OFFSET,
     border: 'line',
     tags: true,
     label: ' Feed ',
@@ -94,41 +103,103 @@ export function createRenderer(focusedSlot: number): RendererHandle {
     style: { border: { fg: 'gray' } },
   })
 
-  // Quit keys — proper input handling comes in step 6.
-  screen.key(['q', 'C-c'], () => {
-    process.kill(process.pid, 'SIGINT')
+  const statusBar = blessed.box({
+    parent: screen,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    tags: true,
+    // `inverse` swaps fg/bg using whatever the terminal's defaults are, so the
+    // bar adapts to light/dark themes instead of being stuck with a fixed blue.
+    style: { inverse: true },
   })
 
-  // ---- subscriptions ------------------------------------------------------
+  const help = blessed.box({
+    parent: screen,
+    top: 'center',
+    left: 'center',
+    width: 50,
+    height: 18,
+    border: 'line',
+    tags: true,
+    hidden: true,
+    label: ' Help ',
+    style: { border: { fg: 'yellow' }, bg: 'black' },
+    content: renderHelpContent(),
+  })
 
-  const stopHeader = watch(
-    () => ({
-      essence: progression.currency.essence,
-      slotCount: progression.unlocks.runSlots,
-      focused: runs.getRunBySlot(focusedSlot),
-      states: runs.activeSlots.map((id) => (id ? runs.runs.get(id)?.state : null)),
-    }),
+  // ===========================================================================
+  // SUBSCRIPTIONS
+  // ===========================================================================
+
+  const stopThumbnails = watch(
+    () => {
+      // Re-derive thumbnails on slot state, focus change, or run-state change.
+      return {
+        focus: focusedSlot.value,
+        slotCount: progression.unlocks.runSlots,
+        slots: runs.activeSlots.map((id) => {
+          if (!id) return null
+          const run = runs.runs.get(id)
+          return run ? { state: run.state, depth: run.depth, hp: run.hp, maxHp: run.maxHp } : null
+        }),
+      }
+    },
     (state) => {
-      header.setContent(renderHeader(state.essence, state.slotCount, focusedSlot, state.focused))
+      thumbnails.setContent(renderThumbnails(state.slots, state.focus, state.slotCount))
       screen.render()
     },
     { immediate: true, deep: true }
   )
 
-  const stopDungeon = watch(
+  const stopDungeonLabel = watch(
     () => {
-      const run = runs.getRunBySlot(focusedSlot)
-      return run?.grid
+      const run = runs.getRunBySlot(focusedSlot.value)
+      return {
+        slot: focusedSlot.value,
+        slotCount: progression.unlocks.runSlots,
+        race: run?.config.race,
+        cls: run?.config.class,
+        state: run?.state,
+        paused: engineState.isPaused,
+        essence: progression.currency.essence,
+      }
     },
-    (grid) => {
-      dungeon.setContent(grid ? renderGrid(grid) : '')
+    (s) => {
+      const label = renderDungeonLabel(
+        s.slot,
+        s.slotCount,
+        s.race,
+        s.cls,
+        s.state,
+        s.paused,
+        s.essence
+      )
+      dungeon.setLabel(label)
+      screen.render()
+    },
+    { immediate: true, deep: true }
+  )
+
+  const stopDungeonGrid = watch(
+    () => {
+      const run = runs.getRunBySlot(focusedSlot.value)
+      return { slot: focusedSlot.value, run, grid: run?.grid }
+    },
+    ({ slot, run, grid }) => {
+      if (!run) {
+        dungeon.setContent(renderEmptySlotPlaceholder(slot))
+      } else {
+        dungeon.setContent(grid ? renderGrid(grid) : '')
+      }
       screen.render()
     },
     { immediate: true, deep: true }
   )
 
   const stopStats = watch(
-    () => runs.getRunBySlot(focusedSlot),
+    () => runs.getRunBySlot(focusedSlot.value),
     (run) => {
       stats.setContent(renderStats(run))
       screen.render()
@@ -136,10 +207,28 @@ export function createRenderer(focusedSlot: number): RendererHandle {
     { immediate: true, deep: true }
   )
 
-  // Track the newest event id we've already logged. Feed events are stored
-  // newest-first (unshift) with a fixed cap (oldest popped), so watching
-  // events.length silently misses updates once the cap is reached. Watching
-  // the front-of-array id triggers reliably for every new event.
+  const stopStatusBar = watch(
+    () => ({
+      killPending: killConfirmSlot.value !== null,
+      killSlot: killConfirmSlot.value,
+    }),
+    (s) => {
+      statusBar.setContent(renderStatusBar(s.killPending, s.killSlot))
+      screen.render()
+    },
+    { immediate: true }
+  )
+
+  const stopHelp = watch(helpVisible, (visible) => {
+    if (visible) {
+      help.show()
+      help.setFront()
+    } else {
+      help.hide()
+    }
+    screen.render()
+  })
+
   let lastLoggedId = -1
   const stopFeed = watch(
     () => feed.events[0]?.id ?? -1,
@@ -147,7 +236,7 @@ export function createRenderer(focusedSlot: number): RendererHandle {
       const fresh: FeedEvent[] = []
       for (const event of feed.events) {
         if (event.id <= lastLoggedId) break
-        fresh.unshift(event) // reverse so we log oldest-first
+        fresh.unshift(event)
       }
       for (const event of fresh) {
         feedBox.log(renderFeedLine(event))
@@ -157,13 +246,174 @@ export function createRenderer(focusedSlot: number): RendererHandle {
     { immediate: true }
   )
 
+  // ===========================================================================
+  // INPUT
+  // ===========================================================================
+
+  let killConfirmTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearKillConfirm(): void {
+    if (killConfirmTimer) {
+      clearTimeout(killConfirmTimer)
+      killConfirmTimer = null
+    }
+    killConfirmSlot.value = null
+  }
+
+  function focusSlot(slot: number): void {
+    if (slot < 0 || slot >= progression.unlocks.runSlots) return
+    if (focusedSlot.value === slot) return
+    focusedSlot.value = slot
+    clearKillConfirm()
+  }
+
+  function cycleFocus(direction: 1 | -1): void {
+    // Cycle only over slots that have an active (non-ended) run.
+    const candidates: number[] = []
+    for (let s = 0; s < progression.unlocks.runSlots; s++) {
+      const run = runs.getRunBySlot(s)
+      if (run && run.state === 'running') candidates.push(s)
+    }
+    if (candidates.length === 0) return
+
+    const current = focusedSlot.value
+    const currentIdx = candidates.indexOf(current)
+    let nextIdx: number
+    if (currentIdx === -1) {
+      nextIdx = direction === 1 ? 0 : candidates.length - 1
+    } else {
+      nextIdx = (currentIdx + direction + candidates.length) % candidates.length
+    }
+    const next = candidates[nextIdx]
+    if (next !== undefined) focusSlot(next)
+  }
+
+  function onTurboKey(): void {
+    const run = runs.getRunBySlot(focusedSlot.value)
+    if (run) runs.toggleTurbo(run.id)
+    clearKillConfirm()
+  }
+
+  function onStartKey(): void {
+    const existing = runs.getRunBySlot(focusedSlot.value)
+    if (existing && existing.state === 'running') return
+    try {
+      startRun(focusedSlot.value)
+    } catch (err) {
+      // Slot locked or some other invariant. Surface via feed.
+      console.error('[tui] startRun failed:', err)
+    }
+    clearKillConfirm()
+  }
+
+  function onKillKey(): void {
+    const run = runs.getRunBySlot(focusedSlot.value)
+    if (!run || run.state !== 'running') {
+      clearKillConfirm()
+      return
+    }
+    if (killConfirmSlot.value === focusedSlot.value) {
+      // Second press within window — execute.
+      clearKillConfirm()
+      killRun(run.id)
+      return
+    }
+    // First press — arm confirm.
+    killConfirmSlot.value = focusedSlot.value
+    if (killConfirmTimer) clearTimeout(killConfirmTimer)
+    killConfirmTimer = setTimeout(() => {
+      killConfirmSlot.value = null
+      killConfirmTimer = null
+    }, KILL_CONFIRM_WINDOW_MS)
+  }
+
+  function onPauseKey(): void {
+    if (engineState.isCatchingUp) return
+    togglePause()
+    clearKillConfirm()
+  }
+
+  function onHelpKey(): void {
+    helpVisible.value = !helpVisible.value
+    clearKillConfirm()
+  }
+
+  function onEscapeKey(): void {
+    if (helpVisible.value) {
+      helpVisible.value = false
+      return
+    }
+    if (killConfirmSlot.value !== null) {
+      clearKillConfirm()
+      return
+    }
+  }
+
+  function onQuitKey(): void {
+    process.kill(process.pid, 'SIGINT')
+  }
+
+  // While the help modal is open, every bound key (except ? and Escape, which
+  // manage the modal directly) dismisses it without firing its underlying
+  // action. Unbound keys do nothing — user uses ? or Esc to close.
+  function gated(action: () => void): () => void {
+    return () => {
+      if (helpVisible.value) {
+        helpVisible.value = false
+        return
+      }
+      action()
+    }
+  }
+
+  // Slot focus
+  screen.key(
+    ['1'],
+    gated(() => focusSlot(0))
+  )
+  screen.key(
+    ['2'],
+    gated(() => focusSlot(1))
+  )
+  screen.key(
+    ['3'],
+    gated(() => focusSlot(2))
+  )
+  screen.key(
+    ['4'],
+    gated(() => focusSlot(3))
+  )
+  screen.key(
+    ['tab'],
+    gated(() => cycleFocus(1))
+  )
+  screen.key(
+    ['S-tab'],
+    gated(() => cycleFocus(-1))
+  )
+
+  // Run controls
+  screen.key(['space'], gated(onPauseKey))
+  screen.key(['t', 'T'], gated(onTurboKey))
+  screen.key(['s', 'S'], gated(onStartKey))
+  screen.key(['K'], gated(onKillKey)) // Shift+K
+
+  // UI — these manage help / kill-confirm directly, no gating
+  screen.key(['?'], onHelpKey)
+  screen.key(['escape'], onEscapeKey)
+  screen.key(['q', 'C-c'], onQuitKey)
+
   screen.render()
 
   return {
     destroy() {
-      stopHeader()
-      stopDungeon()
+      if (killConfirmTimer) clearTimeout(killConfirmTimer)
+      stopThumbnails()
+      stopDungeonLabel()
+      stopDungeonGrid()
       stopStats()
+      stopStatusBar()
+      stopHelp()
       stopFeed()
       screen.destroy()
     },
@@ -171,32 +421,101 @@ export function createRenderer(focusedSlot: number): RendererHandle {
 }
 
 // ===========================================================================
-// HEADER
+// THUMBNAILS
 // ===========================================================================
 
-function renderHeader(
-  essence: number,
-  slotCount: number,
-  focusedSlot: number,
-  focused: ActiveRun | undefined
+interface ThumbState {
+  state: ActiveRun['state']
+  depth: number
+  hp: number
+  maxHp: number
+}
+
+function renderThumbnails(
+  slots: Array<ThumbState | null>,
+  focusIdx: number,
+  unlockedCount: number
 ): string {
-  const left = ` Borglike `
-  const slotPart = `Slot ${focusedSlot + 1}/${slotCount}`
-  const runPart = focused
-    ? `${focused.config.race} ${focused.config.class} (${focused.state})`
-    : 'no run'
-  const essencePart = `essence ${essence}`
-  return `{bold}${left}{/bold} ${slotPart} • ${runPart} • ${essencePart}`
+  const parts: string[] = []
+  for (let i = 0; i < 4; i++) {
+    const focused = i === focusIdx
+    const cell = renderThumbCell(i, slots[i] ?? null, i >= unlockedCount, focused)
+    parts.push(cell)
+  }
+  return parts.join(' {gray-fg}│{/} ')
+}
+
+function renderThumbCell(
+  slotIdx: number,
+  state: ThumbState | null,
+  locked: boolean,
+  focused: boolean
+): string {
+  let body: string
+  if (locked) {
+    body = `[${slotIdx + 1}] {gray-fg}LOCKED{/}`
+  } else if (!state) {
+    body = `[${slotIdx + 1}] {gray-fg}empty{/}`
+  } else {
+    const hpPct = state.maxHp > 0 ? Math.round((state.hp / state.maxHp) * 100) : 0
+    const color = stateColor(state.state)
+    body = `[${slotIdx + 1}] {${color}-fg}${state.state}{/} D${state.depth} ${hpPct}%`
+  }
+  return focused ? `{bold}${body}{/bold}` : body
+}
+
+function stateColor(state: ActiveRun['state']): string {
+  switch (state) {
+    case 'running':
+      return 'green'
+    case 'dead':
+      return 'red'
+    case 'victory':
+      return 'yellow'
+    case 'starting':
+      return 'cyan'
+    default:
+      return 'white'
+  }
 }
 
 // ===========================================================================
-// DUNGEON GRID
+// DUNGEON LABEL + GRID
 // ===========================================================================
 
-/**
- * Convert the 80x32 cell grid into a blessed-tagged string. Groups adjacent
- * same-color cells into a single tag span to keep the resulting string small.
- */
+function renderDungeonLabel(
+  slot: number,
+  slotCount: number,
+  race: string | undefined,
+  cls: string | undefined,
+  state: ActiveRun['state'] | undefined,
+  paused: boolean,
+  essence: number
+): string {
+  const identity = race && cls ? `${race} ${cls}` : 'no run'
+  const stateStr = state ?? '—'
+  const flags: string[] = []
+  if (paused) flags.push('PAUSED')
+  const flagStr = flags.length ? ` [${flags.join(' ')}]` : ''
+  return ` Slot ${slot + 1}/${slotCount} • ${identity} • ${stateStr}${flagStr} • essence ${essence} `
+}
+
+function renderEmptySlotPlaceholder(slot: number): string {
+  const lines: string[] = []
+  for (let i = 0; i < GRID_ROWS; i++) lines.push('')
+  const middle = Math.floor(GRID_ROWS / 2)
+  const message = `Slot ${slot + 1} empty — press {bold}S{/bold} to start a run`
+  lines[middle] = centerLine(message, GRID_COLS)
+  return lines.join('\n')
+}
+
+function centerLine(content: string, width: number): string {
+  // Strip blessed tags for width calc — they don't render as cells.
+  const visible = content.replace(/\{[^}]+\}/g, '')
+  const pad = Math.max(0, Math.floor((width - visible.length) / 2))
+  return ' '.repeat(pad) + content
+}
+
 function renderGrid(grid: GridCell[][]): string {
   const lines: string[] = []
   for (let y = 0; y < GRID_ROWS; y++) {
@@ -227,10 +546,6 @@ function renderRow(row: GridCell[]): string {
   return out
 }
 
-/**
- * Blessed treats `{` and `}` as tag delimiters. The game uses both as item
- * glyphs (gloves, boots). Escape via blessed's documented markers.
- */
 function escapeBlessed(char: string): string {
   if (char === '{') return '{open}'
   if (char === '}') return '{close}'
@@ -242,7 +557,7 @@ function escapeBlessed(char: string): string {
 // ===========================================================================
 
 function renderStats(run: ActiveRun | undefined): string {
-  if (!run) return ' (no run)'
+  if (!run) return '\n  {gray-fg}(no run){/}'
 
   const lines: string[] = []
   lines.push('')
@@ -262,9 +577,9 @@ function renderStats(run: ActiveRun | undefined): string {
   lines.push('')
   lines.push(`  Turn  ${run.turns}`)
   lines.push(`  Kills ${run.kills}`)
-  lines.push('')
 
   if (run.botGoal) {
+    lines.push('')
     lines.push(`  {gray-fg}Goal:{/}`)
     lines.push(`  ${run.botGoal}`)
   }
@@ -275,6 +590,22 @@ function renderStats(run: ActiveRun | undefined): string {
   }
 
   return lines.join('\n')
+}
+
+// ===========================================================================
+// STATUS BAR
+// ===========================================================================
+
+const IDLE_HINTS =
+  ' [Space]pause  [1-4/Tab]focus  [T]turbo  [S]start  [{bold}⇧K{/bold}]kill  [?]help  [q]quit'
+
+function renderStatusBar(killPending: boolean, killSlot: number | null): string {
+  if (killPending && killSlot !== null) {
+    // High-contrast alert palette — overrides the bar's inverse style so the
+    // confirm prompt is obviously a different mode.
+    return ` {red-bg}{white-fg}{bold} ⇧K again to confirm kill of slot ${killSlot + 1} {/} [Esc cancels] `
+  }
+  return IDLE_HINTS
 }
 
 // ===========================================================================
@@ -296,4 +627,30 @@ const FEED_COLOR: Record<FeedEvent['type'], string> = {
   victory: 'green',
   good: 'green',
   danger: 'red',
+}
+
+// ===========================================================================
+// HELP
+// ===========================================================================
+
+function renderHelpContent(): string {
+  const lines = [
+    '',
+    '  {bold}Slot focus{/bold}',
+    '    {cyan-fg}1{/}-{cyan-fg}4{/}        focus slot directly',
+    '    {cyan-fg}Tab{/}        cycle forward through active runs',
+    '    {cyan-fg}⇧Tab{/}       cycle backward',
+    '',
+    '  {bold}Run control{/bold}',
+    '    {cyan-fg}Space{/}      toggle pause (all runs)',
+    '    {cyan-fg}T{/}          toggle turbo on focused run',
+    '    {cyan-fg}S{/}          start new run in focused slot',
+    '    {cyan-fg}⇧K{/}         kill focused run (tap twice within 2s)',
+    '',
+    '  {bold}UI{/bold}',
+    '    {cyan-fg}?{/}          this help',
+    '    {cyan-fg}Esc{/}        cancel modal / pending kill',
+    '    {cyan-fg}q{/}, {cyan-fg}^C{/}     quit',
+  ]
+  return lines.join('\n')
 }

@@ -2,46 +2,77 @@
 /**
  * TUI Entry
  *
- * Boots Pinia + file persistence, starts a run, hands the screen over to the
- * blessed renderer. Ctrl-C / q quits cleanly. Step 5 — rendering only, no
- * meta-control input yet (pause/speed/slot-cycle land in step 6).
+ * Boots Pinia + file persistence, starts a run in slot 0, hands the screen
+ * over to the blessed renderer. Keybindings live in render.ts (close to the
+ * blessed.screen instance that owns them). Quits cleanly on Ctrl-C / q.
  *
- * Invoke: pnpm exec tsx --tsconfig tsconfig.tui.json src/tui/main.ts
+ * Invoke: pnpm exec tsx --tsconfig tsconfig.tui.json src/tui/main.ts [--data-dir <path>]
  */
 
-// MUST be first — sets globalThis.__APP_VERSION__ before persistence loads.
+// Order matters — both modules have load-time side effects that must run
+// BEFORE the persistence package's module bodies execute.
+//   bootstrap: sets globalThis.__APP_VERSION__ (Vite-define equivalent)
+//   log:       redirects console.* to <data-dir>/tui.log so blessed's screen
+//              isn't corrupted by persistence chatter
 import './bootstrap'
+import './log'
 
 import { createPinia, setActivePinia } from 'pinia'
 
 import { initPersistence, cleanupPersistence } from '@/stores/persistence'
 import { createFileBackend } from '@/stores/persistence/file-backend'
-import { startRun, stopRun } from '@/engine/instance-manager'
+import { startRun } from '@/engine/instance-manager'
 import { createRenderer } from './render'
 
+interface Args {
+  dataDir?: string
+}
+
+function parseArgs(argv: string[]): Args {
+  const args: Args = {}
+  for (let i = 2; i < argv.length; i++) {
+    const arg = argv[i]
+    if (!arg) continue
+    if (arg === '--data-dir') {
+      args.dataDir = argv[++i]
+    } else if (arg.startsWith('--data-dir=')) {
+      args.dataDir = arg.slice('--data-dir='.length)
+    } else if (arg === '--help' || arg === '-h') {
+      printUsage()
+      process.exit(0)
+    } else {
+      console.error(`[tui] unknown arg: ${arg}`)
+      printUsage()
+      process.exit(2)
+    }
+  }
+  return args
+}
+
+function printUsage(): void {
+  console.error('Usage: borglike-tui [--data-dir <path>]')
+  console.error('')
+  console.error('  --data-dir <path>   Override save location (default: $XDG_DATA_HOME/borglike)')
+}
+
 async function main(): Promise<void> {
+  const args = parseArgs(process.argv)
+
   setActivePinia(createPinia())
 
-  const backend = createFileBackend()
-  const hadData = await initPersistence(backend)
-  if (!hadData) {
-    // Visible in the feed once the renderer is up; harmless to also log here.
-    console.error('[tui] starting from fresh save')
-  }
+  const backend = createFileBackend(args.dataDir ? { dataDir: args.dataDir } : {})
+  await initPersistence(backend)
 
-  const runId = startRun(0)
-  const renderer = createRenderer(0)
+  // Auto-start slot 0 so the watcher loop has something to render from frame 1.
+  startRun(0)
+
+  const renderer = createRenderer()
 
   const shutdown = (signal: string): void => {
     try {
       renderer.destroy()
     } catch {
-      // ignore — process is exiting anyway
-    }
-    try {
-      stopRun(runId)
-    } catch (err) {
-      console.error('[tui] error stopping run:', err)
+      // ignore — exiting anyway
     }
     cleanupPersistence()
     console.error(`[tui] exited on ${signal}`)
