@@ -2,12 +2,13 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import './styles/index.css'
 import './ui/icons'
-
-const isMobile = window.matchMedia('(max-width: 768px)').matches && 'ontouchstart' in window
+import { useIsMobile } from './ui/composables/use-is-mobile'
 
 const pinia = createPinia()
 
-const loadShell = isMobile ? () => import('./MobileApp.vue') : () => import('./DesktopApp.vue')
+const loadShell = useIsMobile()
+  ? () => import('./MobileApp.vue')
+  : () => import('./DesktopApp.vue')
 
 void loadShell().then((mod) => {
   const app = createApp(mod.default)

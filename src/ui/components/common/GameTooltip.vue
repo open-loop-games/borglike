@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { ref, useSlots, computed, nextTick, watch, onBeforeUnmount } from 'vue'
 import { useShiftHeld } from '@/ui/composables/use-shift-held'
+import { useIsMobile } from '@/ui/composables/use-is-mobile'
 import { Icons } from '@/ui/icons'
 import Icon from './Icon.vue'
 
 defineOptions({ inheritAttrs: false })
+
+// Tooltips are an additive desktop UX. On mobile they can fire from simulated
+// mouseenter on tap (iOS Safari) and compete with parent tap handlers, so we
+// short-circuit to just the trigger slot. Info shown in a tooltip must always
+// be reachable inline or via a MobilePageStack drill-down on mobile.
+const mobile = useIsMobile()
 
 const props = withDefaults(
   defineProps<{
@@ -61,7 +68,7 @@ function clearTimers() {
 }
 
 function onMouseEnter() {
-  if (props.disabled || !hasContent.value) return
+  if (mobile || props.disabled || !hasContent.value) return
   // Cancel pending hide
   if (hideTimer !== null) {
     clearTimeout(hideTimer)
@@ -156,7 +163,7 @@ const tooltipStyle = computed(() => ({
     @mouseleave="onMouseLeave"
   >
     <slot />
-    <Teleport to="body">
+    <Teleport v-if="!mobile" to="body">
       <Transition name="tooltip-fade">
         <div
           v-if="visible"
