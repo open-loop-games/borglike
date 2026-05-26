@@ -15,12 +15,7 @@ defineEmits<{
 
 <template>
   <div class="collapsible-section" :class="{ collapsed: !expanded }">
-    <button
-      class="section-header"
-      type="button"
-      :aria-expanded="expanded"
-      @click="$emit('toggle')"
-    >
+    <button class="section-header" type="button" :aria-expanded="expanded" @click="$emit('toggle')">
       <Icon class="chevron" :class="{ open: expanded }" :name="Icons.caretRight" />
       <span class="title">{{ title }}</span>
       <span v-if="badge !== undefined" class="badge">{{ badge }}</span>
@@ -76,7 +71,9 @@ defineEmits<{
 .chevron {
   width: 10px;
   color: var(--text-dim);
-  transition: color 0.15s, transform 0.15s;
+  transition:
+    color 0.15s,
+    transform 0.15s;
 }
 
 .chevron.open {

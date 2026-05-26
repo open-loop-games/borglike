@@ -34,7 +34,9 @@ defineEmits<{ 'update:modelValue': [value: boolean] }>()
   border-radius: var(--radius-pill);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 .setting-switch[data-state='checked'] {
@@ -59,7 +61,9 @@ defineEmits<{ 'update:modelValue': [value: boolean] }>()
   background: var(--text-secondary);
   border-radius: 50%;
   transform: translateX(2px);
-  transition: transform 0.2s, background 0.2s;
+  transition:
+    transform 0.2s,
+    background 0.2s;
   will-change: transform;
 }
 

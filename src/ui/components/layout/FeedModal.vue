@@ -97,12 +97,7 @@ function formatTimestamp(timestamp: number): string {
         placeholder="Search messages..."
       />
 
-      <IconSelect
-        v-model="slotFilter"
-        :options="slotOptions"
-        aria-label="Filter by slot"
-        inline
-      />
+      <IconSelect v-model="slotFilter" :options="slotOptions" aria-label="Filter by slot" inline />
 
       <IconSelect
         v-model="typeFilter"
