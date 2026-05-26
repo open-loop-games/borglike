@@ -11,6 +11,7 @@ import { useEngineStateStore } from './stores/engine-state'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
 import { useGameTitle } from './ui/composables/use-game-title'
+import { useThemeEffects } from './ui/composables/use-theme-effects'
 
 // Loading state - block render until persistence loads
 const isLoaded = ref(false)
@@ -19,6 +20,7 @@ const isLoaded = ref(false)
 // They register lifecycle hooks that need the active component instance
 useKeyboard()
 useGameTitle()
+useThemeEffects()
 const engineState = useEngineStateStore()
 
 // Initialize persistence on mount

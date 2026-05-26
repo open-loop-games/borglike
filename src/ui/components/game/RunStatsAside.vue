@@ -2,7 +2,7 @@
 import { computed, toRef } from 'vue'
 import type { ActiveRun, DisplayItem } from '@/stores/runs'
 import type { EquipSlot } from '@game/types'
-import { useSettingsStore, type PanelStates } from '@/stores/settings'
+import { usePanelStates } from '@/ui/composables/use-panel-states'
 import { useItemLinger } from '@/ui/composables/use-item-linger'
 import ProgressBar from '../common/ProgressBar.vue'
 import CollapsibleSection from '../common/CollapsibleSection.vue'
@@ -12,11 +12,7 @@ const props = defineProps<{
   run: ActiveRun
 }>()
 
-const settingsStore = useSettingsStore()
-
-function togglePanel(panel: keyof PanelStates) {
-  settingsStore.togglePanel(panel)
-}
+const { panelStates, togglePanel } = usePanelStates()
 
 const RESIST_CONFIG: Record<string, { label: string; color: string }> = {
   FIRE: { label: 'F', color: '#ef4444' },
@@ -253,7 +249,7 @@ function formatGoal(goal: string | undefined): string {
     <!-- Vitals -->
     <CollapsibleSection
       title="Vitals"
-      :expanded="settingsStore.panelStates.vitals"
+      :expanded="panelStates.vitals"
       @toggle="togglePanel('vitals')"
     >
       <div class="resource-row">
@@ -286,11 +282,7 @@ function formatGoal(goal: string | undefined): string {
     </CollapsibleSection>
 
     <!-- Core Stats -->
-    <CollapsibleSection
-      title="Stats"
-      :expanded="settingsStore.panelStates.stats"
-      @toggle="togglePanel('stats')"
-    >
+    <CollapsibleSection title="Stats" :expanded="panelStates.stats" @toggle="togglePanel('stats')">
       <div class="core-stats-grid">
         <GameTooltip class="core-stat" :text="`${STAT_TIPS.STR.label} — ${STAT_TIPS.STR.desc}`">
           <span class="core-label">STR</span>
@@ -318,7 +310,7 @@ function formatGoal(goal: string | undefined): string {
     <!-- Combat Stats -->
     <CollapsibleSection
       title="Combat"
-      :expanded="settingsStore.panelStates.combat"
+      :expanded="panelStates.combat"
       @toggle="togglePanel('combat')"
     >
       <div class="combat-stats-grid">
@@ -390,7 +382,7 @@ function formatGoal(goal: string | undefined): string {
     <!-- Equipment -->
     <CollapsibleSection
       title="Equipped"
-      :expanded="settingsStore.panelStates.equipment"
+      :expanded="panelStates.equipment"
       @toggle="togglePanel('equipment')"
     >
       <div class="equip-grid">
@@ -439,7 +431,7 @@ function formatGoal(goal: string | undefined): string {
     <!-- Pack -->
     <CollapsibleSection
       title="Pack"
-      :expanded="settingsStore.panelStates.inventory"
+      :expanded="panelStates.inventory"
       :badge="equipmentItems.length"
       @toggle="togglePanel('inventory')"
     >
@@ -462,7 +454,7 @@ function formatGoal(goal: string | undefined): string {
     <CollapsibleSection
       v-show="lingeredResistances.length > 0"
       title="Resist"
-      :expanded="settingsStore.panelStates.resist"
+      :expanded="panelStates.resist"
       :badge="activeResistances.length"
       @toggle="togglePanel('resist')"
     >
@@ -508,7 +500,7 @@ function formatGoal(goal: string | undefined): string {
     <CollapsibleSection
       v-show="lingeredStatuses.length > 0"
       title="Status"
-      :expanded="settingsStore.panelStates.status"
+      :expanded="panelStates.status"
       :badge="activeStatuses.length"
       @toggle="togglePanel('status')"
     >
@@ -544,7 +536,7 @@ function formatGoal(goal: string | undefined): string {
     <CollapsibleSection
       v-show="lingeredConsumables.length > 0"
       title="Consumables"
-      :expanded="settingsStore.panelStates.consumables"
+      :expanded="panelStates.consumables"
       :badge="stackedConsumables.reduce((sum, c) => sum + c.count, 0)"
       @toggle="togglePanel('consumables')"
     >

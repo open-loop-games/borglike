@@ -18,6 +18,7 @@ import { useRunsStore } from './stores/runs'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
 import { useGameTitle } from './ui/composables/use-game-title'
+import { useThemeEffects } from './ui/composables/use-theme-effects'
 import { startRun, setSlotConfiguring } from './engine/instance-manager'
 import type { Personality } from './types/events'
 
@@ -25,6 +26,7 @@ const isLoaded = ref(false)
 
 useKeyboard()
 useGameTitle()
+useThemeEffects()
 const engineState = useEngineStateStore()
 const runs = useRunsStore()
 
