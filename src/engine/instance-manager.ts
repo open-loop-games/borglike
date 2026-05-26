@@ -41,7 +41,7 @@ interface GameInstance {
   runId: string
   slot: number
   runner: ReturnType<typeof createGameRunner>
-  intervalId: number | null
+  intervalId: ReturnType<typeof setInterval> | null
   tickRate: number
 }
 
@@ -753,7 +753,7 @@ function startGameLoop(runId: string): void {
       if (instance.intervalId) {
         clearInterval(instance.intervalId)
       }
-      instance.intervalId = window.setInterval(tick, newTickRate) as unknown as number
+      instance.intervalId = setInterval(tick, newTickRate)
       lastTickTime = now
       return
     }
@@ -792,7 +792,7 @@ function startGameLoop(runId: string): void {
     feed.processMessages(runId, run.slot, game.messages)
   }
 
-  instance.intervalId = window.setInterval(tick, instance.tickRate) as unknown as number
+  instance.intervalId = setInterval(tick, instance.tickRate)
 }
 
 /**

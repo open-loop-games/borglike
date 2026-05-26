@@ -27,8 +27,24 @@ const INITIAL_BATCH_SIZE = 200
 let skipRequested = false
 let catchUpActive = false
 
-/** MessageChannel-based yield — avoids setTimeout's 4ms minimum delay */
-function yieldToBrowser(callback: () => void): void {
+/**
+ * Yield to the host event loop without setTimeout's 4ms minimum delay.
+ *
+ * Node: setImmediate is the idiomatic equivalent and is always available.
+ * Browser: MessageChannel is the standard trick (queueMicrotask doesn't give
+ * up the macrotask slot, setTimeout has the 4ms floor).
+ *
+ * `setImmediate` is looked up off globalThis so this module type-checks under
+ * the DOM-only app tsconfig without pulling in @types/node.
+ */
+function yieldToEventLoop(callback: () => void): void {
+  const nodeSetImmediate = (
+    globalThis as { setImmediate?: (cb: () => void) => unknown }
+  ).setImmediate
+  if (typeof nodeSetImmediate === 'function') {
+    nodeSetImmediate(callback)
+    return
+  }
   const { port1, port2 } = new MessageChannel()
   port1.onmessage = () => {
     port1.close()
@@ -190,10 +206,10 @@ export async function runFullCatchUp(
       }
 
       // Yield to browser via MessageChannel (~0.1ms vs setTimeout's ~4ms)
-      yieldToBrowser(batch)
+      yieldToEventLoop(batch)
     }
 
-    yieldToBrowser(batch)
+    yieldToEventLoop(batch)
   })
 
   // Log profiling summary
