@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { TabsRoot, TabsList, TabsTrigger } from 'reka-ui'
 import { useProgressionStore } from '@/stores/progression'
 import { ALL_ITEMS, type ItemTemplate } from '@game/data/items'
 import { ARTIFACTS, type ArtifactTemplate } from '@game/data/artifacts'
@@ -128,23 +129,15 @@ const artifactStats = computed(() => {
 </script>
 
 <template>
-  <div class="armory-panel">
-    <div class="subtab-bar">
-      <button
-        class="subtab-btn"
-        :class="{ active: activeTab === 'items' }"
-        @click="activeTab = 'items'"
-      >
+  <TabsRoot v-model="activeTab" class="armory-panel">
+    <TabsList class="subtab-bar">
+      <TabsTrigger value="items" class="subtab-btn">
         Items ({{ itemStats.discovered }}/{{ itemStats.total }})
-      </button>
-      <button
-        class="subtab-btn"
-        :class="{ active: activeTab === 'artifacts' }"
-        @click="activeTab = 'artifacts'"
-      >
+      </TabsTrigger>
+      <TabsTrigger value="artifacts" class="subtab-btn">
         Artifacts ({{ artifactStats.discovered }}/{{ artifactStats.total }})
-      </button>
-    </div>
+      </TabsTrigger>
+    </TabsList>
 
     <div class="filter-bar">
       <select v-if="activeTab === 'items'" v-model="categoryFilter" class="filter-select">
@@ -203,7 +196,7 @@ const artifactStats = computed(() => {
         @close="clearSelection"
       />
     </div>
-  </div>
+  </TabsRoot>
 </template>
 
 <style scoped>
@@ -239,7 +232,7 @@ const artifactStats = computed(() => {
   color: var(--text-primary);
 }
 
-.subtab-btn.active {
+.subtab-btn[data-state='active'] {
   color: var(--essence);
   border-bottom-color: var(--essence);
 }

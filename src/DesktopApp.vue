@@ -7,6 +7,7 @@ import RunArea from './ui/components/RunArea.vue'
 import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
 import CompendiumModal, { type CompendiumTab } from './ui/components/compendium/CompendiumModal.vue'
 import CatchUpOverlay from './ui/components/overlay/CatchUpOverlay.vue'
+import AppModal from './ui/components/common/AppModal.vue'
 import { useEngineStateStore } from './stores/engine-state'
 import { useKeyboard } from './ui/composables/use-keyboard'
 import { initPersistence } from './ui/composables/use-persistence'
@@ -103,22 +104,14 @@ function handleCloseCompendium() {
     <AppFeed class="feed" />
 
     <!-- Settings Modal -->
-    <Teleport to="body">
-      <div v-if="showSettings" class="modal-overlay" @click="handleCloseSettings">
-        <div class="modal-container" @click.stop>
-          <SettingsPanel @close="handleCloseSettings" />
-        </div>
-      </div>
-    </Teleport>
+    <AppModal v-model:open="showSettings" title="Settings">
+      <SettingsPanel @close="handleCloseSettings" />
+    </AppModal>
 
     <!-- Compendium Modal -->
-    <Teleport to="body">
-      <div v-if="showCompendium" class="modal-overlay" @click="handleCloseCompendium">
-        <div class="modal-container modal-lg" @click.stop>
-          <CompendiumModal :initial-tab="compendiumTab" @close="handleCloseCompendium" />
-        </div>
-      </div>
-    </Teleport>
+    <AppModal v-model:open="showCompendium" title="Compendium" size="lg">
+      <CompendiumModal :initial-tab="compendiumTab" @close="handleCloseCompendium" />
+    </AppModal>
 
     <!-- Catch-Up Overlay -->
     <Teleport to="body">
@@ -280,30 +273,5 @@ function handleCloseCompendium() {
     opacity: 1;
     pointer-events: auto;
   }
-}
-
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  width: 100%;
-  max-width: 600px;
-  max-height: 80vh;
-  margin: var(--space-5);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.modal-container.modal-lg {
-  max-width: 800px;
 }
 </style>

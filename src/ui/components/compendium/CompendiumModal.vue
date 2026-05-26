@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { TabsRoot, TabsList, TabsTrigger } from 'reka-ui'
 import { useProgressionStore } from '@/stores/progression'
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
@@ -81,28 +82,22 @@ const activePanel = computed(() => PANEL_BY_TAB[activeTab.value])
       </button>
     </header>
 
-    <nav class="tab-strip" role="tablist">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        role="tab"
-        :aria-selected="activeTab === tab.id"
-        class="tab-btn"
-        :class="{ active: activeTab === tab.id }"
-        @click="activeTab = tab.id"
-      >
-        <Icon class="tab-icon" :name="tab.icon" />
-        <span class="tab-label">{{ tab.label }}</span>
-        <span v-if="tab.count !== undefined" class="tab-count">{{ tab.count }}</span>
-        <span v-if="tab.notification" class="notification-dot" aria-hidden="true"></span>
-      </button>
-    </nav>
+    <TabsRoot v-model="activeTab" class="tabs-root">
+      <TabsList class="tab-strip">
+        <TabsTrigger v-for="tab in tabs" :key="tab.id" :value="tab.id" class="tab-btn">
+          <Icon class="tab-icon" :name="tab.icon" />
+          <span class="tab-label">{{ tab.label }}</span>
+          <span v-if="tab.count !== undefined" class="tab-count">{{ tab.count }}</span>
+          <span v-if="tab.notification" class="notification-dot" aria-hidden="true"></span>
+        </TabsTrigger>
+      </TabsList>
 
-    <div class="panel-host">
-      <KeepAlive>
-        <component :is="activePanel" />
-      </KeepAlive>
-    </div>
+      <div class="panel-host">
+        <KeepAlive>
+          <component :is="activePanel" />
+        </KeepAlive>
+      </div>
+    </TabsRoot>
   </div>
 </template>
 
@@ -183,7 +178,7 @@ const activePanel = computed(() => PANEL_BY_TAB[activeTab.value])
   color: var(--text-primary);
 }
 
-.tab-btn.active {
+.tab-btn[data-state='active'] {
   color: var(--essence);
   border-bottom-color: var(--essence);
 }
@@ -204,7 +199,7 @@ const activePanel = computed(() => PANEL_BY_TAB[activeTab.value])
   border-radius: var(--radius-sm);
 }
 
-.tab-btn.active .tab-count {
+.tab-btn[data-state='active'] .tab-count {
   color: var(--essence);
   background: color-mix(in srgb, var(--essence) 15%, transparent);
 }
@@ -226,6 +221,13 @@ const activePanel = computed(() => PANEL_BY_TAB[activeTab.value])
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+
+.tabs-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Stretch the active panel to fill the host */

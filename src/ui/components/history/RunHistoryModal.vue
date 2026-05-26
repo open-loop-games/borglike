@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { TabsRoot, TabsList, TabsTrigger, TabsContent } from 'reka-ui'
 import { useProgressionStore } from '@/stores/progression'
 import RunHistoryRow from './RunHistoryRow.vue'
 
@@ -37,20 +38,15 @@ function formatTimeAgo(timestamp: number): string {
 </script>
 
 <template>
-  <div class="run-history-panel">
-    <nav class="subtab-bar">
-      <button :class="{ active: activeTab === 'recent' }" @click="activeTab = 'recent'">
-        Recent ({{ recentRuns.length }})
-      </button>
-      <button :class="{ active: activeTab === 'wins' }" @click="activeTab = 'wins'">
-        Wins ({{ wins.length }})
-      </button>
-      <button :class="{ active: activeTab === 'top' }" @click="activeTab = 'top'">Top Runs</button>
-    </nav>
+  <TabsRoot v-model="activeTab" class="run-history-panel">
+    <TabsList class="subtab-bar">
+      <TabsTrigger value="recent">Recent ({{ recentRuns.length }})</TabsTrigger>
+      <TabsTrigger value="wins">Wins ({{ wins.length }})</TabsTrigger>
+      <TabsTrigger value="top">Top Runs</TabsTrigger>
+    </TabsList>
 
     <div class="panel-body">
-      <!-- Recent tab -->
-      <div v-if="activeTab === 'recent'" class="recent-runs">
+      <TabsContent value="recent" class="recent-runs">
         <div v-if="recentRuns.length === 0" class="empty-state">
           No runs recorded yet. Complete a run to see it here.
         </div>
@@ -64,10 +60,9 @@ function formatTimeAgo(timestamp: number): string {
             @toggle="toggleExpanded(run.id)"
           />
         </div>
-      </div>
+      </TabsContent>
 
-      <!-- Wins tab -->
-      <div v-else-if="activeTab === 'wins'" class="wins-runs">
+      <TabsContent value="wins" class="wins-runs">
         <div v-if="wins.length === 0" class="empty-state">
           No victories yet. Defeat Morgoth to record a win!
         </div>
@@ -82,10 +77,9 @@ function formatTimeAgo(timestamp: number): string {
             @toggle="toggleExpanded(run.id)"
           />
         </div>
-      </div>
+      </TabsContent>
 
-      <!-- Top runs tab -->
-      <div v-else-if="activeTab === 'top'" class="top-runs">
+      <TabsContent value="top" class="top-runs">
         <section class="top-section">
           <h3>Deepest Runs</h3>
           <div class="run-list">
@@ -130,9 +124,9 @@ function formatTimeAgo(timestamp: number): string {
             />
           </div>
         </section>
-      </div>
+      </TabsContent>
     </div>
-  </div>
+  </TabsRoot>
 </template>
 
 <style scoped>
@@ -167,7 +161,7 @@ function formatTimeAgo(timestamp: number): string {
   color: var(--text-primary);
 }
 
-.subtab-bar button.active {
+.subtab-bar button[data-state='active'] {
   background: var(--bg-highlight);
   border-color: var(--essence);
   color: var(--essence);

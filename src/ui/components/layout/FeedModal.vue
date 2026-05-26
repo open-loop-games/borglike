@@ -87,72 +87,55 @@ function formatTimestamp(timestamp: number): string {
 </script>
 
 <template>
-  <div class="modal-overlay" @click="emit('close')">
-    <PanelFrame class="feed-modal" @click.stop>
-      <header class="modal-header">
-        <h2>Event Log</h2>
-        <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
-      </header>
+  <PanelFrame class="feed-modal">
+    <header class="modal-header">
+      <h2>Event Log</h2>
+      <button class="close-btn" @click="emit('close')"><Icon :name="Icons.close" /></button>
+    </header>
 
-      <div class="filters">
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="search-input"
-          placeholder="Search messages..."
-        />
+    <div class="filters">
+      <input
+        v-model="searchQuery"
+        type="text"
+        class="search-input"
+        placeholder="Search messages..."
+      />
 
-        <select v-model="slotFilter" class="filter-select">
-          <option v-for="opt in slotOptions" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
+      <select v-model="slotFilter" class="filter-select">
+        <option v-for="opt in slotOptions" :key="opt.value" :value="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
 
-        <select v-model="typeFilter" class="filter-select">
-          <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
+      <select v-model="typeFilter" class="filter-select">
+        <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
 
-        <span class="event-count">{{ filteredEvents.length }} events</span>
+      <span class="event-count">{{ filteredEvents.length }} events</span>
+    </div>
+
+    <div class="event-list">
+      <div
+        v-for="event in filteredEvents"
+        :key="event.id"
+        class="event-row"
+        :class="getTypeClass(event.type)"
+      >
+        <span class="event-timestamp">{{ formatTimestamp(event.timestamp) }}</span>
+        <span class="event-slot" :style="{ color: getSlotColor(event.slot) }">
+          [{{ getSlotLabel(event.slot) }}]
+        </span>
+        <span class="event-message">{{ event.message }}</span>
       </div>
 
-      <div class="event-list">
-        <div
-          v-for="event in filteredEvents"
-          :key="event.id"
-          class="event-row"
-          :class="getTypeClass(event.type)"
-        >
-          <span class="event-timestamp">{{ formatTimestamp(event.timestamp) }}</span>
-          <span class="event-slot" :style="{ color: getSlotColor(event.slot) }">
-            [{{ getSlotLabel(event.slot) }}]
-          </span>
-          <span class="event-message">{{ event.message }}</span>
-        </div>
-
-        <div v-if="filteredEvents.length === 0" class="no-events">
-          No events match your filters.
-        </div>
-      </div>
-    </PanelFrame>
-  </div>
+      <div v-if="filteredEvents.length === 0" class="no-events">No events match your filters.</div>
+    </div>
+  </PanelFrame>
 </template>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
 .feed-modal {
   width: 700px;
   max-width: 90vw;

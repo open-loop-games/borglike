@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { TabsRoot, TabsList, TabsTrigger } from 'reka-ui'
 import { useProgressionStore } from '@/stores/progression'
 import { getBoosterById } from '@game/data/boosters'
 import { Icons } from '@/ui/icons'
@@ -74,33 +75,21 @@ function getPrereqNames(boosterId: string): string[] {
 </script>
 
 <template>
-  <div class="unlock-list">
-    <div class="unlock-tabs">
-      <button
-        class="unlock-tab"
-        :class="{ active: activeTab === 'boosters' }"
-        @click="activeTab = 'boosters'"
-      >
+  <TabsRoot v-model="activeTab" class="unlock-list">
+    <TabsList class="unlock-tabs">
+      <TabsTrigger value="boosters" class="unlock-tab">
         <Icon class="tab-icon" :name="Icons.boosters" />
         <span class="tab-label">Boosters</span>
-      </button>
-      <button
-        class="unlock-tab"
-        :class="{ active: activeTab === 'races' }"
-        @click="activeTab = 'races'"
-      >
+      </TabsTrigger>
+      <TabsTrigger value="races" class="unlock-tab">
         <Icon class="tab-icon" :name="Icons.races" />
         <span class="tab-label">Races</span>
-      </button>
-      <button
-        class="unlock-tab"
-        :class="{ active: activeTab === 'classes' }"
-        @click="activeTab = 'classes'"
-      >
+      </TabsTrigger>
+      <TabsTrigger value="classes" class="unlock-tab">
         <Icon class="tab-icon" :name="Icons.classes" />
         <span class="tab-label">Classes</span>
-      </button>
-    </div>
+      </TabsTrigger>
+    </TabsList>
 
     <div class="unlock-header">
       <span class="header-text">{{ unlockedCount }} / {{ totalCount }} Unlocked</span>
@@ -239,7 +228,7 @@ function getPrereqNames(boosterId: string): string[] {
         </div>
       </template>
     </div>
-  </div>
+  </TabsRoot>
 </template>
 
 <style scoped>
@@ -275,7 +264,7 @@ function getPrereqNames(boosterId: string): string[] {
   background: var(--bg-highlight);
 }
 
-.unlock-tab.active {
+.unlock-tab[data-state='active'] {
   background: var(--bg-highlight);
   border-bottom: 2px solid var(--info);
 }
@@ -285,7 +274,7 @@ function getPrereqNames(boosterId: string): string[] {
   color: var(--text-dim);
 }
 
-.unlock-tab.active .tab-icon {
+.unlock-tab[data-state='active'] .tab-icon {
   color: var(--info);
   text-shadow: 0 0 6px color-mix(in srgb, var(--info) 50%, transparent);
 }
@@ -296,7 +285,7 @@ function getPrereqNames(boosterId: string): string[] {
   text-transform: uppercase;
 }
 
-.unlock-tab.active .tab-label {
+.unlock-tab[data-state='active'] .tab-label {
   color: var(--text-secondary);
 }
 

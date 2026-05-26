@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useFeedStore, type FeedEventType, type FeedEvent } from '@/stores/feed'
 import { useSettingsStore } from '@/stores/settings'
 import FeedModal from './FeedModal.vue'
+import AppModal from '../common/AppModal.vue'
 
 const feedStore = useFeedStore()
 const settingsStore = useSettingsStore()
@@ -71,7 +72,9 @@ function formatTimestamp(timestamp: number): string {
       </svg>
     </button>
 
-    <FeedModal v-if="showModal" :events="frozenEvents" @close="closeModal" />
+    <AppModal v-model:open="showModal" title="Event Log">
+      <FeedModal :events="frozenEvents" @close="closeModal" />
+    </AppModal>
   </footer>
 </template>
 
