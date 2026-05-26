@@ -17,6 +17,7 @@ import {
   restoreFromBackup,
   type BackupSlot,
 } from '@/stores/persistence'
+import { createIdbBackend } from '@/stores/persistence/idb-backend'
 
 let initialized = false
 
@@ -30,7 +31,7 @@ export async function initPersistence(): Promise<boolean> {
   if (initialized) return true
 
   try {
-    const hadData = await initPersistenceModule()
+    const hadData = await initPersistenceModule(createIdbBackend())
     initialized = true
     return hadData
   } catch (error) {

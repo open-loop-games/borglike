@@ -26,14 +26,17 @@ import {
   progressionDataFromExport,
   setRunHistoryInStore,
 } from './core'
-import { createIdbBackend } from './idb-backend'
 import type { PersistenceBackend, BackupSlotId, BackupSlot } from './backend'
 
 // ============================================================================
 // BACKEND
 // ============================================================================
 
-const backend: PersistenceBackend = createIdbBackend()
+// Set by initPersistence(backend). Each shell (Vue / TUI) picks its own
+// implementation and injects it. Accessing any export before init crashes
+// loudly — same brittleness as the previous module-load construction, just
+// deferred to function-call time.
+let backend!: PersistenceBackend
 
 // ============================================================================
 // LIFECYCLE STATE
@@ -375,14 +378,16 @@ function installCloseHandler(): void {
 let initialized = false
 
 /**
- * Single entry point: init backend, load progression + run history, recover
- * sync backup if newer, set up auto-save, install close handler.
+ * Single entry point: install the backend, init it, hydrate Pinia stores
+ * from persisted data, recover sync backup if newer, set up auto-save,
+ * install close handler.
  *
  * Returns true if persisted progression was loaded, false on a fresh save.
  */
-export async function initPersistence(): Promise<boolean> {
+export async function initPersistence(b: PersistenceBackend): Promise<boolean> {
   if (initialized) return true
 
+  backend = b
   await backend.init()
 
   const hadData = await loadProgression()
