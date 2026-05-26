@@ -49,15 +49,35 @@ export function createFileBackend(options: FileBackendOptions = {}): Persistence
 
   const backupPathFor = (slot: BackupSlotId): string => join(backupsDir, `${slot}.json`)
 
+  // Per-writer counter for unique tmp filenames. Two concurrent saves used to
+  // both write `path.tmp` and race on rename — first one wins, second got
+  // ENOENT and burned through retries. Suffixing each write with pid+counter
+  // means no two in-flight writes share a tmp name.
+  let tmpCounter = 0
+
   async function ensureDir(dir: string): Promise<void> {
     await fs.mkdir(dir, { recursive: true })
   }
 
-  async function atomicWriteJson(path: string, value: unknown): Promise<void> {
+  async function atomicWriteFile(path: string, content: string): Promise<void> {
     await ensureDir(dirname(path))
-    const tmpPath = `${path}.tmp`
-    await fs.writeFile(tmpPath, JSON.stringify(value, null, 2), 'utf8')
-    await fs.rename(tmpPath, path)
+    const tmpPath = `${path}.tmp.${process.pid}.${++tmpCounter}`
+    try {
+      await fs.writeFile(tmpPath, content, 'utf8')
+      await fs.rename(tmpPath, path)
+    } catch (err) {
+      // Best-effort cleanup so a failed write doesn't leave orphan tmp files.
+      try {
+        await fs.unlink(tmpPath)
+      } catch {
+        // ignore — already gone or never created
+      }
+      throw err
+    }
+  }
+
+  async function atomicWriteJson(path: string, value: unknown): Promise<void> {
+    await atomicWriteFile(path, JSON.stringify(value, null, 2))
   }
 
   async function readJsonOrNull<T>(path: string): Promise<T | null> {
@@ -99,11 +119,8 @@ export function createFileBackend(options: FileBackendOptions = {}): Persistence
     async saveAllRuns(runs: RunStats[]): Promise<void> {
       // Bulk replace — used during import. Atomic via tmp+rename like the
       // other writes so a crash mid-write doesn't leave a partial file.
-      await ensureDir(dirname(runsPath))
       const content = runs.map((r) => JSON.stringify(r)).join('\n') + (runs.length ? '\n' : '')
-      const tmpPath = `${runsPath}.tmp`
-      await fs.writeFile(tmpPath, content, 'utf8')
-      await fs.rename(tmpPath, runsPath)
+      await atomicWriteFile(runsPath, content)
     },
 
     async loadRunHistory(): Promise<RunStats[]> {
