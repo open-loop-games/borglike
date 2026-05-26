@@ -1,23 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import Icon from './Icon.vue'
+import { Icons } from '@/ui/icons'
 
-const props = defineProps<{
+defineProps<{
   title: string
   expanded: boolean
   badge?: string | number
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   toggle: []
 }>()
-
-const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 </script>
 
 <template>
   <div class="collapsible-section" :class="{ collapsed: !expanded }">
-    <button class="section-header" @click="emit('toggle')">
-      <span class="chevron">{{ chevron }}</span>
+    <button
+      class="section-header"
+      type="button"
+      :aria-expanded="expanded"
+      @click="$emit('toggle')"
+    >
+      <Icon class="chevron" :class="{ open: expanded }" :name="Icons.caretRight" />
       <span class="title">{{ title }}</span>
       <span v-if="badge !== undefined" class="badge">{{ badge }}</span>
     </button>
@@ -70,10 +74,13 @@ const chevron = computed(() => (props.expanded ? '\u25BE' : '\u25B8'))
 }
 
 .chevron {
-  font-size: var(--text-2xs);
   width: 10px;
   color: var(--text-dim);
-  transition: color 0.15s;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.chevron.open {
+  transform: rotate(90deg);
 }
 
 .section-header:hover .chevron {
