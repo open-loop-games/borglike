@@ -7,6 +7,7 @@ import { cleanupPersistence } from '@/stores/persistence'
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
 import PanelFrame from '../common/PanelFrame.vue'
+import SettingSwitch from '../common/SettingSwitch.vue'
 
 const emit = defineEmits<{
   close: []
@@ -202,19 +203,11 @@ function cancelReset() {
               <span class="setting-label">Turbo by Default</span>
               <span class="setting-desc">Start new runs in turbo mode</span>
             </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.turboByDefault"
-                @change="
-                  settingsStore.updateSetting(
-                    'turboByDefault',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
+            <SettingSwitch
+              :model-value="settingsStore.settings.turboByDefault"
+              aria-label="Turbo by Default"
+              @update:model-value="settingsStore.updateSetting('turboByDefault', $event)"
+            />
           </div>
 
           <div class="setting-row" :class="{ locked: !hasAutoRestartUpgrade }">
@@ -225,20 +218,12 @@ function cancelReset() {
               >
               <span v-else class="setting-desc locked-desc">Requires Auto Restart upgrade</span>
             </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.autoRestart"
-                :disabled="!hasAutoRestartUpgrade"
-                @change="
-                  settingsStore.updateSetting(
-                    'autoRestart',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
+            <SettingSwitch
+              :model-value="settingsStore.settings.autoRestart"
+              :disabled="!hasAutoRestartUpgrade"
+              aria-label="Auto-Restart"
+              @update:model-value="settingsStore.updateSetting('autoRestart', $event)"
+            />
           </div>
 
           <div class="setting-row" :class="{ locked: !hasAutoRestartUpgrade }">
@@ -249,20 +234,12 @@ function cancelReset() {
               >
               <span v-else class="setting-desc locked-desc">Requires Auto Restart upgrade</span>
             </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.pauseOnVictory"
-                :disabled="!hasAutoRestartUpgrade"
-                @change="
-                  settingsStore.updateSetting(
-                    'pauseOnVictory',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
+            <SettingSwitch
+              :model-value="settingsStore.settings.pauseOnVictory"
+              :disabled="!hasAutoRestartUpgrade"
+              aria-label="Pause on Victory"
+              @update:model-value="settingsStore.updateSetting('pauseOnVictory', $event)"
+            />
           </div>
         </PanelFrame>
 
@@ -300,19 +277,11 @@ function cancelReset() {
               <span class="setting-label">Show Timestamps</span>
               <span class="setting-desc">Display time (hh:mm:ss) on events</span>
             </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.feedShowTimestamps"
-                @change="
-                  settingsStore.updateSetting(
-                    'feedShowTimestamps',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
+            <SettingSwitch
+              :model-value="settingsStore.settings.feedShowTimestamps"
+              aria-label="Show Timestamps"
+              @update:model-value="settingsStore.updateSetting('feedShowTimestamps', $event)"
+            />
           </div>
         </PanelFrame>
 
@@ -324,19 +293,11 @@ function cancelReset() {
               <span class="setting-label">Cheat Mode</span>
               <span class="setting-desc">Enable cheat tools (free essence, stat boosters)</span>
             </div>
-            <label class="toggle">
-              <input
-                type="checkbox"
-                :checked="settingsStore.settings.cheatMode"
-                @change="
-                  settingsStore.updateSetting(
-                    'cheatMode',
-                    ($event.target as HTMLInputElement).checked
-                  )
-                "
-              />
-              <span class="toggle-slider"></span>
-            </label>
+            <SettingSwitch
+              :model-value="settingsStore.settings.cheatMode"
+              aria-label="Cheat Mode"
+              @update:model-value="settingsStore.updateSetting('cheatMode', $event)"
+            />
           </div>
         </PanelFrame>
       </div>
@@ -589,55 +550,6 @@ function cancelReset() {
   background: color-mix(in srgb, var(--accent) 15%, transparent);
   border-color: var(--accent);
   color: var(--accent);
-}
-
-/* Toggle Switch */
-.toggle {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--bg-highlight);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  transition: 0.3s;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: '';
-  height: 18px;
-  width: 18px;
-  left: 2px;
-  bottom: 2px;
-  background: var(--text-secondary);
-  border-radius: 50%;
-  transition: 0.3s;
-}
-
-.toggle input:checked + .toggle-slider {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-  border-color: var(--accent);
-}
-
-.toggle input:checked + .toggle-slider:before {
-  transform: translateX(20px);
-  background: var(--accent);
 }
 
 /* Stats Grid */
