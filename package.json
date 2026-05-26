@@ -27,6 +27,7 @@
   "dependencies": {
     "@iconify/vue": "^5.0.0",
     "@vueuse/core": "^14.1.0",
+    "blessed": "^0.1.81",
     "env-paths": "^4.0.0",
     "idb": "^8.0.3",
     "lz-string": "^1.5.0",
@@ -39,6 +40,7 @@
     "@eslint/js": "^9.39.2",
     "@iconify-icons/game-icons": "^1.2.1",
     "@iconify-icons/ph": "^1.2.5",
+    "@types/blessed": "^0.1.27",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",

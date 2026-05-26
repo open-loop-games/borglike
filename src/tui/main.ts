@@ -1,10 +1,10 @@
 #!/usr/bin/env npx tsx
 /**
- * Minimal TUI Entry — Headless Engine Smoke
+ * TUI Entry
  *
- * Proves the engine pipeline (instance-manager + game + bot + stores) runs in
- * Node under file persistence. No blessed yet — logs slot 0's run state to
- * stdout every 2 seconds. Ctrl-C to stop.
+ * Boots Pinia + file persistence, starts a run, hands the screen over to the
+ * blessed renderer. Ctrl-C / q quits cleanly. Step 5 — rendering only, no
+ * meta-control input yet (pause/speed/slot-cycle land in step 6).
  *
  * Invoke: pnpm exec tsx --tsconfig tsconfig.tui.json src/tui/main.ts
  */
@@ -17,57 +17,34 @@ import { createPinia, setActivePinia } from 'pinia'
 import { initPersistence, cleanupPersistence } from '@/stores/persistence'
 import { createFileBackend } from '@/stores/persistence/file-backend'
 import { startRun, stopRun } from '@/engine/instance-manager'
-import { useRunsStore } from '@/stores/runs'
-import { useProgressionStore } from '@/stores/progression'
+import { createRenderer } from './render'
 
 async function main(): Promise<void> {
   setActivePinia(createPinia())
 
   const backend = createFileBackend()
-  console.log('[tui] initializing persistence...')
   const hadData = await initPersistence(backend)
-  console.log(`[tui] persistence ready (${hadData ? 'loaded existing' : 'fresh save'})`)
-
-  const progression = useProgressionStore()
-  const runs = useRunsStore()
-
-  console.log(
-    `[tui] essence=${progression.currency.essence} ` +
-      `slots=${progression.unlocks.runSlots} ` +
-      `races=${progression.unlocks.races.size} ` +
-      `classes=${progression.unlocks.classes.size}`
-  )
+  if (!hadData) {
+    // Visible in the feed once the renderer is up; harmless to also log here.
+    console.error('[tui] starting from fresh save')
+  }
 
   const runId = startRun(0)
-  console.log(`[tui] started run ${runId} in slot 0`)
+  const renderer = createRenderer(0)
 
-  const logInterval = setInterval(() => {
-    const run = runs.getRun(runId)
-    if (!run) {
-      console.log('[tui] run vanished from store')
-      return
+  const shutdown = (signal: string): void => {
+    try {
+      renderer.destroy()
+    } catch {
+      // ignore — process is exiting anyway
     }
-    const goal = run.botGoal ?? '—'
-    console.log(
-      `[tui] T${run.turns} D${run.depth} ` +
-        `HP=${run.hp}/${run.maxHp} MP=${run.mp}/${run.maxMp} ` +
-        `lvl=${run.level} kills=${run.kills} gold=${run.gold} ` +
-        `state=${run.state} | ${goal}`
-    )
-    if (run.state === 'dead' || run.state === 'victory') {
-      console.log(`[tui] run ended: ${run.state}`)
-    }
-  }, 2000)
-
-  const shutdown = (signal: string) => {
-    console.log(`\n[tui] ${signal} received, shutting down...`)
-    clearInterval(logInterval)
     try {
       stopRun(runId)
     } catch (err) {
       console.error('[tui] error stopping run:', err)
     }
     cleanupPersistence()
+    console.error(`[tui] exited on ${signal}`)
     process.exit(0)
   }
 
