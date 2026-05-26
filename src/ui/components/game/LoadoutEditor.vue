@@ -16,6 +16,7 @@ import {
 } from '@game/bot/personality'
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
+import IconSelect from '../common/IconSelect.vue'
 import PanelFrame from '../common/PanelFrame.vue'
 
 const props = withDefaults(
@@ -148,6 +149,21 @@ function getBoosterInfo(id: string | null) {
   if (!id) return null
   return getBoosterById(id)
 }
+
+function buildBoosterOptions(otherSlot: string | null) {
+  return [
+    { value: null, label: '— None —' },
+    ...unlockedBoosters.value.map((b) => ({
+      value: b.id,
+      label: b.name,
+      icon: b.icon,
+      disabled: b.id === otherSlot,
+    })),
+  ]
+}
+
+const boosterSlot0Options = computed(() => buildBoosterOptions(boosterSlot1.value))
+const boosterSlot1Options = computed(() => buildBoosterOptions(boosterSlot0.value))
 
 const personalities = (
   Object.entries(PERSONALITY_DISPLAY) as [Personality, (typeof PERSONALITY_DISPLAY)[Personality]][]
@@ -525,34 +541,24 @@ function handleCancel() {
             <div class="booster-slots">
               <div class="booster-slot">
                 <span class="slot-label">Slot 1</span>
-                <select v-model="boosterSlot0" class="booster-select">
-                  <option :value="null">-- None --</option>
-                  <option
-                    v-for="b in unlockedBoosters"
-                    :key="b.id"
-                    :value="b.id"
-                    :disabled="b.id === boosterSlot1"
-                  >
-                    {{ b.name }}
-                  </option>
-                </select>
+                <IconSelect
+                  v-model="boosterSlot0"
+                  :options="boosterSlot0Options"
+                  placeholder="— None —"
+                  aria-label="Booster slot 1"
+                />
                 <span v-if="getBoosterInfo(boosterSlot0)" class="booster-desc">
                   {{ getBoosterInfo(boosterSlot0)?.description }}
                 </span>
               </div>
               <div class="booster-slot">
                 <span class="slot-label">Slot 2</span>
-                <select v-model="boosterSlot1" class="booster-select">
-                  <option :value="null">-- None --</option>
-                  <option
-                    v-for="b in unlockedBoosters"
-                    :key="b.id"
-                    :value="b.id"
-                    :disabled="b.id === boosterSlot0"
-                  >
-                    {{ b.name }}
-                  </option>
-                </select>
+                <IconSelect
+                  v-model="boosterSlot1"
+                  :options="boosterSlot1Options"
+                  placeholder="— None —"
+                  aria-label="Booster slot 2"
+                />
                 <span v-if="getBoosterInfo(boosterSlot1)" class="booster-desc">
                   {{ getBoosterInfo(boosterSlot1)?.description }}
                 </span>
@@ -1278,36 +1284,6 @@ function handleCancel() {
   font-size: var(--text-base);
   color: var(--text-dim);
   text-transform: uppercase;
-}
-
-.booster-select {
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg-highlight);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.booster-select:hover {
-  border-color: var(--essence);
-}
-
-.booster-select:focus {
-  outline: none;
-  border-color: var(--essence);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--essence) 30%, transparent);
-}
-
-.booster-select option {
-  background: var(--bg-panel);
-  color: var(--text-primary);
-}
-
-.booster-select option:disabled {
-  color: var(--text-dim);
 }
 
 .booster-desc {
