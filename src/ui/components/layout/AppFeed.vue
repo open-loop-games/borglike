@@ -72,7 +72,7 @@ function formatTimestamp(timestamp: number): string {
       </svg>
     </button>
 
-    <AppModal v-model:open="showModal" title="Event Log">
+    <AppModal v-model:open="showModal" title="Event Log" size="lg">
       <FeedModal :events="frozenEvents" @close="closeModal" />
     </AppModal>
   </footer>

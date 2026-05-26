@@ -25,6 +25,8 @@ const props = defineProps<{
   options: Option[]
   placeholder?: string
   ariaLabel?: string
+  /** Size trigger to content instead of filling the parent. For inline filter bars. */
+  inline?: boolean
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: T | null] }>()
@@ -44,7 +46,11 @@ const selectedOption = computed(() =>
 
 <template>
   <SelectRoot v-model="internal">
-    <SelectTrigger class="icon-select-trigger" :aria-label="ariaLabel">
+    <SelectTrigger
+      class="icon-select-trigger"
+      :class="{ 'icon-select-inline': inline }"
+      :aria-label="ariaLabel"
+    >
       <Icon v-if="selectedOption?.icon" class="trigger-icon" :name="selectedOption.icon" />
       <span class="trigger-label">{{ selectedOption?.label ?? placeholder ?? 'Select…' }}</span>
       <SelectIcon class="trigger-caret">
@@ -90,6 +96,10 @@ const selectedOption = computed(() =>
   text-align: left;
 }
 
+.icon-select-trigger.icon-select-inline {
+  width: auto;
+}
+
 .icon-select-trigger:hover {
   border-color: var(--essence);
 }
@@ -129,7 +139,8 @@ const selectedOption = computed(() =>
   border-radius: var(--radius-md);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   overflow: hidden;
-  z-index: 100;
+  /* Must stack above AppModal (z-index 1001) since both are body-portaled. */
+  z-index: 1100;
   min-width: var(--reka-select-trigger-width);
   max-height: var(--reka-select-content-available-height);
 }

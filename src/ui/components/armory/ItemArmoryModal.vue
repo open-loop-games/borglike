@@ -4,6 +4,7 @@ import { TabsRoot, TabsList, TabsTrigger } from 'reka-ui'
 import { useProgressionStore } from '@/stores/progression'
 import { ALL_ITEMS, type ItemTemplate } from '@game/data/items'
 import { ARTIFACTS, type ArtifactTemplate } from '@game/data/artifacts'
+import IconSelect from '../common/IconSelect.vue'
 import ItemCard from './ItemCard.vue'
 import ItemDetailPanel from './ItemDetailPanel.vue'
 
@@ -46,6 +47,19 @@ const itemCategories = computed(() => {
   }
   return ['all', ...Array.from(categories).sort()]
 })
+
+const categoryOptions = computed(() =>
+  itemCategories.value.map((cat) => ({
+    value: cat,
+    label: cat === 'all' ? 'All Categories' : cat.charAt(0).toUpperCase() + cat.slice(1),
+  }))
+)
+
+const sortOptions: { value: 'tier' | 'name' | 'found'; label: string }[] = [
+  { value: 'tier', label: 'Sort by Tier' },
+  { value: 'name', label: 'Sort by Name' },
+  { value: 'found', label: 'Sort by Found' },
+]
 
 // Get category for an item
 function getItemCategory(item: ItemTemplate): string {
@@ -140,16 +154,20 @@ const artifactStats = computed(() => {
     </TabsList>
 
     <div class="filter-bar">
-      <select v-if="activeTab === 'items'" v-model="categoryFilter" class="filter-select">
-        <option v-for="cat in itemCategories" :key="cat" :value="cat">
-          {{ cat === 'all' ? 'All Categories' : cat.charAt(0).toUpperCase() + cat.slice(1) }}
-        </option>
-      </select>
-      <select v-if="activeTab === 'items'" v-model="sortBy" class="filter-select">
-        <option value="tier">Sort by Tier</option>
-        <option value="name">Sort by Name</option>
-        <option value="found">Sort by Found</option>
-      </select>
+      <IconSelect
+        v-if="activeTab === 'items'"
+        v-model="categoryFilter"
+        :options="categoryOptions"
+        aria-label="Filter by category"
+        inline
+      />
+      <IconSelect
+        v-if="activeTab === 'items'"
+        v-model="sortBy"
+        :options="sortOptions"
+        aria-label="Sort items"
+        inline
+      />
       <input
         v-model="searchQuery"
         type="text"
@@ -243,21 +261,6 @@ const artifactStats = computed(() => {
   padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--border);
   background: var(--bg);
-}
-
-.filter-select {
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg-highlight);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--essence);
 }
 
 .search-input {

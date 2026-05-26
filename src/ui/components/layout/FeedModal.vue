@@ -4,6 +4,7 @@ import type { FeedEvent, FeedEventType } from '@/stores/feed'
 import { Icons } from '@/ui/icons'
 import PanelFrame from '../common/PanelFrame.vue'
 import Icon from '../common/Icon.vue'
+import IconSelect from '../common/IconSelect.vue'
 
 const props = defineProps<{
   events: FeedEvent[]
@@ -13,22 +14,20 @@ const emit = defineEmits<{
   close: []
 }>()
 
-// Filter state
+// Filter state — slot values are stringified to satisfy IconSelect (string-only).
 const searchQuery = ref('')
-const slotFilter = ref<number | 'all'>('all')
+const slotFilter = ref<string>('all')
 const typeFilter = ref<FeedEventType | 'all'>('all')
 
-// Slot options
 const slotOptions = [
   { value: 'all', label: 'All Slots' },
-  { value: -1, label: 'System' },
-  { value: 0, label: 'Run 1' },
-  { value: 1, label: 'Run 2' },
-  { value: 2, label: 'Run 3' },
-  { value: 3, label: 'Run 4' },
+  { value: '-1', label: 'System' },
+  { value: '0', label: 'Run 1' },
+  { value: '1', label: 'Run 2' },
+  { value: '2', label: 'Run 3' },
+  { value: '3', label: 'Run 4' },
 ]
 
-// Type options
 const typeOptions: { value: FeedEventType | 'all'; label: string }[] = [
   { value: 'all', label: 'All Types' },
   { value: 'combat', label: 'Combat' },
@@ -41,15 +40,12 @@ const typeOptions: { value: FeedEventType | 'all'; label: string }[] = [
   { value: 'info', label: 'Info' },
 ]
 
-// Filtered events
 const filteredEvents = computed(() => {
   return props.events.filter((event) => {
-    // Slot filter
-    if (slotFilter.value !== 'all' && event.slot !== slotFilter.value) {
+    if (slotFilter.value !== 'all' && event.slot !== Number(slotFilter.value)) {
       return false
     }
 
-    // Type filter
     if (typeFilter.value !== 'all' && event.type !== typeFilter.value) {
       return false
     }
@@ -101,17 +97,19 @@ function formatTimestamp(timestamp: number): string {
         placeholder="Search messages..."
       />
 
-      <select v-model="slotFilter" class="filter-select">
-        <option v-for="opt in slotOptions" :key="opt.value" :value="opt.value">
-          {{ opt.label }}
-        </option>
-      </select>
+      <IconSelect
+        v-model="slotFilter"
+        :options="slotOptions"
+        aria-label="Filter by slot"
+        inline
+      />
 
-      <select v-model="typeFilter" class="filter-select">
-        <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-          {{ opt.label }}
-        </option>
-      </select>
+      <IconSelect
+        v-model="typeFilter"
+        :options="typeOptions"
+        aria-label="Filter by event type"
+        inline
+      />
 
       <span class="event-count">{{ filteredEvents.length }} events</span>
     </div>
@@ -137,11 +135,10 @@ function formatTimestamp(timestamp: number): string {
 
 <style scoped>
 .feed-modal {
-  width: 700px;
-  max-width: 90vw;
-  max-height: 80vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - var(--space-5) * 2);
 }
 
 .modal-header {
@@ -194,16 +191,6 @@ function formatTimestamp(timestamp: number): string {
 .search-input:focus {
   outline: none;
   border-color: var(--info);
-}
-
-.filter-select {
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: var(--text-base);
-  cursor: pointer;
 }
 
 .event-count {
