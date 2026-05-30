@@ -932,7 +932,6 @@ function handleCancel() {
   background: color-mix(in srgb, var(--accent) 15%, transparent);
   border-color: var(--accent);
   color: var(--accent);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .option-btn.random-btn {
@@ -1079,7 +1078,6 @@ function handleCancel() {
 
 .personality-btn.active .personality-name {
   color: var(--essence);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--essence) 40%, transparent);
 }
 
 .personality-desc {
@@ -1150,7 +1148,6 @@ function handleCancel() {
   font-size: var(--text-base);
   font-weight: bold;
   color: var(--success);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 40%, transparent);
 }
 
 .no-bonuses {

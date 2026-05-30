@@ -424,7 +424,6 @@ function handleDismiss() {
 .depth-value {
   color: var(--essence);
   font-weight: bold;
-  text-shadow: 0 0 6px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .run-controls {
@@ -707,7 +706,6 @@ function handleDismiss() {
   font-size: var(--text-md);
   font-weight: bold;
   color: var(--essence);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--essence) 50%, transparent);
 }
 
 .essence-label {

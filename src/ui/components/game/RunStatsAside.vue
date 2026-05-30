@@ -696,7 +696,6 @@ function formatGoal(goal: string | undefined): string {
 
 .item-name.artifact {
   color: var(--warning);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--warning) 40%, transparent);
 }
 
 .inv-empty,
@@ -849,7 +848,6 @@ function formatGoal(goal: string | undefined): string {
 
 .resist-val.immune {
   color: var(--success);
-  text-shadow: 0 0 4px color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 .resist-val.vuln {
@@ -892,10 +890,9 @@ function formatGoal(goal: string | undefined): string {
 }
 </style>
 
-<!-- Tooltip artifact name glow (global since tooltip is teleported) -->
+<!-- Tooltip artifact name color (global since tooltip is teleported) -->
 <style>
 .equip-tt-artifact {
   color: var(--warning);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--warning) 40%, transparent);
 }
 </style>

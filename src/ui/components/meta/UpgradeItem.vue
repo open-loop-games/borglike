@@ -247,7 +247,6 @@ function handlePurchase() {
 
 .is-maxed .effect-value {
   color: var(--success);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 40%, transparent);
 }
 
 .purchase-btn {
