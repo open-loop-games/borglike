@@ -273,6 +273,14 @@ function handlePurchase() {
   cursor: not-allowed;
 }
 
+/* Resting affordable state must read at a glance (and at squint distance) —
+   the card's 1px essence border alone doesn't separate from neutral. */
+.can-afford .purchase-btn {
+  background: color-mix(in srgb, var(--essence) 18%, transparent);
+  border-color: var(--essence);
+  color: var(--essence-light);
+}
+
 .cost-icon {
   color: var(--essence);
   font-size: var(--text-base);
