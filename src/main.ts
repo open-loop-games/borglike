@@ -6,9 +6,7 @@ import { useIsMobile } from './ui/composables/use-is-mobile'
 
 const pinia = createPinia()
 
-const loadShell = useIsMobile()
-  ? () => import('./MobileApp.vue')
-  : () => import('./DesktopApp.vue')
+const loadShell = useIsMobile() ? () => import('./MobileApp.vue') : () => import('./DesktopApp.vue')
 
 void loadShell().then((mod) => {
   const app = createApp(mod.default)
