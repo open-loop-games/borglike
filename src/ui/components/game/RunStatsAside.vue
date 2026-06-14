@@ -587,7 +587,7 @@ function formatGoal(goal: string | undefined): string {
 }
 
 .ai-label {
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   font-size: var(--text-sm);
 }

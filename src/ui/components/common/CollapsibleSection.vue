@@ -57,7 +57,7 @@ defineEmits<{
   border: none;
   cursor: pointer;
   font-size: var(--text-base);
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
   transition: all 0.15s;
@@ -70,7 +70,7 @@ defineEmits<{
 
 .chevron {
   width: 10px;
-  color: var(--text-dim);
+  color: var(--text-muted);
   transition:
     color 0.15s,
     transform 0.15s;
