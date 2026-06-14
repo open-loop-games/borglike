@@ -83,6 +83,12 @@ src/
 - Store full game state in Pinia (only extracted stats)
 - Over-engineer the roguelike
 
+**Conventions:**
+- In Formula chains, floor with the DSL-native `.floor()` — keep it in the Formula tree; only `.toNumber()` at the call site when a plain number is needed.
+- Name unexported module-level consts plainly; the module boundary is the privacy boundary. Reserve `_` prefix for genuinely unused params.
+- Integrate new UI into existing components and patterns (a sub-category in the Upgrades tab, existing card components), not new top-level tabs or panels.
+- Gate engine-primitive adoption (Formula, ModifierChain) on a full-path in-vivo benchmark of the realistic chain shape; microbenches inform expectations, not decisions.
+
 **MUST NEVER NOT**
 - Git revert or checkout without checking last commit time and diff for other work
 
@@ -175,3 +181,6 @@ git branch -D codeberg-release
 - Circuit breaker kills stuck bots after 1000 turns on same level
 - Depth 0 = Town (safe zone, fixed layout)
 - Victory = Kill "Morgoth, Lord of Darkness" at depth 50
+
+<!-- Private, gitignored per-repo notes (replaces auto-memory). Resolves to .claude/CLAUDE.local.md. -->
+@CLAUDE.local.md
