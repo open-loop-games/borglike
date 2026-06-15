@@ -352,18 +352,6 @@ const emit = defineEmits<{
   animation: notification-pulse 1.5s infinite;
 }
 
-@keyframes notification-pulse {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 70%, transparent);
-  }
-  70% {
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--success) 0%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 0%, transparent);
-  }
-}
-
 @keyframes pulse {
   0% {
     transform: scale(1);
