@@ -13,6 +13,7 @@ import LoadoutEditor from './ui/components/game/LoadoutEditor.vue'
 import CompendiumModal, { type CompendiumTab } from './ui/components/compendium/CompendiumModal.vue'
 import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
 import CatchUpOverlay from './ui/components/overlay/CatchUpOverlay.vue'
+import ToastContainer from './ui/components/overlay/ToastContainer.vue'
 import { useEngineStateStore } from './stores/engine-state'
 import { useRunsStore } from './stores/runs'
 import { useKeyboard } from './ui/composables/use-keyboard'
@@ -172,6 +173,11 @@ function handleMoreNavigate(target: string) {
     <!-- Catch-Up Overlay -->
     <Teleport to="body">
       <CatchUpOverlay v-if="engineState.isCatchingUp" />
+    </Teleport>
+
+    <!-- Ceremonial toast notifications -->
+    <Teleport to="body">
+      <ToastContainer placement="mobile" />
     </Teleport>
   </div>
 </template>

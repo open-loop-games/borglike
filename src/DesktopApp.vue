@@ -7,6 +7,7 @@ import RunArea from './ui/components/RunArea.vue'
 import SettingsPanel from './ui/components/settings/SettingsPanel.vue'
 import CompendiumModal, { type CompendiumTab } from './ui/components/compendium/CompendiumModal.vue'
 import CatchUpOverlay from './ui/components/overlay/CatchUpOverlay.vue'
+import ToastContainer from './ui/components/overlay/ToastContainer.vue'
 import AppModal from './ui/components/common/AppModal.vue'
 import { useEngineStateStore } from './stores/engine-state'
 import { useKeyboard } from './ui/composables/use-keyboard'
@@ -116,6 +117,11 @@ function handleCloseCompendium() {
     <!-- Catch-Up Overlay -->
     <Teleport to="body">
       <CatchUpOverlay v-if="engineState.isCatchingUp" />
+    </Teleport>
+
+    <!-- Ceremonial toast notifications -->
+    <Teleport to="body">
+      <ToastContainer placement="desktop" />
     </Teleport>
   </div>
 </template>
