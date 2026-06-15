@@ -56,22 +56,18 @@ export interface UpgradeState {
 }
 
 /**
- * Progressive disclosure — surfaces reveal as the player spends on the upgrade
- * tree (`totalUpgradeSpent`), keeping the new-player screen from showing every
- * panel at once. Phases are monotonic; thresholds are measured-and-locked (see
- * studio/borglike#2), not tuning knobs.
- */
-const REVEAL_S1 = 2000 // essence spent → "selectable" phase
-const REVEAL_S2 = 5000 // essence spent → "wide" phase
-
-/**
  * Per-phase ceremony policy: the loud reveals (selectable, wide) fire a toast
  * once and drop "new" pips on the surfaces they expose. Boot is silent (those
- * surfaces are present from the start). `toastId` is the persisted re-fire
- * guard; `pips` are session-only surface keys cleared on open.
+ * surfaces are present from the start). `threshold` is essence-spent gate;
+ * `toastId` is the persisted re-fire guard; `pips` are session-only surface
+ * keys cleared on open. Thresholds are measured-and-locked (studio/borglike#2).
  */
-const PHASE_CEREMONY: Record<number, { toastId: string; pips: string[]; toast: NotifyOptions }> = {
+const PHASE_CEREMONY: Record<
+  number,
+  { threshold: number; toastId: string; pips: string[]; toast: NotifyOptions }
+> = {
   1: {
+    threshold: 2000,
     toastId: 'reveal-selectable',
     pips: ['tab-unlocks', 'tab-stats'],
     toast: {
@@ -82,6 +78,7 @@ const PHASE_CEREMONY: Record<number, { toastId: string; pips: string[]; toast: N
     },
   },
   2: {
+    threshold: 5000,
     toastId: 'reveal-wide',
     pips: ['chip-meta'],
     toast: {
@@ -279,9 +276,13 @@ export const useProgressionStore = defineStore('progression', () => {
 
   // Reveal phase (0 = boot, 1 = selectable, 2 = wide). Open-ended so prestige
   // (studio/borglike#3) can slot in as a higher rung.
-  const revealPhase = computed(() =>
-    totalUpgradeSpent.value >= REVEAL_S2 ? 2 : totalUpgradeSpent.value >= REVEAL_S1 ? 1 : 0
-  )
+  const revealPhase = computed(() => {
+    let phase = 0
+    for (const [p, c] of Object.entries(PHASE_CEREMONY)) {
+      if (totalUpgradeSpent.value >= c.threshold) phase = Number(p)
+    }
+    return phase
+  })
   const reveal = computed(() => ({
     selectable: revealPhase.value >= 1,
     wide: revealPhase.value >= 2,
@@ -361,8 +362,9 @@ export const useProgressionStore = defineStore('progression', () => {
     }
 
     const toasted = new Set<string>()
-    if (spent >= REVEAL_S1) toasted.add('reveal-selectable')
-    if (spent >= REVEAL_S2) toasted.add('reveal-wide')
+    for (const [, c] of Object.entries(PHASE_CEREMONY)) {
+      if (spent >= c.threshold) toasted.add(c.toastId)
+    }
     toastedReveals.value = toasted
     totalUpgradeSpent.value = spent
   }
