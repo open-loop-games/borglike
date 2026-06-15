@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { ref, useSlots, computed, nextTick, watch, onBeforeUnmount } from 'vue'
-import { useShiftHeld } from '@/ui/composables/use-shift-held'
 import { useIsMobile } from '@/ui/composables/use-is-mobile'
-import { Icons } from '@/ui/icons'
-import Icon from './Icon.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -42,8 +39,7 @@ const props = withDefaults(
 const slots = useSlots()
 const hasContent = computed(() => !!props.text || !!slots.content)
 const hasExtendedSlot = computed(() => !!slots.extended)
-const shiftHeld = useShiftHeld()
-const extended = computed(() => shiftHeld.value && visible.value && hasExtendedSlot.value)
+const extended = computed(() => visible.value && hasExtendedSlot.value)
 
 const triggerRef = ref<HTMLElement>()
 const tooltipRef = ref<HTMLElement>()
@@ -182,9 +178,6 @@ const tooltipStyle = computed(() => ({
               <slot name="extended" />
             </div>
           </template>
-          <div v-else-if="hasExtendedSlot" class="tt-shift-hint">
-            <Icon class="tt-shift-key" :name="Icons.shiftKey" /> Shift
-          </div>
         </div>
       </Transition>
     </Teleport>
@@ -258,19 +251,6 @@ const tooltipStyle = computed(() => ({
 .game-tooltip .tt-muted {
   color: var(--text-dim);
   font-size: var(--text-sm);
-}
-
-.game-tooltip .tt-shift-hint {
-  margin-top: var(--space-1);
-  font-size: var(--text-xs);
-  color: var(--text-dim);
-  opacity: 0.6;
-  text-align: right;
-}
-
-.game-tooltip .tt-shift-key {
-  color: var(--essence);
-  opacity: 1;
 }
 
 .tooltip-fade-enter-active {
