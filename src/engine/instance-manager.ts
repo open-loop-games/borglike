@@ -843,7 +843,7 @@ function handleGameEndSync(runId: string, result: RunResult, slot: number): Prom
       victory: completion.isVictory,
     })
   } else {
-    checkAutoRestart(slot, isVictory)
+    checkAutoRestart(slot, isVictory, result.maxDepth)
   }
 
   return savePromise
@@ -865,14 +865,20 @@ async function handleGameEnd(
 /**
  * Check if auto-restart is enabled and start a new run if so
  */
-function checkAutoRestart(slot: number, isVictory = false): void {
+function checkAutoRestart(slot: number, isVictory = false, depth = 0): void {
   const progression = useProgressionStore()
   const settings = useSettingsStore()
 
   const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
-  if (!bonuses.hasAutoRestart) return
+  if (bonuses.autoRestartDepthThreshold <= 0) return
   if (!settings.settings.autoRestart) return
-  if (isVictory && settings.settings.pauseOnVictory) return
+  if (isVictory) {
+    if (settings.settings.pauseOnVictory) return
+  } else if (depth >= bonuses.autoRestartDepthThreshold) {
+    // Death at or beyond the grade's depth is an interesting run — leave it for a manual restart.
+    // (Offline catch-up deliberately ignores this and always restarts; see the onDeath handler.)
+    return
+  }
   if (configuringSlots.has(slot)) return
 
   // Cancel any existing timeout for this slot (prevents duplicates)

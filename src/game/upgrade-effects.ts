@@ -34,7 +34,8 @@ export interface UpgradeBonuses {
 
   // QoL bonuses
   turboSpeedPercent: number // Extra turbo speed (from turbo_mode)
-  hasAutoRestart: boolean // Auto-restart enabled (from auto_restart)
+  hasAutoRestart: boolean // Auto-restart owned at all (from auto_restart, any grade)
+  autoRestartDepthThreshold: number // Live auto-restart fires only on deaths below this depth (10/20/30/40 by grade; 0 = unowned)
 }
 
 /** Upgrade level state (typically from Pinia store) */
@@ -83,6 +84,7 @@ export function computeUpgradeBonuses(
     // QoL bonuses (not scaled - turbo speed and auto-restart are convenience features)
     turboSpeedPercent: getEffectValue(levels, 'turbo_mode'),
     hasAutoRestart: (levels['auto_restart'] || 0) > 0,
+    autoRestartDepthThreshold: getEffectValue(levels, 'auto_restart'),
   }
 }
 
@@ -185,6 +187,7 @@ export const DEFAULT_BONUSES: UpgradeBonuses = {
   townShopTier: 0,
   turboSpeedPercent: 0,
   hasAutoRestart: false,
+  autoRestartDepthThreshold: 0,
 }
 
 /**

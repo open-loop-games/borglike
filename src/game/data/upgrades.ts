@@ -261,15 +261,17 @@ const turboMode: UpgradeDefinition = {
 const autoRestart: UpgradeDefinition = {
   id: 'auto_restart',
   name: 'Auto Restart',
-  description: 'Automatically start new run on death',
+  description:
+    'Auto-restart on death below depth 10; +10 depth per grade. Deaths at or beyond the grade wait for a manual restart.',
   category: 'qol',
-  maxLevel: 1,
+  maxLevel: 4,
   baseCost: 250,
-  costScaling: 1,
+  costScaling: 2.0,
   effect: {
-    type: 'unlock',
-    baseValue: 1,
-    perLevel: 0,
+    type: 'flat',
+    stat: 'autoRestartDepth',
+    baseValue: 10,
+    perLevel: 10,
   },
   icon: 'ph:arrow-counter-clockwise',
 }
