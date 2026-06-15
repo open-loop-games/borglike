@@ -106,9 +106,7 @@ const processedInventory = computed(() => {
       <span class="time-ago" :title="new Date(run.endTime ?? run.startTime).toLocaleString()">{{
         timeAgo
       }}</span>
-      <span class="character" :title="`${run.race} ${run.class}`"
-        >{{ run.race }} {{ run.class }}</span
-      >
+      <span class="character">{{ run.race }} {{ run.class }}</span>
       <span
         v-if="personalityDisplay"
         class="personality"
@@ -118,11 +116,9 @@ const processedInventory = computed(() => {
       <span class="depth" :title="`Maximum depth reached: ${run.maxDepth}`"
         >D:{{ run.maxDepth }}</span
       >
-      <span class="kills" :title="`${run.kills} monsters killed`">{{ run.kills }} kills</span>
-      <span class="gold" :title="`${run.goldEarned.toLocaleString()} gold earned`"
-        >{{ run.goldEarned }} gold</span
-      >
-      <span class="essence" :title="`Essence earned: ${run.essenceEarned}`">
+      <span class="kills">{{ run.kills }} kills</span>
+      <span class="gold">{{ run.goldEarned.toLocaleString() }} gold</span>
+      <span class="essence">
         <Icon class="essence-icon" :name="Icons.essence" />
         {{ run.essenceEarned }}
       </span>
