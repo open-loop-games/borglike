@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { GameClass } from '@game/data/classes'
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
+import { classSymbols } from './hero-symbols'
 
 interface Props {
   gameClass: GameClass
@@ -22,20 +23,6 @@ const category = computed(() => {
   if (props.gameClass.starting) return 'starter'
   return 'unlockable'
 })
-
-const classSymbols: Record<string, string> = {
-  warrior: Icons.classWarrior,
-  mage: Icons.classMage,
-  rogue: Icons.classRogue,
-  priest: Icons.classPriest,
-  ranger: Icons.classRanger,
-  paladin: Icons.classPaladin,
-  necromancer: Icons.classNecromancer,
-  berserker: Icons.classBerserker,
-  archmage: Icons.classArchmage,
-  druid: Icons.classDruid,
-  blackguard: Icons.classBlackguard,
-}
 
 // Iconify ID for the class symbol when unlocked, or null to fall back to a plaintext glyph.
 const symbolIcon = computed<string | null>(() => {

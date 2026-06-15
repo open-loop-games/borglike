@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Icons } from '@/ui/icons'
-import ProgressBar from '../common/ProgressBar.vue'
-import GameTooltip from '../common/GameTooltip.vue'
+import EssenceCard from './EssenceCard.vue'
+import LevelPips from './LevelPips.vue'
 import Icon from '../common/Icon.vue'
 
 const props = defineProps<{
@@ -29,19 +29,12 @@ const emit = defineEmits<{
   purchase: [id: string]
 }>()
 
-const effectText = computed(() => {
-  if (props.effect.type === 'unlock') {
-    return props.currentLevel > 0 ? 'Unlocked' : 'Locked'
-  }
-  if (props.effectValue === 0) return 'Not purchased'
-  const suffix = props.effect.type === 'percent' ? '%' : ''
-  return `+${props.effectValue}${suffix}`
+const state = computed(() => {
+  if (props.isMaxed) return 'maxed' as const
+  return props.canAfford ? ('afford' as const) : ('cantafford' as const)
 })
 
-const costText = computed(() => {
-  if (props.isMaxed) return 'MAX'
-  return props.cost.toLocaleString()
-})
+const costText = computed(() => props.cost.toLocaleString())
 
 // Extended tooltip: next level effect value
 const nextLevelEffect = computed(() => {
@@ -56,46 +49,45 @@ const nextNextCost = computed(() => {
   return Math.ceil(props.cost * props.costScaling)
 })
 
-function handlePurchase() {
-  if (!props.isMaxed && props.canAfford) {
-    emit('purchase', props.id)
+// Newly-affordable reveal: pulse once when a card crosses into affordable as
+// essence ticks up — the genre's core dopamine beat.
+const fresh = ref(false)
+watch(
+  () => props.canAfford,
+  (now, prev) => {
+    if (now && !prev && !props.isMaxed) {
+      fresh.value = true
+      setTimeout(() => (fresh.value = false), 1600)
+    }
   }
+)
+
+function handlePurchase() {
+  if (!props.isMaxed && props.canAfford) emit('purchase', props.id)
 }
 </script>
 
 <template>
-  <GameTooltip
-    class="upgrade-item"
-    :class="{
-      'is-maxed': isMaxed,
-      'can-afford': canAfford && !isMaxed,
-      'cannot-afford': !canAfford && !isMaxed,
-    }"
-    position="left"
-    :max-width="260"
+  <EssenceCard
+    :icon="icon"
+    :name="name"
+    :state="state"
+    :description="description"
+    :fresh="fresh"
+    :actionable="canAfford && !isMaxed"
+    @action="handlePurchase"
   >
-    <div class="upgrade-icon"><Icon :name="icon" /></div>
+    <template #meta>
+      <LevelPips :current="currentLevel" :max="maxLevel" :maxed="isMaxed" />
+    </template>
 
-    <div class="upgrade-info">
-      <div class="upgrade-header">
-        <span class="upgrade-name">{{ name }}</span>
-        <span class="upgrade-level">{{ currentLevel }}/{{ maxLevel }}</span>
-      </div>
-
-      <div class="upgrade-desc">{{ description }}</div>
-
-      <div class="upgrade-progress">
-        <ProgressBar :current="currentLevel" :max="maxLevel" variant="upgrade" size="sm" />
-      </div>
-    </div>
-
-    <div class="upgrade-action">
-      <div class="effect-value">{{ effectText }}</div>
-      <button class="purchase-btn" :disabled="isMaxed || !canAfford" @click="handlePurchase">
-        <Icon v-if="!isMaxed" class="cost-icon" :name="Icons.essence" />
-        <span class="cost-text">{{ costText }}</span>
-      </button>
-    </div>
+    <template #cost>
+      <template v-if="isMaxed">MAX</template>
+      <template v-else>
+        <Icon :name="Icons.essence" />
+        <span>{{ costText }}</span>
+      </template>
+    </template>
 
     <template #content>
       <div class="tt-header">{{ name }}</div>
@@ -130,174 +122,5 @@ function handlePurchase() {
         </div>
       </template>
     </template>
-  </GameTooltip>
+  </EssenceCard>
 </template>
-
-<style scoped>
-.upgrade-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
-    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
-  );
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  transition: all 0.2s;
-}
-
-.upgrade-item.can-afford {
-  border-color: var(--essence);
-  cursor: pointer;
-}
-
-.upgrade-item.can-afford:hover {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--essence) 10%, transparent) 0%,
-    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 100%
-  );
-  box-shadow: 0 0 12px color-mix(in srgb, var(--essence) 20%, transparent);
-}
-
-.upgrade-item.is-maxed {
-  opacity: 0.8;
-}
-
-.upgrade-item.cannot-afford {
-  border-color: var(--border);
-}
-
-.cannot-afford .upgrade-name {
-  color: var(--text-secondary);
-}
-
-.cannot-afford .upgrade-icon {
-  opacity: 0.5;
-}
-
-.upgrade-icon {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--text-2xl);
-  background: var(--bg-highlight);
-  border-radius: var(--radius-md);
-  flex-shrink: 0;
-}
-
-.can-afford .upgrade-icon {
-  color: var(--essence);
-}
-
-.is-maxed .upgrade-icon {
-  color: var(--success);
-}
-
-.upgrade-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.upgrade-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2px;
-}
-
-.upgrade-name {
-  font-size: var(--text-base);
-  font-weight: bold;
-  color: var(--text-primary);
-}
-
-.upgrade-level {
-  font-size: var(--text-base);
-  color: var(--text-dim);
-}
-
-.upgrade-desc {
-  font-size: var(--text-base);
-  color: var(--text-secondary);
-  margin-bottom: var(--space-1);
-}
-
-.upgrade-progress {
-  max-width: 120px;
-}
-
-.upgrade-action {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-1);
-  flex-shrink: 0;
-}
-
-.effect-value {
-  font-size: var(--text-base);
-  color: var(--info);
-}
-
-.is-maxed .effect-value {
-  color: var(--success);
-}
-
-.purchase-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  background: var(--bg-highlight);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.purchase-btn:not(:disabled):hover {
-  background: var(--essence);
-  border-color: var(--essence);
-  color: white;
-}
-
-.purchase-btn:disabled {
-  cursor: not-allowed;
-}
-
-/* Resting affordable state must read at a glance (and at squint distance) —
-   the card's 1px essence border alone doesn't separate from neutral. */
-.can-afford .purchase-btn {
-  background: color-mix(in srgb, var(--essence) 18%, transparent);
-  border-color: var(--essence);
-  color: var(--essence-light);
-}
-
-.cost-icon {
-  color: var(--essence);
-  font-size: var(--text-base);
-}
-
-.cannot-afford .cost-icon {
-  opacity: 0.5;
-  filter: saturate(0.5);
-}
-
-.purchase-btn:not(:disabled):hover .cost-icon {
-  color: white;
-}
-
-.is-maxed .purchase-btn {
-  background: color-mix(in srgb, var(--success) 15%, transparent);
-  border-color: var(--success);
-  color: var(--success);
-}
-</style>

@@ -13,7 +13,6 @@ type Tab = 'races' | 'classes' | 'boosters'
 
 const activeTab = ref<Tab>('boosters')
 
-// Use store's precomputed canAfford, just add type tag
 const currentUnlocks = computed(() => {
   if (activeTab.value === 'races') {
     return progression.raceUnlocks.map((r) => ({ ...r, type: 'race' as const }))
@@ -21,56 +20,47 @@ const currentUnlocks = computed(() => {
   if (activeTab.value === 'classes') {
     return progression.classUnlocks.map((c) => ({ ...c, type: 'class' as const }))
   }
-  return [] // boosters handled separately
+  return []
 })
 
-// Boosters grouped by category
-const boosterCategories = computed(() => {
-  return progression.boostersByCategory
-})
+const boosterCategories: { key: 'equipment' | 'stats' | 'special'; label: string }[] = [
+  { key: 'equipment', label: 'Equipment' },
+  { key: 'stats', label: 'Stats' },
+  { key: 'special', label: 'Special' },
+]
 
 const unlockedCount = computed(() => {
-  if (activeTab.value === 'races') {
-    return progression.raceUnlocks.filter((r) => r.isUnlocked).length
-  }
-  if (activeTab.value === 'classes') {
+  if (activeTab.value === 'races') return progression.raceUnlocks.filter((r) => r.isUnlocked).length
+  if (activeTab.value === 'classes')
     return progression.classUnlocks.filter((c) => c.isUnlocked).length
-  }
   return progression.unlockedBoosters.length
 })
 
 const totalCount = computed(() => {
-  if (activeTab.value === 'races') {
-    return progression.raceUnlocks.length
-  }
-  if (activeTab.value === 'classes') {
-    return progression.classUnlocks.length
-  }
+  if (activeTab.value === 'races') return progression.raceUnlocks.length
+  if (activeTab.value === 'classes') return progression.classUnlocks.length
   return progression.allBoosters.length
 })
 
-function handleUnlock(name: string, type: 'race' | 'class') {
-  const item = currentUnlocks.value.find((u) => u.name === name)
+function handleRaceClassUnlock(id: string) {
+  const item = currentUnlocks.value.find((u) => u.id === id)
   if (!item) return
-
-  if (type === 'race') {
-    progression.unlockRace(name, item.cost)
-  } else {
-    progression.unlockClass(name, item.cost)
-  }
+  if (item.type === 'race') progression.unlockRace(item.name, item.cost)
+  else progression.unlockClass(item.name, item.cost)
 }
 
 function handleBoosterUnlock(boosterId: string) {
   progression.unlockBooster(boosterId)
 }
 
-function getPrereqNames(boosterId: string): string[] {
+function getPrereqText(boosterId: string): string | undefined {
   const booster = getBoosterById(boosterId)
-  if (!booster?.requires) return []
+  if (!booster?.requires) return undefined
   const prereqs = Array.isArray(booster.requires) ? booster.requires : [booster.requires]
-  return prereqs
+  const names = prereqs
     .map((id) => getBoosterById(id)?.name)
     .filter((name): name is string => name !== undefined)
+  return names.length ? names.join(' + ') : undefined
 }
 </script>
 
@@ -100,7 +90,7 @@ function getPrereqNames(boosterId: string): string[] {
     </div>
 
     <div class="unlocks-scroll">
-      <!-- Race/Class Unlocks -->
+      <!-- Race / Class -->
       <template v-if="activeTab !== 'boosters'">
         <UnlockItem
           v-for="item in currentUnlocks"
@@ -124,7 +114,7 @@ function getPrereqNames(boosterId: string): string[] {
           :primary-stat="'primaryStat' in item ? item.primaryStat : undefined"
           :uses-magic="'usesMagic' in item ? item.usesMagic : undefined"
           :bot-behavior="'botBehavior' in item ? item.botBehavior : undefined"
-          @unlock="handleUnlock"
+          @unlock="handleRaceClassUnlock"
         />
 
         <div v-if="currentUnlocks.length === 0" class="no-unlocks">
@@ -132,99 +122,25 @@ function getPrereqNames(boosterId: string): string[] {
         </div>
       </template>
 
-      <!-- Booster Unlocks -->
+      <!-- Boosters -->
       <template v-else>
-        <!-- Equipment Category -->
-        <div class="booster-category">
-          <div class="category-header">Equipment</div>
-          <div
-            v-for="booster in boosterCategories.equipment"
+        <div v-for="cat in boosterCategories" :key="cat.key" class="booster-category">
+          <div class="category-header">{{ cat.label }}</div>
+          <UnlockItem
+            v-for="booster in progression.boostersByCategory[cat.key]"
+            :id="booster.id"
             :key="booster.id"
-            class="booster-item"
-            :class="{
-              'is-unlocked': booster.isUnlocked,
-              'can-unlock': booster.canUnlock,
-              'cannot-unlock': !booster.canUnlock && !booster.isUnlocked,
-            }"
-            @click="booster.canUnlock && handleBoosterUnlock(booster.id)"
-          >
-            <Icon class="booster-icon" :name="booster.icon" />
-            <div class="booster-info">
-              <div class="booster-name">{{ booster.name }}</div>
-              <div class="booster-desc">{{ booster.description }}</div>
-              <div v-if="booster.requires && !booster.isUnlocked" class="booster-prereq">
-                Requires: {{ getPrereqNames(booster.id).join(' + ') }}
-              </div>
-            </div>
-            <div class="booster-status">
-              <Icon v-if="booster.isUnlocked" class="status-unlocked" :name="Icons.check" />
-              <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <Icon class="cost-icon" :name="Icons.essence" />
-                {{ booster.cost.toLocaleString() }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Stats Category -->
-        <div class="booster-category">
-          <div class="category-header">Stats</div>
-          <div
-            v-for="booster in boosterCategories.stats"
-            :key="booster.id"
-            class="booster-item"
-            :class="{
-              'is-unlocked': booster.isUnlocked,
-              'can-unlock': booster.canUnlock,
-              'cannot-unlock': !booster.canUnlock && !booster.isUnlocked,
-            }"
-            @click="booster.canUnlock && handleBoosterUnlock(booster.id)"
-          >
-            <Icon class="booster-icon" :name="booster.icon" />
-            <div class="booster-info">
-              <div class="booster-name">{{ booster.name }}</div>
-              <div class="booster-desc">{{ booster.description }}</div>
-              <div v-if="booster.requires && !booster.isUnlocked" class="booster-prereq">
-                Requires: {{ getPrereqNames(booster.id).join(' + ') }}
-              </div>
-            </div>
-            <div class="booster-status">
-              <Icon v-if="booster.isUnlocked" class="status-unlocked" :name="Icons.check" />
-              <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <Icon class="cost-icon" :name="Icons.essence" />
-                {{ booster.cost.toLocaleString() }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Special Category -->
-        <div class="booster-category">
-          <div class="category-header">Special</div>
-          <div
-            v-for="booster in boosterCategories.special"
-            :key="booster.id"
-            class="booster-item"
-            :class="{
-              'is-unlocked': booster.isUnlocked,
-              'can-unlock': booster.canUnlock,
-              'cannot-unlock': !booster.canUnlock && !booster.isUnlocked,
-            }"
-            @click="booster.canUnlock && handleBoosterUnlock(booster.id)"
-          >
-            <Icon class="booster-icon" :name="booster.icon" />
-            <div class="booster-info">
-              <div class="booster-name">{{ booster.name }}</div>
-              <div class="booster-desc">{{ booster.description }}</div>
-            </div>
-            <div class="booster-status">
-              <Icon v-if="booster.isUnlocked" class="status-unlocked" :name="Icons.check" />
-              <button v-else class="unlock-btn" :disabled="!booster.canUnlock">
-                <Icon class="cost-icon" :name="Icons.essence" />
-                {{ booster.cost.toLocaleString() }}
-              </button>
-            </div>
-          </div>
+            :name="booster.name"
+            :icon="booster.icon"
+            :description="booster.description"
+            :is-unlocked="booster.isUnlocked"
+            :cost="booster.cost"
+            :can-afford="booster.canAfford"
+            :meets-condition="booster.meetsCondition"
+            :prereq="getPrereqText(booster.id)"
+            type="booster"
+            @unlock="handleBoosterUnlock"
+          />
         </div>
       </template>
     </div>
@@ -332,9 +248,11 @@ function getPrereqNames(boosterId: string): string[] {
   font-size: var(--text-base);
 }
 
-/* Booster Styles */
 .booster-category {
-  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
 }
 
 .category-header {
@@ -342,137 +260,7 @@ function getPrereqNames(boosterId: string): string[] {
   color: var(--essence);
   text-transform: uppercase;
   letter-spacing: 1px;
-  padding: var(--space-2) 0;
-  margin-bottom: var(--space-1);
+  padding: var(--space-2) 0 var(--space-1);
   border-bottom: 1px solid var(--border);
-}
-
-.booster-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-1);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
-    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
-  );
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  transition: all 0.2s;
-}
-
-.booster-item.can-unlock {
-  cursor: pointer;
-  border-color: var(--essence);
-}
-
-.booster-item.can-unlock:hover {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--essence) 10%, transparent) 0%,
-    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 100%
-  );
-  box-shadow: 0 0 12px color-mix(in srgb, var(--essence) 20%, transparent);
-}
-
-.booster-item.is-unlocked {
-  opacity: 0.7;
-}
-
-.booster-item.cannot-unlock {
-  border-color: var(--border);
-}
-
-.cannot-unlock .booster-name {
-  color: var(--text-secondary);
-}
-
-.cannot-unlock .booster-icon {
-  opacity: 0.5;
-}
-
-.booster-icon {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--text-xl);
-  color: var(--essence);
-  flex-shrink: 0;
-}
-
-.booster-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.booster-name {
-  font-size: var(--text-base);
-  font-weight: bold;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
-
-.is-unlocked .booster-name {
-  color: var(--text-secondary);
-}
-
-.booster-desc {
-  font-size: var(--text-base);
-  color: var(--text-secondary);
-}
-
-.booster-prereq {
-  font-size: var(--text-sm);
-  color: var(--warning);
-  font-style: italic;
-  margin-top: 2px;
-}
-
-.booster-status {
-  flex-shrink: 0;
-}
-
-.booster-status .status-unlocked {
-  color: var(--success);
-  font-size: var(--text-xl);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--success) 50%, transparent);
-}
-
-.booster-status .unlock-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  background: var(--bg-highlight);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.booster-status .unlock-btn:not(:disabled):hover {
-  background: var(--essence);
-  border-color: var(--essence);
-  color: white;
-}
-
-.booster-status .unlock-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.booster-status .cost-icon {
-  color: var(--essence);
-  font-size: var(--text-sm);
-}
-
-.booster-status .unlock-btn:not(:disabled):hover .cost-icon {
-  color: white;
 }
 </style>
