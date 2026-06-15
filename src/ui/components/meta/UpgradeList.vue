@@ -16,28 +16,45 @@ const progression = useProgressionStore()
 
 type Category = 'stats' | 'meta' | 'qol' | 'bot'
 
-const activeCategory = ref<Category>('stats')
+// Default to the frontier (Bot), not Stats — progressive disclosure opens the
+// player on the capability surface that drives early depth (studio/borglike#2).
+const activeCategory = ref<Category>('bot')
 
-const categories: { id: Category; label: string; icon: string }[] = [
+const allCategories: { id: Category; label: string; icon: string }[] = [
   { id: 'stats', label: 'Stats', icon: Icons.categoryStats },
   { id: 'bot', label: 'Bot', icon: Icons.categoryBot },
   { id: 'meta', label: 'Meta', icon: Icons.categoryMeta },
   { id: 'qol', label: 'QoL', icon: Icons.categoryQol },
 ]
 
+// Meta is a "wide"-phase reveal; the rest are present from Boot.
+const categories = computed(() =>
+  allCategories.filter((c) => c.id !== 'meta' || progression.reveal.wide)
+)
+
+function selectCategory(id: Category) {
+  activeCategory.value = id
+  if (id === 'meta') progression.markRevealSeen('chip-meta')
+}
+
 const currentUpgrades = computed(() => {
-  return progression.upgradesByCategory[activeCategory.value as 'stats' | 'meta' | 'qol'] ?? []
+  const list =
+    progression.upgradesByCategory[activeCategory.value as 'stats' | 'meta' | 'qol'] ?? []
+  // Run-slot cards reveal by phase; everything else is always shown.
+  return list.filter((u) => progression.isUpgradeRevealed(u.id))
 })
 
-// Bot upgrade chains mapped to UpgradeItem shape (one card per capability)
+// Bot upgrade chains mapped to UpgradeItem shape (one card per capability).
+// Ordered by value-density: value caps (town/preparedness/surf) lead; the cheap
+// trap chains (tactics/targeting/retreat) sink to the bottom (studio/borglike#2).
 const gradedChains: { field: GradedCapabilityField; name: string; icon: string }[] = [
   { field: 'town', name: 'Town', icon: Icons.capTown },
+  { field: 'preparedness', name: 'Preparedness', icon: Icons.capPreparedness },
+  { field: 'surf', name: 'Surf Farming', icon: Icons.capSurf },
+  { field: 'kiting', name: 'Kiting', icon: Icons.capKiting },
   { field: 'tactics', name: 'Tactics', icon: Icons.capTactics },
   { field: 'targeting', name: 'Targeting', icon: Icons.capTargeting },
   { field: 'retreat', name: 'Retreat', icon: Icons.capRetreat },
-  { field: 'kiting', name: 'Kiting', icon: Icons.capKiting },
-  { field: 'preparedness', name: 'Preparedness', icon: Icons.capPreparedness },
-  { field: 'surf', name: 'Surf Farming', icon: Icons.capSurf },
 ]
 
 const botUpgradeItems = computed(() => {
@@ -126,10 +143,14 @@ function handlePurchase(upgradeId: string) {
         :key="cat.id"
         class="category-tab"
         :class="{ active: activeCategory === cat.id }"
-        @click="activeCategory = cat.id"
+        @click="selectCategory(cat.id)"
       >
         <Icon class="tab-icon" :name="cat.icon" />
         <span class="tab-label">{{ cat.label }}</span>
+        <span
+          v-if="cat.id === 'meta' && progression.pendingPips.has('chip-meta')"
+          class="tab-pip"
+        ></span>
       </button>
     </div>
 
@@ -164,6 +185,7 @@ function handlePurchase(upgradeId: string) {
 }
 
 .category-tab {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -175,6 +197,30 @@ function handlePurchase(upgradeId: string) {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
+}
+
+/* "New" pip — mirrors AppHeader's notification-dot. */
+.tab-pip {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: notification-pulse 1.5s infinite;
+}
+
+@keyframes notification-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 70%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--success) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 0%, transparent);
+  }
 }
 
 .category-tab:hover {

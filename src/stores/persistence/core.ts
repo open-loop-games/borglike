@@ -203,6 +203,10 @@ export interface ProgressionData {
   prestigeLevel: number
   lifetimeEssence: number
   totalVictories: number
+  // Progressive disclosure (studio/borglike#2). Optional: absent in pre-feature
+  // saves, reconstructed on restore.
+  totalUpgradeSpent?: number
+  toastedReveals?: string[]
   activeLoadout?: SerializedRunLoadout
   bestiary?: Record<string, BestiaryEntry>
   itemArmory?: Record<string, ArmoryEntry>
@@ -334,6 +338,8 @@ export function serializeProgression(): ProgressionData {
     prestigeLevel: progression.prestigeLevel,
     lifetimeEssence: progression.lifetimeEssence,
     totalVictories: progression.totalVictories,
+    totalUpgradeSpent: progression.totalUpgradeSpent,
+    toastedReveals: Array.from(progression.toastedReveals),
     activeLoadout: {
       boosters: [progression.activeLoadout.boosters[0], progression.activeLoadout.boosters[1]],
     },
@@ -394,6 +400,10 @@ export function restoreProgressionFromData(data: ProgressionData): void {
     progression.botCapabilities = { ...data.botCapabilities }
   }
 
+  // Reveal state — after upgradeLevels + botCapabilities so the backfill (for
+  // pre-feature saves lacking totalUpgradeSpent) can reconstruct from them.
+  progression.restoreReveal(data.totalUpgradeSpent, data.toastedReveals)
+
   if (data.achievements) {
     const achievements = deserializeAchievements(data.achievements)
     progression.achievementState.unlocked = achievements.unlocked
@@ -438,6 +448,8 @@ export interface ExportPayload {
     prestigeLevel: number
     lifetimeEssence: number
     totalVictories: number
+    totalUpgradeSpent?: number
+    toastedReveals?: string[]
     activeLoadout?: SerializedRunLoadout
     bestiary?: Record<string, BestiaryEntry>
     itemArmory?: Record<string, ArmoryEntry>
@@ -466,6 +478,8 @@ export function buildExportPayload(runHistory: RunStats[]): ExportPayload {
       prestigeLevel: progression.prestigeLevel,
       lifetimeEssence: progression.lifetimeEssence,
       totalVictories: progression.totalVictories,
+      totalUpgradeSpent: progression.totalUpgradeSpent,
+      toastedReveals: Array.from(progression.toastedReveals),
       activeLoadout: { boosters: [...progression.activeLoadout.boosters] },
       bestiary: { ...progression.bestiary },
       itemArmory: { ...progression.itemArmory },
@@ -492,6 +506,8 @@ export function progressionDataFromExport(payload: ExportPayload): ProgressionDa
     prestigeLevel: prog.prestigeLevel,
     lifetimeEssence: prog.lifetimeEssence,
     totalVictories: prog.totalVictories,
+    totalUpgradeSpent: prog.totalUpgradeSpent,
+    toastedReveals: prog.toastedReveals,
     activeLoadout: prog.activeLoadout,
     bestiary: prog.bestiary,
     itemArmory: prog.itemArmory,

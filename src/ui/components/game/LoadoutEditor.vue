@@ -141,8 +141,12 @@ function formatStatClass(value: number): string {
   return 'stat-neutral'
 }
 
-// Unlocked boosters for selection
-const unlockedBoosters = computed(() => progression.unlockedBoosters)
+// Unlocked boosters for selection, value-steered: higher-cost (superior) tiers
+// lead so the cheap minor/+1 tiers don't read as "the booster move"
+// (studio/borglike#2). Reorder only — no options hidden or dimmed.
+const unlockedBoosters = computed(() =>
+  [...progression.unlockedBoosters].sort((a, b) => b.unlockCost - a.unlockCost)
+)
 
 // Get booster info for display
 function getBoosterInfo(id: string | null) {

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, type Ref } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import type {
   Currency,
   UnlockState,
@@ -49,9 +49,48 @@ import {
 } from '@core/formulas'
 import { saveImmediately, saveManualBackup } from './persistence'
 import { useSettingsStore } from './settings'
+import { useNotificationsStore, type NotifyOptions } from './notifications'
 
 export interface UpgradeState {
   [upgradeId: string]: number // Current level of each upgrade
+}
+
+/**
+ * Progressive disclosure — surfaces reveal as the player spends on the upgrade
+ * tree (`totalUpgradeSpent`), keeping the new-player screen from showing every
+ * panel at once. Phases are monotonic; thresholds are measured-and-locked (see
+ * studio/borglike#2), not tuning knobs.
+ */
+const REVEAL_S1 = 2000 // essence spent → "selectable" phase
+const REVEAL_S2 = 5000 // essence spent → "wide" phase
+
+/**
+ * Per-phase ceremony policy: the loud reveals (selectable, wide) fire a toast
+ * once and drop "new" pips on the surfaces they expose. Boot is silent (those
+ * surfaces are present from the start). `toastId` is the persisted re-fire
+ * guard; `pips` are session-only surface keys cleared on open.
+ */
+const PHASE_CEREMONY: Record<number, { toastId: string; pips: string[]; toast: NotifyOptions }> = {
+  1: {
+    toastId: 'reveal-selectable',
+    pips: ['tab-unlocks', 'tab-stats'],
+    toast: {
+      title: 'New options unlocked',
+      body: 'Unlocks, Statistics, run loadouts, and a second slot are now available.',
+      kind: 'accent',
+      dedupeKey: 'reveal-selectable',
+    },
+  },
+  2: {
+    toastId: 'reveal-wide',
+    pips: ['chip-meta'],
+    toast: {
+      title: 'Progression widens',
+      body: 'Meta upgrades and further run slots are now available.',
+      kind: 'success',
+      dedupeKey: 'reveal-wide',
+    },
+  },
 }
 
 export const useProgressionStore = defineStore('progression', () => {
@@ -63,6 +102,15 @@ export const useProgressionStore = defineStore('progression', () => {
 
   // Upgrade levels
   const upgradeLevels = ref<UpgradeState>({})
+
+  // Progressive disclosure (studio/borglike#2)
+  // Monotonic sum of essence spent on the upgrade tree (bot + stat/meta/qol
+  // buys). Drives reveal phase. Excludes unlock/booster spend by design.
+  const totalUpgradeSpent = ref<number>(0)
+  // Phase ceremonies already toasted — persisted so reloads don't re-fire.
+  const toastedReveals = ref<Set<string>>(new Set())
+  // Surface keys with an unseen "new" pip. Session-only; reset on reload.
+  const pendingPips = ref<Set<string>>(new Set())
 
   // Unlocks (purchased races/classes — starting ones NOT pre-populated)
   const unlocks = ref<UnlockState>({
@@ -228,6 +276,96 @@ export const useProgressionStore = defineStore('progression', () => {
     canPrestige: canPrestige.value,
     potentialCurrency: potentialPrestigeCurrency.value,
   }))
+
+  // Reveal phase (0 = boot, 1 = selectable, 2 = wide). Open-ended so prestige
+  // (studio/borglike#3) can slot in as a higher rung.
+  const revealPhase = computed(() =>
+    totalUpgradeSpent.value >= REVEAL_S2 ? 2 : totalUpgradeSpent.value >= REVEAL_S1 ? 1 : 0
+  )
+  const reveal = computed(() => ({
+    selectable: revealPhase.value >= 1,
+    wide: revealPhase.value >= 2,
+  }))
+
+  // Run-slot teaser visibility: how many slot indices may show in the grid
+  // (including a single locked teaser). Slot 2 (index 1) teases at selectable;
+  // slots 3/4 (indices 2/3) at wide.
+  const revealedSlotCount = computed(() => {
+    if (reveal.value.wide) return 4
+    if (reveal.value.selectable) return 2
+    return 1
+  })
+
+  /** Whether an upgrade card is revealed yet. Only run-slot cards gate by phase. */
+  function isUpgradeRevealed(upgradeId: string): boolean {
+    if (upgradeId === 'run_slot_2') return reveal.value.selectable
+    if (upgradeId === 'run_slot_3' || upgradeId === 'run_slot_4') return reveal.value.wide
+    return true
+  }
+
+  /** Clear the "new" pip on a surface once the player has looked at it. */
+  function markRevealSeen(surfaceKey: string): void {
+    pendingPips.value.delete(surfaceKey)
+  }
+
+  // Fire the one-time ceremony when a loud phase is first crossed. Guarded by
+  // toastedReveals so a hydrated/already-passed phase stays quiet on reload —
+  // the watcher flushes after deserialize has restored the set.
+  watch(revealPhase, (next, prev) => {
+    for (let phase = prev + 1; phase <= next; phase++) {
+      const ceremony = PHASE_CEREMONY[phase]
+      if (!ceremony || toastedReveals.value.has(ceremony.toastId)) continue
+      toastedReveals.value.add(ceremony.toastId)
+      for (const pip of ceremony.pips) pendingPips.value.add(pip)
+      useNotificationsStore().notify(ceremony.toast)
+      saveImmediately().catch((err) =>
+        console.error('[Progression] Failed to save after reveal ceremony:', err)
+      )
+    }
+  })
+
+  /**
+   * Restore reveal state from a save. Call after upgradeLevels/botCapabilities
+   * are restored. Pre-feature saves lack `totalUpgradeSpent`: reconstruct it from
+   * existing spend so the staircase matches real progression, and mark crossed
+   * phases as toasted so no ceremony re-fires retroactively.
+   */
+  function restoreReveal(savedSpent: number | undefined, savedToasted: string[] | undefined): void {
+    if (savedSpent !== undefined) {
+      toastedReveals.value = new Set(savedToasted ?? [])
+      totalUpgradeSpent.value = savedSpent
+      return
+    }
+
+    let spent = 0
+    for (const [id, level] of Object.entries(upgradeLevels.value)) {
+      const upgrade = getUpgradeById(id)
+      if (!upgrade) continue
+      for (let l = 0; l < level; l++) spent += calculateUpgradeCost(upgrade, l)
+    }
+    const caps = botCapabilities.value
+    if (caps.farming) spent += getBotUpgradeById('farming')?.cost ?? 0
+    const gradedFields = [
+      'town',
+      'tactics',
+      'targeting',
+      'retreat',
+      'kiting',
+      'preparedness',
+      'surf',
+    ] as const
+    for (const field of gradedFields) {
+      for (let tier = 1; tier <= caps[field]; tier++) {
+        spent += getBotUpgradeById(`${field}_${tier}` as BotUpgradeId)?.cost ?? 0
+      }
+    }
+
+    const toasted = new Set<string>()
+    if (spent >= REVEAL_S1) toasted.add('reveal-selectable')
+    if (spent >= REVEAL_S2) toasted.add('reveal-wide')
+    toastedReveals.value = toasted
+    totalUpgradeSpent.value = spent
+  }
 
   // Upgrade getters
   function getUpgradeLevel(upgradeId: string): number {
@@ -432,6 +570,7 @@ export const useProgressionStore = defineStore('progression', () => {
 
     const cost = getUpgradeCost(upgradeId)
     if (!spendEssence(cost)) return false
+    totalUpgradeSpent.value += cost
 
     // Increment level
     upgradeLevels.value[upgradeId] = (upgradeLevels.value[upgradeId] || 0) + 1
@@ -578,6 +717,7 @@ export const useProgressionStore = defineStore('progression', () => {
 
     // Spend essence
     if (!spendEssence(upgrade.cost)) return false
+    totalUpgradeSpent.value += upgrade.cost
 
     // Apply upgrade to global capabilities
     botCapabilities.value = applyBotUpgrade(upgradeId, botCapabilities.value)
@@ -1006,6 +1146,17 @@ export const useProgressionStore = defineStore('progression', () => {
     activeLoadout,
     bestiary,
     itemArmory,
+
+    // Progressive disclosure
+    totalUpgradeSpent,
+    toastedReveals,
+    pendingPips,
+    revealPhase,
+    reveal,
+    revealedSlotCount,
+    isUpgradeRevealed,
+    markRevealSeen,
+    restoreReveal,
 
     // Computed
     availableRaces,

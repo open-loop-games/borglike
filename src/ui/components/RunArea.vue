@@ -36,10 +36,12 @@ const allSlots = computed(() => {
 })
 
 // Show all unlocked slots plus a single locked teaser for the next slot.
-// This keeps the grid from having an unexplained empty quadrant.
+// This keeps the grid from having an unexplained empty quadrant. The teaser is
+// gated by reveal phase so new players aren't shown locked slots up front
+// (studio/borglike#2): slot 2 teases at "selectable", slots 3/4 at "wide".
 const visibleSlots = computed(() => {
   const max = maxSlots.value
-  return allSlots.value.slice(0, Math.min(4, max + 1))
+  return allSlots.value.slice(0, Math.min(max + 1, progression.revealedSlotCount))
 })
 
 const gridClass = computed(() => {

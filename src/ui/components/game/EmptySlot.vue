@@ -83,7 +83,9 @@ function handleOpenLoadout() {
           </span>
         </div>
 
-        <button class="config-btn" @click="handleOpenLoadout">Configure Run</button>
+        <button v-if="progression.reveal.selectable" class="config-btn" @click="handleOpenLoadout">
+          Configure Run
+        </button>
 
         <div v-if="lastRunSummary" class="last-run" :class="{ victory: lastRunSummary.victory }">
           <div class="last-run-label">Last Run</div>

@@ -20,10 +20,11 @@ const emit = defineEmits<{
 const maxSlots = computed(() => progression.maxRunSlots)
 
 // Show all unlocked slots plus a single locked teaser for the next slot,
-// matching the desktop RunArea pattern.
+// matching the desktop RunArea pattern. The teaser is gated by reveal phase
+// (studio/borglike#2).
 const visibleSlots = computed(() => {
   const max = maxSlots.value
-  const count = Math.min(4, max + 1)
+  const count = Math.min(max + 1, progression.revealedSlotCount)
   const arr = []
   for (let i = 0; i < count; i++) {
     const isUnlocked = i < max
