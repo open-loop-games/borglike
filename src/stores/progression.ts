@@ -503,6 +503,7 @@ export const useProgressionStore = defineStore('progression', () => {
     cost: number
     canAfford: boolean
     canUnlock: boolean
+    meetsCondition: boolean
   }
 
   // Computed booster info
@@ -515,12 +516,16 @@ export const useProgressionStore = defineStore('progression', () => {
     }
 
     for (const booster of boosters) {
+      const isUnlocked = isBoosterUnlocked(booster.id)
+      const canAfford = canAffordBooster(booster.id)
+      const meetsCondition = checkBoosterPrereqs(booster.id, unlocks.value.boosters)
       const enriched: EnrichedBooster = {
         ...booster,
-        isUnlocked: isBoosterUnlocked(booster.id),
+        isUnlocked,
         cost: getBoosterCost(booster.id),
-        canAfford: canAffordBooster(booster.id),
-        canUnlock: canUnlockBooster(booster.id),
+        canAfford,
+        canUnlock: !isUnlocked && canAfford && meetsCondition,
+        meetsCondition,
       }
       all.push(enriched)
       byCategory[booster.category].push(enriched)
