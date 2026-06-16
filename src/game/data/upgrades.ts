@@ -7,6 +7,25 @@
  * - qol: Quality of life (turbo speed, auto-restart)
  */
 
+/** A per-level stat component: value at level L = baseValue + perLevel*(L-1). */
+export interface UpgradeEffect {
+  type: 'flat' | 'percent' | 'unlock'
+  stat?: string
+  baseValue: number // Value at level 1
+  perLevel: number // Additional value per level
+  /**
+   * Optional second component shown alongside the primary (e.g. Resilience's
+   * +1%/lvl armor on top of its flat +2/lvl). Read by computeUpgradeBonuses so
+   * the data stays the single source of truth for both the tooltip and runtime.
+   */
+  secondary?: {
+    type: 'flat' | 'percent'
+    stat?: string
+    baseValue: number
+    perLevel: number
+  }
+}
+
 export interface UpgradeDefinition {
   id: string
   name: string
@@ -15,14 +34,33 @@ export interface UpgradeDefinition {
   maxLevel: number
   baseCost: number
   costScaling: number // Multiplier per level (e.g., 1.5 = 50% more each level)
-  effect: {
-    type: 'flat' | 'percent' | 'unlock'
-    stat?: string
-    baseValue: number // Value at level 1
-    perLevel: number // Additional value per level
-  }
+  effect: UpgradeEffect
   /** Iconify ID (e.g. 'game-icons:health-normal'); must be registered in src/ui/icons.ts */
   icon: string
+}
+
+/** Display labels for the internal stat keys used in effects. */
+const STAT_LABELS: Record<string, string> = {
+  maxHp: 'max HP',
+  damage: 'damage',
+  armor: 'armor',
+  evasion: 'evasion',
+  dodge: 'dodge',
+  armorPen: 'armor pen',
+  speed: 'speed',
+  essenceGain: 'essence',
+  goldGain: 'gold',
+  xpGain: 'XP',
+  merchantPrices: 'merchant prices',
+  bestiaryCap: 'bestiary cap',
+  townShopTier: 'shop tier',
+  turboSpeed: 'turbo speed',
+  autoRestartDepth: 'restart depth',
+  runSlots: 'run slots',
+}
+
+export function statLabel(stat: string | undefined): string {
+  return stat ? (STAT_LABELS[stat] ?? stat) : ''
 }
 
 // =============================================================================
@@ -42,6 +80,7 @@ const vitality: UpgradeDefinition = {
     stat: 'maxHp',
     baseValue: 15,
     perLevel: 10,
+    secondary: { type: 'percent', stat: 'maxHp', baseValue: 1, perLevel: 1 },
   },
   icon: 'game-icons:health-normal',
 }
@@ -76,6 +115,7 @@ const resilience: UpgradeDefinition = {
     stat: 'armor',
     baseValue: 2,
     perLevel: 2,
+    secondary: { type: 'percent', stat: 'armor', baseValue: 1, perLevel: 1 },
   },
   icon: 'game-icons:shield',
 }
@@ -88,11 +128,14 @@ const reflexes: UpgradeDefinition = {
   maxLevel: 10,
   baseCost: 100,
   costScaling: 1.8,
+  // Primary is a flat evasion bonus (applied as a flat modifier); the dodge-
+  // chance % is the secondary. Reflects how computeUpgradeBonuses consumes it.
   effect: {
-    type: 'percent',
-    stat: 'dodge',
+    type: 'flat',
+    stat: 'evasion',
     baseValue: 2,
     perLevel: 2,
+    secondary: { type: 'percent', stat: 'dodge', baseValue: 1, perLevel: 1 },
   },
   icon: 'game-icons:wingfoot',
 }
@@ -261,8 +304,7 @@ const turboMode: UpgradeDefinition = {
 const autoRestart: UpgradeDefinition = {
   id: 'auto_restart',
   name: 'Auto Restart',
-  description:
-    'Auto-restart on death below depth 10; +10 depth per grade. Deaths at or beyond the grade wait for a manual restart.',
+  description: 'Auto-restart shallow deaths; +10 restart depth per level',
   category: 'qol',
   maxLevel: 4,
   baseCost: 250,

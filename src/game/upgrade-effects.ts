@@ -64,12 +64,12 @@ export function computeUpgradeBonuses(
   return {
     // Stat bonuses (scaled)
     maxHpBonus: Math.floor(getEffectValue(levels, 'vitality') * scale),
-    maxHpPercent: Math.floor((levels['vitality'] || 0) * 1 * scale), // 1% per vitality level
+    maxHpPercent: Math.floor(getSecondaryValue(levels, 'vitality') * scale),
     damagePercent: Math.floor(getEffectValue(levels, 'might') * scale),
     armorBonus: Math.floor(getEffectValue(levels, 'resilience') * scale),
-    armorPercent: Math.floor((levels['resilience'] || 0) * 1 * scale), // 1% per resilience level
+    armorPercent: Math.floor(getSecondaryValue(levels, 'resilience') * scale),
     dodgePercent: Math.floor(getEffectValue(levels, 'reflexes') * scale),
-    dodgeChancePercent: Math.floor((levels['reflexes'] || 0) * 1 * scale), // 1% per swiftness level
+    dodgeChancePercent: Math.floor(getSecondaryValue(levels, 'reflexes') * scale),
     armorPenPercent: Math.floor(getEffectValue(levels, 'precision') * scale),
     speedBonus: Math.floor(getEffectValue(levels, 'swiftness') * scale),
 
@@ -99,6 +99,20 @@ function getEffectValue(levels: UpgradeLevels, upgradeId: string): number {
   if (!upgrade) return 0
 
   return calculateUpgradeEffect(upgrade, level)
+}
+
+/**
+ * Get the secondary component value (e.g. Vitality's +1%/lvl max HP) for an
+ * upgrade. Same level math as the primary; 0 when the upgrade has no secondary.
+ */
+function getSecondaryValue(levels: UpgradeLevels, upgradeId: string): number {
+  const level = levels[upgradeId] || 0
+  if (level <= 0) return 0
+
+  const secondary = getUpgradeById(upgradeId)?.effect.secondary
+  if (!secondary) return 0
+
+  return secondary.baseValue + secondary.perLevel * (level - 1)
 }
 
 // ============================================================================
