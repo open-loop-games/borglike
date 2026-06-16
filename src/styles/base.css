@@ -27,12 +27,17 @@
   --text-5xl: calc(32px * var(--font-scale));
   --text-display: calc(72px * var(--font-scale));
 
-  /* Border Radius Scale */
+  /* Border Radius Scale (mid-tier baseline; high/low themes override) */
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-lg: 6px;
   --radius-xl: 8px;
   --radius-pill: 24px;
+
+  /* Panel surface tokens — themes set the tier feel (flat / glass).
+     Defaults are flat so an unknown theme degrades cleanly. */
+  --panel-bg: var(--bg-panel);
+  --panel-shadow: 0 0 0 0 transparent;
 }
 
 * {
@@ -78,27 +83,18 @@ button {
   font-family: inherit;
 }
 
-/* Glass Panel Effect */
+/* Panel surface — fill, shadow and corner all carried by theme tokens. */
 .panel {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
-    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
-  );
+  background: var(--panel-bg);
   border: 1px solid var(--border);
-  border-top-color: var(--border-light);
-  border-left-color: var(--border-light);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--panel-shadow);
   border-radius: var(--radius-md);
 }
 
 .panel--focused {
   border-color: var(--accent);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 4px 12px rgba(0, 0, 0, 0.4),
+    var(--panel-shadow),
     0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 

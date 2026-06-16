@@ -1,17 +1,17 @@
 @import './base.css';
 
 /* Default theme — its :root block is the unscoped fallback. */
-@import './themes/tokyo-night.css';
-
-/* Alternates — only [data-theme] scoped. */
 @import './themes/dark-indigo.css';
-@import './themes/catppuccin-mocha.css';
-@import './themes/dracula.css';
-@import './themes/nord.css';
-@import './themes/solarized-dark.css';
-@import './themes/gruvbox-dark.css';
-@import './themes/rose-pine.css';
-@import './themes/forest.css';
-@import './themes/cherry.css';
-@import './themes/amber-crt.css';
+
+/* Alternates — only [data-theme] scoped. Grouped by contrast tier. */
+/* High */
 @import './themes/high-contrast.css';
+@import './themes/green-phosphor.css';
+@import './themes/amber-crt.css';
+/* Mid */
+@import './themes/crimson.css';
+@import './themes/gruvbox-dark.css';
+/* Low */
+@import './themes/tokyo-night.css';
+@import './themes/nord.css';
+@import './themes/rose-pine.css';
