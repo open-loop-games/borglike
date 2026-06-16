@@ -27,4 +27,13 @@
   --text-secondary: #c89758;
   --text-muted: #a17844;
   --text-dim: #7a5a30;
+
+  /* Structure — high tier: sharp edges, flat fill, no shadow */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-pill: 0px;
+  --panel-bg: var(--bg-panel);
+  --panel-shadow: 0 0 0 0 transparent;
 }

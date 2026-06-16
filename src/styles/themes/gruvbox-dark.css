@@ -27,4 +27,8 @@
   --text-secondary: #d5c4a1;
   --text-muted: #b4a48a;
   --text-dim: #928374;
+
+  /* Structure — mid tier: tight corners (base scale), flat fill, faint lift */
+  --panel-bg: var(--bg-panel);
+  --panel-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }

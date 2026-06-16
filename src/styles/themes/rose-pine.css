@@ -27,4 +27,17 @@
   --text-secondary: #c4c0d4;
   --text-muted: #9995ad;
   --text-dim: #6e6a86;
+
+  /* Structure — low tier: soft corners, glass fill, drop shadow */
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --panel-bg: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
+    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
+  );
+  --panel-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 4px 12px rgba(0, 0, 0, 0.4);
 }

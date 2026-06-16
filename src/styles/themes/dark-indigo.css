@@ -1,3 +1,4 @@
+:root,
 :root[data-theme='dark-indigo'] {
   /* Backgrounds */
   --bg: #0a0a12;
@@ -27,4 +28,8 @@
   --text-secondary: #94a3b8;
   --text-muted: #7c8ca2;
   --text-dim: #64748b;
+
+  /* Structure — mid tier: tight corners (base scale), flat fill, faint lift */
+  --panel-bg: var(--bg-panel);
+  --panel-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
