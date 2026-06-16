@@ -28,17 +28,9 @@ defineEmits<{
 
 <style scoped>
 .collapsible-section {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bg-elevated) 95%, transparent) 0%,
-    color-mix(in srgb, var(--bg-panel) 98%, transparent) 100%
-  );
+  background: var(--panel-bg);
   border: 1px solid var(--border);
-  border-top-color: var(--border-light);
-  border-left-color: var(--border-light);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--panel-shadow);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
