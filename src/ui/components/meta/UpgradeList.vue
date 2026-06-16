@@ -47,19 +47,67 @@ const currentUpgrades = computed(() => {
 // Bot upgrade chains mapped to UpgradeItem shape (one card per capability).
 // Ordered by value-density: value caps (town/preparedness/surf) lead; the cheap
 // trap chains (tactics/targeting/retreat) sink to the bottom (studio/borglike#2).
-const gradedChains: { field: GradedCapabilityField; name: string; icon: string }[] = [
-  { field: 'town', name: 'Town', icon: Icons.capTown },
-  { field: 'preparedness', name: 'Preparedness', icon: Icons.capPreparedness },
-  { field: 'surf', name: 'Surf Farming', icon: Icons.capSurf },
-  { field: 'kiting', name: 'Kiting', icon: Icons.capKiting },
-  { field: 'tactics', name: 'Tactics', icon: Icons.capTactics },
-  { field: 'targeting', name: 'Targeting', icon: Icons.capTargeting },
-  { field: 'retreat', name: 'Retreat', icon: Icons.capRetreat },
+// `summary` states the strategic "why" of the whole capability; the per-tier
+// behaviour comes from each upgrade's own description in bot-upgrades.ts.
+const gradedChains: {
+  field: GradedCapabilityField
+  name: string
+  icon: string
+  summary: string
+}[] = [
+  {
+    field: 'town',
+    name: 'Town',
+    icon: Icons.capTown,
+    summary:
+      'Round-trips to town to heal, restock, and trade — turns a one-way dive into a sustainable loop.',
+  },
+  {
+    field: 'preparedness',
+    name: 'Preparedness',
+    icon: Icons.capPreparedness,
+    summary:
+      "Gates descent on real readiness, so the bot stops diving into fights it can't survive.",
+  },
+  {
+    field: 'surf',
+    name: 'Surf Farming',
+    icon: Icons.capSurf,
+    summary:
+      'Tethers farming to a safe radius around the stairs — grind without wandering into danger.',
+  },
+  {
+    field: 'kiting',
+    name: 'Kiting',
+    icon: Icons.capKiting,
+    summary: 'Keeps ranged fighters at distance instead of trading blows toe-to-toe.',
+  },
+  {
+    field: 'tactics',
+    name: 'Tactics',
+    icon: Icons.capTactics,
+    summary: 'Spends mana on debuffs and buffs instead of only swinging the weapon.',
+  },
+  {
+    field: 'targeting',
+    name: 'Targeting',
+    icon: Icons.capTargeting,
+    summary: 'Picks the highest-value target instead of just the nearest body.',
+  },
+  {
+    field: 'retreat',
+    name: 'Retreat',
+    icon: Icons.capRetreat,
+    summary: 'Recognizes a losing fight and flees before the bot dies in it.',
+  },
 ]
+
+const ROMAN = ['I', 'II', 'III'] as const
 
 const botUpgradeItems = computed(() => {
   const caps = progression.botCapabilities
   const ess = progression.currency.essence
+  type Tier = { label: string; desc: string; owned: boolean; isNext: boolean; cost: number | null }
   const items: {
     id: string
     name: string
@@ -68,15 +116,15 @@ const botUpgradeItems = computed(() => {
     currentLevel: number
     maxLevel: number
     cost: number
-    costScaling: number
     canAfford: boolean
     isMaxed: boolean
-    effectValue: number
-    effect: { type: 'flat' | 'percent' | 'unlock'; baseValue: number; perLevel: number }
+    summary: string
+    tiers: Tier[]
   }[] = []
 
-  // Farming toggle as unlock-type card
+  // Farming toggle — a single-tier capability (own it or not).
   const farmingUnlocked = caps.farming
+  const farmingCost = getBotUpgradeById('farming')?.cost ?? 200
   items.push({
     id: 'farming',
     name: 'Resource Farming',
@@ -84,15 +132,24 @@ const botUpgradeItems = computed(() => {
     icon: Icons.capFarming,
     currentLevel: farmingUnlocked ? 1 : 0,
     maxLevel: 1,
-    cost: farmingUnlocked ? 0 : (getBotUpgradeById('farming')?.cost ?? 200),
-    costScaling: 1,
+    cost: farmingUnlocked ? 0 : farmingCost,
     canAfford: !farmingUnlocked && canPurchaseBotUpgrade('farming', caps, ess),
     isMaxed: farmingUnlocked,
-    effectValue: farmingUnlocked ? 1 : 0,
-    effect: { type: 'unlock' as const, baseValue: 0, perLevel: 1 },
+    summary:
+      "Lets the bot grind gold and XP when it's under-leveled, instead of diving in unprepared.",
+    tiers: [
+      {
+        label: '',
+        desc: 'Farms gold/XP when under-leveled for descent',
+        owned: farmingUnlocked,
+        isNext: !farmingUnlocked,
+        cost: farmingUnlocked ? null : farmingCost,
+      },
+    ],
   })
 
-  // Graded chains: one card per field (sweep/surf require farming)
+  // Graded chains: one card per field (surf requires farming). The card shows
+  // the next action; the tooltip shows the full owned→next→ahead tier ladder.
   for (const chain of gradedChains) {
     if (chain.field === 'surf' && !farmingUnlocked) continue
     const currentLevel = caps[chain.field]
@@ -102,6 +159,18 @@ const botUpgradeItems = computed(() => {
       currentLevel > 0
         ? getBotUpgradeById(`${chain.field}_${currentLevel}` as BotUpgradeId)?.description
         : undefined
+    const tiers: Tier[] = ROMAN.map((label, i) => {
+      const level = i + 1
+      const def = getBotUpgradeById(`${chain.field}_${level}` as BotUpgradeId)
+      const isNext = currentLevel + 1 === level
+      return {
+        label,
+        desc: def?.description ?? '',
+        owned: currentLevel >= level,
+        isNext,
+        cost: isNext ? (def?.cost ?? null) : null,
+      }
+    })
     items.push({
       id: nextId ?? `${chain.field}_3`,
       name: chain.name,
@@ -110,11 +179,10 @@ const botUpgradeItems = computed(() => {
       currentLevel,
       maxLevel: 3,
       cost: next?.cost ?? 0,
-      costScaling: 1,
       canAfford: nextId ? canPurchaseBotUpgrade(nextId, caps, ess) : false,
       isMaxed: currentLevel >= 3,
-      effectValue: currentLevel,
-      effect: { type: 'flat' as const, baseValue: 0, perLevel: 1 },
+      summary: chain.summary,
+      tiers,
     })
   }
 
