@@ -10,6 +10,8 @@
   /* Accents */
   --accent: #fabd2f;
   --accent-hover: #e0a720;
+  /* Dark text for filled-accent buttons — white is unreadable on bright amber */
+  --accent-text: #1d2021;
   --essence: #d3869b;
   --essence-light: #e6a4b9;
   --info: #83a598;

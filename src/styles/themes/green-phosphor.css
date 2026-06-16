@@ -10,6 +10,8 @@
   /* Accents */
   --accent: #33ff66;
   --accent-hover: #28cc52;
+  /* Dark text for filled-accent buttons — white is unreadable on bright phosphor green */
+  --accent-text: #03130a;
   --essence: #9dff5a;
   --essence-light: #c8ff9e;
   --info: #33ffcc;
