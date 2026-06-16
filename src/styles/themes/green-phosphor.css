@@ -1,0 +1,39 @@
+:root[data-theme='green-phosphor'] {
+  /* Backgrounds */
+  --bg: #020604;
+  --bg-panel: #06100a;
+  --bg-elevated: #0a160e;
+  --bg-highlight: #102016;
+  --border: #1f4a30;
+  --border-light: #2f6a45;
+
+  /* Accents */
+  --accent: #33ff66;
+  --accent-hover: #28cc52;
+  --essence: #9dff5a;
+  --essence-light: #c8ff9e;
+  --info: #33ffcc;
+  --success: #33ff66;
+  --warning: #ffd23a;
+  --danger: #ff5a3a;
+  --danger-hover: #e04428;
+
+  /* Rarity tiers */
+  --rare: #33ffcc;
+  --legendary: #eaff66;
+
+  /* Text */
+  --text-primary: #d6ffe0;
+  --text-secondary: #7fcf95;
+  --text-muted: #569a6c;
+  --text-dim: #356b45;
+
+  /* Structure — high tier: sharp edges, flat fill, no shadow */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-pill: 0px;
+  --panel-bg: var(--bg-panel);
+  --panel-shadow: 0 0 0 0 transparent;
+}

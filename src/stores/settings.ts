@@ -58,37 +58,36 @@ export const FONT_OPTIONS: FontOption[] = [
 ]
 
 export type ThemeId =
-  | 'tokyo-night'
-  | 'dark-indigo'
-  | 'catppuccin-mocha'
-  | 'dracula'
-  | 'nord'
-  | 'solarized-dark'
-  | 'gruvbox-dark'
-  | 'rose-pine'
-  | 'forest'
-  | 'cherry'
-  | 'amber-crt'
+  // High contrast
   | 'high-contrast'
+  | 'green-phosphor'
+  | 'amber-crt'
+  // Mid contrast
+  | 'dark-indigo'
+  | 'crimson'
+  | 'gruvbox-dark'
+  // Low contrast
+  | 'tokyo-night'
+  | 'nord'
+  | 'rose-pine'
 
 export interface ThemeOption {
   id: ThemeId
   label: string
 }
 
+// Roster grouped by contrast tier (3 high / 3 mid / 3 low). Order is the
+// surfaced order in the settings dropdown.
 export const THEME_OPTIONS: ThemeOption[] = [
-  { id: 'tokyo-night', label: 'Tokyo Night' },
-  { id: 'dark-indigo', label: 'Dark Indigo' },
-  { id: 'catppuccin-mocha', label: 'Catppuccin Mocha' },
-  { id: 'dracula', label: 'Dracula' },
-  { id: 'nord', label: 'Nord' },
-  { id: 'solarized-dark', label: 'Solarized Dark' },
-  { id: 'gruvbox-dark', label: 'Gruvbox Dark' },
-  { id: 'rose-pine', label: 'Rosé Pine' },
-  { id: 'forest', label: 'Forest' },
-  { id: 'cherry', label: 'Cherry' },
-  { id: 'amber-crt', label: 'Amber CRT' },
   { id: 'high-contrast', label: 'High Contrast' },
+  { id: 'green-phosphor', label: 'Green Phosphor' },
+  { id: 'amber-crt', label: 'Amber CRT' },
+  { id: 'dark-indigo', label: 'Dark Indigo' },
+  { id: 'crimson', label: 'Crimson' },
+  { id: 'gruvbox-dark', label: 'Gruvbox Dark' },
+  { id: 'tokyo-night', label: 'Tokyo Night' },
+  { id: 'nord', label: 'Nord' },
+  { id: 'rose-pine', label: 'Rosé Pine' },
 ]
 
 export interface GameSettings {
@@ -126,7 +125,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   animationSpeed: 'normal',
   fontSize: 'medium',
   fontFamily: 'jetbrains-mono',
-  theme: 'tokyo-night',
+  theme: 'dark-indigo',
   defaultPersonality: 'cautious',
   autoRestart: false,
   pauseOnVictory: true,
@@ -158,6 +157,12 @@ export const useSettingsStore = defineStore('settings', () => {
    */
   function applyLoadedSettings(loaded: Partial<GameSettings>) {
     settings.value = { ...DEFAULT_SETTINGS, ...loaded }
+    // A theme id saved before the roster was trimmed would dangle; coerce
+    // unknown ids back to the default rather than render the bare :root fallback
+    // while the dropdown shows a stale selection.
+    if (!THEME_OPTIONS.some((t) => t.id === settings.value.theme)) {
+      settings.value.theme = DEFAULT_SETTINGS.theme
+    }
   }
 
   return {

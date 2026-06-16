@@ -1,0 +1,34 @@
+:root[data-theme='crimson'] {
+  /* Backgrounds */
+  --bg: #160f11;
+  --bg-panel: #1e1518;
+  --bg-elevated: #271b20;
+  --bg-highlight: #332229;
+  --border: #48303a;
+  --border-light: #664450;
+
+  /* Accents */
+  --accent: #e85d75;
+  --accent-hover: #cf4a62;
+  --essence: #c08cf0;
+  --essence-light: #d9b8f7;
+  --info: #5fb0c4;
+  --success: #7cc079;
+  --warning: #e0a23c;
+  --danger: #ff4d3a;
+  --danger-hover: #e03826;
+
+  /* Rarity tiers */
+  --rare: #5fb0c4;
+  --legendary: #f0c84a;
+
+  /* Text */
+  --text-primary: #efdce0;
+  --text-secondary: #c2a6ad;
+  --text-muted: #9a7e86;
+  --text-dim: #6e525b;
+
+  /* Structure — mid tier: tight corners (base scale), flat fill, faint lift */
+  --panel-bg: var(--bg-panel);
+  --panel-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
