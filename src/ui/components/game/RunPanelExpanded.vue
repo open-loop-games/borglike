@@ -23,6 +23,7 @@ const emit = defineEmits<{
   restart: []
   dismiss: []
   kill: []
+  configure: []
 }>()
 
 const runs = useRunsStore()
@@ -98,6 +99,15 @@ function startKillHold() {
         <button class="turbo-btn" :class="{ active: run.turbo }" @click="handleToggleTurbo">
           <Icon class="turbo-icon" :name="Icons.turbo" />
           Turbo
+        </button>
+        <button
+          v-if="!runEnded"
+          class="configure-btn"
+          title="Edit loadout — applies to next auto-restart"
+          @click="emit('configure')"
+        >
+          <Icon class="configure-icon" :name="Icons.configure" />
+          Edit
         </button>
         <button
           class="kill-btn"
@@ -304,6 +314,29 @@ function startKillHold() {
   font-size: var(--text-base);
 }
 
+.configure-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 14px;
+  background: var(--bg-highlight);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.configure-btn:hover {
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.configure-icon {
+  font-size: var(--text-base);
+}
+
 .kill-btn {
   display: flex;
   align-items: center;
@@ -429,7 +462,7 @@ function startKillHold() {
 .action-btn.primary {
   background: var(--accent);
   border: 1px solid var(--accent);
-  color: white;
+  color: var(--accent-text, white);
   font-weight: bold;
 }
 

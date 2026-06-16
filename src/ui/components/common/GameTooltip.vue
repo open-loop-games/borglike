@@ -248,9 +248,77 @@ const tooltipStyle = computed(() => ({
   border-top: 1px solid var(--border);
 }
 
+/* Separates a second group of rows (e.g. the cost block under the effect). */
+.game-tooltip .tt-row--group {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px dashed color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+/* Cost-scaling multiplier, trailing the next-cost figure. */
+.game-tooltip .tt-scale {
+  margin-left: var(--space-1);
+  font-weight: normal;
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+
 .game-tooltip .tt-muted {
   color: var(--text-dim);
   font-size: var(--text-sm);
+}
+
+/* Capability ladder rows (BOT upgrades). Three states share one row grammar:
+   future tiers stay dim (default), owned tiers read legible with a green tick,
+   the next purchasable tier gets full emphasis + an essence-toned mark/cost. */
+.game-tooltip .tt-tier {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: 2px 0;
+  color: var(--text-dim);
+}
+
+.game-tooltip .tt-tier-mark {
+  flex: 0 0 0.9em;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.game-tooltip .tt-tier-text {
+  flex: 1;
+}
+
+.game-tooltip .tt-tier-rank {
+  font-weight: bold;
+  margin-right: var(--space-2);
+  color: var(--text-muted);
+}
+
+.game-tooltip .tt-tier-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  color: var(--essence-light);
+}
+
+.game-tooltip .tt-tier--owned {
+  color: var(--text-secondary);
+}
+.game-tooltip .tt-tier--owned .tt-tier-mark,
+.game-tooltip .tt-tier--owned .tt-tier-rank {
+  color: var(--success);
+}
+
+.game-tooltip .tt-tier--next {
+  color: var(--text-primary);
+}
+.game-tooltip .tt-tier--next .tt-tier-mark,
+.game-tooltip .tt-tier--next .tt-tier-rank {
+  color: var(--essence);
 }
 
 .tooltip-fade-enter-active {

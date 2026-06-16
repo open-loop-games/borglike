@@ -149,6 +149,9 @@ function handleConfigure(slot: number) {
   if (run && isRunEnded(run.state)) {
     runs.removeRun(run.id)
   }
+  // Drop focus so the loadout editor branch renders instead of the expanded
+  // view (no-op when configuring from the grid, where nothing is focused).
+  runs.clearFocus()
   loadoutSlot.value = slot
 }
 
@@ -183,6 +186,7 @@ function handleKillExpanded() {
         @restart="handleRestart(runs.focusedSlot!)"
         @dismiss="handleDismissExpanded"
         @kill="handleKillExpanded"
+        @configure="handleConfigure(runs.focusedSlot!)"
       />
     </template>
 
