@@ -69,6 +69,8 @@ import {
   runProgression,
   BASELINE_CLASSES,
   BASELINE_RACES,
+  BASELINE_REPRESENTATIVE_CLASSES,
+  BASELINE_REPRESENTATIVE_RACES,
   ALL_CAPABILITY_TIERS,
   ALL_UPGRADE_TIERS,
   ALL_PERSONALITIES,
@@ -158,6 +160,8 @@ interface Args {
   progressionTiers: string[]
   /** Whether the user explicitly passed --threads */
   userSetThreads: boolean
+  /** Whether the user explicitly passed --boosters (pins boosters uniform, opting out of auto-zip) */
+  userSetBoosters: boolean
 }
 
 const ALL_ANALYZERS: AnalyzerName[] = [
@@ -220,6 +224,7 @@ function parseArgs(): Args {
     upgradeTiers: [],
     progressionTiers: [],
     userSetThreads: false,
+    userSetBoosters: false,
   }
 
   // Parse mode (first positional arg)
@@ -294,7 +299,9 @@ function parseArgs(): Args {
     } else if (arg.startsWith('--races=')) {
       const val = arg.slice(8)
       if (result.mode === 'matrix') {
-        result.matrixRaces = val === 'all' ? [...BASELINE_RACES] : val.split(',').filter(Boolean)
+        result.matrixRaces = val === 'all' ? [...BASELINE_RACES]
+          : val === 'representative' ? [...BASELINE_REPRESENTATIVE_RACES]
+          : val.split(',').filter(Boolean)
       } else {
         result.compareRaces = true
         result.raceList = val.split(',').filter(Boolean)
@@ -302,7 +309,9 @@ function parseArgs(): Args {
     // Matrix mode options
     } else if (arg.startsWith('--classes=')) {
       const val = arg.slice(10)
-      result.matrixClasses = val === 'all' ? [...BASELINE_CLASSES] : val.split(',').filter(Boolean)
+      result.matrixClasses = val === 'all' ? [...BASELINE_CLASSES]
+        : val === 'representative' ? [...BASELINE_REPRESENTATIVE_CLASSES]
+        : val.split(',').filter(Boolean)
     } else if (arg.startsWith('--personalities=')) {
       const val = arg.slice(16)
       result.matrixPersonalities = val === 'all' ? [...ALL_PERSONALITIES] : val.split(',').filter(Boolean)
@@ -315,13 +324,13 @@ function parseArgs(): Args {
     } else if (arg.startsWith('--progression=')) {
       const val = arg.slice(14)
       result.progressionTiers = val === 'all' ? [...ALL_UPGRADE_TIERS] : val.split(',').filter(Boolean)
-      result.progressionTiers = arg.slice(14).split(',').filter(Boolean)
     } else if (arg.startsWith('--capabilities=')) {
       result.capabilities = arg.slice(15)
     } else if (arg.startsWith('--upgrades=')) {
       result.upgrades = arg.slice(11)
     } else if (arg.startsWith('--boosters=')) {
       result.boosters = arg.slice(11)
+      result.userSetBoosters = true
     // Balance overrides (Tier 1)
     } else if (arg.startsWith('--monster-hp=')) {
       result.monsterHp = parseInt(arg.slice(13), 10)
@@ -846,6 +855,12 @@ async function main(): Promise<void> {
       matrixCapTiers = args.progressionTiers
     }
 
+    // Boosters are the third progression leg: auto-zip to the same tier names when
+    // --progression is set, unless --boosters was explicitly passed (pins uniform).
+    const matrixBoosterTiers = args.progressionTiers.length > 0 && !args.userSetBoosters
+      ? args.progressionTiers
+      : undefined
+
     // Build balance overrides
     const effectiveBestiary = args.bestiary > 0 ? args.bestiary : (args.maxUpgrades ? 25 : 0)
     const balance = {
@@ -875,6 +890,7 @@ async function main(): Promise<void> {
       startSeed: args.seed,
       threads: matrixThreads,
       boosters: args.boosters,
+      boosterTiers: matrixBoosterTiers,
       maxUpgrades: args.maxUpgrades,
       balance,
       pairedProgression: args.progressionTiers.length > 0,
@@ -908,6 +924,9 @@ async function main(): Promise<void> {
             avgKills: cellResult.avgKills,
             victories: cellResult.victories,
             avgTurns: cellResult.avgTurns,
+            essence: cellResult.essence,
+            essencePerTurn: cellResult.essencePerTurn,
+            endReasonMix: cellResult.endReasonMix,
           },
           runs: cellResult.batchResult.runs,
           deathCauses: cellResult.batchResult.deathCauses,
@@ -942,6 +961,9 @@ async function main(): Promise<void> {
           avgKills: c.avgKills,
           victories: c.victories,
           avgTurns: c.avgTurns,
+          essence: c.essence,
+          essencePerTurn: c.essencePerTurn,
+          endReasonMix: c.endReasonMix,
         })),
       }, null, 2), 'utf-8')
 

@@ -6,7 +6,7 @@ Game balance methodology, diagnostic tooling, and historical baselines.
 
 ```
 Character:     11 classes × 11 races = 121 combinations
-Boosters:      class-optimal vs custom loadouts
+Boosters:      5 tiers (none, early, mid, late, full) — co-vary with the progression bundle
 Personality:   4 types (cautious, aggressive, greedy, speedrunner)
 Bot caps:      5 tiers (none, early, mid, late, full)
 Upgrades:      5 tiers (none, early, mid, late, full)
@@ -27,7 +27,7 @@ All tests use this baseline unless specified:
 | `--class` | warrior | Simplest mechanics |
 | `--personality` | cautious | Default, most tested |
 | `--upgrades` | full | Meta-progression maxed |
-| `--boosters` | class | Class-optimal loadout |
+| `--boosters` | class | Class-optimal loadout (≡ tier `full`) |
 | `--capabilities` | full | Bot fully unlocked |
 
 ---
@@ -74,100 +74,63 @@ pnpm diagnose matrix --classes=warrior,mage,ranger --races=all --runs=50 --turns
 # Matrix: capability progression sweep
 pnpm diagnose matrix --class=warrior --upgrades=mid --cap-tiers=none,early,mid,late,full
 
-# Matrix: paired progression (upgrade + capability at same tier)
+# Matrix: paired progression — upgrades + capabilities + boosters zip together
 pnpm diagnose matrix --class=warrior --progression=none,early,mid,late,full
+
+# Matrix: representative archetype × starter-race grid (3×3, the de-facto default)
+pnpm diagnose matrix --classes=representative --races=representative --runs=50 --turns=50000
 
 # Matrix: all classes × 2 races
 pnpm diagnose matrix --classes=all --races=human,dwarf --runs=100 --turns=50000
 ```
 
-### Output
+### Tool reference lives in the skill
 
-Most modes write to `/tmp/borglike-diagnose/` as timestamped `.txt` + `.json` pairs.
-Matrix mode uses subfolders per cell. Quick mode defaults to stdout. Use `--stdout` to force stdout for any mode.
+Flag tables, preset definitions (upgrade/booster/capability), output mechanics, and
+`jq` parsing recipes are owned by the `/diagnose` skill — `.claude/skills/diagnose/SKILL.md`.
+That file is the tool's reference; this doc owns **methodology, recipes, and baselines**
+and cross-references rather than duplicates. Start there for "what flag does X" or "how do
+I read the output"; stay here for "what configuration should I measure and why".
+
+### The progression bundle (a tier = {upgrades, capabilities, boosters})
+
+A progression tier is a matched triple. `--progression=none,early,mid,late,full` zips all
+three legs at the same tier per cell, so a low-tier cell pairs low upgrades with low caps
+**and** a stage-appropriate booster loadout — not the top-tier `class` boosters, which used
+to be applied uniformly and silently over-powered every non-full cell. Boosters auto-zip to
+the progression tier names unless `--boosters=<fixed>` pins them uniform (to isolate the
+booster axis). The booster ladder (`early` = universal `armor_plus_1,con_minor`; `mid/late/
+full` specialize the class primary stat; `full` ≡ `class`) is tabulated in the skill.
+
+### Essence throughput metric
+
+Matrix mode reports `Essence` (mean **base** essence per run), `Ess/Turn` (the headline
+throughput: total essence ÷ total turns), and `D/CB/MT %` (death / circuit-breaker /
+max-turns endReason mix). Essence is base-only — `essenceFromDeath`/`essenceFromVictory`
+with **no** prestige, `essence_boost`, or `essence_magnet` multipliers (those are meta-state
+the headless worker doesn't model), so harness essence is a relative-comparison instrument,
+not an in-game absolute. Non-victory runs realize essence as-if-died at run end.
+
+`Ess/Turn` is the throughput signal: a tier where essence/turn **stabilizes or rises** as
+runs lengthen has a breakthrough (the bot converts holding into descent); one where it
+**falls** is a throughput-negative holding pattern (e.g. the underpowered farming/surf/
+preparedness ping-pong). Read it alongside `D/CB/MT %` — a death-heavy mix at stable
+essence/turn means progress; a max-turns/CB-heavy mix at falling essence/turn means churn.
+
+### Recipe: cap-height / run-to-death sweep
+
+To tell breakthrough from holding pattern on a safe-band cell, sweep `--turns` and watch
+whether `Ess/Turn` stabilizes (breakthrough lands) or falls (throughput-negative), with the
+endReason mix alongside:
 
 ```bash
-# List recent results
-ls -lt /tmp/borglike-diagnose/
-
-# Read human-friendly text
-cat /tmp/borglike-diagnose/20260206-143000-baseline-seed1000-100runs.txt
-
-# Matrix results use subfolders
-cat /tmp/borglike-diagnose/20260206-143000-matrix/summary.txt
-ls /tmp/borglike-diagnose/20260206-143000-matrix/warrior-human/
-
-# Parse JSON with jq
-jq '.result[] | {classId, avgDepth, morgothKills}' /tmp/borglike-diagnose/*baseline*.json
-jq '.result.runs[] | select(.depth >= 50)' /tmp/borglike-diagnose/*batch*.json
-jq '.config' /tmp/borglike-diagnose/*baseline*.json  # check run config
+for T in 10000 30000 100000; do
+  pnpm diagnose matrix --class=mage --race=human --progression=mid \
+    --runs=50 --turns=$T --seed=1000 --stdout
+done
+# Compare Ess/Turn across T: rising/flat → breakthrough; falling → holding pattern.
+# A shift in D/CB/MT % toward death/victory as T grows confirms the cell breaks through.
 ```
-
-**Thread pool:** All modes share a singleton thread pool. Use `matrix` mode instead of parallel processes for cross-class/race testing — one pool of 20 threads beats 9 processes × 8 threads each.
-
-### Balance Flags
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--upgrades=X` | full | Upgrade preset: none, early, mid, late, full |
-| `--boosters=X` | class | Booster preset: none, class, or comma-separated IDs |
-| `--capabilities=X` | full | Capability preset: none, early, mid, late, full |
-| `--turns=N` | 20000 | Max turns per run |
-| `--monster-hp=N` | 100 | Monster HP % |
-| `--monster-damage=N` | 100 | Monster damage % |
-| `--bestiary=N` | 0 | Fixed bestiary bonus % (0=use kills) |
-| `--start-potions=N` | 3 | Starting healing potions |
-| `--potion-rate=N` | 100 | Potion spawn rate % |
-| `--regen=N` | 0 | HP regen per 10 turns (OOC) |
-| `--armor-pen=N` | 0 | Flat armor penetration |
-| `--enchant-rate=N` | 100 | Enchantment chance % |
-| `--item-rate=N` | 100 | Items per level % |
-| `--xp-rate=N` | 100 | XP gain % |
-
-### Matrix Flags
-
-| Flag | Description |
-|------|-------------|
-| `--classes=X` | Comma-separated class IDs or `all` (11 classes) |
-| `--races=X` | Comma-separated race IDs or `all` (11 races) |
-| `--personalities=X` | Comma-separated or `all` (4 personalities) |
-| `--cap-tiers=X` | Capability tiers to sweep (e.g., `none,early,mid,late,full`) |
-| `--upgrade-tiers=X` | Upgrade tiers to sweep |
-| `--progression=X` | Paired tiers: sets both upgrades AND capabilities (zipped, not crossed) |
-
-### Upgrade Presets (`--upgrades=X`)
-
-| Preset | Upgrades |
-|--------|----------|
-| `none` | No upgrades |
-| `early` | vitality 2, might 2, resilience 1 |
-| `mid` | vitality 5, might 5, resilience 5, reflexes 4, precision 2, swiftness 2 |
-| `late` | vitality 8, might 8, resilience 7, reflexes 6, precision 4, swiftness 4 |
-| `full` | All upgrades at max level |
-
-### Booster Presets (`--boosters=X`)
-
-| Preset | Description |
-|--------|-------------|
-| `none` | No boosters |
-| `class` | Primary stat (superior) + CON (superior) based on class |
-| `str_superior,con_superior` | Custom comma-separated booster IDs |
-
-**Class Booster Defaults (--boosters=class):**
-- STR classes (warrior, berserker, blackguard): `str_superior + con_superior`
-- INT classes (mage, archmage, necromancer): `int_superior + con_superior`
-- WIS classes (priest, paladin, druid): `wis_superior + con_superior`
-- DEX classes (rogue, ranger): `dex_superior + con_superior`
-
-### Capability Presets (`--capabilities=X`)
-
-| Preset | Capabilities | Expected Depth |
-|--------|--------------|----------------|
-| `none` | (all disabled) | 5-10 (face-rush) |
-| `early` | town_1, farming, tactics_1, preparedness_1, targeting_1, retreat_1 | 15-20 |
-| `mid` | town_2, farming, tactics_2, preparedness_2, surf_1, kiting_1, targeting_2, retreat_2 | 25-35 |
-| `late` | town_3, farming, tactics_3, preparedness_3, surf_2, kiting_2, targeting_3, retreat_3 | 40-45 |
-| `full` | (all maxed) | 45+ (endgame) |
 
 ### Interpreting Results
 

@@ -35,6 +35,8 @@ export interface WaypointStats {
   upgradeStr: string
   /** Exact capability string passed to worker */
   capStr: string
+  /** Booster tier (none|early|mid|late|full) measured at this waypoint */
+  boosterTier: string
   /** Number of purchases completed at this waypoint */
   purchaseCount: number
   avgDepth: number
@@ -96,6 +98,9 @@ interface WaypointDef {
   name: string
   upgrades: string     // Custom upgrade string or preset name
   capabilities: string // Custom capability string or preset name
+  /** Booster tier matched to this stage (none|early|mid|late|full). Co-varies with
+   *  upgrades/caps so the throughput curve isn't measured at top-tier boosters throughout. */
+  boosters: string
   /** How many total purchases (bot + stat + meta + qol) a player has at this point.
    *  Used for interpolation — the sim looks up where it sits between waypoints. */
   purchaseCount: number
@@ -114,6 +119,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'bare',
     upgrades: 'none',
     capabilities: 'none',
+    boosters: 'none',
     purchaseCount: 0,
   },
   {
@@ -122,6 +128,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'economy',
     upgrades: 'none',
     capabilities: 'none',
+    boosters: 'none',
     purchaseCount: 3,
   },
   {
@@ -129,6 +136,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'early_bots',
     upgrades: 'none',
     capabilities: 'farming,town_1,town_2,preparedness_1,tactics_1,targeting_1,retreat_1',
+    boosters: 'early',
     purchaseCount: 10,
   },
   {
@@ -136,6 +144,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'town3',
     upgrades: 'none',
     capabilities: 'farming,town_3,preparedness_1,tactics_1,targeting_1,retreat_1',
+    boosters: 'early',
     purchaseCount: 11,
   },
   {
@@ -143,6 +152,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'mid_bots',
     upgrades: 'none',
     capabilities: 'farming,town_3,preparedness_2,tactics_2,surf_1,kiting_1,targeting_2,retreat_2',
+    boosters: 'mid',
     purchaseCount: 18,
   },
   {
@@ -150,6 +160,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'all_bots',
     upgrades: 'none',
     capabilities: 'full',
+    boosters: 'mid',
     purchaseCount: 25,
   },
   {
@@ -157,6 +168,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'early_stats',
     upgrades: 'vitality=2,might=2,resilience=1',
     capabilities: 'full',
+    boosters: 'late',
     purchaseCount: 30,
   },
   {
@@ -164,6 +176,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'mid_stats',
     upgrades: 'vitality=5,might=5,resilience=5,reflexes=4,precision=2,swiftness=2',
     capabilities: 'full',
+    boosters: 'late',
     purchaseCount: 48,
   },
   {
@@ -171,6 +184,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'late_stats',
     upgrades: 'vitality=8,might=8,resilience=7,reflexes=6,precision=4,swiftness=4',
     capabilities: 'full',
+    boosters: 'full',
     purchaseCount: 62,
   },
   {
@@ -178,6 +192,7 @@ const WAYPOINTS: WaypointDef[] = [
     name: 'full',
     upgrades: 'full',
     capabilities: 'full',
+    boosters: 'full',
     purchaseCount: 126,  // all 126 purchasable items
   },
 ]
@@ -206,7 +221,11 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * Math.max(0, Math.min(1, t))
 }
 
-/** Build all purchasable items */
+/** Build all purchasable items.
+ *  Note: boosters are NOT in this list — the buy-loop sim doesn't model booster
+ *  purchase costs. Per-waypoint booster tiers improve measurement fidelity (each
+ *  waypoint runs at a stage-matched loadout) but the economy timeline doesn't
+ *  spend essence on them. Closing that gap is out of scope. */
 function buildPurchaseList(): Purchase[] {
   const purchases: Purchase[] = []
 
@@ -276,6 +295,7 @@ function extractWaypointStats(
   name: string,
   upgradeStr: string,
   capStr: string,
+  boosterTier: string,
   purchaseCount: number,
   batch: BatchResult,
   runsPerCell: number,
@@ -297,6 +317,7 @@ function extractWaypointStats(
     name,
     upgradeStr,
     capStr,
+    boosterTier,
     purchaseCount,
     avgDepth: batch.aggregateMetrics['worker-metrics.maxDepth']?.avg ?? 0,
     medianDepth: median(depths),
@@ -327,6 +348,7 @@ function mergeWaypointStats(perClassWaypoints: WaypointStats[][]): WaypointStats
       name: matching[0]!.name,
       upgradeStr: matching[0]!.upgradeStr,
       capStr: matching[0]!.capStr,
+      boosterTier: matching[0]!.boosterTier,
       purchaseCount: matching[0]!.purchaseCount,
       avgDepth: matching.reduce((s, w) => s + w.avgDepth, 0) / n,
       medianDepth: matching.reduce((s, w) => s + w.medianDepth, 0) / n,
@@ -363,23 +385,24 @@ async function collectWaypointStats(config: ProgressionConfig): Promise<{
   const isRandom = classId === 'random' || classId === 'all'
   const classes = isRandom ? [...BASELINE_CLASSES] : [classId]
 
-  // Deduplicate waypoints with identical upgrade+cap strings
-  // (e.g., 'bare' and 'economy' both have none/none)
-  const uniqueConfigs: { upgrades: string; capabilities: string; waypointIndices: number[] }[] = []
+  // Deduplicate waypoints with identical upgrade+cap+booster strings
+  // (e.g., 'bare' and 'economy' both have none/none/none)
+  const uniqueConfigs: { upgrades: string; capabilities: string; boosters: string; waypointIndices: number[] }[] = []
   for (let i = 0; i < WAYPOINTS.length; i++) {
     const wp = WAYPOINTS[i]!
-    const existing = uniqueConfigs.find(c => c.upgrades === wp.upgrades && c.capabilities === wp.capabilities)
+    const existing = uniqueConfigs.find(c => c.upgrades === wp.upgrades && c.capabilities === wp.capabilities && c.boosters === wp.boosters)
     if (existing) {
       existing.waypointIndices.push(i)
     } else {
-      uniqueConfigs.push({ upgrades: wp.upgrades, capabilities: wp.capabilities, waypointIndices: [i] })
+      uniqueConfigs.push({ upgrades: wp.upgrades, capabilities: wp.capabilities, boosters: wp.boosters, waypointIndices: [i] })
     }
   }
 
   // Run matrix with unique configs as "tiers"
-  // Using paired mode: upgradeTiers[i] pairs with capabilityTiers[i]
+  // Using paired mode: upgradeTiers[i] pairs with capabilityTiers[i] and boosterTiers[i]
   const upgradeTiers = uniqueConfigs.map(c => c.upgrades)
   const capabilityTiers = uniqueConfigs.map(c => c.capabilities)
+  const boosterTiers = uniqueConfigs.map(c => c.boosters)
 
   const result = await runMatrix({
     classes,
@@ -392,6 +415,7 @@ async function collectWaypointStats(config: ProgressionConfig): Promise<{
     startSeed: seed,
     threads,
     boosters,
+    boosterTiers,
     maxUpgrades: false,
     balance,
     pairedProgression: true,
@@ -430,21 +454,21 @@ async function collectWaypointStats(config: ProgressionConfig): Promise<{
 
 /** Build waypoint stats from matrix cells, mapping unique configs back to (possibly duplicate) waypoints */
 function buildWaypointsFromCells(
-  cells: { cell: { upgrades: string; capabilities: string }; batchResult: BatchResult; avgDepth: number; avgKills: number; avgTurns: number }[],
-  uniqueConfigs: { upgrades: string; capabilities: string; waypointIndices: number[] }[],
+  cells: { cell: { upgrades: string; capabilities: string; boosters: string }; batchResult: BatchResult; avgDepth: number; avgKills: number; avgTurns: number }[],
+  uniqueConfigs: { upgrades: string; capabilities: string; boosters: string; waypointIndices: number[] }[],
   runs: number,
 ): WaypointStats[] {
   const waypoints: WaypointStats[] = new Array(WAYPOINTS.length)
 
   for (let ci = 0; ci < uniqueConfigs.length; ci++) {
     const config = uniqueConfigs[ci]!
-    const cell = cells.find(c => c.cell.upgrades === config.upgrades && c.cell.capabilities === config.capabilities)
+    const cell = cells.find(c => c.cell.upgrades === config.upgrades && c.cell.capabilities === config.capabilities && c.cell.boosters === config.boosters)
     if (!cell) continue
 
     for (const wi of config.waypointIndices) {
       const wp = WAYPOINTS[wi]!
       waypoints[wi] = extractWaypointStats(
-        wp.name, wp.upgrades, wp.capabilities, wp.purchaseCount,
+        wp.name, wp.upgrades, wp.capabilities, wp.boosters, wp.purchaseCount,
         cell.batchResult, runs,
       )
     }

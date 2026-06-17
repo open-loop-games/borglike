@@ -18,7 +18,7 @@ export { runDiagnosis, runBatchDiagnosis, runBatchDiagnosisParallel, runDeepDiag
 export type { TurnLogEntry, ParallelBatchConfig, WorkerInput } from './runner'
 
 // Modes
-export { runBaseline, runBaselineRaces, BASELINE_CLASSES, BASELINE_RACES, BASELINE_DEFAULTS } from './baseline'
+export { runBaseline, runBaselineRaces, BASELINE_CLASSES, BASELINE_RACES, BASELINE_DEFAULTS, BASELINE_REPRESENTATIVE_CLASSES, BASELINE_REPRESENTATIVE_RACES } from './baseline'
 export type { BaselineConfig, BaselineResult, BaselineRacesConfig, BaselineRaceResult } from './baseline'
 
 // Matrix mode

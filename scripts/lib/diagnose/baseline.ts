@@ -44,6 +44,14 @@ export const BASELINE_RACES = [
   'kobold',
 ] as const
 
+/**
+ * Representative archetype × starter-race grid (TANK/MEDIUM/SQUISHY × average races).
+ * The de-facto 3×3 used across BALANCE.md, surfaced as the `representative` alias for
+ * --classes / --races in matrix mode.
+ */
+export const BASELINE_REPRESENTATIVE_CLASSES = ['warrior', 'mage', 'rogue'] as const
+export const BASELINE_REPRESENTATIVE_RACES = ['human', 'dwarf', 'elf'] as const
+
 /** Standard baseline parameters */
 export const BASELINE_DEFAULTS = {
   runs: 100,

@@ -246,6 +246,29 @@ export function computeClassBoosterBonuses(classId: string): BoosterBonuses {
   return computeBoosterBonuses(preset)
 }
 
+/** Booster progression tier — co-varies with upgrade/capability tiers in the diagnose matrix. */
+export type BoosterTier = 'none' | 'early' | 'mid' | 'late' | 'full'
+
+/**
+ * Resolve a class-appropriate booster loadout for a progression tier.
+ *
+ * `early` is a deliberately universal survivability baseline (+1 armor, +1 CON)
+ * identical across all classes — the unspecialized new-player loadout. The class
+ * picks ramp the primary stat + CON together: `full` equals {@link getClassBoosterPreset}
+ * (primary_superior + con_superior), so tier `full` and `--boosters=class` are equivalent.
+ *
+ * Primary stat is derived from the class preset's first entry so the class→stat
+ * mapping stays single-sourced in {@link CLASS_BOOSTER_PRESETS}.
+ */
+export function getClassBoosterTierPreset(classId: string, tier: BoosterTier): string[] {
+  if (tier === 'none') return []
+  if (tier === 'early') return ['armor_plus_1', 'con_minor']
+
+  const primary = (CLASS_BOOSTER_PRESETS[classId]?.[0] ?? 'str_superior').replace(/_superior$/, '')
+  const magnitude = tier === 'mid' ? 'minor' : tier === 'late' ? 'greater' : 'superior'
+  return [`${primary}_${magnitude}`, `con_${magnitude}`]
+}
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================

@@ -5,7 +5,7 @@
  * can't resolve path aliases at runtime.
  */
 
-import { computeBoosterBonuses, computeClassBoosterBonuses } from '../../../src/game/booster-effects'
+import { computeBoosterBonuses, computeClassBoosterBonuses, getClassBoosterTierPreset, type BoosterTier } from '../../../src/game/booster-effects'
 import {
   DEFAULT_BOT_CAPABILITIES,
   FULL_BOT_CAPABILITIES,
@@ -18,7 +18,7 @@ import {
 
 /** Named capability presets for progression testing. */
 export const CAPABILITY_PRESETS: Record<string, string> = {
-  early: 'town_1,farming,tactics_1,preparedness_1,targeting_1,retreat_1',
+  early: 'town_1,farming,surf_1,tactics_1,preparedness_1,targeting_1,retreat_1',
   mid: 'town_2,farming,tactics_2,preparedness_2,surf_1,kiting_1,targeting_2,retreat_2',
   late: 'town_3,farming,tactics_3,preparedness_3,surf_2,kiting_2,targeting_3,retreat_3',
 }
@@ -112,9 +112,13 @@ export function parseCustomUpgrades(spec: string): Record<string, number> | null
 // BOOSTERS
 // ============================================================================
 
+/** Progression tier names that resolve to a class-appropriate tiered loadout. */
+const BOOSTER_TIERS = new Set<BoosterTier>(['none', 'early', 'mid', 'late', 'full'])
+
 /**
  * Resolve booster bonuses from a spec string and class ID.
- * 'none' = no boosters, 'class' = class default, or comma-separated IDs
+ * 'none' = no boosters, 'class' = class default (≡ tier 'full'),
+ * a progression tier (early|mid|late|full), or comma-separated IDs.
  */
 export function resolveBoosterBonuses(boosters: string | undefined, classId: string) {
   if (!boosters || boosters === 'none') {
@@ -122,6 +126,9 @@ export function resolveBoosterBonuses(boosters: string | undefined, classId: str
   }
   if (boosters === 'class') {
     return computeClassBoosterBonuses(classId)
+  }
+  if (BOOSTER_TIERS.has(boosters as BoosterTier)) {
+    return computeBoosterBonuses(getClassBoosterTierPreset(classId, boosters as BoosterTier))
   }
   const boosterIds = boosters.split(',').map(s => s.trim()).filter(Boolean)
   if (boosterIds.length > 0) {

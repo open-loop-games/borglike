@@ -222,7 +222,9 @@ pnpm diagnose deep 1768965560201 --map
 --upgrades=X      Upgrade preset (default: full)
                   Values: none, early, mid, late, full
 --boosters=X      Booster preset (default: class)
-                  Values: none, class (primary stat + CON), or comma-separated IDs
+                  Values: none, class (= full), tier (early|mid|late|full),
+                          or comma-separated IDs
+                  Tiers are class-appropriate; see Booster Presets below.
                   IDs: str_superior, con_superior, int_superior, etc.
 --exclude-upgrade=X,Y  Exclude specific upgrades (isolation testing)
 --capabilities=X  Bot capabilities (default: full)
@@ -240,7 +242,11 @@ Matrix Options:
 --personalities=X Comma-separated or 'all' (default: --personality value)
 --cap-tiers=X     Capability tiers to sweep (e.g., none,early,mid,late,full)
 --upgrade-tiers=X Upgrade tiers to sweep
---progression=X   Paired tiers: sets BOTH upgrades AND capabilities (zipped, not crossed)
+--progression=X   Paired tiers: sets upgrades, capabilities AND boosters together
+                  (zipped, not crossed). Boosters auto-zip to the same tier names
+                  unless --boosters=<fixed> is passed to pin them uniform.
+--classes=representative   Alias for warrior,mage,rogue (TANK/MEDIUM/SQUISHY)
+--races=representative     Alias for human,dwarf,elf (starter-average races)
 ```
 
 ## File Output
@@ -324,8 +330,6 @@ pnpm diagnose batch --runs=50
 ```
 
 ## Additional Workflows
-
-**💡 For detailed navigation tips, grep patterns, and filtering strategies, see `references/navigation.md`**
 
 ### Comparing Bot Behavior
 
@@ -458,16 +462,30 @@ pnpm diagnose batch --runs=100 \
 
 ### Booster Presets (`--boosters=X`)
 
-| Preset | Description |
-|--------|-------------|
-| `none` | No boosters |
-| `class` | Primary stat (superior) + CON (superior) based on class |
+Boosters form a progression ladder that co-varies with the upgrade/capability tier
+(see `--progression`). `early` is a deliberately universal survivability baseline;
+`mid`/`late`/`full` specialize on the class primary stat. `full` ≡ `class`.
 
-**Class defaults (--boosters=class):**
-- STR classes (warrior, berserker, blackguard): str_superior + con_superior
-- INT classes (mage, archmage, necromancer): int_superior + con_superior
-- WIS classes (priest, paladin, druid): wis_superior + con_superior
-- DEX classes (rogue, ranger): dex_superior + con_superior
+| Preset | Loadout | Note |
+|--------|---------|------|
+| `none` | (none) | |
+| `early` | `armor_plus_1, con_minor` | universal — identical across all classes |
+| `mid` | `{primary}_minor, con_minor` | first class specialization |
+| `late` | `{primary}_greater, con_greater` | |
+| `full` / `class` | `{primary}_superior, con_superior` | top tier |
+
+`{primary}` by class: STR (warrior, berserker, blackguard), INT (mage, archmage,
+necromancer), WIS (priest, paladin, druid), DEX (rogue, ranger). Custom loadouts
+still accepted as comma-separated IDs (e.g. `str_superior,con_superior`).
+
+### Matrix essence metrics
+
+Matrix mode reports per cell, alongside depth/kills/CB: `Essence` (mean base essence
+per run — `essenceFromDeath`/`essenceFromVictory`, **no** prestige/essence_boost/
+essence_magnet multipliers, which are meta-state the headless worker doesn't model),
+`Ess/Turn` (the headline throughput: total essence ÷ total turns), and `D/CB/MT %`
+(the death / circuit-breaker / max-turns endReason mix). Non-victory runs realize
+essence as-if-died at run end.
 
 ### Balance Overrides
 
@@ -491,4 +509,3 @@ The diagnostic toolkit is designed to be extended. All new functionality should 
 
 For detailed documentation:
 - **`references/extending.md`** - Adding analyzers, modes, code structure, lifecycle hooks (read this first when extending!)
-- **`references/navigation.md`** - Grep patterns, turn ranges, and workflow examples for navigating diagnostic output

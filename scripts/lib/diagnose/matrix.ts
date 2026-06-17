@@ -12,13 +12,14 @@ import type { WorkerInput } from './runner'
 import { BASELINE_CLASSES, BASELINE_RACES } from './baseline'
 import type { BatchResult, DiagnoseResult } from './types'
 import type { BalanceOverrides } from '@game/types'
+import { essenceFromDeath, essenceFromVictory } from '@/core/formulas'
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 /** A single axis of variation in the matrix */
-export type MatrixAxis = 'class' | 'race' | 'personality' | 'upgrades' | 'capabilities'
+export type MatrixAxis = 'class' | 'race' | 'personality' | 'upgrades' | 'capabilities' | 'boosters'
 
 /** Configuration for a matrix run */
 export interface MatrixConfig {
@@ -31,7 +32,11 @@ export interface MatrixConfig {
   maxTurns: number
   startSeed?: number
   threads: number
+  /** Uniform booster preset applied to every cell unless boosterTiers overrides per-cell. */
   boosters: string
+  /** When set (and pairedProgression), zips alongside upgrade/capability tiers as the
+   *  third progression leg, so a tier cell = matched {upgrades, capabilities, boosters}. */
+  boosterTiers?: string[]
   maxUpgrades: boolean
   balance?: Partial<BalanceOverrides>
   /** Custom header label (default: "MATRIX TEST") */
@@ -49,6 +54,15 @@ export interface MatrixCell {
   personality: string
   upgrades: string
   capabilities: string
+  boosters: string
+}
+
+/** Run-outcome breakdown for a cell, as percentages of its runs. */
+export interface EndReasonMix {
+  death: number
+  victory: number
+  cb: number
+  maxTurns: number
 }
 
 /** Result for one cell */
@@ -61,6 +75,11 @@ export interface MatrixCellResult {
   avgKills: number
   victories: number
   avgTurns: number
+  /** Mean base essence per run (essenceFromDeath/Victory, no meta multipliers). */
+  essence: number
+  /** Headline throughput: total base essence / total turns across the cell's runs. */
+  essencePerTurn: number
+  endReasonMix: EndReasonMix
   batchResult: BatchResult
 }
 
@@ -81,17 +100,20 @@ export interface MatrixResult {
 function buildCells(config: MatrixConfig): MatrixCell[] {
   const cells: MatrixCell[] = []
 
-  // When paired, zip upgrade and capability tiers together
+  // When paired, zip upgrade, capability, and (optionally) booster tiers together.
+  // Boosters are the third progression leg, never an independent cartesian axis —
+  // they fall back to the uniform config.boosters when no per-tier array is given.
   if (config.pairedProgression) {
     const tierPairs = config.upgradeTiers.map((upg, i) => ({
       upgrades: upg,
       capabilities: config.capabilityTiers[i] ?? upg,
+      boosters: config.boosterTiers?.[i] ?? config.boosters,
     }))
     for (const classId of config.classes) {
       for (const raceId of config.races) {
         for (const personality of config.personalities) {
-          for (const { upgrades, capabilities } of tierPairs) {
-            cells.push({ classId, raceId, personality, upgrades, capabilities })
+          for (const { upgrades, capabilities, boosters } of tierPairs) {
+            cells.push({ classId, raceId, personality, upgrades, capabilities, boosters })
           }
         }
       }
@@ -99,13 +121,13 @@ function buildCells(config: MatrixConfig): MatrixCell[] {
     return cells
   }
 
-  // Default: full cartesian product
+  // Default: full cartesian product (boosters uniform across all cells)
   for (const classId of config.classes) {
     for (const raceId of config.races) {
       for (const personality of config.personalities) {
         for (const upgrades of config.upgradeTiers) {
           for (const capabilities of config.capabilityTiers) {
-            cells.push({ classId, raceId, personality, upgrades, capabilities })
+            cells.push({ classId, raceId, personality, upgrades, capabilities, boosters: config.boosters })
           }
         }
       }
@@ -115,13 +137,16 @@ function buildCells(config: MatrixConfig): MatrixCell[] {
 }
 
 /** Determine which axes have more than one value. */
-function findVaryingAxes(config: MatrixConfig): MatrixAxis[] {
+function findVaryingAxes(config: MatrixConfig, cells: MatrixCell[]): MatrixAxis[] {
   const axes: MatrixAxis[] = []
   if (config.classes.length > 1) axes.push('class')
   if (config.races.length > 1) axes.push('race')
   if (config.personalities.length > 1) axes.push('personality')
   if (config.upgradeTiers.length > 1) axes.push('upgrades')
   if (config.capabilityTiers.length > 1) axes.push('capabilities')
+  // Boosters co-vary as a paired leg, so derive variation from the built cells
+  // (not a config array) — this stays correct whether zipped or pinned uniform.
+  if (new Set(cells.map(c => c.boosters)).size > 1) axes.push('boosters')
   return axes
 }
 
@@ -133,6 +158,7 @@ export function buildCellLabel(cell: MatrixCell, varyingAxes: MatrixAxis[]): str
   if (varyingAxes.includes('personality')) parts.push(cell.personality)
   if (varyingAxes.includes('upgrades')) parts.push(`upg_${cell.upgrades}`)
   if (varyingAxes.includes('capabilities')) parts.push(`cap_${cell.capabilities}`)
+  if (varyingAxes.includes('boosters')) parts.push(`boost_${cell.boosters}`)
   return parts.join('-') || 'default'
 }
 
@@ -147,6 +173,33 @@ function buildCellResult(
   const depthMetrics = batchResult.aggregateMetrics['worker-metrics.maxDepth']
   const killMetrics = batchResult.aggregateMetrics['worker-metrics.kills']
   const turnMetrics = batchResult.aggregateMetrics['worker-metrics.totalTurns']
+
+  // Base essence per run (no prestige/essence_boost/essence_magnet multipliers —
+  // those are meta-state the headless worker doesn't model). Non-victory endReasons
+  // are realized as-if-died at run end.
+  const runEssence = (r: BatchResult['runs'][number]) =>
+    r.endReason === 'victory'
+      ? essenceFromVictory(r.depth, r.kills, r.turns)
+      : essenceFromDeath(r.depth, r.kills, r.gold)
+  const runs_ = batchResult.runs
+  const totalEssence = runs_.reduce((s, r) => s + runEssence(r), 0)
+  const totalTurns = runs_.reduce((s, r) => s + r.turns, 0)
+  const n = runs_.length
+
+  const mix: EndReasonMix = { death: 0, victory: 0, cb: 0, maxTurns: 0 }
+  for (const r of runs_) {
+    if (r.endReason === 'death') mix.death++
+    else if (r.endReason === 'victory') mix.victory++
+    else if (r.endReason === 'circuit_breaker') mix.cb++
+    else if (r.endReason === 'max_turns') mix.maxTurns++
+  }
+  if (n > 0) {
+    mix.death = (mix.death / n) * 100
+    mix.victory = (mix.victory / n) * 100
+    mix.cb = (mix.cb / n) * 100
+    mix.maxTurns = (mix.maxTurns / n) * 100
+  }
+
   return {
     cell,
     label,
@@ -156,6 +209,9 @@ function buildCellResult(
     avgKills: killMetrics?.avg ?? 0,
     victories: batchResult.victories,
     avgTurns: turnMetrics?.avg ?? 0,
+    essence: n > 0 ? totalEssence / n : 0,
+    essencePerTurn: totalTurns > 0 ? totalEssence / totalTurns : 0,
+    endReasonMix: mix,
     batchResult,
   }
 }
@@ -171,7 +227,7 @@ function buildCellResult(
 export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
   const startTime = Date.now()
   const cells = buildCells(config)
-  const varyingAxes = findVaryingAxes(config)
+  const varyingAxes = findVaryingAxes(config, cells)
   const startSeed = config.startSeed ?? Date.now()
   const threadCount = Math.min(config.threads, cpus().length)
 
@@ -221,7 +277,7 @@ export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
             balance: config.balance as any,
             capabilities: cell.capabilities,
             upgrades: cell.upgrades,
-            boosters: config.boosters,
+            boosters: cell.boosters,
           },
         },
       })
@@ -264,7 +320,7 @@ export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
       cellsFinished++
       const elapsed = ((Date.now() - (cellStartTimes[cellIdx] ?? startTime)) / 1000).toFixed(1)
       const cellResult = buildCellResult(cells[cellIdx]!, cellLabels[cellIdx]!, perCellResults[cellIdx]!, config.runs)
-      const line = `${cellLabels[cellIdx]!.padEnd(maxLabelLen)} depth=${cellResult.avgDepth.toFixed(1)} kills=${cellResult.avgKills.toFixed(0)} cb=${cellResult.cbRate.toFixed(0)}% (${elapsed}s)`
+      const line = `${cellLabels[cellIdx]!.padEnd(maxLabelLen)} depth=${cellResult.avgDepth.toFixed(1)} kills=${cellResult.avgKills.toFixed(0)} ess/t=${cellResult.essencePerTurn.toFixed(2)} cb=${cellResult.cbRate.toFixed(0)}% (${elapsed}s)`
       if (isTTY) {
         // Clear progress bar, print cell line, redraw bar
         process.stdout.write(`\r${' '.repeat(80)}\r${line}\n`)
@@ -306,6 +362,7 @@ function axisHeader(axis: MatrixAxis): string {
     case 'personality': return 'Personality'
     case 'upgrades': return 'Upgrades'
     case 'capabilities': return 'Caps'
+    case 'boosters': return 'Boosters'
   }
 }
 
@@ -317,6 +374,7 @@ function axisValue(cell: MatrixCell, axis: MatrixAxis): string {
     case 'personality': return cell.personality
     case 'upgrades': return cell.upgrades
     case 'capabilities': return cell.capabilities
+    case 'boosters': return cell.boosters
   }
 }
 
@@ -331,7 +389,7 @@ export function formatMatrixSummary(result: MatrixResult): string {
   lines.push('')
 
   const axisHeaders = result.varyingAxes.map(axisHeader)
-  const metricHeaders = ['Avg Depth', 'Max Depth', 'CB Rate', 'Kills', 'Victories', 'Turns']
+  const metricHeaders = ['Avg Depth', 'Max Depth', 'CB Rate', 'Kills', 'Victories', 'Turns', 'Essence', 'Ess/Turn', 'D/CB/MT %']
 
   // Header
   lines.push(`| ${[...axisHeaders, ...metricHeaders].join(' | ')} |`)
@@ -349,6 +407,9 @@ export function formatMatrixSummary(result: MatrixResult): string {
       cell.avgKills.toFixed(0),
       String(cell.victories),
       cell.avgTurns.toFixed(0),
+      cell.essence.toFixed(0),
+      cell.essencePerTurn.toFixed(2),
+      `${cell.endReasonMix.death.toFixed(0)}/${cell.endReasonMix.cb.toFixed(0)}/${cell.endReasonMix.maxTurns.toFixed(0)}`,
     ]
     lines.push(`| ${[...axisVals, ...metricVals].join(' | ')} |`)
   }
@@ -370,6 +431,9 @@ export function formatMatrixSummary(result: MatrixResult): string {
       cell.avgKills.toFixed(0),
       String(cell.victories),
       cell.avgTurns.toFixed(0),
+      cell.essence.toFixed(0),
+      cell.essencePerTurn.toFixed(2),
+      `${cell.endReasonMix.death.toFixed(0)}/${cell.endReasonMix.cb.toFixed(0)}/${cell.endReasonMix.maxTurns.toFixed(0)}`,
     ]
     lines.push(`| ${[...axisVals, ...metricVals].join(' | ')} |`)
   }

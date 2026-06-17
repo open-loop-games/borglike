@@ -780,11 +780,11 @@ export function formatProgressionResults(result: ProgressionResult): string {
   // Waypoint stats table
   lines.push('## Waypoint Run Stats (measured)')
   lines.push('')
-  lines.push('| Waypoint     | Med Depth | Med Kills | Med Gold | Med Turns | Ess/Death | Ess/Win | Vic |')
-  lines.push('|--------------|-----------|-----------|----------|-----------|-----------|---------|-----|')
+  lines.push('| Waypoint     | Boost | Med Depth | Med Kills | Med Gold | Med Turns | Ess/Death | Ess/Win | Vic |')
+  lines.push('|--------------|-------|-----------|-----------|----------|-----------|-----------|---------|-----|')
   for (const w of result.waypoints) {
     lines.push(
-      `| ${w.name.padEnd(12)} | ${w.medianDepth.toFixed(1).padStart(9)} | ` +
+      `| ${w.name.padEnd(12)} | ${w.boosterTier.padEnd(5)} | ${w.medianDepth.toFixed(1).padStart(9)} | ` +
       `${w.medianKills.toFixed(0).padStart(9)} | ${w.medianGold.toFixed(0).padStart(8)} | ` +
       `${w.medianTurns.toFixed(0).padStart(9)} | ${w.medianEssencePerDeath.toFixed(0).padStart(9)} | ` +
       `${(w.medianEssencePerVictory || '-').toString().padStart(7)} | ${String(w.victories).padStart(3)} |`
