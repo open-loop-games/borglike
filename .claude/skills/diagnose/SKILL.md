@@ -230,6 +230,14 @@ pnpm diagnose deep 1768965560201 --map
 --capabilities=X  Bot capabilities (default: full)
                   Values: none, early, mid, late, full, or comma-separated IDs
                   IDs: town,farming,tactics,preparedness_1-3,sweep_1-3,surf_1-3,kiting_1-3,targeting_1-3,retreat_1-3
+--depth-gate-offset=N  Depth-vs-level gate slider (default: 0), added to the class
+                  offset: getMinLevel = depth + classOffset + N. Negative dives riskier
+                  (lower level allowed for a depth); positive is more cautious.
+--farming-toggle=on|off  Toggle the farming loop (default: on). off collapses the
+                  farming↔ascend ping-pong (see studio/borglike#5).
+--surf-range=S-E  Character-level range where surf/tether is active (default: 0-0 = always).
+--personality-config=k=v,...  Override personality knobs (aggression, greed, caution,
+                  exploration, patience). Only applied when --personality=custom.
 --randomize       Randomize race/class/personality per run
 --races           Compare races instead of personalities (compare mode)
 --races=a,b,c     Compare specific races (e.g., --races=human,dwarf,elf)
@@ -245,6 +253,9 @@ Matrix Options:
 --progression=X   Paired tiers: sets upgrades, capabilities AND boosters together
                   (zipped, not crossed). Boosters auto-zip to the same tier names
                   unless --boosters=<fixed> is passed to pin them uniform.
+--gate-offsets=X  Depth-gate-offset sweep — an independent cartesian axis (crosses
+                  class/race/tier), e.g. -5,-3,-1,0,1,3,5. The effective-offset headline
+                  lever for studio/borglike#5. Reported as the `Gate` column/axis.
 --classes=representative   Alias for warrior,mage,rogue (TANK/MEDIUM/SQUISHY)
 --races=representative     Alias for human,dwarf,elf (starter-average races)
 ```
@@ -363,6 +374,11 @@ pnpm diagnose matrix --class=warrior --progression=none,early,mid,late,full
 
 # Quick regression check
 pnpm diagnose matrix --classes=warrior,mage,rogue --runs=50 --seed=1000 --turns=50000
+
+# Effective-offset sweep (studio/borglike#5 headline): gate crossed with the representative
+# 3x3 at a fixed progression tier — essence/turn curve per class → per-class knees
+pnpm diagnose matrix --classes=representative --races=representative \
+  --progression=early --gate-offsets=-5,-3,-1,0,1,3,5 --runs=50 --seed=1000 --turns=50000
 ```
 
 Output: subfolder tree with `summary.txt` + per-cell `batch.txt`/`batch.json`. Use `--stdout` for console output.

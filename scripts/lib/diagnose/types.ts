@@ -109,6 +109,16 @@ export interface DiagnoseConfig {
   balance?: Partial<BalanceOverrides>
   /** Bot capabilities spec: 'none', 'full', or comma-separated upgrade IDs */
   capabilities?: string
+  /** Depth-vs-level gate offset (the loadout slider); added to classOffset. Default 0. */
+  depthGateOffset?: number
+  /** Farming toggle (BotToggles.farming). Default true (matches DEFAULT_BOT_TOGGLES). */
+  farmingToggle?: boolean
+  /** Surf/tether active lower level bound (0 = no lower bound). Default 0. */
+  surfRangeStart?: number
+  /** Surf/tether active upper level bound (0 = no upper bound). Default 0. */
+  surfRangeEnd?: number
+  /** PersonalityConfig override spec (key=val,...); only used when personality='custom'. Default ''. */
+  personalityConfig?: string
 }
 
 /** Result from a diagnostic run */

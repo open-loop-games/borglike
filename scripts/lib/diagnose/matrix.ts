@@ -19,7 +19,7 @@ import { essenceFromDeath, essenceFromVictory } from '@/core/formulas'
 // ============================================================================
 
 /** A single axis of variation in the matrix */
-export type MatrixAxis = 'class' | 'race' | 'personality' | 'upgrades' | 'capabilities' | 'boosters'
+export type MatrixAxis = 'class' | 'race' | 'personality' | 'upgrades' | 'capabilities' | 'boosters' | 'gateOffset'
 
 /** Configuration for a matrix run */
 export interface MatrixConfig {
@@ -39,6 +39,14 @@ export interface MatrixConfig {
   boosterTiers?: string[]
   maxUpgrades: boolean
   balance?: Partial<BalanceOverrides>
+  /** Depth-gate-offset sweep: an independent cartesian axis (the #5 headline lever).
+   *  Defaults to [0] (single cell at the class-default gate) when unset. */
+  gateOffsets?: number[]
+  /** Uniform loadout levers applied to every cell (not swept). */
+  farmingToggle?: boolean
+  surfRangeStart?: number
+  surfRangeEnd?: number
+  personalityConfig?: string
   /** Custom header label (default: "MATRIX TEST") */
   headerLabel?: string
   /** When true, zip upgradeTiers and capabilityTiers instead of crossing them.
@@ -55,6 +63,7 @@ export interface MatrixCell {
   upgrades: string
   capabilities: string
   boosters: string
+  depthGateOffset: number
 }
 
 /** Run-outcome breakdown for a cell, as percentages of its runs. */
@@ -100,6 +109,10 @@ export interface MatrixResult {
 function buildCells(config: MatrixConfig): MatrixCell[] {
   const cells: MatrixCell[] = []
 
+  // Gate offset is an independent cartesian axis (unlike boosters, which co-vary).
+  // Defaults to [0] = the class-default gate.
+  const gateOffsets = config.gateOffsets && config.gateOffsets.length > 0 ? config.gateOffsets : [0]
+
   // When paired, zip upgrade, capability, and (optionally) booster tiers together.
   // Boosters are the third progression leg, never an independent cartesian axis —
   // they fall back to the uniform config.boosters when no per-tier array is given.
@@ -113,7 +126,9 @@ function buildCells(config: MatrixConfig): MatrixCell[] {
       for (const raceId of config.races) {
         for (const personality of config.personalities) {
           for (const { upgrades, capabilities, boosters } of tierPairs) {
-            cells.push({ classId, raceId, personality, upgrades, capabilities, boosters })
+            for (const depthGateOffset of gateOffsets) {
+              cells.push({ classId, raceId, personality, upgrades, capabilities, boosters, depthGateOffset })
+            }
           }
         }
       }
@@ -127,7 +142,9 @@ function buildCells(config: MatrixConfig): MatrixCell[] {
       for (const personality of config.personalities) {
         for (const upgrades of config.upgradeTiers) {
           for (const capabilities of config.capabilityTiers) {
-            cells.push({ classId, raceId, personality, upgrades, capabilities, boosters: config.boosters })
+            for (const depthGateOffset of gateOffsets) {
+              cells.push({ classId, raceId, personality, upgrades, capabilities, boosters: config.boosters, depthGateOffset })
+            }
           }
         }
       }
@@ -147,7 +164,13 @@ function findVaryingAxes(config: MatrixConfig, cells: MatrixCell[]): MatrixAxis[
   // Boosters co-vary as a paired leg, so derive variation from the built cells
   // (not a config array) — this stays correct whether zipped or pinned uniform.
   if (new Set(cells.map(c => c.boosters)).size > 1) axes.push('boosters')
+  if (new Set(cells.map(c => c.depthGateOffset)).size > 1) axes.push('gateOffset')
   return axes
+}
+
+/** Render a signed gate offset for labels/columns (e.g. -4, 0, +3). */
+function formatOffset(n: number): string {
+  return n > 0 ? `+${n}` : String(n)
 }
 
 /** Build a subfolder/label from a cell, only including varying dimensions. */
@@ -159,6 +182,7 @@ export function buildCellLabel(cell: MatrixCell, varyingAxes: MatrixAxis[]): str
   if (varyingAxes.includes('upgrades')) parts.push(`upg_${cell.upgrades}`)
   if (varyingAxes.includes('capabilities')) parts.push(`cap_${cell.capabilities}`)
   if (varyingAxes.includes('boosters')) parts.push(`boost_${cell.boosters}`)
+  if (varyingAxes.includes('gateOffset')) parts.push(`gate_${formatOffset(cell.depthGateOffset)}`)
   return parts.join('-') || 'default'
 }
 
@@ -278,6 +302,11 @@ export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
             capabilities: cell.capabilities,
             upgrades: cell.upgrades,
             boosters: cell.boosters,
+            depthGateOffset: cell.depthGateOffset,
+            farmingToggle: config.farmingToggle,
+            surfRangeStart: config.surfRangeStart,
+            surfRangeEnd: config.surfRangeEnd,
+            personalityConfig: config.personalityConfig,
           },
         },
       })
@@ -363,6 +392,7 @@ function axisHeader(axis: MatrixAxis): string {
     case 'upgrades': return 'Upgrades'
     case 'capabilities': return 'Caps'
     case 'boosters': return 'Boosters'
+    case 'gateOffset': return 'Gate'
   }
 }
 
@@ -375,6 +405,7 @@ function axisValue(cell: MatrixCell, axis: MatrixAxis): string {
     case 'upgrades': return cell.upgrades
     case 'capabilities': return cell.capabilities
     case 'boosters': return cell.boosters
+    case 'gateOffset': return formatOffset(cell.depthGateOffset)
   }
 }
 

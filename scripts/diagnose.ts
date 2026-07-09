@@ -122,6 +122,18 @@ interface Args {
   upgrades: string
   /** Booster preset: 'none', 'class', or comma-separated booster IDs */
   boosters: string
+  /** Depth-vs-level gate offset (loadout slider); added to classOffset. */
+  depthGateOffset: number
+  /** Farming toggle (BotToggles.farming). */
+  farmingToggle: boolean
+  /** Surf/tether active level range lower bound (0 = none). */
+  surfRangeStart: number
+  /** Surf/tether active level range upper bound (0 = none). */
+  surfRangeEnd: number
+  /** PersonalityConfig override spec (key=val,...); needs --personality=custom to take effect. */
+  personalityConfig: string
+  /** Matrix gate-offset sweep values (independent cartesian axis). */
+  gateOffsets: number[]
   // Balance overrides (Tier 1)
   monsterHp: number
   monsterDamage: number
@@ -201,6 +213,12 @@ function parseArgs(): Args {
     capabilities: 'full',
     upgrades: 'full',
     boosters: 'class',
+    depthGateOffset: 0,
+    farmingToggle: true,
+    surfRangeStart: 0,
+    surfRangeEnd: 0,
+    personalityConfig: '',
+    gateOffsets: [],
     // Balance defaults (100 = normal)
     monsterHp: 100,
     monsterDamage: 100,
@@ -331,6 +349,19 @@ function parseArgs(): Args {
     } else if (arg.startsWith('--boosters=')) {
       result.boosters = arg.slice(11)
       result.userSetBoosters = true
+    } else if (arg.startsWith('--depth-gate-offset=')) {
+      result.depthGateOffset = parseInt(arg.slice(20), 10)
+    } else if (arg.startsWith('--gate-offsets=')) {
+      result.gateOffsets = arg.slice(15).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
+    } else if (arg.startsWith('--farming-toggle=')) {
+      const val = arg.slice(17).toLowerCase()
+      result.farmingToggle = val === 'on' || val === 'true' || val === '1'
+    } else if (arg.startsWith('--surf-range=')) {
+      const [start, end] = arg.slice(13).split('-').map(s => parseInt(s.trim(), 10))
+      if (start !== undefined && !isNaN(start)) result.surfRangeStart = start
+      if (end !== undefined && !isNaN(end)) result.surfRangeEnd = end
+    } else if (arg.startsWith('--personality-config=')) {
+      result.personalityConfig = arg.slice(21)
     // Balance overrides (Tier 1)
     } else if (arg.startsWith('--monster-hp=')) {
       result.monsterHp = parseInt(arg.slice(13), 10)
@@ -423,6 +454,13 @@ OPTIONS:
   --capabilities=X Bot capabilities (default: full)
                   Presets: none, early, mid, late, full
                   Or comma-separated IDs: town,farming,sweep_1,targeting_2,retreat_3,etc.
+  --depth-gate-offset=N  Depth-vs-level gate slider, added to class offset (default: 0)
+                  getMinLevel = depth + classOffset + N. Negative = dive riskier.
+                  Inert without the preparedness capability.
+  --farming-toggle=on|off  Toggle the farming loop (default: on)
+  --surf-range=S-E  Character-level range where surf/tether is active (default: 0-0 = always)
+  --personality-config=k=v,...  Override personality knobs (aggression,greed,caution,
+                  exploration,patience); requires --personality=custom to take effect
   --randomize     Randomize race/class/personality per run (batch mode)
   --races         Compare races instead of personalities (compare mode)
   --races=a,b,c   Compare specific races (e.g., --races=human,dwarf,elf)
@@ -436,6 +474,8 @@ MATRIX OPTIONS:
   --cap-tiers=X   Capability tiers to iterate (e.g., none,early,mid,late,full)
   --upgrade-tiers=X  Upgrade tiers to iterate (e.g., none,early,mid,late,full)
   --progression=X Paired tiers: sets BOTH upgrades AND capabilities to same values
+  --gate-offsets=X  Depth-gate-offset sweep — independent cartesian axis
+                  (e.g., -5,-3,-1,0,1,3,5); the studio/borglike#5 effective-offset lever
 
 OUTPUT:
   Most modes write results to /tmp/borglike-diagnose/ as .txt + .json files.
@@ -891,6 +931,11 @@ async function main(): Promise<void> {
       threads: matrixThreads,
       boosters: args.boosters,
       boosterTiers: matrixBoosterTiers,
+      gateOffsets: args.gateOffsets.length > 0 ? args.gateOffsets : undefined,
+      farmingToggle: args.farmingToggle,
+      surfRangeStart: args.surfRangeStart,
+      surfRangeEnd: args.surfRangeEnd,
+      personalityConfig: args.personalityConfig,
       maxUpgrades: args.maxUpgrades,
       balance,
       pairedProgression: args.progressionTiers.length > 0,
@@ -944,6 +989,7 @@ async function main(): Promise<void> {
           personalities: result.config.personalities,
           upgradeTiers: result.config.upgradeTiers,
           capabilityTiers: result.config.capabilityTiers,
+          gateOffsets: result.config.gateOffsets,
           runs: result.config.runs,
           maxTurns: result.config.maxTurns,
           startSeed: result.config.startSeed,
@@ -1019,6 +1065,11 @@ async function main(): Promise<void> {
     randomize: args.randomize,
     balance,
     capabilities: args.capabilities,
+    depthGateOffset: args.depthGateOffset,
+    farmingToggle: args.farmingToggle,
+    surfRangeStart: args.surfRangeStart,
+    surfRangeEnd: args.surfRangeEnd,
+    personalityConfig: args.personalityConfig,
   }
 
   switch (args.mode) {

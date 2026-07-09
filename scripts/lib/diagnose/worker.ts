@@ -15,8 +15,9 @@ import { calculateCombatStats, calculateStats } from '../../../src/game/characte
 import type { GameState, BotPersonality, BalanceOverrides } from '../../../src/game/types'
 import { DEFAULT_BALANCE, MAX_DEPTH } from '../../../src/game/types'
 import type { BotState } from '../../../src/game/bot/types'
+import type { BotToggles, SurfLevelRange } from '../../../src/types/progression'
 import type { DiagnoseResult, EndReason, DiagnosticIssue, AnalyzerResult } from './types'
-import { parseCapabilities, parseCustomUpgrades, resolveBoosterBonuses } from './config-parsing'
+import { parseCapabilities, parseCustomUpgrades, parsePersonalityConfig, resolveBoosterBonuses } from './config-parsing'
 
 interface WorkerInput {
   seed: number
@@ -33,6 +34,11 @@ interface WorkerInput {
     randomize?: boolean
     balance?: Partial<BalanceOverrides>
     capabilities?: string
+    depthGateOffset?: number
+    farmingToggle?: boolean
+    surfRangeStart?: number
+    surfRangeEnd?: number
+    personalityConfig?: string
   }
 }
 
@@ -59,6 +65,11 @@ const DEFAULT_CONFIG = {
   randomize: false,
   balance: DEFAULT_BALANCE,
   capabilities: 'full',
+  depthGateOffset: 0,
+  farmingToggle: true,
+  surfRangeStart: 0,
+  surfRangeEnd: 0,
+  personalityConfig: '',
 }
 
 /** Compute upgrade bonuses with optional exclusions */
@@ -111,6 +122,12 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
   // Parse bot capabilities
   const capabilities = parseCapabilities(cfg.capabilities)
 
+  // Resolve the player-facing loadout levers (defaults are behaviorally identical
+  // to passing undefined, so unset config reproduces prior behavior exactly).
+  const toggles: BotToggles = { farming: cfg.farmingToggle }
+  const surfLevelRange: SurfLevelRange = { start: cfg.surfRangeStart, end: cfg.surfRangeEnd }
+  const personalityConfig = parsePersonalityConfig(cfg.personalityConfig, cfg.personality)
+
   // Compute booster bonuses
   const boosterBonuses = resolveBoosterBonuses(cfg.boosters, cfg.classId)
 
@@ -142,7 +159,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
     const previousHP = game.character.hp
     const previousPosition = { ...game.character.position }
 
-    const action = runBotTick(game, cfg.personality as BotPersonality, botState, capabilities)
+    const action = runBotTick(game, cfg.personality as BotPersonality, botState, capabilities, toggles, surfLevelRange, personalityConfig, cfg.depthGateOffset)
     processTurn(game, action)
 
     // Track movement

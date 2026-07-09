@@ -17,6 +17,7 @@ import { invalidateFrontierCache } from '@bot/exploration'
 import { invalidateUnexploredCache } from '@bot/context'
 import type { GameState } from '@game/types'
 import type { BotState } from '@bot/types'
+import type { BotToggles, SurfLevelRange } from '@/types/progression'
 import type {
   DiagnoseConfig,
   DiagnoseResult,
@@ -27,7 +28,7 @@ import type {
   PostTurnContext,
   DiagnosticIssue,
 } from './types'
-import { parseCapabilities, parseCustomUpgrades, resolveBoosterBonuses } from './config-parsing'
+import { parseCapabilities, parseCustomUpgrades, parsePersonalityConfig, resolveBoosterBonuses } from './config-parsing'
 
 // Re-export for public API (consumed by index.ts)
 export { parseCapabilities, CAPABILITY_PRESETS } from './config-parsing'
@@ -95,6 +96,11 @@ const DEFAULT_CONFIG: Required<Omit<DiagnoseConfig, 'analyzers'>> = {
   randomize: false,
   balance: DEFAULT_BALANCE,
   capabilities: 'full',
+  depthGateOffset: 0,
+  farmingToggle: true,
+  surfRangeStart: 0,
+  surfRangeEnd: 0,
+  personalityConfig: '',
 }
 
 /**
@@ -121,6 +127,23 @@ function computeUpgradesFromConfig(cfg: typeof DEFAULT_CONFIG) {
   return computeUpgradeBonusesFromPreset(cfg.upgrades, cfg.balance.upgradePowerPercent)
 }
 
+/**
+ * Resolve the player-facing loadout levers (toggles, surf range, personality
+ * override) from config. Defaults are behaviorally identical to passing
+ * undefined, so unset config reproduces prior runBotTick behavior exactly.
+ */
+function resolveLevers(cfg: typeof DEFAULT_CONFIG): {
+  toggles: BotToggles
+  surfLevelRange: SurfLevelRange
+  personalityConfig: ReturnType<typeof parsePersonalityConfig>
+} {
+  return {
+    toggles: { farming: cfg.farmingToggle },
+    surfLevelRange: { start: cfg.surfRangeStart, end: cfg.surfRangeEnd },
+    personalityConfig: parsePersonalityConfig(cfg.personalityConfig, cfg.personality),
+  }
+}
+
 // ============================================================================
 // SINGLE RUN
 // ============================================================================
@@ -134,6 +157,7 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
 
   // Parse bot capabilities
   const capabilities = parseCapabilities(cfg.capabilities)
+  const { toggles, surfLevelRange, personalityConfig } = resolveLevers(cfg)
 
   // Create game with upgrade and booster bonuses
   const game: GameState = createGame({
@@ -163,7 +187,7 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
     const previousDepth = game.character.depth
 
     // Get bot action
-    const action = runBotTick(game, cfg.personality, botState, capabilities)
+    const action = runBotTick(game, cfg.personality, botState, capabilities, toggles, surfLevelRange, personalityConfig, cfg.depthGateOffset)
 
     // Build turn context
     const turnCtx: TurnContext = {
@@ -408,6 +432,11 @@ export interface WorkerInput {
     capabilities?: string
     upgrades?: string
     boosters?: string
+    depthGateOffset?: number
+    farmingToggle?: boolean
+    surfRangeStart?: number
+    surfRangeEnd?: number
+    personalityConfig?: string
   }
 }
 
@@ -531,6 +560,11 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     capabilities: config.capabilities,
     upgrades: config.upgrades,
     boosters: config.boosters,
+    depthGateOffset: config.depthGateOffset,
+    farmingToggle: config.farmingToggle,
+    surfRangeStart: config.surfRangeStart,
+    surfRangeEnd: config.surfRangeEnd,
+    personalityConfig: config.personalityConfig,
   }
   for (let i = 0; i < config.runs; i++) {
     workItems.push({ seed: startSeed + i, config: baseConfig })
@@ -577,6 +611,7 @@ export function runDeepDiagnosis(
 
   // Parse bot capabilities
   const capabilities = parseCapabilities(cfg.capabilities)
+  const { toggles, surfLevelRange, personalityConfig } = resolveLevers(cfg)
 
   // CRITICAL: Invalidate module-level caches before each run
   // These caches persist across runs and can cause "no goal" bugs when stale
@@ -615,7 +650,7 @@ export function runDeepDiagnosis(
     const previousDepth = game.character.depth
 
     // Get bot action
-    const action = runBotTick(game, cfg.personality, botState, capabilities)
+    const action = runBotTick(game, cfg.personality, botState, capabilities, toggles, surfLevelRange, personalityConfig, cfg.depthGateOffset)
 
     // Build action string BEFORE processTurn (items/monsters may be consumed/killed)
     let actionType: string

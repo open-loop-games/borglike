@@ -11,6 +11,8 @@ import {
   FULL_BOT_CAPABILITIES,
   type BotCapabilities,
 } from '../../../src/types/progression'
+import { getPersonalityConfig, isValidPersonality } from '../../../src/game/bot/personality'
+import type { PersonalityConfig } from '../../../src/game/bot/types'
 
 // ============================================================================
 // CAPABILITIES
@@ -135,4 +137,43 @@ export function resolveBoosterBonuses(boosters: string | undefined, classId: str
     return computeBoosterBonuses(boosterIds)
   }
   return undefined
+}
+
+// ============================================================================
+// PERSONALITY CONFIG
+// ============================================================================
+
+/**
+ * Parse a personality-config override spec into a full PersonalityConfig.
+ *
+ * Format: comma-separated `key=value` pairs over the 5 PersonalityConfig knobs
+ * (aggression, greed, caution, exploration, patience), e.g.
+ * `aggression=0.8,caution=0.3`. Unspecified knobs inherit from the named base
+ * personality (or `cautious` when the base is itself `custom`/unknown).
+ *
+ * Returns undefined for an empty spec so callers pass `undefined` to runBotTick
+ * and preserve the default (named-personality) behavior. NOTE: the resolved
+ * config only takes effect when the run personality is `custom` — the bot
+ * context ignores personalityConfig for named personalities.
+ */
+export function parsePersonalityConfig(
+  spec: string | undefined,
+  basePersonality: string,
+): PersonalityConfig | undefined {
+  const trimmed = (spec ?? '').trim()
+  if (!trimmed) return undefined
+
+  const base = isValidPersonality(basePersonality)
+    ? getPersonalityConfig(basePersonality)
+    : getPersonalityConfig('cautious')
+  const config: PersonalityConfig = { ...base }
+
+  for (const part of trimmed.split(',')) {
+    const [key, val] = part.split('=').map((s) => s.trim())
+    if (key && val && key in config) {
+      const n = parseFloat(val)
+      if (!isNaN(n)) config[key as keyof PersonalityConfig] = n
+    }
+  }
+  return config
 }
