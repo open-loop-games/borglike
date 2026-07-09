@@ -5,9 +5,8 @@ import { useRunsStore, isRunEnded } from '@/stores/runs'
 import { getBoosterById } from '@game/data/boosters'
 import { races, type Race } from '@game/data/races'
 import { classes, type GameClass } from '@game/data/classes'
-import { getClassTier, type PersonalityConfig } from '@game/bot/types'
+import type { PersonalityConfig } from '@game/bot/types'
 import { PERSONALITY_DISPLAY, type Personality } from '@/types/events'
-import { computeUpgradeBonuses, getUpgradeTier } from '@game/upgrade-effects'
 import {
   PARAMETER_INFO,
   SLIDER_UPGRADE_GATES,
@@ -77,27 +76,13 @@ const customPersonality = ref<PersonalityConfig>(
 const surfRangeStart = ref(savedConfig.surfLevelRange?.start ?? 0)
 const surfRangeEnd = ref(savedConfig.surfLevelRange?.end ?? 0)
 
-// Depth gate offset
+// Depth gate offset — the player's Reckless↔Normal↔Cautious adjustment applied
+// ON TOP of the engine's per-class baseline (getMinLevel = depth + classOffset +
+// depthGateOffset). 0 = "Normal" (use the class baseline unchanged). It is NOT
+// prefilled to the classOffset value: doing so double-counts the class margin
+// (e.g. warrior baseline -4 + slider -4 = -8), which is the LoadoutEditor
+// double-count defect. The slider stays a per-slot player preference.
 const depthGateOffset = ref(savedConfig.depthGateOffset ?? 0)
-
-// Update depth gate to class default when switching class
-watch(selectedClass, (cls) => {
-  if (cls === 'Random') {
-    depthGateOffset.value = 0
-    return
-  }
-  const tier = getClassTier(cls.toLowerCase())
-  if (tier === 'TANK') {
-    depthGateOffset.value = -4
-  } else if (tier === 'SQUISHY') {
-    const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
-    const upgradeTier = getUpgradeTier(bonuses)
-    const offsets = [5, 4, 3, 1, 0] // none → early → mid → late → full
-    depthGateOffset.value = offsets[upgradeTier] ?? 5
-  } else {
-    depthGateOffset.value = 0
-  }
-})
 
 // Booster slots - initialized from saved config
 const boosterSlot0 = ref(savedConfig.boosters[0])
