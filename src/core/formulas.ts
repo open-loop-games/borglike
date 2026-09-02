@@ -7,7 +7,7 @@
  * - XP/Level progression
  *
  * Sources:
- * - /work/open-loop-incremental/docs/research/patterns/tier-1-foundation/prestige-systems.md
+ * - /work/open-loop-incremental/docs/research/patterns/prestige-systems.md
  * - /work/borglike/docs/ANGBAND-LITE-DESIGN.md
  */
 
