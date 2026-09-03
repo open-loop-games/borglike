@@ -10,7 +10,7 @@ import type { DungeonLevel, GameState, Monster, Point } from '../types'
 import { chebyshevDistance, isMonsterAt } from '../types'
 import { getTile, setTile, findOpenPositions } from '../dungeon'
 import { spawnMonster } from '../monster-ai'
-import { applyDamage } from '../combat'
+import { applyDamage, resolveDefense } from '../combat'
 import { getSpawnableMonsters, getMonsterByName } from '../data/monsters'
 import {
   RIFT_SPAWNER_TEMPLATE,
@@ -404,21 +404,28 @@ export function packAuraMult(game: GameState, monster: Monster): number {
  * spells, arrows, and minions bypass). Call after dealing melee damage.
  */
 /**
- * Melee-only thorns retaliation (affix design decision: thorns punish blades;
- * spells, arrows, and minions bypass). Call after dealing melee damage.
+ * Melee-only thorns retaliation (thorns punish blades; spells, arrows, and
+ * minions bypass). Resolves as physical damage through the standard defense
+ * pipeline — armor mitigates (up to half), so plate answers thorns and the
+ * affix stays a gear check rather than a melee ban.
+ * Call after dealing melee damage.
  */
 export function applyThornsReflect(game: GameState, monster: Monster, damageDealt: number): void {
   if (damageDealt <= 0 || monster.hp < 0) return
   const percent = thornsPercentOf(monster.template)
   if (percent <= 0) return
-  const reflect = Math.max(1, Math.floor((damageDealt * percent) / 100))
-  const killed = applyDamage(game.character, reflect)
+  const raw = Math.max(1, Math.floor((damageDealt * percent) / 100))
+  const { finalDamage } = resolveDefense(game.character, {
+    rawDamage: raw,
+    attackerMonster: monster,
+  })
+  const killed = applyDamage(game.character, finalDamage)
   void killed // processTurn death check settles it
-  game.stats.damageTaken += reflect
-  game.stats.damageByMethod.melee += reflect
+  game.stats.damageTaken += finalDamage
+  game.stats.damageByMethod.melee += finalDamage
   addTaggedMessage(
     game,
-    `The ${monster.template.name}'s thorns bite back for ${reflect} damage!`,
+    `The ${monster.template.name}'s thorns bite back for ${finalDamage} damage!`,
     'combat',
     { tags: ['damage.taken'], importance: 2 }
   )
