@@ -198,6 +198,7 @@ export function createGame(config: RunConfig): GameState {
   const gameState: GameState = {
     runId,
     seed,
+    ruleset: { mode: config.dungeonMode ?? 'classic' },
     character,
     currentLevel: firstLevel,
     levelCache,

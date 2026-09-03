@@ -78,6 +78,9 @@ export interface SurfLevelRange {
   end: number // 0 = no upper bound (always eligible)
 }
 
+/** Dungeon mode for a run: classic Angband-style descent or ARPG rift */
+export type DungeonMode = 'classic' | 'rift'
+
 /** Per-slot configuration - remembers last used settings */
 export interface SlotConfig {
   race: string
@@ -95,6 +98,8 @@ export interface SlotConfig {
   // Depth gate offset: shifts class-based level requirement for descent
   // Positive = need more levels above depth (cautious), negative = can descend sooner (reckless)
   depthGateOffset?: number // -5 to +5, default 0
+  // Dungeon mode: 'classic' descent or 'rift' (ARPG). Missing = classic (old saves).
+  dungeonMode?: DungeonMode
 }
 
 export interface Upgrade {

@@ -334,5 +334,22 @@ function findEscapeTarget(
     moved = true
   }
 
+  if (!moved && currentCost === MAX_COST) {
+    // Off-grid, not surrounded: player is beyond MAX_BFS_DIST of every monster
+    // (wide-open arena corner), so no downhill exists. Step to an adjacent
+    // passable tile instead of reporting surrounded — callers treat null as
+    // "no flee path". DX order keeps it deterministic. Genuinely surrounded
+    // (no passable neighbor) still returns null.
+    for (let i = 0; i < 8; i++) {
+      const nx = playerPos.x + DX[i]!
+      const ny = playerPos.y + DY[i]!
+      if (nx < 0 || nx >= gridWidth || ny < 0 || ny >= gridHeight) continue
+      const nIdx = ny * gridWidth + nx
+      if (monsterSet.has(nIdx)) continue
+      if (!level.passable[nIdx]) continue
+      return { x: nx, y: ny }
+    }
+  }
+
   return moved ? { x: cx, y: cy } : null
 }

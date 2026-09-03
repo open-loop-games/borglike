@@ -87,21 +87,24 @@ export type DangerMap = DangerGrid
 export interface SeenGrid {
   data: Uint8Array
   width: number
+  height: number
   count: number
 }
 
 /** Create a SeenGrid for the given level dimensions */
 export function createSeenGrid(width: number, height: number): SeenGrid {
-  return { data: new Uint8Array(width * height), width, count: 0 }
+  return { data: new Uint8Array(width * height), width, height, count: 0 }
 }
 
-/** Check if tile has been seen this visit */
+/** Check if tile has been seen this visit (off-map reads as seen: don't chase it) */
 export function seenGridHas(grid: SeenGrid, x: number, y: number): boolean {
+  if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) return true
   return grid.data[y * grid.width + x] !== 0
 }
 
-/** Mark tile as seen this visit */
+/** Mark tile as seen this visit (off-map writes are a no-op) */
 export function seenGridAdd(grid: SeenGrid, x: number, y: number): void {
+  if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) return
   const idx = y * grid.width + x
   if (grid.data[idx] === 0) {
     grid.data[idx] = 1

@@ -22,6 +22,7 @@ import type {
   BestiaryEntry,
   BotCapabilities,
   BotToggles,
+  DungeonMode,
   SurfLevelRange,
 } from '@/types/progression'
 import type { PersonalityConfig } from '@bot/types'
@@ -43,6 +44,7 @@ export type {
   GoldPileTemplate,
   TrapTemplate,
   BestiaryEntry,
+  DungeonMode,
   GeneratorType,
 }
 
@@ -741,6 +743,11 @@ export interface GameState {
   runId: string
   seed: number // RNG seed for reproducibility
 
+  // Dungeon ruleset handle — owns mode-specific run state.
+  // Everything downstream (gen, spawn, transitions, settlement) reads this
+  // instead of branching on config. Rift-specific fields arrive in M1/M2.
+  ruleset: DungeonRuleset
+
   // Player
   character: Character
 
@@ -990,6 +997,21 @@ export const DEFAULT_BALANCE: BalanceOverrides = {
 }
 
 // ============================================================================
+// DUNGEON RULESETS
+// ============================================================================
+
+/**
+ * Dungeon ruleset handle — mode-specific run state carried on GameState.
+ *
+ * Classic = 50-level Angband-style descent. Rift = ARPG clear (spawners → boss).
+ * M0 carries mode only; rift routes to classic generation so the pipe is proven
+ * with zero behavior change. Tier/quota/spawner state arrives in M1/M2.
+ */
+export interface DungeonRuleset {
+  mode: DungeonMode
+}
+
+// ============================================================================
 // RUN CONFIGURATION
 // ============================================================================
 
@@ -1014,6 +1036,8 @@ export interface RunConfig {
   botPersonalityConfig?: PersonalityConfig
   // Depth gate offset: shifts class-based level requirement for descent (-5 to +5)
   depthGateOffset?: number
+  // Dungeon mode: 'classic' descent or 'rift' (ARPG). Missing = classic.
+  dungeonMode?: DungeonMode
 }
 
 // ============================================================================

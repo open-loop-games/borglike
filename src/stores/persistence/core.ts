@@ -308,6 +308,7 @@ export function serializeProgression(): ProgressionData {
     surfLevelRange: config.surfLevelRange ? { ...config.surfLevelRange } : undefined,
     customPersonality: config.customPersonality ? { ...config.customPersonality } : undefined,
     activeSurfLevel: config.activeSurfLevel,
+    dungeonMode: config.dungeonMode ?? 'classic',
   }))
 
   const serializedBestiary: Record<string, BestiaryEntry> = {}

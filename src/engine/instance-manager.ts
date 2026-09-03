@@ -257,6 +257,7 @@ export function startRun(slot: number, config?: Partial<RunRequest>): string {
     botPersonalityConfig:
       slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
     depthGateOffset: slotConfig.depthGateOffset,
+    dungeonMode: slotConfig.dungeonMode ?? 'classic',
   })
 
   // Create instance
@@ -1063,6 +1064,7 @@ function createRunForCatchUp(
     botPersonalityConfig:
       slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
     depthGateOffset: slotConfig.depthGateOffset,
+    dungeonMode: slotConfig.dungeonMode ?? 'classic',
   })
 
   const instance: GameInstance = { runId, slot, runner, intervalId: null, tickRate: 100 }

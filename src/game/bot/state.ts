@@ -89,8 +89,17 @@ export function createBotState(): BotState {
 
 /**
  * Reset state when entering a new level
+ *
+ * Resizes seenThisVisit to the level (level-change only, never per-tick):
+ * classic 80×40, town 48×16, rift arenas per M0 MAX_LEVEL_TILES.
  */
-export function resetLevelState(state: BotState, newDepth: number, turn: number): void {
+export function resetLevelState(
+  state: BotState,
+  newDepth: number,
+  turn: number,
+  width: number,
+  height: number
+): void {
   state.recentPositions = []
   state.currentGoal = null
   state.goalTarget = null
@@ -122,7 +131,12 @@ export function resetLevelState(state: BotState, newDepth: number, turn: number)
   // Item blacklist - clear on level change
   state.dangerousItemBlacklist.clear()
   // Tethered exploration - reset seen tiles for this visit
-  seenGridClear(state.seenThisVisit)
+  // (recreate if level dims changed — town 48×16 vs dungeon 80×40)
+  if (state.seenThisVisit.width !== width || state.seenThisVisit.height !== height) {
+    state.seenThisVisit = createSeenGrid(width, height)
+  } else {
+    seenGridClear(state.seenThisVisit)
+  }
   // Performance caches - clear on level change
   state.cachedExplorationFlow = null
   state.cachedSweepFlow = null

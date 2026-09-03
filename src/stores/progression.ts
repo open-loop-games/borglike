@@ -137,6 +137,7 @@ export const useProgressionStore = defineStore('progression', () => {
       personality: 'cautious',
       boosters: [null, null],
       toggles: { ...DEFAULT_BOT_TOGGLES },
+      dungeonMode: 'classic',
     }
   }
 
@@ -697,6 +698,7 @@ export const useProgressionStore = defineStore('progression', () => {
         surfLevelRange,
         customPersonality: saved.customPersonality,
         activeSurfLevel,
+        dungeonMode: saved.dungeonMode ?? 'classic',
       }
     }
     return createDefaultSlotConfig()

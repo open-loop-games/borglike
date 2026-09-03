@@ -35,6 +35,13 @@ let cachedCharPosHash: number = 0
 const DANGER_MULTIPLIERS = [2.0, 1.0, 0.6, 0.35, 0.2]
 
 /**
+ * Int16Array max. Danger accumulates per-monster splats into one grid; dense
+ * packs (30-50 + auras) can exceed this, and a raw add would wrap negative =
+ * "safe". Saturate instead — one compare, no type change, no extra pass.
+ */
+const MAX_DANGER_VALUE = 32767
+
+/**
  * Numeric hash of monster state for cache invalidation.
  * FNV-1a inspired — mixes id, position, and HP into a single number.
  */
@@ -120,8 +127,9 @@ export function computeDangerGrid(game: GameState): DangerResult {
         const tileDanger = Math.floor(threat * DANGER_MULTIPLIERS[dist]!)
         const idx = rowOffset + x
         const newVal = data[idx]! + tileDanger
-        data[idx] = newVal
-        if (newVal > maxDanger) maxDanger = newVal
+        const clamped = newVal > MAX_DANGER_VALUE ? MAX_DANGER_VALUE : newVal
+        data[idx] = clamped
+        if (clamped > maxDanger) maxDanger = clamped
       }
     }
   }
@@ -134,7 +142,8 @@ export function computeDangerGrid(game: GameState): DangerResult {
 
   if (statusDanger > 0) {
     const idx = character.position.y * width + character.position.x
-    data[idx]! += statusDanger
+    const newVal = data[idx]! + statusDanger
+    data[idx] = newVal > MAX_DANGER_VALUE ? MAX_DANGER_VALUE : newVal
     if (data[idx]! > maxDanger) maxDanger = data[idx]!
   }
 

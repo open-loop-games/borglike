@@ -89,7 +89,13 @@ export function runBotTick(
   // Check for level change
   if (game.character.depth !== botState.currentDepth) {
     const wasInFarmingMode = botState.farmingMode
-    resetLevelState(botState, game.character.depth, game.turn)
+    resetLevelState(
+      botState,
+      game.character.depth,
+      game.turn,
+      game.currentLevel.width,
+      game.currentLevel.height
+    )
     invalidateFrontierCache()
 
     // Initialize town needs when entering town

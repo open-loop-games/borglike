@@ -28,6 +28,15 @@ export { VAULTS } from './vaults'
 const DEFAULT_WIDTH = 80
 const DEFAULT_HEIGHT = 40
 
+/**
+ * Fast-path capacity: bot flow/safety queues are preallocated at 3200 entries
+ * (see bot/flow.ts sharedQueue, bot/safety-flow.ts BFS_CAP/HEAP_CAP) and flow
+ * distances are u8 (cap 254). Levels must fit; a bigger level is a generator
+ * bug and must fail here, never as silent queue corruption downstream.
+ * Classic 80×40 = 3200 exactly. Rift arenas must stay within this (M1: 60×30).
+ */
+export const MAX_LEVEL_TILES = 3200
+
 export interface GenerationResult {
   level: DungeonLevel
   generatorType: GeneratorType
@@ -137,6 +146,14 @@ export function generateLevelWithInfo(
   level.passable = buildPassabilityBitmap(level)
   level.passableCount = level.passable.reduce((sum, v) => sum + v, 0)
   level.explored = buildExploredBitmap(level)
+
+  if (width * height > MAX_LEVEL_TILES) {
+    throw new Error(
+      `generateLevelWithInfo: ${width}x${height}=${width * height} tiles exceeds ` +
+        `MAX_LEVEL_TILES=${MAX_LEVEL_TILES} (bot flow/safety queues are preallocated; ` +
+        `shrink the level instead of growing the hot loop)`
+    )
+  }
 
   return {
     level,
