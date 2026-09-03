@@ -167,11 +167,7 @@ export function generateLevelWithInfo(
   }
 }
 
-/**
- * Fast-path capacity guard: bot flow/safety queues are
- * preallocated and flow distances are u8. Oversize levels must fail here,
- * never as silent queue corruption downstream.
- */
+/** Enforces MAX_LEVEL_TILES; see the constant for why the cap exists. */
 function assertLevelCapacity(width: number, height: number): void {
   if (width * height > MAX_LEVEL_TILES) {
     throw new Error(

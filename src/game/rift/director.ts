@@ -7,11 +7,12 @@
  */
 
 import type { DungeonLevel, GameState, Monster, Point } from '../types'
-import { chebyshevDistance, isMonsterAt } from '../types'
-import { getTile, setTile, findOpenPositions } from '../dungeon'
+import { chebyshevDistance } from '../types'
+import { getTile, setTile, findOpenPositions, freeRingTiles } from '../dungeon'
 import { spawnMonster } from '../monster-ai'
 import { applyDamage, resolveDefense } from '../combat'
-import { getSpawnableMonsters, getMonsterByName } from '../data/monsters'
+import type { MonsterTemplate } from '../data/monsters'
+import { getMonsterByName, bestiaryKey } from '../data/monsters'
 import {
   RIFT_SPAWNER_TEMPLATE,
   riftSpawnerHpPercent,
@@ -42,6 +43,9 @@ const WHITE_HP_PERCENT = 70
 
 /** Safe landing radius around the entry point (no spawns inside) */
 const ENTRY_SAFE_RADIUS = 8
+
+/** Pack aura reach: same-pack bearers within this lend their bonus */
+const PACK_AURA_RADIUS = 4
 
 /** Active monster cap — emissions stop here (keeps the 30–50 budget) */
 export const RIFT_ACTIVE_CAP = 50
@@ -76,7 +80,7 @@ export function spawnRiftWhites(
   entry: Point,
   count: number = ROAMER_MAX_COUNT
 ): Monster[] {
-  const templates = getSpawnableMonsters(tier).filter((t) => !t.flags?.includes('UNIQUE'))
+  const templates = getRiftBodies(tier)
   if (templates.length === 0) return []
 
   const wanted = Math.min(count, ROAMER_MAX_COUNT)
@@ -122,10 +126,16 @@ export function handleRiftKillProgress(game: GameState, monster: Monster): void 
  * tail; the portal + advance path itself is unchanged.
  */
 export function checkRiftAdvance(game: GameState): void {
-  if (!game.ruleset.portalOpen && game.isRunning && game.ruleset.bossKilled) {
+  if (!game.ruleset.portalPos && game.isRunning && game.ruleset.bossKilled) {
     openRiftPortal(game)
   }
 }
+
+/** Arena entry, falling back to geometric center for levels generated without one. */
+function arenaCenter(level: DungeonLevel): Point {
+  return level.entryPoint ?? { x: Math.floor(level.width / 2), y: Math.floor(level.height / 2) }
+}
+
 /**
  * Open the advance portal at the arena center. Sets the tile, patches the
  * passability bitmap (portal opens at runtime, after gen-time bitmap build),
@@ -133,13 +143,9 @@ export function checkRiftAdvance(game: GameState): void {
  */
 export function openRiftPortal(game: GameState): void {
   const level = game.currentLevel
-  const center = level.entryPoint ?? {
-    x: Math.floor(level.width / 2),
-    y: Math.floor(level.height / 2),
-  }
+  const center = arenaCenter(level)
   setTile(level, center.x, center.y, 'rift_portal')
   level.passable[center.y * level.width + center.x] = 1
-  game.ruleset.portalOpen = true
   game.ruleset.portalPos = { ...center }
   addTaggedMessage(game, 'A rift portal tears open at the center of the arena!', 'good', {
     tags: ['progress'],
@@ -167,8 +173,7 @@ export function spawnRiftTier(
   const monsters: Monster[] = []
   for (let i = 0; i < dens.length; i++) {
     const den = dens[i]!
-    const spawner = spawnDenSpawner(den, tier, hpPercent, i)
-    if (spawner) monsters.push(spawner)
+    monsters.push(spawnDenSpawner(den, tier, hpPercent, i))
     if (i === rareDen) {
       monsters.push(...spawnRareDen(level, tier, hpPercent, den, i, bodies, monsters))
     } else {
@@ -181,10 +186,7 @@ export function spawnRiftTier(
 }
 
 /** Den body: deterministic per-den pick from the shuffled tier bodies. */
-function denBody(
-  bodies: ReturnType<typeof getRiftBodies>,
-  denIndex: number
-): ReturnType<typeof getRiftBodies>[number] | undefined {
+function denBody(bodies: MonsterTemplate[], denIndex: number): MonsterTemplate | undefined {
   if (bodies.length === 0) return undefined
   return bodies[denIndex % bodies.length]
 }
@@ -197,25 +199,41 @@ function pickRareDen(denCount: number, tier: number): number {
   return randomInt(0, denCount - 1)
 }
 
-/** Shared pack spawner: copies of one body (plain or affixed clone) on a ring. */
+/**
+ * Pack tag: den members share an id (wake together) and a home (leash
+ * together). The home is always copied — sharing a Point with the den or the
+ * parent would let one monster's leash drag the whole pack's.
+ */
+function joinPack(monster: Monster, packId: string | undefined, home: Point | undefined): Monster {
+  monster.packId = packId
+  monster.packHome = home ? { ...home } : undefined
+  return monster
+}
+
+/** Den pack id: stable per tier and den, shared by spawner, guards, and minis. */
+function denPackId(tier: number, denIndex: number): string {
+  return `t${tier}d${denIndex}`
+}
+
+/** Guard HP: percent of the den body, tier scaling already folded into hpPercent. */
+function guardHp(hpPercent: number): number {
+  return Math.floor((hpPercent * RIFT_GUARD_HP_PERCENT) / 100)
+}
+
+/** Spawn copies of one body (plain or affixed clone) onto the den ring. */
 function spawnGuardPack(
   level: DungeonLevel,
-  body: ReturnType<typeof getRiftBodies>[number],
+  body: MonsterTemplate,
   hpPct: number,
   den: Point,
   packId: string,
-  countRange: readonly [number, number],
-  ringRadius: number,
   occupied: Monster[]
 ): Monster[] {
-  const spots = freeRingTiles(level, den, 1, ringRadius, 8, occupied)
-  const count = Math.min(randomInt(countRange[0], countRange[1]), spots.length)
+  const spots = freeRingTiles(level, den, 1, GUARD_RING_RADIUS, 8, occupied)
+  const count = Math.min(randomInt(GUARDS_PER_DEN[0], GUARDS_PER_DEN[1]), spots.length)
   const pack: Monster[] = []
   for (let i = 0; i < count; i++) {
-    const m = spawnMonster(body, spots[i]!, hpPct)
-    m.packId = packId
-    m.packHome = { ...den }
-    pack.push(m)
+    pack.push(joinPack(spawnMonster(body, spots[i]!, hpPct), packId, den))
   }
   return pack
 }
@@ -230,39 +248,21 @@ export function spawnDenGuards(
   hpPercent: number,
   den: Point,
   denIndex: number,
-  bodies: ReturnType<typeof getRiftBodies>,
+  bodies: MonsterTemplate[],
   occupied: Monster[]
 ): Monster[] {
   const base = denBody(bodies, denIndex)
   if (!base) return []
-  const packId = `t${tier}d${denIndex}`
+
   const blueChance = Math.min(BLUE_BASE_CHANCE + tier * BLUE_PER_TIER, BLUE_MAX_CHANCE)
-  if (random() < blueChance) {
-    const prefix = rollPrefix(tier, base)
-    const body = prefix ? applyAffixesToClone(base, { prefix }) : base
-    const hpPct = Math.floor((hpPercent * RIFT_GUARD_HP_PERCENT * BLUE_HP_PERCENT) / 10000)
-    return spawnGuardPack(
-      level,
-      body,
-      hpPct,
-      den,
-      packId,
-      GUARDS_PER_DEN,
-      GUARD_RING_RADIUS,
-      occupied
-    )
-  }
-  const hpPct = Math.floor((hpPercent * RIFT_GUARD_HP_PERCENT) / 100)
-  return spawnGuardPack(
-    level,
-    base,
-    hpPct,
-    den,
-    packId,
-    GUARDS_PER_DEN,
-    GUARD_RING_RADIUS,
-    occupied
-  )
+  const isBlue = random() < blueChance
+  const prefix = isBlue ? rollPrefix(tier, base) : undefined
+  const body = prefix ? applyAffixesToClone(base, { prefix }) : base
+  const hpPct = isBlue
+    ? Math.floor((hpPercent * RIFT_GUARD_HP_PERCENT * BLUE_HP_PERCENT) / 10000)
+    : guardHp(hpPercent)
+
+  return spawnGuardPack(level, body, hpPct, den, denPackId(tier, denIndex), occupied)
 }
 
 /**
@@ -274,32 +274,24 @@ export function spawnRareDen(
   hpPercent: number,
   den: Point,
   denIndex: number,
-  bodies: ReturnType<typeof getRiftBodies>,
+  bodies: MonsterTemplate[],
   occupied: Monster[]
 ): Monster[] {
   const base = denBody(bodies, denIndex)
   if (!base) return []
-  const packId = `t${tier}d${denIndex}`
-  const out: Monster[] = []
-  const rareBody = applyAffixesToClone(base, rollRareAffixes(tier, base))
   const spots = freeRingTiles(level, den, 1, GUARD_RING_RADIUS, 8, occupied)
-  if (spots.length === 0) return out
+  if (spots.length === 0) return []
+
+  const packId = denPackId(tier, denIndex)
+  const hpPct = guardHp(hpPercent)
+  const rareBody = applyAffixesToClone(base, rollRareAffixes(tier, base))
   // Rare takes the innermost free spot (closest to the den)
-  const rare = spawnMonster(
-    rareBody,
-    spots[0]!,
-    Math.floor((hpPercent * RIFT_GUARD_HP_PERCENT) / 100)
-  )
-  rare.packId = packId
-  rare.packHome = { ...den }
-  out.push(rare)
+  const out: Monster[] = [joinPack(spawnMonster(rareBody, spots[0]!, hpPct), packId, den)]
+
   const rest = spots.slice(1)
   const guardCount = Math.min(randomInt(RARE_GUARDS[0], RARE_GUARDS[1]), rest.length)
   for (let i = 0; i < guardCount; i++) {
-    const g = spawnMonster(base, rest[i]!, Math.floor((hpPercent * RIFT_GUARD_HP_PERCENT) / 100))
-    g.packId = packId
-    g.packHome = { ...den }
-    out.push(g)
+    out.push(joinPack(spawnMonster(base, rest[i]!, hpPct), packId, den))
   }
   return out
 }
@@ -310,14 +302,13 @@ export function spawnDenSpawner(
   tier: number,
   hpPercent: number,
   denIndex: number
-): Monster | null {
+): Monster {
   const m = spawnMonster(
     RIFT_SPAWNER_TEMPLATE,
     den,
     Math.floor((hpPercent * riftSpawnerHpPercent(tier)) / 100)
   )
-  m.packId = `t${tier}d${denIndex}`
-  m.packHome = { ...den }
+  joinPack(m, denPackId(tier, denIndex), den)
   m.riftRole = 'spawner'
   return m
 }
@@ -343,8 +334,7 @@ export function trySpawnerEmission(game: GameState, spawner: Monster): boolean {
     spot,
     Math.floor((game.balance.monsterHpPercent * WHITE_HP_PERCENT) / 100)
   )
-  m.packId = spawner.packId
-  m.packHome = { ...den }
+  joinPack(m, spawner.packId, den)
   game.monsters.push(m)
   return true
 }
@@ -365,10 +355,7 @@ export function spawnRiftBoss(game: GameState): void {
     ? game.balance.monsterHpPercent
     : Math.floor((game.balance.monsterHpPercent * RIFT_BOSS_HP_PERCENT) / 100)
   const level = game.currentLevel
-  const center = level.entryPoint ?? {
-    x: Math.floor(level.width / 2),
-    y: Math.floor(level.height / 2),
-  }
+  const center = arenaCenter(level)
   const spots = freeRingTiles(level, center, 0, 3, 1, game.monsters)
   const spot = spots[0] ?? center
   const boss = spawnMonster(body, spot, hpPct)
@@ -390,19 +377,11 @@ export function packAuraMult(game: GameState, monster: Monster): number {
   for (const ally of game.monsters) {
     if (ally.hp <= 0 || ally.id === monster.id) continue
     if (ally.packId !== monster.packId) continue
-    const dist = Math.max(
-      Math.abs(ally.position.x - monster.position.x),
-      Math.abs(ally.position.y - monster.position.y)
-    )
-    if (dist > 4) continue
+    if (chebyshevDistance(ally.position, monster.position) > PACK_AURA_RADIUS) continue
     best = Math.max(best, auraPercentOf(ally.template))
   }
   return best > 0 ? 1 + best / 100 : 1
 }
-/**
- * Melee-only thorns retaliation (affix design decision: thorns punish blades;
- * spells, arrows, and minions bypass). Call after dealing melee damage.
- */
 /**
  * Melee-only thorns retaliation (thorns punish blades; spells, arrows, and
  * minions bypass). Resolves as physical damage through the standard defense
@@ -419,8 +398,7 @@ export function applyThornsReflect(game: GameState, monster: Monster, damageDeal
     rawDamage: raw,
     attackerMonster: monster,
   })
-  const killed = applyDamage(game.character, finalDamage)
-  void killed // processTurn death check settles it
+  applyDamage(game.character, finalDamage)
   game.stats.damageTaken += finalDamage
   game.stats.damageByMethod.melee += finalDamage
   addTaggedMessage(
@@ -438,7 +416,7 @@ export function applyThornsReflect(game: GameState, monster: Monster, damageDeal
 export function handleAffixDeath(game: GameState, monster: Monster): void {
   const count = deathSpawnOf(monster.template)
   if (count <= 0) return
-  const baseName = monster.template.baseName ?? monster.template.name
+  const baseName = bestiaryKey(monster.template)
   const base = getMonsterByName(baseName)
   if (!base) return
   const spots = freeRingTiles(game.currentLevel, monster.position, 1, 3, count, game.monsters)
@@ -450,8 +428,7 @@ export function handleAffixDeath(game: GameState, monster: Monster): void {
       spot,
       Math.floor((game.balance.monsterHpPercent * WHITE_HP_PERCENT) / 100)
     )
-    mini.packId = monster.packId
-    mini.packHome = monster.packHome ? { ...monster.packHome } : undefined
+    joinPack(mini, monster.packId, monster.packHome)
     game.monsters.push(mini)
     spawned++
   }
@@ -463,35 +440,4 @@ export function handleAffixDeath(game: GameState, monster: Monster): void {
       { tags: ['combat.kill'], importance: 2 }
     )
   }
-}
-
-/**
- * Free floor tiles in a Chebyshev annulus around a point, in fixed scan
- * order (deterministic). Occupancy comes from the caller's array: the
- * in-progress batch at gen time, game.monsters at runtime.
- */
-export function freeRingTiles(
-  level: DungeonLevel,
-  center: Point,
-  rMin: number,
-  rMax: number,
-  limit: number,
-  occupied: Monster[]
-): Point[] {
-  const out: Point[] = []
-  for (let r = rMin; r <= rMax && out.length < limit; r++) {
-    for (let dy = -r; dy <= r && out.length < limit; dy++) {
-      for (let dx = -r; dx <= r && out.length < limit; dx++) {
-        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue
-        const x = center.x + dx
-        const y = center.y + dy
-        if (x < 1 || x >= level.width - 1 || y < 1 || y >= level.height - 1) continue
-        const tile = getTile(level, x, y)
-        if (!tile || tile.type !== 'floor') continue
-        if (isMonsterAt(occupied, { x, y })) continue
-        out.push({ x, y })
-      }
-    }
-  }
-  return out
 }

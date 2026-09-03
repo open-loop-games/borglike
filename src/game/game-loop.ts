@@ -26,7 +26,6 @@ import { createCharacter } from './character'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { generateLevel, computeFOV, setAllTilesVisible, findOpenPosition } from './dungeon'
-import { RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT } from './dungeon/rift-arena'
 import { spawnMonstersForLevel, processMonsterTurns } from './monster-ai'
 import { spawnRiftTier, checkRiftAdvance } from './rift/director'
 import { processMinionTurns } from './minion-ai'
@@ -115,8 +114,7 @@ export function createGame(config: RunConfig): GameState {
 
   // Generate first dungeon level
   const mode = config.dungeonMode ?? 'classic'
-  const firstLevel =
-    mode === 'rift' ? generateLevel(1, RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT, mode) : generateLevel(1)
+  const firstLevel = generateLevel(1, undefined, undefined, mode)
 
   // Place character at entry: rift center clearing, else stairs up
   const startPosition = firstLevel.entryPoint ?? firstLevel.stairsUp ?? findOpenPosition(firstLevel)

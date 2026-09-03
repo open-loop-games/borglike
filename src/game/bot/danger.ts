@@ -18,6 +18,7 @@ import {
 } from './items'
 import { getEffectiveDamage, countAdjacentMonsters } from './combat'
 import { getMonsterAverageDamage } from '../monster-combat'
+import { auraPercentOf } from '../data/rift/affixes'
 
 // Re-export types for convenience
 export type { DangerGrid, DangerMap, DangerResult, DangerTier }
@@ -323,8 +324,10 @@ export function getMonsterThreat(
     threat *= 0.3
   }
 
-  // Rift pack bearers buff their pack — priority target, read hotter
-  if (template.flags?.includes('AFFIX_PACK')) {
+  // Rift pack bearers buff their pack — priority target, read hotter.
+  // Read through the affix registry, not the flag, so the bot and the
+  // director agree on what "carries an aura" means.
+  if (auraPercentOf(template) > 0) {
     threat *= 1.5
   }
 

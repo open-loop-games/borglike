@@ -13,7 +13,8 @@
  */
 
 import { FOV, Path } from 'rot-js'
-import type { DungeonLevel, Point, Tile, TileType } from './types'
+import type { DungeonLevel, Monster, Point, Tile, TileType } from './types'
+import { isMonsterAt } from './types'
 import { randomInt } from './rng'
 
 // Re-export generateLevel from new module
@@ -157,6 +158,37 @@ export function findOpenPositions(level: DungeonLevel, count: number): Point[] {
   // Shuffle and return requested count
   shuffleArray(walkable)
   return walkable.slice(0, count)
+}
+
+/**
+ * Free floor tiles in a Chebyshev annulus around a point, in fixed scan
+ * order (deterministic). Occupancy comes from the caller's array: the
+ * in-progress batch at gen time, game.monsters at runtime.
+ */
+export function freeRingTiles(
+  level: DungeonLevel,
+  center: Point,
+  rMin: number,
+  rMax: number,
+  limit: number,
+  occupied: Monster[]
+): Point[] {
+  const out: Point[] = []
+  for (let r = rMin; r <= rMax && out.length < limit; r++) {
+    for (let dy = -r; dy <= r && out.length < limit; dy++) {
+      for (let dx = -r; dx <= r && out.length < limit; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue
+        const x = center.x + dx
+        const y = center.y + dy
+        if (x < 1 || x >= level.width - 1 || y < 1 || y >= level.height - 1) continue
+        const tile = getTile(level, x, y)
+        if (!tile || tile.type !== 'floor') continue
+        if (isMonsterAt(occupied, { x, y })) continue
+        out.push({ x, y })
+      }
+    }
+  }
+  return out
 }
 
 /**

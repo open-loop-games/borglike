@@ -1016,16 +1016,17 @@ export const DEFAULT_BALANCE: BalanceOverrides = {
  * Dungeon ruleset handle — mode-specific run state carried on GameState.
  *
  * Classic = 50-level Angband-style descent. Rift = ARPG clear (spawners → boss).
- * Carries mode only at first; rift routes to classic generation so the pipe is
- * proven with zero behavior change. Tier/spawner state grows here as systems land.
+ * Downstream systems (generation, spawning, transitions, bot goals) read this
+ * rather than branching on run config.
  */
 export interface DungeonRuleset {
   mode: DungeonMode
-  /** Town travel allowed (classic). Rift stays in-arena: travel wipes tier progress. */
+  /**
+   * Town travel allowed. Gates the bot's whole town tier through
+   * `getEffectiveCapabilities`, not at individual portal sites.
+   */
   allowTownTravel: boolean
-  /** Rift: advance portal open (boss kill once trickle exists) */
-  portalOpen?: boolean
-  /** Rift: portal tile position when open */
+  /** Rift: advance portal tile, or null/absent while the tier is uncleared. */
   portalPos?: Point | null
   /** Rift: spawners killed this tier (boss spawns at 3 of 4) */
   spawnersKilled?: number

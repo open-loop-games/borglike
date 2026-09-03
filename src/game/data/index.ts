@@ -38,6 +38,7 @@ export {
   getMonstersForDepth,
   getSpawnableMonsters,
   getMonsterByName,
+  bestiaryKey,
   getUniques,
   type MonsterTemplate,
 } from './monsters'

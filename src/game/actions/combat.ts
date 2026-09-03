@@ -5,6 +5,7 @@
  */
 
 import type { GameState, ActionResult, Monster } from '../types'
+import { chebyshevDistance } from '../types'
 import {
   meleeAttack,
   attack,
@@ -21,7 +22,7 @@ import { DEFAULT_BONUSES, applyXPBonus } from '../upgrade-effects'
 import { awardMonsterGold } from '../features'
 import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 import { getKnowledgeBonuses } from '../knowledge-effects'
-import { VICTORY_BOSS_NAME } from '../data/index'
+import { VICTORY_BOSS_NAME, bestiaryKey } from '../data/index'
 import { handleRiftKillProgress, handleAffixDeath, applyThornsReflect } from '../rift/director'
 
 // ============================================================================
@@ -49,7 +50,7 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
 
   // Compute knowledge bonuses from bestiary (or override for testing)
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.baseName ?? monster.template.name,
+    bestiaryKey(monster.template),
     game.bestiary,
     game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent
@@ -140,7 +141,7 @@ function getStapleSplash(game: GameState, primary: Monster): StapleSplash | null
   const pos = game.character.position
   const dx = Math.sign(primary.position.x - pos.x)
   const dy = Math.sign(primary.position.y - pos.y)
-  if (Math.max(Math.abs(primary.position.x - pos.x), Math.abs(primary.position.y - pos.y)) !== 1) {
+  if (chebyshevDistance(primary.position, pos) !== 1) {
     return null // primary must be adjacent (bump range)
   }
 
@@ -183,7 +184,7 @@ function resolveStapleAttack(game: GameState, splash: StapleSplash): ActionResul
     const monster = living[s % living.length]!
 
     const knowledgeBonuses = getKnowledgeBonuses(
-      monster.template.baseName ?? monster.template.name,
+      bestiaryKey(monster.template),
       game.bestiary,
       game.balance.bestiaryBonusPercent,
       game.upgradeBonuses?.bestiaryCapPercent
@@ -219,12 +220,11 @@ function resolveStapleAttack(game: GameState, splash: StapleSplash): ActionResul
     }
   }
 
-  const verb = splash.stapleId === 'cleave' ? 'cleave' : splash.stapleId
   const message =
     kills > 0
-      ? `You ${verb} through ${splash.targets.length} foes for ${totalDamage} damage, slaying ${slain.join(', ')}!`
+      ? `You ${splash.stapleId} through ${splash.targets.length} foes for ${totalDamage} damage, slaying ${slain.join(', ')}!`
       : hits > 0
-        ? `You ${verb} ${splash.targets.length} foes for ${totalDamage} damage!`
+        ? `You ${splash.stapleId} ${splash.targets.length} foes for ${totalDamage} damage!`
         : `You swing wide and miss everything.`
   addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
@@ -282,7 +282,7 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
 
   // Compute knowledge bonuses from bestiary (or override for testing)
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.baseName ?? monster.template.name,
+    bestiaryKey(monster.template),
     game.bestiary,
     game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent
@@ -375,7 +375,7 @@ export function handleMonsterKill(game: GameState, monster: Monster): void {
   game.stats.kills++
 
   // Track monster kill by name for bestiary (affixed rares key to their base)
-  const monsterName = monster.template.baseName ?? monster.template.name
+  const monsterName = bestiaryKey(monster.template)
   game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
 
   // Award gold from monster

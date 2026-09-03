@@ -42,9 +42,22 @@ export const RIFT_BOSS_HP_PERCENT = 300
 /** Den guard HP: 150% of the same-body base */
 export const RIFT_GUARD_HP_PERCENT = 150
 
-/** Non-unique classic bodies valid at this tier (whites, guards, boss base) */
+/**
+ * Non-unique classic bodies valid at this tier (whites, guards, boss base).
+ *
+ * Memoized: the source tables are static, and spawner emission calls this on
+ * the turn loop. Callers must not mutate the returned array — clone first
+ * (`spawnRiftTier` shuffles a copy).
+ */
+const riftBodiesByTier = new Map<number, MonsterTemplate[]>()
+
 export function getRiftBodies(tier: number): MonsterTemplate[] {
-  return getSpawnableMonsters(tier).filter((t) => !t.flags?.includes('UNIQUE'))
+  let bodies = riftBodiesByTier.get(tier)
+  if (!bodies) {
+    bodies = getSpawnableMonsters(tier).filter((t) => !t.flags?.includes('UNIQUE'))
+    riftBodiesByTier.set(tier, bodies)
+  }
+  return bodies
 }
 
 /**

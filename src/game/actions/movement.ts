@@ -26,7 +26,6 @@ import {
   getAdjacentPositions,
 } from '../dungeon'
 import { spawnMonstersForLevel } from '../monster-ai'
-import { RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT } from '../dungeon/rift-arena'
 import { spawnRiftTier } from '../rift/director'
 import { spawnItemsForLevel, generateMerchantInventory } from '../items'
 import { triggerTrap, checkTrapDetection, initializeFeaturesFromVault } from '../features'
@@ -197,7 +196,7 @@ export function handleDescend(game: GameState): ActionResult {
       }
       return { success: false, message: 'The way back is lost.', energyCost: 0 }
     }
-    if (!currentTile || currentTile.type !== 'rift_portal' || !game.ruleset.portalOpen) {
+    if (!currentTile || currentTile.type !== 'rift_portal' || !game.ruleset.portalPos) {
       return { success: false, message: 'The rift portal has not opened yet.', energyCost: 0 }
     }
     return handleRiftAdvance(game)
@@ -313,7 +312,7 @@ export function handleRiftAdvance(game: GameState): ActionResult {
   // Get or generate next-tier arena (same cache discipline as classic)
   let newLevel = game.levelCache.get(newDepth)
   if (!newLevel) {
-    newLevel = generateLevel(newDepth, RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT, 'rift')
+    newLevel = generateLevel(newDepth, undefined, undefined, 'rift')
     game.levelCache.set(newDepth, newLevel)
     evictOldLevels(game.levelCache, newDepth, LEVEL_CACHE_MAX_SIZE)
   } else {
@@ -346,7 +345,6 @@ export function handleRiftAdvance(game: GameState): ActionResult {
   game.traps = new Map<string, TrapState>()
 
   // Close the portal behind us: next tier starts un-cleared
-  game.ruleset.portalOpen = false
   game.ruleset.portalPos = null
   game.ruleset.spawnersKilled = 0
   game.ruleset.bossKilled = false

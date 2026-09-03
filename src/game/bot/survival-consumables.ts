@@ -232,14 +232,9 @@ export function getSurvivalConsumableAction(
   // This is a strategic escape/resupply - not for immediate combat
   // Skip if portal already active (would fail and loop forever)
   // Skip if town portal capability disabled (no benefit from town visit)
-  // Skip when the ruleset forbids town travel (rift: wipes tier progress)
-  if (
-    adjacentCount === 0 &&
-    personality &&
-    !game.townPortal &&
-    townPortalEnabled &&
-    game.ruleset.allowTownTravel
-  ) {
+  // townPortalEnabled folds the ruleset's town-travel gate (see
+  // getEffectiveCapabilities), so no separate ruleset check belongs here.
+  if (adjacentCount === 0 && personality && !game.townPortal && townPortalEnabled) {
     const portalDecision = shouldUseTownPortal(game, config, personality)
     if (portalDecision.shouldUse) {
       const scroll = findTownPortalScroll(character)

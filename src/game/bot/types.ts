@@ -384,7 +384,9 @@ export function getEffectiveCapabilities(context: BotContext): EffectiveCapabili
   return {
     farming: capabilities.farming && context.toggles.farming,
     tactics: capabilities.tactics, // Graded capability, no toggle
-    town: capabilities.town,
+    // A ruleset that forbids town travel zeroes every town tier at once:
+    // unreachable town means no portal, no healer, no commerce.
+    town: context.game.ruleset.allowTownTravel ? capabilities.town : 0,
     preparedness: capabilities.preparedness,
     surf: capabilities.surf,
     kiting: capabilities.kiting,

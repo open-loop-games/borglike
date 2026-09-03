@@ -1668,6 +1668,15 @@ export function getMonsterByName(name: string): MonsterTemplate | undefined {
   return monsters.find((m) => m.name === name)
 }
 
+/**
+ * Bestiary/knowledge key for a template. Affixed rares carry a composed
+ * display name ("Swift Ghoul of Stone") but must key to their base body, or
+ * kill counts and knowledge bonuses fragment across every affix roll.
+ */
+export function bestiaryKey(template: MonsterTemplate): string {
+  return template.baseName ?? template.name
+}
+
 // Get all unique/boss monsters
 export function getUniques(): MonsterTemplate[] {
   return monsters.filter((m) => m.flags.includes('UNIQUE'))

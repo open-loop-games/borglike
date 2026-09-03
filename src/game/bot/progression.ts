@@ -17,7 +17,7 @@
 
 import type { Point, GameState, Character, Monster } from '../types'
 import type { UpgradeBonuses } from '../upgrade-effects'
-import { MAX_DEPTH } from '../types'
+import { MAX_DEPTH, chebyshevDistance } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
 import { getEffectiveCapabilities, seenGridAdd } from './types'
 import { profile } from './profiler'
@@ -124,7 +124,7 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
   // (The DESCEND type is reused so goalMovement, bullrush, and arrival
   // handling work unchanged; spawner/boss targeting extends this later.)
   if (game.ruleset.mode === 'rift') {
-    if (!game.ruleset.portalOpen || !game.ruleset.portalPos) return null
+    if (!game.ruleset.portalPos) return null
     return {
       type: 'DESCEND',
       target: { ...game.ruleset.portalPos },
@@ -177,7 +177,7 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
 export function getRiftSpawnerGoal(context: BotContext): BotGoal | null {
   const { game } = context
   if (game.ruleset.mode !== 'rift') return null
-  if (game.ruleset.portalOpen) return null // descend takes over
+  if (game.ruleset.portalPos) return null // descend takes over
 
   const pos = game.character.position
   let spawner: Monster | null = null
@@ -187,7 +187,7 @@ export function getRiftSpawnerGoal(context: BotContext): BotGoal | null {
 
   for (const m of game.monsters) {
     if (m.hp <= 0) continue
-    const d = Math.max(Math.abs(m.position.x - pos.x), Math.abs(m.position.y - pos.y))
+    const d = chebyshevDistance(m.position, pos)
     if (m.riftRole === 'spawner') {
       if (d < spawnerDist) {
         spawnerDist = d

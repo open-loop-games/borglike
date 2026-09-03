@@ -22,7 +22,7 @@ import { random, randomInt } from './rng'
 import { addStatusEffect, hasProtectionFrom } from './status-effects'
 import { findOpenPosition } from './dungeon'
 import { spawnMonster } from './monster-ai'
-import { getSpawnableMonsters } from './data/monsters'
+import { getSpawnableMonsters, bestiaryKey } from './data/monsters'
 import { resolveDefense } from './combat'
 import { getKnowledgeBonuses } from './knowledge-effects'
 
@@ -188,7 +188,7 @@ function executeBreathWeapon(
   const rawDamage = Math.min(baseDamage, caps[element])
 
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.baseName ?? monster.template.name,
+    bestiaryKey(monster.template),
     game.bestiary,
     game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent
@@ -236,7 +236,7 @@ function executeBoltSpell(
   const rawDamage = rollDice('5d8') + Math.floor(character.depth / 2)
 
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.baseName ?? monster.template.name,
+    bestiaryKey(monster.template),
     game.bestiary,
     game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent

@@ -5,25 +5,20 @@
  * Rares are cloned templates (never the shared base) with composed names;
  * mechanics resolve via flags + affixIds at runtime.
  *
- * First batch: Pit, Stone, Swift (clone-only), Thorns (melee reflect),
- * Swarm (death-spawns). The registry shape carries the rest (elemental
- * touches, dice, spell lists, blink, greed, auras, lifesteal) without
- * framework changes.
+ * Affixes carry their own tuning and eligibility rules, so adding one is a
+ * table entry plus (for a new mechanic) one accessor — never a framework change.
  */
 
 import type { MonsterTemplate } from '../monsters'
 import type { AttackEffect, Element } from '../../types'
 import { random } from '../../rng'
 
-export type AffixKind = 'prefix' | 'suffix'
-
 export interface AffixDef {
   id: string
-  kind: AffixKind
   /** Name fragment: prefixes prepend ("Swift Ghoul"), suffixes append ("Ghoul of the Pit") */
   name: string
-  /** Clone edits (stats only — flags/ids handled by the composer) */
-  apply: (clone: MonsterTemplate) => void
+  /** Clone edits (stats only — flags/ids handled by the composer). Omit for data-only affixes. */
+  apply?: (clone: MonsterTemplate) => void
   /** Template flags added (AI and combat read these) */
   flags?: string[]
   /** Melee reflect percent (Thorns-like). 0 = none. Melee only by design. */
@@ -112,7 +107,6 @@ function grantSpell(clone: MonsterTemplate, spell: 'SLOW' | 'BO_FIRE'): void {
 export const PREFIXES: AffixDef[] = [
   {
     id: 'swift',
-    kind: 'prefix',
     name: 'Swift',
     apply: (clone) => {
       clone.speed = Math.min(SWIFT_SPEED_CAP, clone.speed + SWIFT_SPEED_BONUS)
@@ -124,7 +118,6 @@ export const PREFIXES: AffixDef[] = [
   },
   {
     id: 'burning',
-    kind: 'prefix',
     name: 'Burning',
     apply: (clone) => convertToElement(clone, 'FIRE'),
     weightEarly: 2,
@@ -133,7 +126,6 @@ export const PREFIXES: AffixDef[] = [
   },
   {
     id: 'frozen',
-    kind: 'prefix',
     name: 'Frozen',
     apply: (clone) => {
       const i = firstHurtIndex(clone)
@@ -151,7 +143,6 @@ export const PREFIXES: AffixDef[] = [
   },
   {
     id: 'venomous',
-    kind: 'prefix',
     name: 'Venomous',
     apply: (clone) => convertToElement(clone, 'POISON'),
     weightEarly: 2,
@@ -160,7 +151,6 @@ export const PREFIXES: AffixDef[] = [
   },
   {
     id: 'brutal',
-    kind: 'prefix',
     name: 'Brutal',
     apply: (clone) => {
       clone.attacks = clone.attacks.map((a) => ({ ...a, dice: bumpDice(a.dice) }))
@@ -170,7 +160,6 @@ export const PREFIXES: AffixDef[] = [
   },
   {
     id: 'hexing',
-    kind: 'prefix',
     name: 'Hexing',
     apply: (clone) => grantSpell(clone, 'SLOW'),
     weightEarly: 1,
@@ -178,7 +167,6 @@ export const PREFIXES: AffixDef[] = [
   },
   {
     id: 'spitting',
-    kind: 'prefix',
     name: 'Spitting',
     apply: (clone) => grantSpell(clone, 'BO_FIRE'),
     weightEarly: 1,
@@ -186,9 +174,7 @@ export const PREFIXES: AffixDef[] = [
   },
   {
     id: 'vampiric',
-    kind: 'prefix',
     name: 'Vampiric',
-    apply: () => {},
     flags: ['AFFIX_VAMPIRIC'],
     drainPercent: VAMPIRIC_DRAIN_PERCENT,
     weightEarly: 1,
@@ -200,7 +186,6 @@ export const PREFIXES: AffixDef[] = [
 export const SUFFIXES: AffixDef[] = [
   {
     id: 'pit',
-    kind: 'suffix',
     name: 'of the Pit',
     apply: (clone) => {
       clone.hp = Math.max(1, Math.floor(clone.hp * PIT_HP_MULT))
@@ -211,7 +196,6 @@ export const SUFFIXES: AffixDef[] = [
   },
   {
     id: 'stone',
-    kind: 'suffix',
     name: 'of Stone',
     apply: (clone) => {
       clone.armor += STONE_ARMOR_BONUS
@@ -222,9 +206,7 @@ export const SUFFIXES: AffixDef[] = [
   },
   {
     id: 'thorns',
-    kind: 'suffix',
     name: 'of Thorns',
-    apply: () => {},
     flags: ['AFFIX_THORNS'],
     thornsPercent: THORNS_REFLECT_PERCENT,
     weightEarly: 1,
@@ -233,9 +215,7 @@ export const SUFFIXES: AffixDef[] = [
   },
   {
     id: 'swarm',
-    kind: 'suffix',
     name: 'of the Swarm',
-    apply: () => {},
     flags: ['AFFIX_SWARM'],
     deathSpawn: SWARM_MINI_COUNT,
     weightEarly: 1,
@@ -243,16 +223,13 @@ export const SUFFIXES: AffixDef[] = [
   },
   {
     id: 'wisp',
-    kind: 'suffix',
     name: 'of the Wisp',
-    apply: () => {},
     flags: ['AFFIX_WISP'],
     weightEarly: 1,
     weightLate: 3,
   },
   {
     id: 'greed',
-    kind: 'suffix',
     name: 'of Greed',
     apply: (clone) => {
       clone.hp = Math.max(1, Math.floor(clone.hp * GREED_HP_MULT))
@@ -264,9 +241,7 @@ export const SUFFIXES: AffixDef[] = [
   },
   {
     id: 'pack',
-    kind: 'suffix',
     name: 'of the Pack',
-    apply: () => {},
     flags: ['AFFIX_PACK'],
     auraPercent: PACK_AURA_PERCENT,
     weightEarly: 1,
@@ -362,57 +337,72 @@ export function applyAffixesToClone(base: MonsterTemplate, rolled: RolledAffixes
     ],
   }
   if (rolled.prefix) {
-    rolled.prefix.apply(clone)
+    rolled.prefix.apply?.(clone)
     if (rolled.prefix.flags) clone.flags.push(...rolled.prefix.flags)
   }
   if (rolled.suffix) {
-    rolled.suffix.apply(clone)
+    rolled.suffix.apply?.(clone)
     if (rolled.suffix.flags) clone.flags.push(...rolled.suffix.flags)
   }
   return clone
 }
 
-/** Total melee reflect percent on a template (sums Thorns-like affixes). */
-export function thornsPercentOf(template: MonsterTemplate): number {
+/**
+ * Sum a stacking affix stat across a template's affixes.
+ *
+ * Hot: runs per melee exchange for every monster, affixed or not. The bare
+ * `affixIds` test keeps the unaffixed path (every classic monster, every rift
+ * white) free of the array-and-iterator allocation `?? []` would cost.
+ */
+function sumAffix(
+  template: MonsterTemplate,
+  key: 'thornsPercent' | 'deathSpawn' | 'drainPercent'
+): number {
+  const ids = template.affixIds
+  if (!ids) return 0
   let total = 0
-  for (const id of template.affixIds ?? []) {
-    total += AFFIXES[id]?.thornsPercent ?? 0
+  for (let i = 0; i < ids.length; i++) {
+    total += AFFIXES[ids[i]!]?.[key] ?? 0
   }
   return total
+}
+
+/** Best of a non-stacking affix stat across a template's affixes (max wins). */
+function maxAffix(
+  template: MonsterTemplate,
+  key: 'auraPercent' | 'goldMult',
+  identity: number
+): number {
+  const ids = template.affixIds
+  if (!ids) return identity
+  let best = identity
+  for (let i = 0; i < ids.length; i++) {
+    best = Math.max(best, AFFIXES[ids[i]!]?.[key] ?? identity)
+  }
+  return best
+}
+
+/** Total melee reflect percent on a template (sums Thorns-like affixes). */
+export function thornsPercentOf(template: MonsterTemplate): number {
+  return sumAffix(template, 'thornsPercent')
 }
 
 /** Total death-spawn count on a template (sums Swarm-like affixes). */
 export function deathSpawnOf(template: MonsterTemplate): number {
-  let total = 0
-  for (const id of template.affixIds ?? []) {
-    total += AFFIXES[id]?.deathSpawn ?? 0
-  }
-  return total
+  return sumAffix(template, 'deathSpawn')
 }
 
 /** Lifesteal percent of damage dealt (Vampiric-like). */
 export function drainPercentOf(template: MonsterTemplate): number {
-  let total = 0
-  for (const id of template.affixIds ?? []) {
-    total += AFFIXES[id]?.drainPercent ?? 0
-  }
-  return total
+  return sumAffix(template, 'drainPercent')
 }
 
 /** Damage bonus for nearby allies percent (Pack-like, non-stacking — max wins). */
 export function auraPercentOf(template: MonsterTemplate): number {
-  let best = 0
-  for (const id of template.affixIds ?? []) {
-    best = Math.max(best, AFFIXES[id]?.auraPercent ?? 0)
-  }
-  return best
+  return maxAffix(template, 'auraPercent', 0)
 }
 
 /** Gold drop multiplier (Greed-like, non-stacking — max wins). */
 export function greedMultOf(template: MonsterTemplate): number {
-  let best = 1
-  for (const id of template.affixIds ?? []) {
-    best = Math.max(best, AFFIXES[id]?.goldMult ?? 1)
-  }
-  return best
+  return maxAffix(template, 'goldMult', 1)
 }

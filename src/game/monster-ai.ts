@@ -19,13 +19,18 @@ import type {
   MessageTag,
   MessageImportance,
 } from './types'
-import { MAX_DEPTH, getDirectionFromDelta, DIRECTION_VECTORS } from './types'
+import { MAX_DEPTH, getDirectionFromDelta, DIRECTION_VECTORS, chebyshevDistance } from './types'
 import { randomInt, random } from './rng'
 import { applyDamage } from './combat'
 import { getEffectiveStats } from './modifiers'
 import { checkSecondWind } from './status-effects'
 import { getKnowledgeBonuses } from './knowledge-effects'
-import { getSpawnableMonsters, getMonsterByName, VICTORY_BOSS_NAME } from './data/index'
+import {
+  getSpawnableMonsters,
+  getMonsterByName,
+  VICTORY_BOSS_NAME,
+  bestiaryKey,
+} from './data/index'
 import {
   findPath,
   findOpenPositions,
@@ -33,11 +38,15 @@ import {
   getTile,
   getAdjacentPositions,
   distance,
+  freeRingTiles,
 } from './dungeon'
 import { resolveMonsterAttacks, formatMonsterAttackMessage } from './monster-combat'
 import { shouldCastSpell, executeMonsterSpell } from './monster-spells'
-import { trySpawnerEmission, freeRingTiles, packAuraMult } from './rift/director'
+import { trySpawnerEmission, packAuraMult } from './rift/director'
 import { drainPercentOf } from './data/rift/affixes'
+import { damageMinionById } from './minion-ai'
+import { rollDice } from './dice'
+import { incrementStat, checkCloseCall } from './stats-helpers'
 
 /** Rift leash radius: pack members beyond this (Chebyshev) step home */
 const RIFT_LEASH_DISTANCE = 14
@@ -47,9 +56,6 @@ const WISP_BLINK_MIN_DIST = 8
 
 /** ...but only within this range (no cross-map teleports) */
 const WISP_BLINK_MAX_DIST = 16
-import { damageMinionById } from './minion-ai'
-import { rollDice } from './dice'
-import { incrementStat, checkCloseCall } from './stats-helpers'
 
 // ============================================================================
 // UNIQUE ID GENERATION
@@ -384,11 +390,7 @@ export function decideAction(monster: Monster, game: GameState): GameAction | nu
   // Rift leash: beyond 14 from the den and target unseen, step home instead
   // of wandering (prevents whole-map trains; boss has no packHome = unleashed)
   if (monster.packHome) {
-    const homeDist = Math.max(
-      Math.abs(monster.position.x - monster.packHome.x),
-      Math.abs(monster.position.y - monster.packHome.y)
-    )
-    if (homeDist > RIFT_LEASH_DISTANCE) {
+    if (chebyshevDistance(monster.position, monster.packHome) > RIFT_LEASH_DISTANCE) {
       const homePos = findMoveTowardPlayer(
         monster,
         monster.packHome,
@@ -408,10 +410,7 @@ export function decideAction(monster: Monster, game: GameState): GameAction | nu
   // sight (supernatural), capped at blink range so it can't cross the map.
   // Side effect (position set directly) then wait — consumes the turn.
   if (monster.template.flags?.includes('AFFIX_WISP') && target) {
-    const dist = Math.max(
-      Math.abs(monster.position.x - target.position.x),
-      Math.abs(monster.position.y - target.position.y)
-    )
+    const dist = chebyshevDistance(monster.position, target.position)
     if (dist > WISP_BLINK_MIN_DIST && dist <= WISP_BLINK_MAX_DIST) {
       const dests = freeRingTiles(game.currentLevel, target.position, 2, 3, 1, game.monsters)
       const dest = dests[0]
@@ -768,25 +767,12 @@ export function processMonsterTurns(game: GameState): GameEvent[] {
   const playerSpeed = getEffectiveStats(game.character).speed
 
   for (const monster of game.monsters) {
-    // Rift spawner: immobile structure. Emission clock reuses the energy
-    // loop (speed 7 ≈ 6 energy/turn ≈ one creep per ~17 player turns).
-    // Runs before decideAction so spawners never move, attack, or wander.
-    // Role implies it (spawners only exist in rift) — no mode check.
-    if (monster.riftRole === 'spawner' && monster.hp > 0) {
-      const tile = getTile(game.currentLevel, monster.position.x, monster.position.y)
-      if (tile?.visible && !monster.seen) {
-        monster.seen = true
-      }
-      const effectiveSpeed = getMonsterEffectiveSpeed(monster)
-      monster.energy += Math.floor((effectiveSpeed / 110) * ENERGY_PER_TICK * (100 / playerSpeed))
-      while (monster.energy >= BASE_ENERGY_COST && !game.character.isDead) {
-        monster.energy -= BASE_ENERGY_COST
-        trySpawnerEmission(game, monster)
-      }
-      tickMonsterDebuffs(monster)
-      tickMonsterBuffs(monster)
-      continue
-    }
+    // Rift spawner: immobile structure. Emission replaces the AI decision but
+    // rides the shared energy clock (speed 7 ≈ one creep per ~17 player turns),
+    // so spawners never move, attack, or wander. Role implies rift — no mode
+    // check. Seen-marking is hoisted because spawners skip getMonsterAction.
+    const isSpawner = monster.riftRole === 'spawner' && monster.hp > 0
+    if (isSpawner) markSeenIfVisible(game, monster)
 
     const effectiveSpeed = getMonsterEffectiveSpeed(monster)
 
@@ -797,6 +783,11 @@ export function processMonsterTurns(game: GameState): GameEvent[] {
     // Process actions while monster has enough energy
     while (monster.energy >= BASE_ENERGY_COST && !game.character.isDead) {
       monster.energy -= BASE_ENERGY_COST
+
+      if (isSpawner) {
+        trySpawnerEmission(game, monster)
+        continue
+      }
 
       // Get AI decision and execute
       const monsterAction = getMonsterAction(game, monster)
@@ -815,6 +806,13 @@ export function processMonsterTurns(game: GameState): GameEvent[] {
   return events
 }
 
+/** Mark a monster seen once the player can see its tile (UI reveal only). */
+function markSeenIfVisible(game: GameState, monster: Monster): void {
+  if (monster.seen) return
+  const tile = getTile(game.currentLevel, monster.position.x, monster.position.y)
+  if (tile?.visible) monster.seen = true
+}
+
 /**
  * Get monster AI decision
  *
@@ -824,11 +822,7 @@ function getMonsterAction(
   game: GameState,
   monster: Monster
 ): { type: 'move'; direction: Direction } | { type: 'attack'; targetId?: string } | null {
-  // Mark monster as seen if visible to player (for UI purposes)
-  const tile = getTile(game.currentLevel, monster.position.x, monster.position.y)
-  if (tile?.visible && !monster.seen) {
-    monster.seen = true
-  }
+  markSeenIfVisible(game, monster)
 
   // Use the full monster AI decision system
   // This handles: detection, waking up, pathfinding, and attack decisions
@@ -950,7 +944,7 @@ function executeMonsterAction(
 
     // Compute knowledge bonuses and resolve monster melee attacks
     const knowledgeBonuses = getKnowledgeBonuses(
-      monster.template.baseName ?? monster.template.name,
+      bestiaryKey(monster.template),
       game.bestiary,
       game.balance.bestiaryBonusPercent,
       game.upgradeBonuses?.bestiaryCapPercent
