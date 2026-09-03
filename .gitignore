@@ -26,6 +26,9 @@ dist-ssr
 !.claude/skills/
 .superpowers/
 
+# OpenCode: local agent config, keep private
+opencode.json
+
 # Claude: commit .claude/CLAUDE.md and rules/, keep the rest private
 .claude/*
 !.claude/CLAUDE.md
