@@ -7,7 +7,8 @@
  */
 
 import type { MonsterTemplate } from '../monsters'
-import { getSpawnableMonsters } from '../monsters'
+import { getSpawnableMonsters, getMonsterByName } from '../monsters'
+import { randomItem } from '../../rng'
 
 /**
  * The rift spawner: an immobile structure-monster, one per den.
@@ -56,4 +57,30 @@ export function getRiftBossBase(tier: number): MonsterTemplate | undefined {
     if (!best || t.experience > best.experience) best = t
   }
   return best
+}
+
+/**
+ * Milestone boss bodies: native classic uniques at tiers matching their
+ * depth (tier ≈ depth/3). T3 and T17+ pools roll one body per run (seeded).
+ * Morgoth is deliberately excluded — killing him by name triggers victory.
+ */
+const MILESTONE_BOSSES: Record<number, string[]> = {
+  2: ['Bullroarer the Hobbit'],
+  3: ['Wormtongue, Agent of Saruman', 'Grishnakh, the Hill Orc'],
+  7: ['Bolg, Son of Azog'],
+  8: ['Azog, Enemy of the Dwarves'],
+  9: ['Lugdush, Uruk Captain'],
+  12: ['Lokkak, the Ogre Chieftain'],
+}
+
+const DEEP_BOSSES = ['Gothmog, High Captain of Balrogs', 'Sauron, the Sorcerer', 'Smaug the Golden']
+
+export const DEEP_BOSS_TIER = 17
+
+/** Milestone unique body for this tier, or undefined for promoted-trash tiers. */
+export function getMilestoneBossBase(tier: number): MonsterTemplate | undefined {
+  const pool = MILESTONE_BOSSES[tier] ?? (tier >= DEEP_BOSS_TIER ? DEEP_BOSSES : undefined)
+  if (!pool) return undefined
+  const name = randomItem(pool)
+  return name ? getMonsterByName(name) : undefined
 }

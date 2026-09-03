@@ -22,6 +22,13 @@
   decreases), pruning stays trivial. Control duo after: warrior 10.0→16.7
   (398→634 kills), mage 16.3→19.3 (895→990, CB 33%→0%). Deaths moved to real
   mid-tier fights (affixed dragon/troll/hydra).
+- [x] Milestone bosses from the classic unique roster (native depth ≈ tier x 3):
+  T2 Bullroarer, T3 Wormtongue/Grishnakh roll, T7 Bolg, T8 Azog, T9 Lugdush,
+  T12 Lokkak, T17+ Gothmog/Sauron/Smaug roll (Morgoth excluded — victory binding).
+  Native stats + affixes, no HP inflation. HP-mult affixes excluded for milestones
+  (double-dip). Control duo: warrior ~10, mage ~17 — milestones are the melee wall
+  (700-900 HP duels + thorns), fair fights mages win. Melee-duel answers (bow vs
+  thorns, kiting) belong to the bot retune.
 - [ ] Economy pass: XP/drop/essence weights for pack volume, boss burst, endless tiers.
 
 ## Future Features

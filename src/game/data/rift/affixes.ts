@@ -49,6 +49,11 @@ export interface AffixDef {
   notVsEffects?: AttackEffect['type'][]
   /** Requires at least one plain-damage attack (elemental converters) */
   needsHurtAttack?: boolean
+  /**
+   * Skipped for milestone uniques (their native HP curve is already
+   * boss-grade — multipliers would double-dip).
+   */
+  noMilestone?: boolean
 }
 
 const SWIFT_SPEED_BONUS = 30
@@ -202,6 +207,7 @@ export const SUFFIXES: AffixDef[] = [
     },
     weightEarly: 3,
     weightLate: 2,
+    noMilestone: true,
   },
   {
     id: 'stone',
@@ -318,12 +324,17 @@ export function rollPrefix(tier: number, base: MonsterTemplate): AffixDef | unde
 }
 
 /** Prefix + suffix with exclusion rules, checked both directions (rares, bosses). */
-export function rollRareAffixes(tier: number, base: MonsterTemplate): RolledAffixes {
+export function rollRareAffixes(
+  tier: number,
+  base: MonsterTemplate,
+  milestone = false
+): RolledAffixes {
   const prefix = weightedRoll(PREFIXES, tier, base)
   // Exclude the prefix's bans plus any suffix that bans the prefix
   const banned = new Set(prefix?.excludes ?? [])
   for (const s of SUFFIXES) {
     if (prefix && s.excludes?.includes(prefix.id)) banned.add(s.id)
+    if (milestone && s.noMilestone) banned.add(s.id)
   }
   const suffix = weightedRoll(SUFFIXES, tier, base, [...banned])
   return { prefix, suffix }

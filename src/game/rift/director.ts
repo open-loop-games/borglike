@@ -19,6 +19,7 @@ import {
   RIFT_GUARD_HP_PERCENT,
   getRiftBodies,
   getRiftBossBase,
+  getMilestoneBossBase,
 } from '../data/rift/monsters'
 import {
   rollPrefix,
@@ -349,15 +350,20 @@ export function trySpawnerEmission(game: GameState, spawner: Monster): boolean {
 }
 
 /**
- * Rift boss: promoted tier base (highest-XP body) with prefix+suffix affixes
- * at 300% HP, spawned near the arena center on the 3rd spawner kill.
+ * Rift boss: milestone unique bodies at native stats (already tier-true),
+ * else promoted trash at 300%. Both roll prefix+suffix affixes.
  * No pack home (unleashed).
  */
 export function spawnRiftBoss(game: GameState): void {
   const tier = game.character.depth
-  const base = getRiftBossBase(tier) ?? getRiftBodies(tier)[0]
+  const milestone = getMilestoneBossBase(tier)
+  const base = milestone ?? getRiftBossBase(tier) ?? getRiftBodies(tier)[0]
   if (!base) return
-  const body = applyAffixesToClone(base, rollRareAffixes(tier, base))
+  const body = applyAffixesToClone(base, rollRareAffixes(tier, base, milestone !== undefined))
+  // Milestones bring their own HP curve; trash needs the multiplier
+  const hpPct = milestone
+    ? game.balance.monsterHpPercent
+    : Math.floor((game.balance.monsterHpPercent * RIFT_BOSS_HP_PERCENT) / 100)
   const level = game.currentLevel
   const center = level.entryPoint ?? {
     x: Math.floor(level.width / 2),
@@ -365,11 +371,7 @@ export function spawnRiftBoss(game: GameState): void {
   }
   const spots = freeRingTiles(level, center, 0, 3, 1, game.monsters)
   const spot = spots[0] ?? center
-  const boss = spawnMonster(
-    body,
-    spot,
-    Math.floor((game.balance.monsterHpPercent * RIFT_BOSS_HP_PERCENT) / 100)
-  )
+  const boss = spawnMonster(body, spot, hpPct)
   boss.riftRole = 'boss'
   game.monsters.push(boss)
   addTaggedMessage(game, `A ${body.name} erupts at the center of the arena!`, 'danger', {
