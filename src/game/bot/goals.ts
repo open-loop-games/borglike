@@ -27,6 +27,7 @@ import { getUseAltarGoal, getVisitMerchantGoal } from './merchant'
 import {
   getProgressionGoal,
   getReturnToUniqueHuntGoal,
+  getRiftSpawnerGoal,
   getMorgothHuntGoal,
   getMorgothFlipReturnGoal,
 } from './progression'
@@ -201,6 +202,14 @@ export function selectGoal(
   // 2.5 HUNT_UNIQUE - Hunt uniques blocking descent (priority over regular KILL)
   const huntUniqueGoal = profile('goal.huntUnique', () => getHuntUniqueGoal(context))
   if (huntUniqueGoal) return huntUniqueGoal
+
+  // 2.4 RIFT HUNT - Melee dives spawners/boss when posture allows (above KILL:
+  // commitment; FLEE/RECOVER still preempt). Ranged classes skip the dive —
+  // they kill at range via KILL/spells. Posture threshold inside.
+  if (game.ruleset.mode === 'rift' && context.classProfile?.prefersMelee) {
+    const riftHuntGoal = profile('goal.riftHunt', () => getRiftSpawnerGoal(context))
+    if (riftHuntGoal) return riftHuntGoal
+  }
 
   // 2.6 MORGOTH_HUNT - Hunt Morgoth at depth 50 (triggers flip when stuck)
   const morgothHuntGoal = getMorgothHuntGoal(context)

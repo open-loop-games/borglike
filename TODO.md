@@ -13,7 +13,11 @@
   `pnpm diagnose matrix --classes=all --runs=3 --upgrades=full --capabilities=full
   --boosters=class --dungeon-mode=rift --turns=20000`).
 - [ ] Melee-vs-density gap (bot retune input): paladin/rogue/warrior walk into dens
-  and trade down; ranged kites and AoE. AoE-seek, flank danger, rare focus still open.
+  and trade down; ranged kites and AoE. Done: cleave splash for warriors (class-kit
+  data, no new action), dive posture (melee-only chain hunt gated on visible-trash
+  count scaled by aggression; ranged skip the dive, idle fallback kept). Control duo
+  pinned to --seed=1000 for comparable runs. Still open: AoE-seek, flank danger,
+  melee-duel answers (kiting), bow-vs-thorns stays out (off brand).
 - [ ] Deep-tier stalls (scaling input): circuit breakers at 16-18, boss + trickle
   outscale minion/caster builds. Feed into the economy/scaling curve.
 - [x] Town travel restore for rift (resupply without regrind): snapshot the single
