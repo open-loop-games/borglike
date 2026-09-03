@@ -12,7 +12,7 @@
  */
 
 import type { MonsterTemplate } from '../monsters'
-import type { AttackEffect } from '../../types'
+import type { AttackEffect, Element } from '../../types'
 import { random } from '../../rng'
 
 export type AffixKind = 'prefix' | 'suffix'
@@ -30,6 +30,12 @@ export interface AffixDef {
   thornsPercent?: number
   /** Death-spawn count (Swarm-like). 0 = none. */
   deathSpawn?: number
+  /** Lifesteal percent of damage dealt (Vampiric-like). 0 = none. */
+  drainPercent?: number
+  /** Damage bonus for nearby allies percent (Pack-like). 0 = none. */
+  auraPercent?: number
+  /** Gold drop multiplier (Greed-like). 1 = none. */
+  goldMult?: number
   /** Tier weight endpoints; lerped by depthIntoScaling */
   weightEarly: number
   weightLate: number
@@ -41,6 +47,8 @@ export interface AffixDef {
    * against the base's attack effects before weighting.
    */
   notVsEffects?: AttackEffect['type'][]
+  /** Requires at least one plain-damage attack (elemental converters) */
+  needsHurtAttack?: boolean
 }
 
 const SWIFT_SPEED_BONUS = 30
@@ -51,6 +59,50 @@ const STONE_SPEED_FLOOR = 20
 const PIT_HP_MULT = 2
 const THORNS_REFLECT_PERCENT = 30
 const SWARM_MINI_COUNT = 2
+const VAMPIRIC_DRAIN_PERCENT = 50
+const PACK_AURA_PERCENT = 25
+const GREED_GOLD_MULT = 3
+const GREED_HP_MULT = 0.8
+const HEX_SPELL_FREQ = 4
+
+const DIE_LADDER = [2, 3, 4, 6, 8, 10, 12, 20]
+
+/** Bump every die one step (2d6 → 2d8). Unknown shapes pass through. */
+function bumpDice(notation: string): string {
+  const m = /^(\d+)d(\d+)([+-]\d+)?$/.exec(notation.trim())
+  if (!m) return notation
+  const sides = Number(m[2])
+  const idx = DIE_LADDER.indexOf(sides)
+  const next = idx >= 0 && idx < DIE_LADDER.length - 1 ? DIE_LADDER[idx + 1]! : sides
+  return `${m[1]}d${next}${m[3] ?? ''}`
+}
+
+/** First plain-damage attack index, or -1. */
+function firstHurtIndex(clone: MonsterTemplate): number {
+  return clone.attacks.findIndex((a) => a.effect.type === 'HURT')
+}
+
+/** Convert the first plain attack to an element (keeps dice and method). */
+function convertToElement(clone: MonsterTemplate, element: Element): void {
+  const i = firstHurtIndex(clone)
+  if (i < 0) return
+  const attack = clone.attacks[i]!
+  clone.attacks[i] = { ...attack, effect: { type: 'ELEMENTAL', element } }
+  if (!clone.resist?.includes(element)) {
+    clone.resist = [...(clone.resist ?? []), element]
+  }
+}
+
+/** Grant a monster spell (appends to the clone's list or creates one). */
+function grantSpell(clone: MonsterTemplate, spell: 'SLOW' | 'BO_FIRE'): void {
+  if (clone.spells) {
+    if (!clone.spells.list.includes(spell)) {
+      clone.spells = { ...clone.spells, list: [...clone.spells.list, spell] }
+    }
+    return
+  }
+  clone.spells = { freq: HEX_SPELL_FREQ, list: [spell] }
+}
 
 export const PREFIXES: AffixDef[] = [
   {
@@ -64,6 +116,79 @@ export const PREFIXES: AffixDef[] = [
     weightLate: 2,
     excludes: ['echoes'],
     notVsEffects: ['PARALYZE', 'CONFUSE', 'BLIND', 'TERRIFY'],
+  },
+  {
+    id: 'burning',
+    kind: 'prefix',
+    name: 'Burning',
+    apply: (clone) => convertToElement(clone, 'FIRE'),
+    weightEarly: 2,
+    weightLate: 3,
+    needsHurtAttack: true,
+  },
+  {
+    id: 'frozen',
+    kind: 'prefix',
+    name: 'Frozen',
+    apply: (clone) => {
+      const i = firstHurtIndex(clone)
+      if (i < 0) return
+      const attack = clone.attacks[i]!
+      clone.attacks[i] = { ...attack, effect: { type: 'SLOW' } }
+      if (!clone.resist?.includes('COLD')) {
+        clone.resist = [...(clone.resist ?? []), 'COLD']
+      }
+    },
+    weightEarly: 2,
+    weightLate: 3,
+    needsHurtAttack: true,
+    notVsEffects: ['SLOW'],
+  },
+  {
+    id: 'venomous',
+    kind: 'prefix',
+    name: 'Venomous',
+    apply: (clone) => convertToElement(clone, 'POISON'),
+    weightEarly: 2,
+    weightLate: 3,
+    needsHurtAttack: true,
+  },
+  {
+    id: 'brutal',
+    kind: 'prefix',
+    name: 'Brutal',
+    apply: (clone) => {
+      clone.attacks = clone.attacks.map((a) => ({ ...a, dice: bumpDice(a.dice) }))
+    },
+    weightEarly: 3,
+    weightLate: 3,
+  },
+  {
+    id: 'hexing',
+    kind: 'prefix',
+    name: 'Hexing',
+    apply: (clone) => grantSpell(clone, 'SLOW'),
+    weightEarly: 1,
+    weightLate: 3,
+  },
+  {
+    id: 'spitting',
+    kind: 'prefix',
+    name: 'Spitting',
+    apply: (clone) => grantSpell(clone, 'BO_FIRE'),
+    weightEarly: 1,
+    weightLate: 3,
+  },
+  {
+    id: 'vampiric',
+    kind: 'prefix',
+    name: 'Vampiric',
+    apply: () => {},
+    flags: ['AFFIX_VAMPIRIC'],
+    drainPercent: VAMPIRIC_DRAIN_PERCENT,
+    weightEarly: 1,
+    weightLate: 3,
+    excludes: ['thorns'],
   },
 ]
 
@@ -110,6 +235,37 @@ export const SUFFIXES: AffixDef[] = [
     weightEarly: 1,
     weightLate: 3,
   },
+  {
+    id: 'wisp',
+    kind: 'suffix',
+    name: 'of the Wisp',
+    apply: () => {},
+    flags: ['AFFIX_WISP'],
+    weightEarly: 1,
+    weightLate: 3,
+  },
+  {
+    id: 'greed',
+    kind: 'suffix',
+    name: 'of Greed',
+    apply: (clone) => {
+      clone.hp = Math.max(1, Math.floor(clone.hp * GREED_HP_MULT))
+    },
+    flags: ['AFFIX_GREED'],
+    goldMult: GREED_GOLD_MULT,
+    weightEarly: 2,
+    weightLate: 2,
+  },
+  {
+    id: 'pack',
+    kind: 'suffix',
+    name: 'of the Pack',
+    apply: () => {},
+    flags: ['AFFIX_PACK'],
+    auraPercent: PACK_AURA_PERCENT,
+    weightEarly: 1,
+    weightLate: 3,
+  },
 ]
 
 export const AFFIXES: Record<string, AffixDef> = Object.fromEntries(
@@ -133,8 +289,12 @@ function weightedRoll(
   exclude: string[] = []
 ): AffixDef | undefined {
   const baseEffects = new Set(base.attacks.map((a) => a.effect.type))
+  const hasHurt = baseEffects.has('HURT')
   const options = pool.filter(
-    (a) => !exclude.includes(a.id) && !(a.notVsEffects ?? []).some((e) => baseEffects.has(e))
+    (a) =>
+      !exclude.includes(a.id) &&
+      !(a.notVsEffects ?? []).some((e) => baseEffects.has(e)) &&
+      (!a.needsHurtAttack || hasHurt)
   )
   let total = 0
   for (const a of options) total += weightOf(a, tier)
@@ -157,10 +317,15 @@ export function rollPrefix(tier: number, base: MonsterTemplate): AffixDef | unde
   return weightedRoll(PREFIXES, tier, base)
 }
 
-/** Prefix + suffix with exclusion rules (rares, bosses). */
+/** Prefix + suffix with exclusion rules, checked both directions (rares, bosses). */
 export function rollRareAffixes(tier: number, base: MonsterTemplate): RolledAffixes {
   const prefix = weightedRoll(PREFIXES, tier, base)
-  const suffix = weightedRoll(SUFFIXES, tier, base, prefix?.excludes ?? [])
+  // Exclude the prefix's bans plus any suffix that bans the prefix
+  const banned = new Set(prefix?.excludes ?? [])
+  for (const s of SUFFIXES) {
+    if (prefix && s.excludes?.includes(prefix.id)) banned.add(s.id)
+  }
+  const suffix = weightedRoll(SUFFIXES, tier, base, [...banned])
   return { prefix, suffix }
 }
 
@@ -212,4 +377,31 @@ export function deathSpawnOf(template: MonsterTemplate): number {
     total += AFFIXES[id]?.deathSpawn ?? 0
   }
   return total
+}
+
+/** Lifesteal percent of damage dealt (Vampiric-like). */
+export function drainPercentOf(template: MonsterTemplate): number {
+  let total = 0
+  for (const id of template.affixIds ?? []) {
+    total += AFFIXES[id]?.drainPercent ?? 0
+  }
+  return total
+}
+
+/** Damage bonus for nearby allies percent (Pack-like, non-stacking — max wins). */
+export function auraPercentOf(template: MonsterTemplate): number {
+  let best = 0
+  for (const id of template.affixIds ?? []) {
+    best = Math.max(best, AFFIXES[id]?.auraPercent ?? 0)
+  }
+  return best
+}
+
+/** Gold drop multiplier (Greed-like, non-stacking — max wins). */
+export function greedMultOf(template: MonsterTemplate): number {
+  let best = 1
+  for (const id of template.affixIds ?? []) {
+    best = Math.max(best, AFFIXES[id]?.goldMult ?? 1)
+  }
+  return best
 }

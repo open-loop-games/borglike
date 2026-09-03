@@ -36,10 +36,17 @@ import {
 } from './dungeon'
 import { resolveMonsterAttacks, formatMonsterAttackMessage } from './monster-combat'
 import { shouldCastSpell, executeMonsterSpell } from './monster-spells'
-import { trySpawnerEmission } from './rift/director'
+import { trySpawnerEmission, freeRingTiles, packAuraMult } from './rift/director'
+import { drainPercentOf } from './data/rift/affixes'
 
 /** Rift leash radius: pack members beyond this (Chebyshev) step home */
 const RIFT_LEASH_DISTANCE = 14
+
+/** Rift wisp: blinks to rings 2–3 around the target when farther than this */
+const WISP_BLINK_MIN_DIST = 8
+
+/** ...but only within this range (no cross-map teleports) */
+const WISP_BLINK_MAX_DIST = 16
 import { damageMinionById } from './minion-ai'
 import { rollDice } from './dice'
 import { incrementStat, checkCloseCall } from './stats-helpers'
@@ -393,6 +400,24 @@ export function decideAction(monster: Monster, game: GameState): GameAction | nu
         if (direction) {
           return { type: 'move', direction }
         }
+      }
+    }
+  }
+
+  // Rift wisp: far → blink to a ring near the target. Senses prey without
+  // sight (supernatural), capped at blink range so it can't cross the map.
+  // Side effect (position set directly) then wait — consumes the turn.
+  if (monster.template.flags?.includes('AFFIX_WISP') && target) {
+    const dist = Math.max(
+      Math.abs(monster.position.x - target.position.x),
+      Math.abs(monster.position.y - target.position.y)
+    )
+    if (dist > WISP_BLINK_MIN_DIST && dist <= WISP_BLINK_MAX_DIST) {
+      const dests = freeRingTiles(game.currentLevel, target.position, 2, 3, 1, game.monsters)
+      const dest = dests[0]
+      if (dest) {
+        monster.position = { ...dest }
+        return { type: 'wait' }
       }
     }
   }
@@ -925,7 +950,7 @@ function executeMonsterAction(
 
     // Compute knowledge bonuses and resolve monster melee attacks
     const knowledgeBonuses = getKnowledgeBonuses(
-      monster.template.name,
+      monster.template.baseName ?? monster.template.name,
       game.bestiary,
       game.balance.bestiaryBonusPercent,
       game.upgradeBonuses?.bestiaryCapPercent
@@ -936,6 +961,14 @@ function executeMonsterAction(
     let totalDamage = attackResult.totalDamage
     if (totalDamage > 0 && game.balance.monsterDamagePercent !== 100) {
       totalDamage = Math.max(1, Math.floor((totalDamage * game.balance.monsterDamagePercent) / 100))
+    }
+
+    // Rift pack aura: same-pack bearers within 4 lend their bonus (max wins)
+    if (totalDamage > 0) {
+      const auraMult = packAuraMult(game, monster)
+      if (auraMult > 1) {
+        totalDamage = Math.max(1, Math.floor(totalDamage * auraMult))
+      }
     }
 
     // Format and display message
@@ -957,6 +990,12 @@ function executeMonsterAction(
       game.stats.damageTaken += totalDamage
       game.stats.damageByMethod.melee += totalDamage
       incrementStat(game.stats.damageTakenByMonster, monster.template.name, totalDamage)
+
+      // Rift vampiric: attacker drinks a cut of what it dealt
+      const drain = drainPercentOf(monster.template)
+      if (drain > 0 && monster.hp > 0) {
+        monster.hp = Math.min(monster.maxHp, monster.hp + Math.floor((totalDamage * drain) / 100))
+      }
 
       // Track physical damage (monster melee attacks are physical)
       incrementStat(game.stats.damageByElement, 'physical', totalDamage)

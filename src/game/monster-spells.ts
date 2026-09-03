@@ -188,7 +188,7 @@ function executeBreathWeapon(
   const rawDamage = Math.min(baseDamage, caps[element])
 
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.name,
+    monster.template.baseName ?? monster.template.name,
     game.bestiary,
     game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent
@@ -236,7 +236,7 @@ function executeBoltSpell(
   const rawDamage = rollDice('5d8') + Math.floor(character.depth / 2)
 
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.name,
+    monster.template.baseName ?? monster.template.name,
     game.bestiary,
     game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent

@@ -323,6 +323,11 @@ export function getMonsterThreat(
     threat *= 0.3
   }
 
+  // Rift pack bearers buff their pack — priority target, read hotter
+  if (template.flags?.includes('AFFIX_PACK')) {
+    threat *= 1.5
+  }
+
   // Higher HP monsters are harder to kill = more dangerous
   // Use effective damage based on class profile and distance
   let playerDamage: number

@@ -26,6 +26,7 @@ import {
   applyAffixesToClone,
   thornsPercentOf,
   deathSpawnOf,
+  auraPercentOf,
 } from '../data/rift/affixes'
 import { shuffle, random, randomItem, randomInt } from '../rng'
 import { addTaggedMessage } from '../actions/helpers'
@@ -378,6 +379,29 @@ export function spawnRiftBoss(game: GameState): void {
 }
 
 /**
+ * Pack aura multiplier for a monster's attacks: same-pack allies within 4
+ * tiles carrying a Pack-like affix lend their bonus (max wins, no stacking).
+ */
+export function packAuraMult(game: GameState, monster: Monster): number {
+  if (!monster.packId) return 1
+  let best = 0
+  for (const ally of game.monsters) {
+    if (ally.hp <= 0 || ally.id === monster.id) continue
+    if (ally.packId !== monster.packId) continue
+    const dist = Math.max(
+      Math.abs(ally.position.x - monster.position.x),
+      Math.abs(ally.position.y - monster.position.y)
+    )
+    if (dist > 4) continue
+    best = Math.max(best, auraPercentOf(ally.template))
+  }
+  return best > 0 ? 1 + best / 100 : 1
+}
+/**
+ * Melee-only thorns retaliation (affix design decision: thorns punish blades;
+ * spells, arrows, and minions bypass). Call after dealing melee damage.
+ */
+/**
  * Melee-only thorns retaliation (affix design decision: thorns punish blades;
  * spells, arrows, and minions bypass). Call after dealing melee damage.
  */
@@ -437,7 +461,7 @@ export function handleAffixDeath(game: GameState, monster: Monster): void {
  * order (deterministic). Occupancy comes from the caller's array: the
  * in-progress batch at gen time, game.monsters at runtime.
  */
-function freeRingTiles(
+export function freeRingTiles(
   level: DungeonLevel,
   center: Point,
   rMin: number,

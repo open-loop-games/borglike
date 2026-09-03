@@ -27,6 +27,7 @@ import { getMerchantById, getDialogue } from './data/merchants'
 import { selectGoldPile, rollGoldValue, getDefaultGoldDrop, rollMonsterGold } from './data/gold'
 import { getTrapById } from './data/traps'
 import type { MonsterTemplate } from './data/monsters'
+import { greedMultOf } from './data/rift/affixes'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 import { addStatusEffect, clearPoison, isPoisoned, applyPoison } from './status-effects'
 import { incrementStat, checkCloseCall } from './stats-helpers'
@@ -536,7 +537,8 @@ function getItemValue(item: Item): number {
 export function awardMonsterGold(game: GameState, monster: MonsterTemplate): number {
   const drop = getDefaultGoldDrop(monster.minDepth)
   const bonuses = game.upgradeBonuses ?? DEFAULT_BONUSES
-  const gold = rollMonsterGold(drop, bonuses.goldMultiplier)
+  // Rift greed affix multiplies the drop (template-driven, no branch shape change)
+  const gold = rollMonsterGold(drop, bonuses.goldMultiplier * greedMultOf(monster))
 
   if (gold > 0) {
     game.character.gold += gold
