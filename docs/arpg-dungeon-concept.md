@@ -1,6 +1,10 @@
 # ARPG Dungeon — Concept (Fork 2)
 
-Status: decisions locked (2026-09-03). Direction: mode flag, rifts, monsters-first, 30–50 active cap.
+Status at session close: playable end to end (arena → dens → affixed rares →
+milestone bosses → portal → next tier, town resupply with exact restore).
+Control duo on pinned seeds: warrior ~9.5 tiers, mage ~16.4. Classic gates
+identical throughout. Open: melee-duel answers, AoE-seek/flank-danger retune,
+economy curve. Tracked items live in TODO.md ("Rift Dungeon").
 
 ## 1. Pitch
 
@@ -132,7 +136,7 @@ Balance guardrails: speed and extra-action affixes share a cap (never both); ref
 ## 9. What changes in combat / AI
 
 - Trash steering: cheap surround — prefer unoccupied adjacent tile nearest player, no full A* per creep. Rares/boss keep existing pathfinding.
-- Pack leash: if player kites >12 tiles from den, stragglers slow-return (prevents whole-map trains). Boss unleashed.
+- Pack leash: past 14 tiles from the den, stragglers step home (prevents whole-map trains). Boss unleashed.
 - AoE value flip: bot currently avoids crowds; ARPG bot must **seek** them. New goal weight: `packDensity × aoeReadiness`. Single-target spells deprioritized vs pack-bonus damage.
 - Danger grid reshape: thin per-monster threat down for whites, add spike for rare auras + surround count (flanked-by-4 must read as dangerous).
 - Kill priority: rares > blues > whites, unless white pack blocks movement. Retreating through a den is worse than standing ground.
@@ -150,35 +154,53 @@ Keep player power flat (same classes/items). ARPG progression expresses through:
 - 30–50 cap keeps energy loop + flow BFS + danger grid within current budgets. Swarm steering must be O(1)-ish per creep or the tick loop sags at 4 slots.
 - Renderer: cap glyph overlays to rare/boss to avoid canvas churn.
 
-## 12. Milestones (foundations first — no content before switching points exist)
+## 12. Build order (as built — foundations first, classic seed-identical each step)
 
-- **M0 mode flag + ruleset seam + overflow-safe minimum:** `dungeonMode` pipe, ruleset
-  handle, gen-time assert (arena ≤3200 tiles / path <254 by construction), danger
-  saturating add, level-sized SeenGrid + edge bounds check. Rift flag routes to
-  classic gen — proves the pipe with classic `diagnose` numbers unmoved.
-- **M1 arena gen (locked 2026-09-03):** `rift-arena` generator (60×30, cellular
-  high-fill, pillars, center spawn clearing, no doors). Whites only, scattered.
-  Advance = clear-all-whites → portal spawns at center → step on portal → tier+1
-  (depth reused as tier number; level cache + stats work unchanged). Bot hook is
-  minimal: DESCEND goal targets the portal tile when ruleset is rift (extended in
-  M4). Portal is a new `rift_portal` tile (not the town `portal` — no coupling).
-  M2 replaces the trigger with spawners, keeps the portal + advance path.
-- **M2 packs + director (locked 2026-09-03):** den placement (quadrant via cavern
-  open-area helper, center/wall bias, min separation; geometry on
-  `DungeonLevel.riftDens`, progress on ruleset), spawner entity (data/rift body,
-  energy-clock emission ~1/17 turns, annulus spread = gradient, cap-respecting),
-  guards (same-body whites at 150% HP; blues/yellows wait for M3 affixes),
-  pack aggro (packId wake propagation) + leash (packHome, return past 14),
-  boss at center on 3rd spawner kill (promoted base, stat-scaled, no affixes yet),
-  **boss kill opens the portal** (replaces M1 clear-all hook — trickle makes
-  clear-all unreachable while the 4th spawns). Data split starts: `data/rift/`
-  first file `monsters.ts` (spawner body + rift table helpers extending classic;
-  classic tables untouched).
-- **M3 affixes:** prefix/suffix tree (8+7 above), name composer, aura hooks, blue/yellow tiers. Blues share one set.
-- **M4 bot retune:** AoE-seek, rare focus, flank-danger. Playable hands-off to rift 5+.
-- **M5 economy:** XP/drop/essence weights, boss burst, endless scaling curve.
+- **Foundations (done):** `dungeonMode` pipe (SlotConfig → RunConfig → ruleset
+  handle on GameState), gen-time capacity assert (≤3200 tiles), danger
+  saturating add, level-sized SeenGrid + edge bounds, safety off-grid fallback.
+  Rift flag first routed to classic gen with byte-identical trajectories proven.
+- **Arena (done):** `rift-arena` generator (60×30 cellular high-fill, pillars,
+  center clearing, sealed borders, 4-way connectivity reuse). No vaults/doors/
+  stairs; `entryPoint` = center; new `rift_portal` tile. Advance = portal at
+  center → tier+1 (depth reused as tier). First trigger was clear-all-whites;
+  spawners replaced it (boss kill opens the portal), portal + advance kept.
+- **Spawners (done):** quadrant dens (cavern open-area helper + separation
+  filters; geometry on level, progress on ruleset), immobile spawner bodies
+  (`data/rift/monsters.ts`, energy-clock emission ~1/17 turns, annulus spread,
+  cap-respecting), same-body guard packs, pack wake propagation + home leash,
+  boss at center on 3rd spawner kill. Bot hunts spawners/boss on the
+  descent-blocker pattern; no town travel at first (later restored, below).
+- **Affixes (done, first full tree):** registry (`data/rift/affixes.ts`: name
+  fragment, clone edits, flags, magnitudes, tier weights, exclusions,
+  eligibility). Rares clone the base (composed names, `baseName` keeps bestiary
+  and knowledge keyed to the base). Blues share one prefix; rares add a suffix
+  with guards; bosses roll both. Pit/Stone/Swift/Thorns/Swarm first, then
+  touches, Brutal, casters, Wisp, Greed, Pack aura, Vampiric. Echoes deferred
+  (extra actions are the most sensitive hook). Eligibilities learned the hard
+  way: no speed on hard-CC bodies (stun-lock), converters need a plain attack,
+  no HP-mult on milestone natives (double-dip).
+- **Milestone bosses (done):** native uniques at tiers matching their depth
+  (T2 Bullroarer, T3 Wormtongue/Grishnakh roll, T7 Bolg, T8 Azog, T9 Lugdush,
+  T12 Lokkak, T17+ deep-three roll; Morgoth excluded on the victory binding).
+  Native stats + affixes, no HP inflation. Everything else stays promoted trash.
+- **Town resupply (done):** rift allows town travel again — tier snapshotted
+  exactly on entry (dead entity-cache path rewired), restored on return and on
+  expired-portal entrance exit. No stair flipping, pruning trivial. Control duo
+  moved warrior 10.0→16.7, mage 16.3→19.3 (then bosses re-walled melee; see below).
+- **Class staple (done):** warrior cleave as class-kit data (`meleeStaple` on
+  GameClass), splash resolved inside `handleAttack` — no new action, routing,
+  or bot code. Next staples are data rows.
+- **Dive posture (tried, reverted):** chain hunt above KILL cost warrior ~1.9
+  tiers over 18 pinned runs; patient clearing wins. Lesson filed, mechanism gone.
+- **Bot retune (open):** AoE-seek, flank danger, melee-duel answers (kiting;
+  bow-vs-thorns stays out as off brand).
+- **Economy (open):** XP/drop/essence weights for pack volume, boss burst,
+  endless scaling curve (deep-tier stalls at 16–18 are the first data).
 
-## 13. Resolved decisions (2026-09-03)
+## 13. Resolved decisions
+
+Early locks (2026-09-03):
 
 1. Boss = promoted base (super-yellow), same affix generator, higher budget. No bespoke bodies.
 2. Progress = spawners (3 of 4 kills → boss). Replaces fixed-75% quota (straggler-hunt problem).
@@ -186,18 +208,37 @@ Keep player power flat (same classes/items). ARPG progression expresses through:
 4. Blues share one affix set per pack.
 5. Tier visual = cell rim + inner glow, not char swap.
 6. Spawner = immobile monster (reuses combat/bot/danger), placed per-quadrant via vault-style tooling; 60–80% of heavies at dens; whites drift outward (no new field).
-7. M2 data split starts at `data/rift/monsters.ts` (midpoint: extends classic, classic untouched). Spawner clock = energy loop (speed 7 ≈ 1 emission/17 turns, deterministic, no new timers). Boss-kill (not clear-all) opens the portal once trickle exists.
+7. Data split starts at `data/rift/monsters.ts` (midpoint: extends classic, classic untouched). Spawner clock = energy loop (speed 7 ≈ 1 emission/17 turns, deterministic, no new timers). Boss-kill (not clear-all) opens the portal once trickle exists.
+
+Later locks (session two):
+
+8. Branch on data, not mode strings: behavior keys off `riftRole`/`packId`/`packHome`
+   and the `allowTownTravel` flag. Mode checks live only at structural dispatch
+   points (gen, descend, kill, advance, progression).
+9. Thorns is melee-only and resolves as physical damage through armor (gear check,
+   not a ban). No parity reopen for spells/ranged/minions.
+10. Class staples are data (`meleeStaple` on GameClass), resolved inside the
+    existing attack path — never bespoke actions per staple.
+11. Town travel restored for rift with exact snapshot/restore (no regrind, no stair
+    flipping). Pruning stays trivial: one tier + town.
+12. Milestone tiers pull native uniques; Morgoth never spawns in rift (victory binding).
+13. Dive posture reverted after measurement (−1.9 tiers over 18 pinned runs).
+    Comparisons pin seeds (`--seed=`); unseeded matrices are directional only.
+14. `diagnose matrix` takes `--dungeon-mode` (deep/batch/matrix covered) for rift baselines.
 
 ## 14. Foundation seams (where the second dungeon plugs in)
 
 Proven by codebase map; build order is top-down so classic never breaks:
 
 1. **Config pipe** — `types/progression.ts SlotConfig` → `stores/progression.ts createDefaultSlotConfig` (default `classic`) → `game/types.ts RunConfig` → `engine/instance-manager.ts getSlotConfig/createGameRunner` → `game/game-runner.ts createGameRunner` → `game-loop.ts createGame`. Thread `dungeonMode?` (optional until M0 flips it required). One-way, display stores never see it.
-2. **Ruleset handle on GameState** — a `ruleset: ClassicRules | RiftRules` (or minimal `mode` + `riftTier/quota` fields) created in `createGame`. Everything downstream (gen, spawn, descend, essence) reads the handle instead of `if (mode)` chains scattered everywhere. Bot reads it via `BotContext`.
+2. **Ruleset handle on GameState** — `ruleset` (mode + rift progress fields:
+  portal, spawners, boss, return depth) created in `createGame`. Downstream reads
+  the handle; behavior branches on role/pack data and the `allowTownTravel` flag,
+  with mode checks only at structural dispatch points. Bot reads it via `BotContext`.
 3. **Level-gen branch** — `game/dungeon/index.ts generateLevelWithInfo` is the single branch point: classic keeps `getDepthProfile/selectGenerator` + `classic|cavern|labyrinth` switch; rift bypasses to `rift-arena` (cellular high-fill, no doors, dens + boss arena). `placeStairs` skipped for rift (no `stairs_down`); portal/boss spawn owned by ruleset.
-4. **Spawn director** — `monster-ai.ts spawnMonstersForLevel` (count + placement) + `spawnMonster` (per-instance attach) are the two hooks. Rift replaces count table (`data/monsters.ts getSpawnableMonsters` 6-level window → tier list) and attaches optional `packId/tier/affixes` on the `Monster` instance type (`game/types.ts`). Optional fields = classic untouched.
-5. **Turn/transition seam** — `game-loop.ts executeAction 'descend'` → `actions/movement.ts handleDescend` (tile-gate + `levelCache` + regen). Rift adds a parallel `rift-advance` path (quota met + boss dead → tier+1 arena gen) and disables/forbids `handleAscend`. Run start (`createGame` → `generateLevel(1)`) becomes tier-1 arena when ruleset is rift.
-6. **Bot injection** — `bot/tick.ts runBotTick` + `bot/context.ts buildBotContext` gain optional mode/weights; `BotContext` carries them; `bot/goals.ts selectGoal` (devalue `DESCEND`, add `RIFT_CLEAR/HUNT_BOSS`); `bot/danger.ts computeDangerGrid` gains pack/affix multipliers (and its cache hash must include new fields). Classic weights are the default — rift overrides, never rewrites.
+4. **Spawn director** — `monster-ai.ts spawnMonstersForLevel` (count + placement) + `spawnMonster` (per-instance attach) are the two hooks. Rift director (`game/rift/director.ts`) owns tier population and attaches optional `packId`/`packHome`/`riftRole` on the `Monster` instance type (`game/types.ts`). Optional fields = classic untouched.
+5. **Turn/transition seam** — `game-loop.ts executeAction 'descend'` → `actions/movement.ts handleDescend` (tile-gate + `levelCache` + regen). Rift adds parallel paths: `rift_portal` → tier+1 arena gen (`handleRiftAdvance`), town entrance → snapshot restore. No `stairs_up` in rift; run start (`createGame`) becomes tier-1 arena when ruleset is rift.
+6. **Bot injection** — `bot/tick.ts runBotTick` + `bot/context.ts buildBotContext` gain optional mode/weights; `BotContext` carries them; `bot/goals.ts selectGoal` (portal-as-DESCEND, spawner hunt on the descent-blocker pattern); `bot/danger.ts computeDangerGrid` (pack-bearer threat). Classic weights are the default — rift overrides, never rewrites.
 7. **Renderer overlay** — `engine/instance-manager.ts renderGameToGrid` + `renderEntities` display lambda is where rim+glow attaches (tier → rim color, inner glow). Entity data stays in engine; stores keep extracted cells only.
 8. **Settlement** — `game-runner.ts calculateEssence` (live estimate) + `core/formulas.ts essenceFromDeath/essenceFromVictory` (canonical) + `stores/progression.ts calculateEssenceReward/recordRun` + `core/run-completion-service.ts handleRunCompletionSync`. Rift branches formula (tier² kicker + boss bonus) at the canonical layer, not the UI.
 
@@ -207,9 +248,9 @@ Build rule: each milestone ships its seam with classic behavior identical (flag-
 
 Context: the tight types are deliberate — 8 optimization passes, 0.13ms/tick, zero
 per-tick allocation in hot loops (FlowGrid u8, DangerGrid i16 + folded max, SeenGrid
-u8, passable/explored bitmaps, preallocated module-level queues, FNV-1a hash). M0
-must not regress these. Rule: **constrain the arena to fit the fast path; only the
-overflow-safe minimum changes, each with a before/after `diagnose` gate.**
+u8, passable/explored bitmaps, preallocated module-level queues, FNV-1a hash). Rift
+work must not regress these. Rule: **constrain the arena to fit the fast path; only
+the overflow-safe minimum changes, each with a before/after `diagnose` gate.**
 
 - **Flow u8 distances (cap 254) — no change.** 60×30 open diameter ~59 fits with
   headroom. Constraint: rift arena tiles ≤3200 and longest walkable path <254 by
@@ -235,26 +276,26 @@ overflow-safe minimum changes, each with a before/after `diagnose` gate.**
   fallback (nearest-better-tile) instead of a null that reads as "surrounded".
 - **Per-tick A\* per monster — the real density cost.** `processMonsterTurns` already
   runs full-grid A\* per monster; 30–50 trash × A\* is what breaks the budget, not
-  the grids. M2 swarm steering (O(1) surround-step for whites, full pathing kept for
-  rares/boss) is the perf feature, and it must arrive with `diagnose` numbers at
-  M=30 vs M=50, 4-slot turbo frame check.
+  the grids. Cheap surround-steering for trash (full pathing kept for rares/boss)
+  is the perf feature to reach for if density rises, and it must arrive with
+  `diagnose` numbers at high vs low active counts, 4-slot turbo frame check.
 
-M0 perf gate (every M0 PR): `pnpm run check` + `PROFILE_BOT=1 pnpm diagnose deep
+Perf gate (every change): `pnpm run check` + `PROFILE_BOT=1 pnpm diagnose deep
 --seed=1000 --class=warrior --turns=50000` and `--class=mage` before/after (avg +
 max per op, not just avg — spikes drop turbo frames), plus batch runtime spot-check.
-Classic numbers must not move outside noise.
+Classic numbers must not move outside noise. Matrix comparisons pin `--seed=`.
 
-## 16. Data split: classic vs rift (plan, not yet built)
+## 16. Data split: classic vs rift (underway)
 
 Lookups are id/name-based with `undefined`/empty fallbacks at callers, and there is
 one central re-export (`game/data/index.ts` — note: omits `town, forms, activations,
 bot-upgrades`; vaults live in `game/dungeon/vaults.ts`). That makes an overlay split
-cheap:
+cheap. Live so far: `data/rift/monsters.ts` (spawner body, tier tables, milestone
+pool), `data/rift/affixes.ts` (registry, roller, composer, resolvers). Planned:
+`packs.ts` (pack profiles per body), `tiers.ts` (stat multipliers + scaling curve).
 
-- **Keep `data/` as classic canonical.** No file moves in M0–M2. Rift adds:
-  `data/rift/` with `affixes.ts` (prefix/suffix tree + weights), `packs.ts` (pack
-  profiles per base body: size, composition, guard counts), `tiers.ts` (tier stat
-  multipliers + scaling curve), `rift-scaling.ts` (tier → Classic-depth-equivalent).
+- **Keep `data/` as classic canonical.** Rift adds `data/rift/` files as needed;
+  classic tables stay untouched.
 - **Resolver by ruleset, not forked imports.** Consumers keep importing one symbol;
   the function branches on the ruleset handle: `getSpawnableMonsters(depth, ruleset)`,
   `getAverageDamage(...)` unchanged (affix mods applied on the instance, not the
@@ -266,7 +307,10 @@ cheap:
   race sustain review (shared). Rule: shared files get rift *weights/overrides* first;
   only fork a table (e.g. separate class numbers) if overrides prove insufficient.
   Upgrades/bot-upgrades/boosters stay shared in v1; rift-specific boosters (if any)
-  come after M5 economy data exists.
+  come after economy data exists.
 
 ---
-*Next step: M0 capacity pass (§15 fixes) + mode flag + ruleset seam, then M1 arena.*
+*Resume: pick up the bot retune (AoE-seek, flank danger, kiting) or the economy
+curve, both tracked in TODO.md. Control duo: warrior + mage, seeds pinned.
+`pnpm diagnose matrix --classes=warrior,mage --runs=3 --upgrades=full
+--capabilities=full --boosters=class --dungeon-mode=rift --turns=20000 --seed=1000`.*
