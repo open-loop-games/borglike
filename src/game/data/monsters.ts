@@ -56,6 +56,10 @@ export interface MonsterTemplate {
   flags: string[]
   /** Spawn weight (default 1.0). Lower = rarer. Uniques use 0.1-0.15 */
   rarity?: number
+  /** Rift: base body name for composed rares (bestiary + bonuses key here) */
+  baseName?: string
+  /** Rift: applied affix ids (mechanics resolve via the affix registry) */
+  affixIds?: string[]
 
   // Structured attack system
   /** Monster's melee attacks (1-4 attacks per round) */

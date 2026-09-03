@@ -20,7 +20,7 @@ import { awardMonsterGold } from '../features'
 import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 import { getKnowledgeBonuses } from '../knowledge-effects'
 import { VICTORY_BOSS_NAME } from '../data/index'
-import { handleRiftKillProgress } from '../rift/director'
+import { handleRiftKillProgress, handleAffixDeath, applyThornsReflect } from '../rift/director'
 
 // ============================================================================
 // MELEE COMBAT
@@ -40,7 +40,7 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
 
   // Compute knowledge bonuses from bestiary (or override for testing)
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.name,
+    monster.template.baseName ?? monster.template.name,
     game.bestiary,
     game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent
@@ -75,6 +75,11 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     applyDamage(monster, attackResult.totalDamage)
     game.stats.damageDealt += attackResult.totalDamage
     game.stats.damageBySource.melee += attackResult.totalDamage
+
+    // Thorns retaliation (melee only — spells, arrows, and minions bypass)
+    if (game.ruleset.mode === 'rift') {
+      applyThornsReflect(game, monster, attackResult.totalDamage)
+    }
 
     // SNEAK ATTACK: Consume buff and show message
     const sneakAttackIndex = game.character.statusEffects.findIndex(
@@ -155,7 +160,7 @@ export function handleRangedAttack(game: GameState, targetId: string): ActionRes
 
   // Compute knowledge bonuses from bestiary (or override for testing)
   const knowledgeBonuses = getKnowledgeBonuses(
-    monster.template.name,
+    monster.template.baseName ?? monster.template.name,
     game.bestiary,
     game.balance.bestiaryBonusPercent,
     game.upgradeBonuses?.bestiaryCapPercent
@@ -222,10 +227,11 @@ export function handleMonsterKill(game: GameState, monster: Monster): void {
     game.uniqueState.killed.add(monster.template.name)
   }
 
-  // Rift tier progress (spawner count → boss → portal). Single dispatch point;
-  // the logic lives in the director.
+  // Rift tier progress (spawner count → boss → portal) + affix deaths.
+  // Single dispatch point; the logic lives in the director.
   if (game.ruleset.mode === 'rift') {
     handleRiftKillProgress(game, monster)
+    handleAffixDeath(game, monster)
   }
 
   // Award XP with upgrade bonus and balance rate
@@ -246,8 +252,8 @@ export function handleMonsterKill(game: GameState, monster: Monster): void {
   const { leveledUp, newLevel } = gainXP(game.character, xpToAward, game.balance.levelupHpPercent)
   game.stats.kills++
 
-  // Track monster kill by name for bestiary
-  const monsterName = monster.template.name
+  // Track monster kill by name for bestiary (affixed rares key to their base)
+  const monsterName = monster.template.baseName ?? monster.template.name
   game.stats.monsterKills[monsterName] = (game.stats.monsterKills[monsterName] || 0) + 1
 
   // Award gold from monster
