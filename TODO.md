@@ -14,10 +14,11 @@
   --boosters=class --dungeon-mode=rift --turns=20000`).
 - [ ] Melee-vs-density gap (bot retune input): paladin/rogue/warrior walk into dens
   and trade down; ranged kites and AoE. Done: cleave splash for warriors (class-kit
-  data, no new action), dive posture (melee-only chain hunt gated on visible-trash
-  count scaled by aggression; ranged skip the dive, idle fallback kept). Control duo
-  pinned to --seed=1000 for comparable runs. Still open: AoE-seek, flank danger,
-  melee-duel answers (kiting), bow-vs-thorns stays out (off brand).
+  data, no new action). Reverted: dive posture (chain hunt above KILL) — measured
+  over 18 runs/class (seeds 1000-6000 pinned) it cost warrior ~1.9 tiers (9.45→7.55)
+  and ~82 kills; mage identical throughout (skips the dive by design). Patient
+  outward-in clearing beats committed dives for melee. Still open: AoE-seek, flank
+  danger, kiting. Control duo pinned to fixed seeds for comparable runs.
 - [ ] Deep-tier stalls (scaling input): circuit breakers at 16-18, boss + trickle
   outscale minion/caster builds. Feed into the economy/scaling curve.
 - [x] Town travel restore for rift (resupply without regrind): snapshot the single

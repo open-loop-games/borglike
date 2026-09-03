@@ -175,7 +175,7 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
  * tracking, arrival handled by the tier system — same shape as unique blockers.
  */
 export function getRiftSpawnerGoal(context: BotContext): BotGoal | null {
-  const { game, config, visibleMonsters } = context
+  const { game } = context
   if (game.ruleset.mode !== 'rift') return null
   if (game.ruleset.portalOpen) return null // descend takes over
 
@@ -203,18 +203,6 @@ export function getRiftSpawnerGoal(context: BotContext): BotGoal | null {
 
   const target = spawner ?? boss
   if (!target) return null
-
-  // Dive posture: hunt only when the room is this clear of other live
-  // monsters, else fall through and clear contact first. Threshold scales
-  // with aggression (cautious ~2, aggressive ~4) — cautious clears dens,
-  // aggressive dives them.
-  const diveThreshold = 1 + Math.floor((config?.aggression ?? 50) / 25)
-  let trash = 0
-  for (const m of visibleMonsters) {
-    if (m.hp > 0 && m.id !== target.id) trash++
-  }
-  if (trash > diveThreshold) return null
-
   return {
     type: 'HUNT_UNIQUE',
     target: { ...target.position },
@@ -387,9 +375,8 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
   const descendGoal = profile('prog.getDescendGoal', () => getDescendGoal(context))
   if (descendGoal) return descendGoal
 
-  // Rift fallback hunt: anyone may path an unseen spawner/boss here — this
-  // only fires when KILL/EXPLORE found nothing (idle insurance). Melee
-  // commitment dives live at chain 2.4.
+  // Rift: spawners (then the boss) block advance — hunt them first.
+  // Placed after descend so an open portal always wins.
   if (game.ruleset.mode === 'rift') {
     const spawnerGoal = profile('prog.riftSpawner', () => getRiftSpawnerGoal(context))
     if (spawnerGoal) return spawnerGoal
