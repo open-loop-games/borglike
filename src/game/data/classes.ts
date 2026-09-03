@@ -45,6 +45,19 @@ export interface GameClass {
   healPotency?: number
   /** FINESSE: Uses max(STR, DEX) for melee damage and deadliness instead of just STR (Rogue) */
   finesse?: boolean
+  /**
+   * Melee staple vs density: attack action splashes swings across neighboring
+   * targets (arc = forward 3 facing the primary, surround = all 8). Single
+   * occupants behave exactly like a normal attack — no bot or action changes.
+   */
+  meleeStaple?: {
+    /** Display id (cleave, whirlwind, fan of blades, ...) */
+    id: string
+    /** Splash pattern around the primary target */
+    pattern: 'arc' | 'surround'
+    /** Max targets sharing the swing pool */
+    targets: number
+  }
 }
 
 // =============================================================================
@@ -75,6 +88,7 @@ const warrior: GameClass = {
   description: 'Masters of combat who rely on strength and endurance over magic.',
   botBehavior: 'Aggressive: charges enemies, uses melee primarily, relies on potions for healing',
   canShieldBash: true,
+  meleeStaple: { id: 'cleave', pattern: 'arc', targets: 3 },
 }
 
 const mage: GameClass = {

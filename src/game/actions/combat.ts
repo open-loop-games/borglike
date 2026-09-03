@@ -7,14 +7,16 @@
 import type { GameState, ActionResult, Monster } from '../types'
 import {
   meleeAttack,
+  attack,
   applyDamage,
   formatMultiAttackMessage,
   multiRangedAttack,
   canRangedAttack,
   calculateLifesteal,
 } from '../combat'
-import { gainXP } from '../character'
+import { gainXP, calculateAttackCount } from '../character'
 import { getRaceById } from '../data/races'
+import { getClassById } from '../data/classes'
 import { DEFAULT_BONUSES, applyXPBonus } from '../upgrade-effects'
 import { awardMonsterGold } from '../features'
 import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
@@ -36,6 +38,13 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
 
   if (!monster) {
     return { success: false, message: 'No target found.', energyCost: 0 }
+  }
+
+  // Melee staple (cleave et al): swings spread across the arc/surround when
+  // 2+ targets share it. Single occupants fall through to the classic path.
+  const splash = getStapleSplash(game, monster)
+  if (splash) {
+    return resolveStapleAttack(game, splash)
   }
 
   // Compute knowledge bonuses from bestiary (or override for testing)
@@ -105,6 +114,119 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
       handleMonsterKill(game, monster)
     }
   }
+
+  return { success: true, energyCost: BASE_ENERGY_COST }
+}
+
+// ============================================================================
+// MELEE STAPLES (cleave et al: swing pool shared across neighbors)
+// ============================================================================
+
+/** Staple splash targets: primary first, then neighbors sharing the pattern. */
+interface StapleSplash {
+  stapleId: string
+  targets: Monster[]
+}
+
+/**
+ * Find staple splash targets for an attack: class kit pattern around the
+ * primary (arc facing it, or full surround), capped at the staple count.
+ * Returns null for single occupants (classic path handles those identically).
+ */
+function getStapleSplash(game: GameState, primary: Monster): StapleSplash | null {
+  const staple = getClassById(game.character.classId)?.meleeStaple
+  if (!staple) return null
+
+  const pos = game.character.position
+  const dx = Math.sign(primary.position.x - pos.x)
+  const dy = Math.sign(primary.position.y - pos.y)
+  if (Math.max(Math.abs(primary.position.x - pos.x), Math.abs(primary.position.y - pos.y)) !== 1) {
+    return null // primary must be adjacent (bump range)
+  }
+
+  const neighbors = game.monsters.filter((m) => {
+    if (m.hp <= 0 || m.id === primary.id) return false
+    const ox = m.position.x - pos.x
+    const oy = m.position.y - pos.y
+    if (Math.max(Math.abs(ox), Math.abs(oy)) !== 1) return false
+    if (staple.pattern === 'surround') return true
+    return ox * dx + oy * dy > 0
+  })
+
+  const targets = [primary, ...neighbors].slice(0, staple.targets)
+  if (targets.length < 2) return null
+  return { stapleId: staple.id, targets }
+}
+
+/**
+ * Resolve a staple attack: the full multi-attack swing pool dealt round-robin
+ * across the splash targets. Same total output as single-target, spread out.
+ * (No sneak-attack or lifesteal handling — no stapled class has those yet.)
+ */
+function resolveStapleAttack(game: GameState, splash: StapleSplash): ActionResult {
+  // Adrenaline Rush applies per swing like single attacks
+  const adrenalinePercent = game.boosterBonuses?.adrenalineRushPercent ?? 0
+  const adrenaline =
+    adrenalinePercent > 0 && game.character.hp < game.character.maxHp * 0.2
+      ? 1 + adrenalinePercent / 100
+      : 1
+
+  const swings = calculateAttackCount(game.character)
+  let hits = 0
+  let totalDamage = 0
+  let kills = 0
+  const slain: string[] = []
+
+  for (let s = 0; s < swings; s++) {
+    const living = splash.targets.filter((m) => m.hp > 0)
+    if (living.length === 0) break
+    const monster = living[s % living.length]!
+
+    const knowledgeBonuses = getKnowledgeBonuses(
+      monster.template.baseName ?? monster.template.name,
+      game.bestiary,
+      game.balance.bestiaryBonusPercent,
+      game.upgradeBonuses?.bestiaryCapPercent
+    )
+    const result = attack(
+      game.character,
+      monster,
+      knowledgeBonuses,
+      game.balance.armorPenetration,
+      game.upgradeBonuses?.armorPenPercent ?? 0
+    )
+    game.stats.meleeHits += result.hit ? 1 : 0
+    game.stats.meleeMisses += result.hit ? 0 : 1
+    if (result.critical) game.stats.criticalHits += 1
+    if (!result.hit) continue
+
+    const damage = Math.floor(result.damage * adrenaline)
+    applyDamage(monster, damage)
+    game.stats.damageDealt += damage
+    game.stats.damageBySource.melee += damage
+    hits++
+    totalDamage += damage
+
+    // Thorns retaliation (melee by design)
+    if (game.ruleset.mode === 'rift') {
+      applyThornsReflect(game, monster, damage)
+    }
+
+    if (monster.hp <= 0) {
+      handleMonsterKill(game, monster)
+      kills++
+      slain.push(monster.template.name)
+    }
+  }
+
+  const verb = splash.stapleId === 'cleave' ? 'cleave' : splash.stapleId
+  const message =
+    kills > 0
+      ? `You ${verb} through ${splash.targets.length} foes for ${totalDamage} damage, slaying ${slain.join(', ')}!`
+      : hits > 0
+        ? `You ${verb} ${splash.targets.length} foes for ${totalDamage} damage!`
+        : `You swing wide and miss everything.`
+  addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }
