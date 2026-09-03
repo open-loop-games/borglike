@@ -17,7 +17,7 @@ import type {
   Element,
   SpellDamageType,
 } from './types'
-import { MINION_TEMPLATES, chebyshevDistance } from './types'
+import { MINION_TEMPLATES, chebyshevDistance, manhattanDistance } from './types'
 import { hasLineOfSight } from './monster-ai'
 import { calculateLightRadius } from './lighting'
 import { randomInt, random } from './rng'
@@ -299,27 +299,34 @@ export function calculateSpellPower(
 // ============================================================================
 
 /**
- * Select up to N nearest visible monsters for AOE spells
+ * Select up to N nearest visible monsters for an area effect.
+ *
+ * Shared by spells and activations — the only difference between them is
+ * reach, so activations pass their longer `maxRange` and spells omit it
+ * (a spell's area is bounded by what the caster can see, not by radius).
+ * Distance is Manhattan throughout, which is what the numbers were tuned on.
  */
-export function selectAOETargets(game: GameState, maxTargets: number): Monster[] {
+export function selectAOETargets(
+  game: GameState,
+  maxTargets: number,
+  maxRange?: number
+): Monster[] {
   const charPos = game.character.position
 
-  // Get all visible monsters
   const visibleMonsters = game.monsters.filter((monster) => {
+    if (monster.hp <= 0) return false
     const tile = getTile(game.currentLevel, monster.position.x, monster.position.y)
-    return tile?.visible && monster.hp > 0
+    if (!tile?.visible) return false
+    return maxRange === undefined || manhattanDistance(monster.position, charPos) <= maxRange
   })
 
   if (visibleMonsters.length === 0) return []
 
-  // Sort by distance (nearest first)
-  visibleMonsters.sort((a, b) => {
-    const distA = Math.abs(a.position.x - charPos.x) + Math.abs(a.position.y - charPos.y)
-    const distB = Math.abs(b.position.x - charPos.x) + Math.abs(b.position.y - charPos.y)
-    return distA - distB
-  })
+  // Nearest first, so a capped target count spends itself on what's closest
+  visibleMonsters.sort(
+    (a, b) => manhattanDistance(a.position, charPos) - manhattanDistance(b.position, charPos)
+  )
 
-  // Return up to maxTargets
   return visibleMonsters.slice(0, maxTargets)
 }
 

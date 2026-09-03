@@ -19,6 +19,10 @@ import { addStatusEffect } from '../status-effects'
 import { getTile } from '../dungeon'
 import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 import { incrementStat, trackAbilityUsage } from '../stats-helpers'
+import { selectAOETargets } from '../spell-resolution'
+
+/** Ball activations reach this far past their nominal radius; spells stop at sight. */
+const ACTIVATION_RANGE_BONUS = 4
 
 // ============================================================================
 // COOLDOWN HELPERS
@@ -305,17 +309,9 @@ function executeDraconianBreath(game: GameState, activation: ActivationTemplate)
   const radius = activation.aoeRadius ?? 3
   const maxTargets = activation.maxTargets ?? 6
 
-  // Get visible monsters in range
-  const charPos = game.character.position
-  const targets = game.monsters.filter((m) => {
-    if (m.hp <= 0) return false
-    const tile = getTile(game.currentLevel, m.position.x, m.position.y)
-    if (!tile?.visible) return false
-    const dist = Math.abs(m.position.x - charPos.x) + Math.abs(m.position.y - charPos.y)
-    return dist <= radius
-  })
+  const hitTargets = selectAOETargets(game, maxTargets, radius)
 
-  if (targets.length === 0) {
+  if (hitTargets.length === 0) {
     addTaggedMessage(game, `You breathe ${element}, but there are no targets.`, 'info', {
       tags: ['combat.hit'],
       importance: 2,
@@ -326,14 +322,6 @@ function executeDraconianBreath(game: GameState, activation: ActivationTemplate)
       energyCost: BASE_ENERGY_COST,
     }
   }
-
-  // Sort by distance, take up to maxTargets
-  targets.sort((a, b) => {
-    const distA = Math.abs(a.position.x - charPos.x) + Math.abs(a.position.y - charPos.y)
-    const distB = Math.abs(b.position.x - charPos.x) + Math.abs(b.position.y - charPos.y)
-    return distA - distB
-  })
-  const hitTargets = targets.slice(0, maxTargets)
 
   let totalDamage = 0
   let killedCount = 0
@@ -390,17 +378,9 @@ function executeAOEDamage(
   const maxTargets = activation.maxTargets ?? 4
   const radius = activation.aoeRadius ?? 2
 
-  // Get visible monsters in range
-  const charPos = game.character.position
-  const targets = game.monsters.filter((m) => {
-    if (m.hp <= 0) return false
-    const tile = getTile(game.currentLevel, m.position.x, m.position.y)
-    if (!tile?.visible) return false
-    const dist = Math.abs(m.position.x - charPos.x) + Math.abs(m.position.y - charPos.y)
-    return dist <= radius + 4 // Activation range is a bit longer than spell AOE radius
-  })
+  const hitTargets = selectAOETargets(game, maxTargets, radius + ACTIVATION_RANGE_BONUS)
 
-  if (targets.length === 0) {
+  if (hitTargets.length === 0) {
     addTaggedMessage(game, `You activate ${activation.name}, but there are no targets.`, 'info', {
       tags: ['combat.hit'],
       importance: 2,
@@ -411,14 +391,6 @@ function executeAOEDamage(
       energyCost: BASE_ENERGY_COST,
     }
   }
-
-  // Sort by distance, take up to maxTargets
-  targets.sort((a, b) => {
-    const distA = Math.abs(a.position.x - charPos.x) + Math.abs(a.position.y - charPos.y)
-    const distB = Math.abs(b.position.x - charPos.x) + Math.abs(b.position.y - charPos.y)
-    return distA - distB
-  })
-  const hitTargets = targets.slice(0, maxTargets)
 
   let totalDamage = 0
   let killedCount = 0
@@ -617,18 +589,10 @@ function executeIlluminate(game: GameState, activation: ActivationTemplate): Act
 function executeBlindMonsters(game: GameState, activation: ActivationTemplate): ActionResult {
   const maxTargets = activation.maxTargets ?? 4
   const radius = activation.aoeRadius ?? 5
-  const charPos = game.character.position
 
-  // Get nearby visible monsters
-  const targets = game.monsters.filter((m) => {
-    if (m.hp <= 0) return false
-    const tile = getTile(game.currentLevel, m.position.x, m.position.y)
-    if (!tile?.visible) return false
-    const dist = Math.abs(m.position.x - charPos.x) + Math.abs(m.position.y - charPos.y)
-    return dist <= radius
-  })
+  const hitTargets = selectAOETargets(game, maxTargets, radius)
 
-  if (targets.length === 0) {
+  if (hitTargets.length === 0) {
     addTaggedMessage(game, `You activate ${activation.name}, but there are no targets.`, 'info', {
       tags: ['combat.hit'],
       importance: 2,
@@ -639,14 +603,6 @@ function executeBlindMonsters(game: GameState, activation: ActivationTemplate): 
       energyCost: BASE_ENERGY_COST,
     }
   }
-
-  // Sort by distance, take up to maxTargets
-  targets.sort((a, b) => {
-    const distA = Math.abs(a.position.x - charPos.x) + Math.abs(a.position.y - charPos.y)
-    const distB = Math.abs(b.position.x - charPos.x) + Math.abs(b.position.y - charPos.y)
-    return distA - distB
-  })
-  const hitTargets = targets.slice(0, maxTargets)
 
   // Apply blind debuff
   for (const target of hitTargets) {
