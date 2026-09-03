@@ -1,11 +1,11 @@
 /**
- * Rift arena generator for the ARPG dungeon (M1).
+ * Rift arena generator for the ARPG dungeon.
  *
  * One large irregular cavern: high-fill cellular automata, pillar blobs for
  * kiting geometry, a guaranteed floor clearing at map center (player spawn,
- * M2 boss arena). No doors, no rooms/corridors — packs need open ground.
+ * boss arena). No doors, no rooms/corridors — packs need open ground.
  *
- * Fits the M0 fast-path contract: default 60×30 = 1800 tiles ≤ MAX_LEVEL_TILES,
+ * Fits the fast-path contract: default 60×30 = 1800 tiles ≤ MAX_LEVEL_TILES,
  * open diameter ~59 < u8 flow cap. All rolls via seeded rng (deterministic).
  */
 
@@ -18,7 +18,7 @@ import { ensureConnectivity } from './validation'
 export const RIFT_ARENA_WIDTH = 60
 export const RIFT_ARENA_HEIGHT = 30
 
-/** Radius of the guaranteed center clearing (spawn + M2 boss arena) */
+/** Radius of the guaranteed center clearing (spawn + boss arena) */
 const CENTER_CLEARING_RADIUS = 4
 
 /** Pillar blob count range */
@@ -26,7 +26,7 @@ const PILLAR_COUNT: [number, number] = [2, 4]
 
 export interface RiftArenaResult {
   tiles: Tile[][]
-  rooms: RoomData[] // Single center room (quadrant dens arrive in M2)
+  rooms: RoomData[] // Single center room (quadrant dens placed separately)
   center: { x: number; y: number }
 }
 

@@ -87,8 +87,11 @@ export function generateCavern(
  * Instead of finding one giant connected region, we identify the best
  * floor cluster in each map quadrant. This ensures stair placement has
  * candidates spread across the map even when the cavern is fully connected.
+ *
+ * Exported: rift den placement (dungeon/rift-dens.ts) reuses the quadrant
+ * clustering with its own separation filters.
  */
-function findOpenAreas(tiles: Tile[][], width: number, height: number): RoomData[] {
+export function findOpenAreas(tiles: Tile[][], width: number, height: number): RoomData[] {
   const midX = Math.floor(width / 2)
   const midY = Math.floor(height / 2)
 

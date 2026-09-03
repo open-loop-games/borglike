@@ -232,7 +232,14 @@ export function getSurvivalConsumableAction(
   // This is a strategic escape/resupply - not for immediate combat
   // Skip if portal already active (would fail and loop forever)
   // Skip if town portal capability disabled (no benefit from town visit)
-  if (adjacentCount === 0 && personality && !game.townPortal && townPortalEnabled) {
+  // Skip when the ruleset forbids town travel (rift: wipes tier progress)
+  if (
+    adjacentCount === 0 &&
+    personality &&
+    !game.townPortal &&
+    townPortalEnabled &&
+    game.ruleset.allowTownTravel
+  ) {
     const portalDecision = shouldUseTownPortal(game, config, personality)
     if (portalDecision.shouldUse) {
       const scroll = findTownPortalScroll(character)
@@ -280,7 +287,8 @@ export function getSurvivalConsumableAction(
     // Try town portal as escape when not adjacent (safe to cast)
     // This is a valid escape - returns us to town for healing
     // Skip if portal already active (would fail and loop forever)
-    if (adjacentCount === 0 && !game.townPortal) {
+    // Skip when the ruleset forbids town travel
+    if (adjacentCount === 0 && !game.townPortal && game.ruleset.allowTownTravel) {
       const townPortal = findTownPortalScroll(character)
       if (townPortal) {
         // Store reason for diagnostics
@@ -313,7 +321,8 @@ export function getSurvivalConsumableAction(
       return { type: 'use', itemId: phaseDoor.id }
     }
     // Town portal can break stuck state too (skip if portal already active)
-    if (!game.townPortal) {
+    // Skip when the ruleset forbids town travel
+    if (!game.townPortal && game.ruleset.allowTownTravel) {
       const townPortal = findTownPortalScroll(character)
       if (townPortal) {
         // Store reason for diagnostics

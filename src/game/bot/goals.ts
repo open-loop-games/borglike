@@ -311,7 +311,8 @@ function isGoalStillValid(goal: BotGoal, context: BotContext, botState: BotState
       return game.items.some((item) => item.id === goal.targetId)
 
     case 'DESCEND':
-      // Descend is valid if we know stairs location
+      // Descend is valid if we know stairs location (rift: portal open)
+      if (game.ruleset.mode === 'rift') return game.ruleset.portalOpen === true
       return botState.knownStairsDown !== null
 
     case 'EXPLORE':

@@ -28,7 +28,7 @@ import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { generateLevel, computeFOV, setAllTilesVisible, findOpenPosition } from './dungeon'
 import { RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT } from './dungeon/rift-arena'
 import { spawnMonstersForLevel, processMonsterTurns } from './monster-ai'
-import { spawnRiftWhites, openRiftPortal } from './rift/director'
+import { spawnRiftTier, checkRiftAdvance } from './rift/director'
 import { processMinionTurns } from './minion-ai'
 import { spawnItemsForLevel, createStartingEquipment } from './items'
 import { initializeFeaturesFromVault } from './features'
@@ -134,10 +134,10 @@ export function createGame(config: RunConfig): GameState {
   }
 
   // Spawn monsters for first level (pass uniqueState for unique tracking)
-  // Rift M1: whites only, scattered, off the entry clearing
+  // Rift: dens + spawners + roamers (replaces the early whites-only scatter)
   const monsters =
     mode === 'rift'
-      ? spawnRiftWhites(firstLevel, 1, balance.monsterHpPercent, startPosition)
+      ? spawnRiftTier(firstLevel, 1, balance.monsterHpPercent, startPosition)
       : spawnMonstersForLevel(firstLevel, 1, balance.monsterHpPercent, uniqueState)
 
   // Spawn items for first level
@@ -206,7 +206,7 @@ export function createGame(config: RunConfig): GameState {
   const gameState: GameState = {
     runId,
     seed,
-    ruleset: { mode: config.dungeonMode ?? 'classic' },
+    ruleset: { mode, allowTownTravel: mode === 'classic' },
     character,
     currentLevel: firstLevel,
     levelCache,
@@ -452,16 +452,9 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     return events
   }
 
-  // Rift M1: clear-all opens the advance portal (M2 spawners replace the trigger;
-  // the portal + advance path stay). O(1): length check on the live array
-  // (kills splice the dead out in actions/combat).
-  if (
-    game.ruleset.mode === 'rift' &&
-    !game.ruleset.portalOpen &&
-    game.isRunning &&
-    game.monsters.length === 0
-  ) {
-    openRiftPortal(game)
+  // Rift: boss kill opens the advance portal (logic lives in the director).
+  if (game.ruleset.mode === 'rift') {
+    checkRiftAdvance(game)
   }
 
   // Update FOV (town is always fully visible, dungeon uses shadowcasting)

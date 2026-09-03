@@ -36,6 +36,10 @@ import {
 } from './dungeon'
 import { resolveMonsterAttacks, formatMonsterAttackMessage } from './monster-combat'
 import { shouldCastSpell, executeMonsterSpell } from './monster-spells'
+import { trySpawnerEmission } from './rift/director'
+
+/** Rift leash radius: pack members beyond this (Chebyshev) step home */
+const RIFT_LEASH_DISTANCE = 14
 import { damageMinionById } from './minion-ai'
 import { rollDice } from './dice'
 import { incrementStat, checkCloseCall } from './stats-helpers'
@@ -334,6 +338,14 @@ export function decideAction(monster: Monster, game: GameState): GameAction | nu
     }
     if (shouldWake) {
       monster.isAwake = true
+      // Rift pack aggro: waking one wakes the den (O(M) on transitions only)
+      if (monster.packId) {
+        for (const packmate of game.monsters) {
+          if (packmate.packId === monster.packId && packmate.hp > 0) {
+            packmate.isAwake = true
+          }
+        }
+      }
     } else {
       return null // Stay asleep
     }
@@ -358,6 +370,29 @@ export function decideAction(monster: Monster, game: GameState): GameAction | nu
       const direction = getDirectionToward(monster.position, movePos)
       if (direction) {
         return { type: 'move', direction }
+      }
+    }
+  }
+
+  // Rift leash: beyond 14 from the den and target unseen, step home instead
+  // of wandering (prevents whole-map trains; boss has no packHome = unleashed)
+  if (monster.packHome) {
+    const homeDist = Math.max(
+      Math.abs(monster.position.x - monster.packHome.x),
+      Math.abs(monster.position.y - monster.packHome.y)
+    )
+    if (homeDist > RIFT_LEASH_DISTANCE) {
+      const homePos = findMoveTowardPlayer(
+        monster,
+        monster.packHome,
+        game.currentLevel,
+        game.monsters
+      )
+      if (homePos) {
+        const direction = getDirectionToward(monster.position, homePos)
+        if (direction) {
+          return { type: 'move', direction }
+        }
       }
     }
   }
@@ -708,6 +743,26 @@ export function processMonsterTurns(game: GameState): GameEvent[] {
   const playerSpeed = getEffectiveStats(game.character).speed
 
   for (const monster of game.monsters) {
+    // Rift spawner: immobile structure. Emission clock reuses the energy
+    // loop (speed 7 ≈ 6 energy/turn ≈ one creep per ~17 player turns).
+    // Runs before decideAction so spawners never move, attack, or wander.
+    // Role implies it (spawners only exist in rift) — no mode check.
+    if (monster.riftRole === 'spawner' && monster.hp > 0) {
+      const tile = getTile(game.currentLevel, monster.position.x, monster.position.y)
+      if (tile?.visible && !monster.seen) {
+        monster.seen = true
+      }
+      const effectiveSpeed = getMonsterEffectiveSpeed(monster)
+      monster.energy += Math.floor((effectiveSpeed / 110) * ENERGY_PER_TICK * (100 / playerSpeed))
+      while (monster.energy >= BASE_ENERGY_COST && !game.character.isDead) {
+        monster.energy -= BASE_ENERGY_COST
+        trySpawnerEmission(game, monster)
+      }
+      tickMonsterDebuffs(monster)
+      tickMonsterBuffs(monster)
+      continue
+    }
+
     const effectiveSpeed = getMonsterEffectiveSpeed(monster)
 
     // Add energy based on monster speed, scaled by player speed

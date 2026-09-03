@@ -20,6 +20,7 @@ import { awardMonsterGold } from '../features'
 import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
 import { getKnowledgeBonuses } from '../knowledge-effects'
 import { VICTORY_BOSS_NAME } from '../data/index'
+import { handleRiftKillProgress } from '../rift/director'
 
 // ============================================================================
 // MELEE COMBAT
@@ -219,6 +220,12 @@ export function handleMonsterKill(game: GameState, monster: Monster): void {
   // Track unique kills
   if (monster.template.flags.includes('UNIQUE')) {
     game.uniqueState.killed.add(monster.template.name)
+  }
+
+  // Rift tier progress (spawner count → boss → portal). Single dispatch point;
+  // the logic lives in the director.
+  if (game.ruleset.mode === 'rift') {
+    handleRiftKillProgress(game, monster)
   }
 
   // Award XP with upgrade bonus and balance rate

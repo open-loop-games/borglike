@@ -91,7 +91,7 @@ export function createBotState(): BotState {
  * Reset state when entering a new level
  *
  * Resizes seenThisVisit to the level (level-change only, never per-tick):
- * classic 80×40, town 48×16, rift arenas per M0 MAX_LEVEL_TILES.
+ * classic 80×40, town 48×16, rift arenas per MAX_LEVEL_TILES.
  */
 export function resetLevelState(
   state: BotState,

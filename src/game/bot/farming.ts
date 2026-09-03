@@ -537,6 +537,9 @@ export function getTownTripGoal(context: BotContext): BotGoal | null {
   const { game, effectiveConfig, botState } = context
   const character = game.character
 
+  // No town trips when the ruleset forbids town travel (rift stays in-arena)
+  if (!game.ruleset.allowTownTravel) return null
+
   // Already in town?
   if (character.depth === 0) return null
 

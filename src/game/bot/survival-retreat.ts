@@ -523,6 +523,11 @@ export function shouldUseTownPortal(
     return { shouldUse: false, reason: 'Already in town' }
   }
 
+  // Never when the ruleset forbids town travel (rift stays in-arena)
+  if (!game.ruleset.allowTownTravel) {
+    return { shouldUse: false, reason: 'Town travel forbidden by ruleset' }
+  }
+
   // Don't use if portal already active
   if (game.townPortal) {
     return { shouldUse: false, reason: 'Portal already active' }

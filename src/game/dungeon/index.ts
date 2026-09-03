@@ -14,6 +14,7 @@ import { generateClassic } from './classic'
 import { generateCavern } from './cavern'
 import { generateLabyrinth } from './labyrinth'
 import { generateRiftArena, RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT } from './rift-arena'
+import { placeRiftDens } from './rift-dens'
 import { findDoorCandidates, placeDoors } from './doors'
 import { validateConnectivity, ensureConnectivity } from './validation'
 import { tryPlaceVault } from './vaults'
@@ -34,7 +35,7 @@ const DEFAULT_HEIGHT = 40
  * (see bot/flow.ts sharedQueue, bot/safety-flow.ts BFS_CAP/HEAP_CAP) and flow
  * distances are u8 (cap 254). Levels must fit; a bigger level is a generator
  * bug and must fail here, never as silent queue corruption downstream.
- * Classic 80×40 = 3200 exactly. Rift arenas must stay within this (M1: 60×30).
+ * Classic 80×40 = 3200 exactly. Rift arenas must stay within this (60×30).
  */
 export const MAX_LEVEL_TILES = 3200
 
@@ -167,7 +168,7 @@ export function generateLevelWithInfo(
 }
 
 /**
- * Fast-path capacity guard (M0 contract): bot flow/safety queues are
+ * Fast-path capacity guard: bot flow/safety queues are
  * preallocated and flow distances are u8. Oversize levels must fail here,
  * never as silent queue corruption downstream.
  */
@@ -185,7 +186,7 @@ function assertLevelCapacity(width: number, height: number): void {
  * Generate a rift arena level (ARPG mode).
  *
  * Own dims (60×30), no vaults/doors/stairs. Entry = center clearing.
- * Dens arrive in M2; M1 spawns whites scattered.
+ * Dens placed here; whites scatter.
  */
 function generateRiftLevelWithInfo(depth: number): GenerationResult {
   const width = RIFT_ARENA_WIDTH
@@ -208,6 +209,7 @@ function generateRiftLevelWithInfo(depth: number): GenerationResult {
     explored: new Uint8Array(0),
     generatorType: 'rift-arena',
     entryPoint: { ...center },
+    riftDens: placeRiftDens(tiles, width, height, center),
   }
   level.passable = buildPassabilityBitmap(level)
   level.passableCount = level.passable.reduce((sum, v) => sum + v, 0)

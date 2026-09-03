@@ -163,7 +163,17 @@ Keep player power flat (same classes/items). ARPG progression expresses through:
   minimal: DESCEND goal targets the portal tile when ruleset is rift (extended in
   M4). Portal is a new `rift_portal` tile (not the town `portal` — no coupling).
   M2 replaces the trigger with spawners, keeps the portal + advance path.
-- **M2 packs + director (spawner-gated):** den placement, spawner entity + guards, bounded trickle, drift, 3-of-4 → boss spawn (promoted base).
+- **M2 packs + director (locked 2026-09-03):** den placement (quadrant via cavern
+  open-area helper, center/wall bias, min separation; geometry on
+  `DungeonLevel.riftDens`, progress on ruleset), spawner entity (data/rift body,
+  energy-clock emission ~1/17 turns, annulus spread = gradient, cap-respecting),
+  guards (same-body whites at 150% HP; blues/yellows wait for M3 affixes),
+  pack aggro (packId wake propagation) + leash (packHome, return past 14),
+  boss at center on 3rd spawner kill (promoted base, stat-scaled, no affixes yet),
+  **boss kill opens the portal** (replaces M1 clear-all hook — trickle makes
+  clear-all unreachable while the 4th spawns). Data split starts: `data/rift/`
+  first file `monsters.ts` (spawner body + rift table helpers extending classic;
+  classic tables untouched).
 - **M3 affixes:** prefix/suffix tree (8+7 above), name composer, aura hooks, blue/yellow tiers. Blues share one set.
 - **M4 bot retune:** AoE-seek, rare focus, flank-danger. Playable hands-off to rift 5+.
 - **M5 economy:** XP/drop/essence weights, boss burst, endless scaling curve.
@@ -176,6 +186,7 @@ Keep player power flat (same classes/items). ARPG progression expresses through:
 4. Blues share one affix set per pack.
 5. Tier visual = cell rim + inner glow, not char swap.
 6. Spawner = immobile monster (reuses combat/bot/danger), placed per-quadrant via vault-style tooling; 60–80% of heavies at dens; whites drift outward (no new field).
+7. M2 data split starts at `data/rift/monsters.ts` (midpoint: extends classic, classic untouched). Spawner clock = energy loop (speed 7 ≈ 1 emission/17 turns, deterministic, no new timers). Boss-kill (not clear-all) opens the portal once trickle exists.
 
 ## 14. Foundation seams (where the second dungeon plugs in)
 

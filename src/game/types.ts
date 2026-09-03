@@ -190,6 +190,8 @@ export interface DungeonLevel {
   vault?: VaultPlacement | null
   /** Entry point override (rift center spawn; classic uses stairsUp) */
   entryPoint?: Point | null
+  /** Rift: den centers, one per quadrant (spawner + guard geometry) */
+  riftDens?: Point[]
 }
 
 // ============================================================================
@@ -498,6 +500,12 @@ export interface Monster {
   isAwake: boolean
   /** Has this monster been seen by the player? */
   seen: boolean
+  /** Rift: pack id — den members share it (wake together, leash together) */
+  packId?: string
+  /** Rift: pack home (den center; leash return point; boss has none) */
+  packHome?: Point
+  /** Rift: special role (spawner structure, boss) */
+  riftRole?: 'spawner' | 'boss'
   /** Active debuffs on this monster */
   debuffs: MonsterDebuff[]
   /** Active buffs on this monster */
@@ -748,7 +756,8 @@ export interface GameState {
 
   // Dungeon ruleset handle — owns mode-specific run state.
   // Everything downstream (gen, spawn, transitions, settlement) reads this
-  // instead of branching on config. Rift-specific fields arrive in M1/M2.
+  // instead of branching on config. Rift-specific fields grow here as the
+  // second dungeon gains systems.
   ruleset: DungeonRuleset
 
   // Player
@@ -1007,15 +1016,21 @@ export const DEFAULT_BALANCE: BalanceOverrides = {
  * Dungeon ruleset handle — mode-specific run state carried on GameState.
  *
  * Classic = 50-level Angband-style descent. Rift = ARPG clear (spawners → boss).
- * M0 carries mode only; rift routes to classic generation so the pipe is proven
- * with zero behavior change. Tier/quota/spawner state arrives in M1/M2.
+ * Carries mode only at first; rift routes to classic generation so the pipe is
+ * proven with zero behavior change. Tier/spawner state grows here as systems land.
  */
 export interface DungeonRuleset {
   mode: DungeonMode
-  /** Rift: advance portal open (clear-all in M1, 3-of-4 spawners in M2) */
+  /** Town travel allowed (classic). Rift stays in-arena: travel wipes tier progress. */
+  allowTownTravel: boolean
+  /** Rift: advance portal open (boss kill once trickle exists) */
   portalOpen?: boolean
   /** Rift: portal tile position when open */
   portalPos?: Point | null
+  /** Rift: spawners killed this tier (boss spawns at 3 of 4) */
+  spawnersKilled?: number
+  /** Rift: boss killed this tier (opens the portal) */
+  bossKilled?: boolean
 }
 
 // ============================================================================

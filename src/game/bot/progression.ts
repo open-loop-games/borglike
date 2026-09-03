@@ -15,7 +15,7 @@
  * - Main dispatcher: getProgressionGoal()
  */
 
-import type { Point, GameState, Character } from '../types'
+import type { Point, GameState, Character, Monster } from '../types'
 import type { UpgradeBonuses } from '../upgrade-effects'
 import { MAX_DEPTH } from '../types'
 import type { BotState, BotGoal, BotContext } from './types'
@@ -120,9 +120,9 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
   const character = game.character
   const nextDepth = character.depth + 1
 
-  // Rift M1: advance via the open portal, not stairs. Cleared tier ⇒ ready.
-  // (M4 extends this with spawner/boss targeting; the DESCEND type is reused
-  // so goalMovement, bullrush, and arrival handling work unchanged.)
+  // Rift: advance via the open portal, not stairs. Cleared tier ⇒ ready.
+  // (The DESCEND type is reused so goalMovement, bullrush, and arrival
+  // handling work unchanged; spawner/boss targeting extends this later.)
   if (game.ruleset.mode === 'rift') {
     if (!game.ruleset.portalOpen || !game.ruleset.portalPos) return null
     return {
@@ -165,6 +165,52 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
   }
 }
 
+/**
+ * Get hunt goal for the nearest living rift spawner (else the boss).
+ *
+ * Spawners are the tier objective: killing 3 of 4 spawns the boss, killing
+ * the boss opens the portal. Without this goal the bot has no reason to dive
+ * dens — it farms trickle forever or idles with no valid goals. Reuses the
+ * HUNT_UNIQUE type (descent-blocker hunt): no visibility requirement, position
+ * tracking, arrival handled by the tier system — same shape as unique blockers.
+ */
+export function getRiftSpawnerGoal(context: BotContext): BotGoal | null {
+  const { game } = context
+  if (game.ruleset.mode !== 'rift') return null
+  if (game.ruleset.portalOpen) return null // descend takes over
+
+  const pos = game.character.position
+  let spawner: Monster | null = null
+  let spawnerDist = Infinity
+  let boss: Monster | null = null
+  let bossDist = Infinity
+
+  for (const m of game.monsters) {
+    if (m.hp <= 0) continue
+    const d = Math.max(Math.abs(m.position.x - pos.x), Math.abs(m.position.y - pos.y))
+    if (m.riftRole === 'spawner') {
+      if (d < spawnerDist) {
+        spawnerDist = d
+        spawner = m
+      }
+    } else if (m.riftRole === 'boss') {
+      if (d < bossDist) {
+        bossDist = d
+        boss = m
+      }
+    }
+  }
+
+  const target = spawner ?? boss
+  if (!target) return null
+  return {
+    type: 'HUNT_UNIQUE',
+    target: { ...target.position },
+    targetId: target.id,
+    reason: target.riftRole === 'boss' ? 'Slaying the Riftlord' : 'Destroying rift spawner',
+    startTurn: game.turn,
+  }
+}
 /**
  * Get DESCEND goal to return to unique hunt depth after level flip.
  */
@@ -327,7 +373,16 @@ export function getProgressionGoal(context: BotContext): BotGoal | null {
   }
 
   const descendGoal = profile('prog.getDescendGoal', () => getDescendGoal(context))
-  return descendGoal
+  if (descendGoal) return descendGoal
+
+  // Rift: spawners (then the boss) block advance — hunt them first.
+  // Placed after descend so an open portal always wins.
+  if (game.ruleset.mode === 'rift') {
+    const spawnerGoal = profile('prog.riftSpawner', () => getRiftSpawnerGoal(context))
+    if (spawnerGoal) return spawnerGoal
+  }
+
+  return null
 }
 
 // ============================================================================

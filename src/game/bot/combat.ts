@@ -41,6 +41,17 @@ export interface TargetSelection {
   reason: string
 }
 
+/**
+ * Rift role bonus for target scoring: bosses and spawners outrank trash at
+ * range. Calibrated so adjacent self-defense still wins (adjacent trash
+ * scores ~200; a spawner 8 tiles out scores ~180, a boss ~260).
+ */
+function riftTargetBonus(monster: Monster): number {
+  if (monster.riftRole === 'boss') return 200
+  if (monster.riftRole === 'spawner') return 120
+  return 0
+}
+
 // ============================================================================
 // ENGAGEMENT DECISIONS
 // ============================================================================
@@ -243,6 +254,10 @@ export function selectTarget(
       score -= distance * 5
     }
 
+    // Rift: spawners and bosses outrank trash at range (adjacent
+    // self-defense still wins — don't walk past teeth to hit structure)
+    score += riftTargetBonus(monster)
+
     let reason = ''
     if (distance === 1) {
       reason = 'adjacent'
@@ -369,6 +384,9 @@ export function selectTargetForClass(
     if (evaluation.canWin) {
       score += 25
     }
+
+    // Rift: spawners and bosses outrank trash at range
+    score += riftTargetBonus(monster)
 
     let reason = ''
     if (classProfile.prefersRanged && distance >= 2 && distance <= bowRange) {

@@ -27,7 +27,7 @@ import {
 } from '../dungeon'
 import { spawnMonstersForLevel } from '../monster-ai'
 import { RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT } from '../dungeon/rift-arena'
-import { spawnRiftWhites } from '../rift/director'
+import { spawnRiftTier } from '../rift/director'
 import { spawnItemsForLevel, generateMerchantInventory } from '../items'
 import { triggerTrap, checkTrapDetection, initializeFeaturesFromVault } from '../features'
 import { touchLevelCache, evictOldLevels, LEVEL_CACHE_MAX_SIZE } from '../level-cache'
@@ -316,8 +316,8 @@ export function handleRiftAdvance(game: GameState): ActionResult {
   const entry = newLevel.entryPoint ?? findOpenPosition(newLevel)
   game.character.position = { ...entry }
 
-  // Fresh tier: M1 whites, standard loot tables (M5 retunes weights)
-  game.monsters = spawnRiftWhites(newLevel, newDepth, game.balance.monsterHpPercent, entry)
+  // Fresh tier: dens + spawners + roamers; standard loot tables for now
+  game.monsters = spawnRiftTier(newLevel, newDepth, game.balance.monsterHpPercent, entry)
   game.items = spawnItemsForLevel(
     newLevel,
     newDepth,
@@ -337,6 +337,8 @@ export function handleRiftAdvance(game: GameState): ActionResult {
   // Close the portal behind us: next tier starts un-cleared
   game.ruleset.portalOpen = false
   game.ruleset.portalPos = null
+  game.ruleset.spawnersKilled = 0
+  game.ruleset.bossKilled = false
 
   if (newDepth > game.stats.deepestDepth) {
     game.stats.deepestDepth = newDepth
