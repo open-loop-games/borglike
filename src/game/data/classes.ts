@@ -6,6 +6,7 @@
  * See ANGBAND-LITE-DESIGN.md for unlock conditions and bot behavior design.
  */
 
+import type { SplashPattern } from '../types'
 import type { StatModifiers } from './races'
 import type { UnlockContext } from '@/types/progression'
 
@@ -46,18 +47,11 @@ export interface GameClass {
   /** FINESSE: Uses max(STR, DEX) for melee damage and deadliness instead of just STR (Rogue) */
   finesse?: boolean
   /**
-   * Melee staple vs density: attack action splashes swings across neighboring
-   * targets (arc = forward 3 facing the primary, surround = all 8). Single
-   * occupants behave exactly like a normal attack — no bot or action changes.
+   * Always-on melee splash: the attack action spreads its swing pool across
+   * neighbouring targets instead of focusing one. A lone target behaves
+   * exactly like a normal attack, so no action or bot path branches on this.
    */
-  meleeStaple?: {
-    /** Display id (cleave, whirlwind, fan of blades, ...) */
-    id: string
-    /** Splash pattern around the primary target */
-    pattern: 'arc' | 'surround'
-    /** Max targets sharing the swing pool */
-    targets: number
-  }
+  meleeStaple?: SplashPattern
 }
 
 // =============================================================================

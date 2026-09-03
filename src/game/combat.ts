@@ -5,7 +5,15 @@
  * Functions are pure where possible - actual state mutation happens in the game loop.
  */
 
-import type { Character, Monster, ResistanceType, Point, Item, Element } from './types'
+import type {
+  Character,
+  Monster,
+  ResistanceType,
+  Point,
+  Item,
+  Element,
+  SplashPattern,
+} from './types'
 import type { KnowledgeBonuses } from './knowledge-effects'
 import { random } from './rng'
 import { rollDice } from './dice'
@@ -25,6 +33,17 @@ export interface AttackResult {
   killed: boolean
 }
 
+/** Damage a multi-attack accumulated against one target, for the caller to apply. */
+export interface TargetDamage {
+  monster: Monster
+  /** Total damage across every swing that landed on this target */
+  damage: number
+  /** Swings that landed on this target */
+  hits: number
+  /** Whether accumulated damage brought it to 0 */
+  killed: boolean
+}
+
 /** Result of a multi-attack melee action */
 export interface MultiAttackResult {
   /** Number of attacks performed */
@@ -35,10 +54,16 @@ export interface MultiAttackResult {
   totalDamage: number
   /** Number of critical hits */
   criticals: number
-  /** Whether the target was killed */
+  /** Whether the primary target was killed (drives single-target messaging) */
   killed: boolean
   /** Individual attack results for message formatting */
   attacks: AttackResult[]
+  /**
+   * Damage per target in engagement order, primary first. Single-target
+   * attacks yield exactly one entry; splash spreads the same swing pool.
+   * Nothing is mutated here — the caller applies these.
+   */
+  perTarget: TargetDamage[]
 }
 
 interface AttackerStats {
@@ -754,50 +779,131 @@ export function attack(
 /**
  * Generic multi-attack loop - executes multiple attacks and accumulates results
  *
- * @param defender - Target monster
+ * The swing pool is shared across `defenders`: one target spends every swing
+ * on it, several rotate round-robin over whoever is still standing. Nothing is
+ * mutated — HP is tracked locally and returned as `perTarget` for the caller
+ * to apply, so a swing never hits a corpse and overkill isn't double-counted.
+ *
+ * @param defenders - Targets in engagement order, primary first (never empty)
  * @param attackCount - Number of attacks to perform
  * @param performSingleAttack - Callback that performs one attack given remaining HP
  */
 function executeMultiAttack(
-  defender: Monster,
+  defenders: Monster[],
   attackCount: number,
   performSingleAttack: (tempDefender: Monster) => AttackResult
 ): MultiAttackResult {
   const attacks: AttackResult[] = []
+  const perTarget: TargetDamage[] = defenders.map((monster) => ({
+    monster,
+    damage: 0,
+    hits: 0,
+    killed: false,
+  }))
   let hits = 0
   let totalDamage = 0
   let criticals = 0
-  let killed = false
-  let remainingHp = defender.hp
 
-  for (let i = 0; i < attackCount && remainingHp > 0; i++) {
-    const result = performSingleAttack({ ...defender, hp: remainingHp })
+  for (let i = 0; i < attackCount; i++) {
+    const living = perTarget.filter((t) => !t.killed)
+    if (living.length === 0) break
+    const target = living[i % living.length]!
+
+    const result = performSingleAttack({
+      ...target.monster,
+      hp: target.monster.hp - target.damage,
+    })
     attacks.push(result)
+    if (!result.hit) continue
 
-    if (result.hit) {
-      hits++
-      totalDamage += result.damage
-      remainingHp -= result.damage
-      if (result.critical) criticals++
-      if (remainingHp <= 0) killed = true
-    }
+    hits++
+    totalDamage += result.damage
+    if (result.critical) criticals++
+    target.damage += result.damage
+    target.hits++
+    if (target.monster.hp - target.damage <= 0) target.killed = true
   }
 
-  return { attackCount, hits, totalDamage, criticals, killed, attacks }
+  return {
+    attackCount,
+    hits,
+    totalDamage,
+    criticals,
+    killed: perTarget[0]?.killed ?? false,
+    attacks,
+    perTarget,
+  }
+}
+
+// ============================================================================
+// MELEE SPLASH (cleave, whirlwind: one swing pool spread across neighbours)
+// ============================================================================
+
+/**
+ * The character's active melee splash shape, or null for a normal attack.
+ *
+ * Splash is a modifier on the ordinary attack action, not an ability with its
+ * own cost or turn — the same bump, spread wider. Trading swings for targets
+ * is the whole trade: total output is unchanged, focus is not.
+ */
+export function getSplashPattern(character: Character): SplashPattern | null {
+  // TODO(expansion): second source — a timed splash status effect, so
+  // Whirlwind can be a Berserker cooldown granting arc/surround for a turn.
+  // Resolve status first, then this class passive, when that lands.
+  return getClassById(character.classId)?.meleeStaple ?? null
+}
+
+/**
+ * Targets a splash attack engages, primary first.
+ *
+ * The primary must be adjacent (bump range). Neighbours are the other
+ * adjacent monsters, filtered to the forward arc for 'arc' patterns by
+ * keeping those on the primary's side of the character. Returns just the
+ * primary when nothing else qualifies, so callers need no special case.
+ */
+export function selectSplashTargets(
+  character: Character,
+  primary: Monster,
+  monsters: Monster[],
+  splash: SplashPattern
+): Monster[] {
+  const pos = character.position
+  const px = primary.position.x - pos.x
+  const py = primary.position.y - pos.y
+  if (Math.max(Math.abs(px), Math.abs(py)) !== 1) return [primary]
+
+  const dx = Math.sign(px)
+  const dy = Math.sign(py)
+  const targets: Monster[] = [primary]
+  for (const m of monsters) {
+    if (targets.length >= splash.targets) break
+    if (m.hp <= 0 || m.id === primary.id) continue
+    const ox = m.position.x - pos.x
+    const oy = m.position.y - pos.y
+    if (Math.max(Math.abs(ox), Math.abs(oy)) !== 1) continue
+    if (splash.pattern === 'arc' && ox * dx + oy * dy <= 0) continue
+    targets.push(m)
+  }
+  return targets
 }
 
 /**
  * Perform a full melee attack action with multiple attacks
+ *
+ * `defenders` is the engagement order, primary first. A splash staple
+ * (see getSplashPattern) passes several and the swing pool spreads across
+ * them; everything else passes one and behaves exactly as before.
+ * Per-target knowledge bonuses are the caller's to supply via the lookup.
  */
 export function meleeAttack(
   attacker: Character,
-  defender: Monster,
-  knowledgeBonuses?: KnowledgeBonuses,
+  defenders: Monster[],
+  knowledgeFor: (defender: Monster) => KnowledgeBonuses | undefined,
   armorPenetration = 0,
   armorPenPercent = 0
 ): MultiAttackResult {
-  return executeMultiAttack(defender, calculateAttackCount(attacker), (tempDefender) =>
-    attack(attacker, tempDefender, knowledgeBonuses, armorPenetration, armorPenPercent)
+  return executeMultiAttack(defenders, calculateAttackCount(attacker), (tempDefender) =>
+    attack(attacker, tempDefender, knowledgeFor(tempDefender), armorPenetration, armorPenPercent)
   )
 }
 
@@ -1122,7 +1228,7 @@ export function multiRangedAttack(
   armorPenetration = 0,
   armorPenPercent = 0
 ): MultiAttackResult {
-  return executeMultiAttack(defender, calculateRangedAttackCount(attacker), (tempDefender) =>
+  return executeMultiAttack([defender], calculateRangedAttackCount(attacker), (tempDefender) =>
     rangedAttack(
       attacker,
       tempDefender,

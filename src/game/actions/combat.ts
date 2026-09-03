@@ -4,20 +4,20 @@
  * Handles player attack actions (melee and ranged).
  */
 
-import type { GameState, ActionResult, Monster } from '../types'
-import { chebyshevDistance } from '../types'
+import type { GameState, ActionResult, Monster, SplashPattern } from '../types'
+import type { MultiAttackResult } from '../combat'
 import {
   meleeAttack,
-  attack,
   applyDamage,
   formatMultiAttackMessage,
   multiRangedAttack,
   canRangedAttack,
   calculateLifesteal,
+  getSplashPattern,
+  selectSplashTargets,
 } from '../combat'
-import { gainXP, calculateAttackCount } from '../character'
+import { gainXP } from '../character'
 import { getRaceById } from '../data/races'
-import { getClassById } from '../data/classes'
 import { DEFAULT_BONUSES, applyXPBonus } from '../upgrade-effects'
 import { awardMonsterGold } from '../features'
 import { addTaggedMessage, BASE_ENERGY_COST } from './helpers'
@@ -41,38 +41,44 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
     return { success: false, message: 'No target found.', energyCost: 0 }
   }
 
-  // Melee staple (cleave et al): swings spread across the arc/surround when
-  // 2+ targets share it. Single occupants fall through to the classic path.
-  const splash = getStapleSplash(game, monster)
-  if (splash) {
-    return resolveStapleAttack(game, splash)
-  }
+  // Splash staples (cleave et al) spread the same swing pool across adjacent
+  // neighbours; without one, or with nothing else adjacent, this is [monster].
+  const splash = getSplashPattern(game.character)
+  const targets = splash
+    ? selectSplashTargets(game.character, monster, game.monsters, splash)
+    : [monster]
 
-  // Compute knowledge bonuses from bestiary (or override for testing)
-  const knowledgeBonuses = getKnowledgeBonuses(
-    bestiaryKey(monster.template),
-    game.bestiary,
-    game.balance.bestiaryBonusPercent,
-    game.upgradeBonuses?.bestiaryCapPercent
-  )
-
-  // Resolve multi-attack with knowledge bonuses and armor penetration
-  // Number of attacks scales with level, STR, and class cap
+  // Resolve multi-attack with knowledge bonuses and armor penetration.
+  // Number of attacks scales with level, STR, and class cap; bonuses are
+  // looked up per target, since splash can cross monster types.
   const attackResult = meleeAttack(
     game.character,
-    monster,
-    knowledgeBonuses,
+    targets,
+    (defender) =>
+      getKnowledgeBonuses(
+        bestiaryKey(defender.template),
+        game.bestiary,
+        game.balance.bestiaryBonusPercent,
+        game.upgradeBonuses?.bestiaryCapPercent
+      ),
     game.balance.armorPenetration,
     game.upgradeBonuses?.armorPenPercent ?? 0
   )
 
   // Adrenaline Rush: +damage% when below 20% HP
   const adrenalinePercent = game.boosterBonuses?.adrenalineRushPercent ?? 0
-  if (adrenalinePercent > 0 && game.character.hp < game.character.maxHp * 0.2) {
-    attackResult.totalDamage = Math.floor(attackResult.totalDamage * (1 + adrenalinePercent / 100))
-  }
+  const adrenaline =
+    adrenalinePercent > 0 && game.character.hp < game.character.maxHp * 0.2
+      ? 1 + adrenalinePercent / 100
+      : 1
 
-  const message = formatMultiAttackMessage(`the ${monster.template.name}`, attackResult)
+  const message =
+    targets.length > 1 && splash
+      ? formatSplashAttackMessage(splash, attackResult, adrenaline)
+      : formatMultiAttackMessage(
+          `the ${monster.template.name}`,
+          scaleMultiAttack(attackResult, adrenaline)
+        )
   addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
 
   // Track melee combat accuracy
@@ -80,155 +86,74 @@ export function handleAttack(game: GameState, targetId: string): ActionResult {
   game.stats.meleeMisses += attackResult.attackCount - attackResult.hits
   game.stats.criticalHits += attackResult.criticals
 
-  if (attackResult.hits > 0) {
-    // Apply total damage to monster
-    applyDamage(monster, attackResult.totalDamage)
-    game.stats.damageDealt += attackResult.totalDamage
-    game.stats.damageBySource.melee += attackResult.totalDamage
+  if (attackResult.hits === 0) {
+    return { success: true, energyCost: BASE_ENERGY_COST }
+  }
+
+  // One post-resolution block for every target the swings reached. Splash and
+  // single-target differ only in how many entries perTarget carries, so
+  // thorns, kills, and damage accounting can never diverge between them.
+  let totalDamage = 0
+  for (const hit of attackResult.perTarget) {
+    if (hit.hits === 0) continue
+    const damage = Math.floor(hit.damage * adrenaline)
+    totalDamage += damage
+
+    applyDamage(hit.monster, damage)
+    game.stats.damageDealt += damage
+    game.stats.damageBySource.melee += damage
 
     // Thorns retaliation (melee only — spells, arrows, and minions bypass)
     if (game.ruleset.mode === 'rift') {
-      applyThornsReflect(game, monster, attackResult.totalDamage)
+      applyThornsReflect(game, hit.monster, damage)
     }
 
-    // SNEAK ATTACK: Consume buff and show message
-    const sneakAttackIndex = game.character.statusEffects.findIndex(
-      (e) => e.type === 'sneak_attack'
-    )
-    if (sneakAttackIndex >= 0) {
-      game.character.statusEffects.splice(sneakAttackIndex, 1)
-      addTaggedMessage(game, 'Sneak Attack!', 'good', { tags: ['combat.hit'], importance: 2 })
+    if (hit.monster.hp <= 0) {
+      handleMonsterKill(game, hit.monster)
     }
+  }
 
-    // COMBAT_REGEN: Lifesteal healing (Blackguard)
-    const lifesteal = calculateLifesteal(game.character, attackResult.totalDamage)
-    if (lifesteal > 0) {
-      game.character.hp = Math.min(game.character.hp + lifesteal, game.character.maxHp)
-      game.stats.healingBySource.lifesteal += lifesteal
-      addTaggedMessage(game, `You drain ${lifesteal} HP!`, 'good', {
-        tags: ['combat.hit'],
-        importance: 2,
-      })
-    }
+  // SNEAK ATTACK: Consume buff and show message
+  const sneakAttackIndex = game.character.statusEffects.findIndex((e) => e.type === 'sneak_attack')
+  if (sneakAttackIndex >= 0) {
+    game.character.statusEffects.splice(sneakAttackIndex, 1)
+    addTaggedMessage(game, 'Sneak Attack!', 'good', { tags: ['combat.hit'], importance: 2 })
+  }
 
-    if (attackResult.killed) {
-      handleMonsterKill(game, monster)
-    }
+  // COMBAT_REGEN: Lifesteal healing (Blackguard) — drains the full swing pool,
+  // so a cleave heals the same as the single-target attack it replaced.
+  const lifesteal = calculateLifesteal(game.character, totalDamage)
+  if (lifesteal > 0) {
+    game.character.hp = Math.min(game.character.hp + lifesteal, game.character.maxHp)
+    game.stats.healingBySource.lifesteal += lifesteal
+    addTaggedMessage(game, `You drain ${lifesteal} HP!`, 'good', {
+      tags: ['combat.hit'],
+      importance: 2,
+    })
   }
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }
 
-// ============================================================================
-// MELEE STAPLES (cleave et al: swing pool shared across neighbors)
-// ============================================================================
-
-/** Staple splash targets: primary first, then neighbors sharing the pattern. */
-interface StapleSplash {
-  stapleId: string
-  targets: Monster[]
+/** Apply the adrenaline multiplier to a result's totals for message formatting. */
+function scaleMultiAttack(result: MultiAttackResult, adrenaline: number): MultiAttackResult {
+  if (adrenaline === 1) return result
+  return { ...result, totalDamage: Math.floor(result.totalDamage * adrenaline) }
 }
 
-/**
- * Find staple splash targets for an attack: class kit pattern around the
- * primary (arc facing it, or full surround), capped at the staple count.
- * Returns null for single occupants (classic path handles those identically).
- */
-function getStapleSplash(game: GameState, primary: Monster): StapleSplash | null {
-  const staple = getClassById(game.character.classId)?.meleeStaple
-  if (!staple) return null
+/** Splash message: one line naming the staple, the spread, and the fallen. */
+function formatSplashAttackMessage(
+  splash: SplashPattern,
+  result: MultiAttackResult,
+  adrenaline: number
+): string {
+  const engaged = result.perTarget.length
+  if (result.hits === 0) return 'You swing wide and miss everything.'
 
-  const pos = game.character.position
-  const dx = Math.sign(primary.position.x - pos.x)
-  const dy = Math.sign(primary.position.y - pos.y)
-  if (chebyshevDistance(primary.position, pos) !== 1) {
-    return null // primary must be adjacent (bump range)
-  }
-
-  const neighbors = game.monsters.filter((m) => {
-    if (m.hp <= 0 || m.id === primary.id) return false
-    const ox = m.position.x - pos.x
-    const oy = m.position.y - pos.y
-    if (Math.max(Math.abs(ox), Math.abs(oy)) !== 1) return false
-    if (staple.pattern === 'surround') return true
-    return ox * dx + oy * dy > 0
-  })
-
-  const targets = [primary, ...neighbors].slice(0, staple.targets)
-  if (targets.length < 2) return null
-  return { stapleId: staple.id, targets }
-}
-
-/**
- * Resolve a staple attack: the full multi-attack swing pool dealt round-robin
- * across the splash targets. Same total output as single-target, spread out.
- * (No sneak-attack or lifesteal handling — no stapled class has those yet.)
- */
-function resolveStapleAttack(game: GameState, splash: StapleSplash): ActionResult {
-  // Adrenaline Rush applies per swing like single attacks
-  const adrenalinePercent = game.boosterBonuses?.adrenalineRushPercent ?? 0
-  const adrenaline =
-    adrenalinePercent > 0 && game.character.hp < game.character.maxHp * 0.2
-      ? 1 + adrenalinePercent / 100
-      : 1
-
-  const swings = calculateAttackCount(game.character)
-  let hits = 0
-  let totalDamage = 0
-  let kills = 0
-  const slain: string[] = []
-
-  for (let s = 0; s < swings; s++) {
-    const living = splash.targets.filter((m) => m.hp > 0)
-    if (living.length === 0) break
-    const monster = living[s % living.length]!
-
-    const knowledgeBonuses = getKnowledgeBonuses(
-      bestiaryKey(monster.template),
-      game.bestiary,
-      game.balance.bestiaryBonusPercent,
-      game.upgradeBonuses?.bestiaryCapPercent
-    )
-    const result = attack(
-      game.character,
-      monster,
-      knowledgeBonuses,
-      game.balance.armorPenetration,
-      game.upgradeBonuses?.armorPenPercent ?? 0
-    )
-    game.stats.meleeHits += result.hit ? 1 : 0
-    game.stats.meleeMisses += result.hit ? 0 : 1
-    if (result.critical) game.stats.criticalHits += 1
-    if (!result.hit) continue
-
-    const damage = Math.floor(result.damage * adrenaline)
-    applyDamage(monster, damage)
-    game.stats.damageDealt += damage
-    game.stats.damageBySource.melee += damage
-    hits++
-    totalDamage += damage
-
-    // Thorns retaliation (melee by design)
-    if (game.ruleset.mode === 'rift') {
-      applyThornsReflect(game, monster, damage)
-    }
-
-    if (monster.hp <= 0) {
-      handleMonsterKill(game, monster)
-      kills++
-      slain.push(monster.template.name)
-    }
-  }
-
-  const message =
-    kills > 0
-      ? `You ${splash.stapleId} through ${splash.targets.length} foes for ${totalDamage} damage, slaying ${slain.join(', ')}!`
-      : hits > 0
-        ? `You ${splash.stapleId} ${splash.targets.length} foes for ${totalDamage} damage!`
-        : `You swing wide and miss everything.`
-  addTaggedMessage(game, message, 'combat', { tags: ['combat.hit'], importance: 2 })
-
-  return { success: true, energyCost: BASE_ENERGY_COST }
+  const damage = Math.floor(result.totalDamage * adrenaline)
+  const slain = result.perTarget.filter((t) => t.killed).map((t) => t.monster.template.name)
+  const base = `You ${splash.id} ${engaged} foes for ${damage} damage`
+  return slain.length > 0 ? `${base}, slaying ${slain.join(', ')}!` : `${base}!`
 }
 
 // ============================================================================

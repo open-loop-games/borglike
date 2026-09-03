@@ -873,6 +873,16 @@ export type SpellEffectType =
   | 'shadow_step' // Rogue: teleport adjacent to target monster
   | 'summon'
 
+/** An active melee splash shape: where extra swings land, and how many share them. */
+export interface SplashPattern {
+  /** Ability id, used as the message verb */
+  id: string
+  /** arc = the forward three facing the primary, surround = all eight */
+  pattern: 'arc' | 'surround'
+  /** Max targets sharing the swing pool, primary included */
+  targets: number
+}
+
 /** Damage types for spells */
 export type SpellDamageType = 'fire' | 'cold' | 'lightning' | 'holy' | 'dark' | 'nature' | 'arcane'
 
