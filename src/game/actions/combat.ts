@@ -14,7 +14,7 @@ import {
   canRangedAttack,
   calculateLifesteal,
   getSplashPattern,
-  selectSplashTargets,
+  splashCandidates,
 } from '../combat'
 import { gainXP } from '../character'
 import { getRaceById } from '../data/races'
@@ -34,18 +34,19 @@ import { handleRiftKillProgress, handleAffixDeath, applyThornsReflect } from '..
  *
  * Find monster by ID, resolve combat, apply damage, award XP
  */
-export function handleAttack(game: GameState, targetId: string): ActionResult {
+export function handleAttack(game: GameState, targetId: string, useSplash = false): ActionResult {
   const monster = game.monsters.find((m) => m.id === targetId)
 
   if (!monster) {
     return { success: false, message: 'No target found.', energyCost: 0 }
   }
 
-  // Splash staples (cleave et al) spread the same swing pool across adjacent
-  // neighbours; without one, or with nothing else adjacent, this is [monster].
-  const splash = getSplashPattern(game.character)
+  // Spreading the swing pool is the caller's decision, not this layer's — the
+  // bot weighs it per fight. Geometry still gates what the pattern can reach,
+  // so a caller cannot ask for more than the staple allows.
+  const splash = useSplash ? getSplashPattern(game.character) : null
   const targets = splash
-    ? selectSplashTargets(game.character, monster, game.monsters, splash)
+    ? splashCandidates(game.character, monster, game.monsters, splash)
     : [monster]
 
   // Resolve multi-attack with knowledge bonuses and armor penetration.

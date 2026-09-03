@@ -478,7 +478,7 @@ function executeAction(game: GameState, action: GameAction): ActionResult {
     case 'move':
       return handleMove(game, action.direction)
     case 'attack':
-      return handleAttack(game, action.targetId)
+      return handleAttack(game, action.targetId, action.splash)
     case 'ranged_attack':
       return handleRangedAttack(game, action.targetId)
     case 'descend':

@@ -893,7 +893,9 @@ export type SpellDamageType = 'fire' | 'cold' | 'lightning' | 'holy' | 'dark' | 
 /** Actions the player/bot can take */
 export type GameAction =
   | { type: 'move'; direction: Direction }
-  | { type: 'attack'; targetId: string }
+  // splash: spend the swing pool across the staple's reach instead of the
+  // primary alone (see getSplashPattern). Absent = focus the primary.
+  | { type: 'attack'; targetId: string; splash?: boolean }
   | { type: 'ranged_attack'; targetId: string }
   | { type: 'pickup'; itemId: string }
   | { type: 'drop'; itemId: string }

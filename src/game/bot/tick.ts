@@ -11,7 +11,7 @@
  * - SAFE:     normal flow (combat > items > movement)
  */
 
-import type { GameState, GameAction, BotPersonality } from '../types'
+import type { GameState, GameAction, BotPersonality, Monster, Point, Direction } from '../types'
 import type { BotCapabilities, BotToggles, SurfLevelRange } from '@/types/progression'
 import { getTile, countExploredTiles } from '../dungeon'
 import { canRangedAttack, getBowRange } from '../combat'
@@ -38,7 +38,7 @@ import {
 } from './flow'
 import type { FlowAvoidance } from './flow'
 import { selectStep } from './movement'
-import { isSamePoint } from '../types'
+import { isSamePoint, DIRECTION_VECTORS } from '../types'
 import { buildBotContext } from './context'
 import {
   computeDangerGrid,
@@ -61,7 +61,13 @@ import {
   getSweepFrontierPositions,
 } from './exploration'
 import { recordVisibleTiles } from './progression'
-import { findAdjacentMonster, hasRangedWeapon, findKitePosition, shouldAvoidMelee } from './combat'
+import {
+  findAdjacentMonster,
+  hasRangedWeapon,
+  findKitePosition,
+  shouldAvoidMelee,
+  meleeAttackAction,
+} from './combat'
 import { getDamageSpellAction } from './spells'
 import { getCombatBuffAction, getPreCombatBuffAction } from './survival'
 import { botSellItems, botBuySupplies } from './merchant'
@@ -641,7 +647,25 @@ function executeGoalMovement(
     recordProgress(botState, game.turn)
   }
 
+  // A step into an occupied tile is a melee attack. Emit it explicitly so the
+  // swing pool spread is decided rather than defaulted — this is the choke
+  // point every goal's movement funnels through, so KILL, FLEE and the rest
+  // all get the same call.
+  const bumped = monsterInDirection(game, pos, direction)
+  if (bumped) {
+    return meleeAttackAction(context, bumped)
+  }
+
   return { type: 'move', direction }
+}
+
+/** The living monster a step in this direction would walk into, if any. */
+function monsterInDirection(game: GameState, pos: Point, direction: Direction): Monster | null {
+  if (direction === 'wait') return null
+  const delta = DIRECTION_VECTORS[direction]
+  const x = pos.x + delta.x
+  const y = pos.y + delta.y
+  return game.monsters.find((m) => m.hp > 0 && m.position.x === x && m.position.y === y) ?? null
 }
 
 function updateTownState(botState: BotState, goal: BotGoal, _game: GameState): void {

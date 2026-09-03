@@ -17,7 +17,7 @@ import { recordProgress } from './state'
 import { getAvailableSpells } from '../spell-resolution'
 import { getLocalDanger } from './danger'
 import { getHealingSpellAction, getDamageSpellAction, getDebuffSpellAction } from './spells'
-import { countAdjacentMonsters, findClosestMonster } from './combat'
+import { countAdjacentMonsters, findClosestMonster, meleeAttackAction } from './combat'
 import { canTransform } from '../actions/shapeshift'
 import { findManaPotion } from './items'
 
@@ -368,7 +368,7 @@ function getBearFormCombatAction(
         return { type: 'cast', spellId: 'thorn_strike', targetId: adjacentMonster.id }
       }
       recordProgress(botState, game.turn)
-      return { type: 'attack', targetId: adjacentMonster.id }
+      return meleeAttackAction(context, adjacentMonster)
     }
 
     // HP ≤ 50%: heal first
@@ -392,7 +392,7 @@ function getBearFormCombatAction(
   // Melee attack
   if (adjacentMonster) {
     recordProgress(botState, game.turn)
-    return { type: 'attack', targetId: adjacentMonster.id }
+    return meleeAttackAction(context, adjacentMonster)
   }
 
   // No adjacent - proactive healing in CAUTION/SAFE

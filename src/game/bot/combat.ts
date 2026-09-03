@@ -5,13 +5,25 @@
  * Determines when to fight vs flee based on personality and situation.
  */
 
-import type { GameState, Monster, Character, Point, Direction } from '../types'
-import { chebyshevDistance, isAdjacent, getDirectionFromDelta, isMonsterAt } from '../types'
+import type { GameState, GameAction, Monster, Character, Point, Direction } from '../types'
+import {
+  chebyshevDistance,
+  isAdjacent,
+  getDirectionFromDelta,
+  isMonsterAt,
+  isBossOrUnique,
+} from '../types'
 import type { BotContext, PersonalityConfig, BotGoal } from './types'
 import { getEffectiveCapabilities } from './types'
 import type { ClassBehaviorProfile } from './class-profiles'
 import { getAdjacentPositions, getTile, isWalkable } from '../dungeon'
-import { canRangedAttack, getBowRange, estimateDamageAfterArmor } from '../combat'
+import {
+  canRangedAttack,
+  getBowRange,
+  estimateDamageAfterArmor,
+  getSplashPattern,
+  splashCandidates,
+} from '../combat'
 import { getAverageDamage } from '../data/monsters'
 import { resetCorridorFollowing } from './exploration'
 import { calculateLightRadius } from '../lighting'
@@ -50,6 +62,45 @@ function riftTargetBonus(monster: Monster): number {
   if (monster.riftRole === 'boss') return 200
   if (monster.riftRole === 'spawner') return 120
   return 0
+}
+
+/**
+ * Build a melee attack action, deciding the swing-pool spread for it.
+ *
+ * Every bot path that melees goes through here, so the choice is made once
+ * and a new caller cannot silently skip it by emitting a bare attack action.
+ */
+export function meleeAttackAction(context: BotContext, target: Monster): GameAction {
+  return { type: 'attack', targetId: target.id, splash: shouldSplashAttack(context, target) }
+}
+
+/**
+ * Decide whether a melee attack spreads across the staple's reach or stays
+ * on the primary.
+ *
+ * Splash trades focus for coverage at equal output: it wins against a cluster
+ * of comparable trash and loses against anything that *is* the fight, where a
+ * warrior spreading three swings over a unique and two rats lands one on the
+ * thing that can kill it. Uniques and rift bosses are exactly what
+ * riftTargetBonus and selectTarget already rank above trash, so the two agree.
+ *
+ * Threat-ratio dominance was tried here and measured worse than the flat rule
+ * (-1 tier for warrior in classic over 2x48 runs): threat spreads too widely
+ * among ordinary trash, so the bot kept declining spreads that were fine.
+ *
+ * Gated on targeting, which already grades target-selection intelligence: an
+ * untrained bot swings naively and spreads whenever it can.
+ */
+export function shouldSplashAttack(context: BotContext, primary: Monster): boolean {
+  const { game } = context
+  const pattern = getSplashPattern(game.character)
+  if (!pattern) return false
+
+  if (splashCandidates(game.character, primary, game.monsters, pattern).length < 2) return false
+
+  if (getEffectiveCapabilities(context).targeting < 1) return true
+
+  return !isBossOrUnique(primary) && primary.riftRole !== 'boss'
 }
 
 // ============================================================================

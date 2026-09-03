@@ -5,7 +5,6 @@
  * Functions are pure where possible - actual state mutation happens in the game loop.
  */
 
-import { isBossOrUnique } from './types'
 import type {
   Character,
   Monster,
@@ -855,38 +854,21 @@ export function getSplashPattern(character: Character): SplashPattern | null {
 }
 
 /**
- * Targets worth focusing rather than spreading swings away from.
+ * Every target a splash pattern can legally reach from this attack.
  *
- * Splash trades focus for coverage at equal output, which is the wrong trade
- * when one target *is* the fight: a warrior facing a unique with two trash
- * beside it would land a third of its swings on the thing that matters.
- * Threats only, not objectives: rift spawners are immobile structures ringed
- * by guards, and thinning the guards beats focusing the structure. Measured
- * balance-neutral for warrior (mean -0.03 tiers, 4x48 runs, two seeds); this
- * exists to stop splash contradicting the bot's own target priority, not to
- * raise throughput.
+ * Geometry only — whether to *use* the spread is the caller's call, since
+ * trading focus for coverage depends on what the targets are worth. The
+ * primary must be adjacent (bump range); neighbours are the other adjacent
+ * monsters, narrowed to the forward arc for 'arc' patterns by keeping those
+ * on the primary's side. Always includes the primary, so callers that decline
+ * the spread need no special case.
  */
-function isFocusTarget(monster: Monster): boolean {
-  return monster.riftRole === 'boss' || isBossOrUnique(monster)
-}
-
-/**
- * Targets a splash attack engages, primary first.
- *
- * The primary must be adjacent (bump range). Neighbours are the other
- * adjacent monsters, filtered to the forward arc for 'arc' patterns by
- * keeping those on the primary's side of the character. Returns just the
- * primary when nothing else qualifies or when the primary deserves the
- * whole swing pool, so callers need no special case.
- */
-export function selectSplashTargets(
+export function splashCandidates(
   character: Character,
   primary: Monster,
   monsters: Monster[],
   splash: SplashPattern
 ): Monster[] {
-  if (isFocusTarget(primary)) return [primary]
-
   const pos = character.position
   const px = primary.position.x - pos.x
   const py = primary.position.y - pos.y

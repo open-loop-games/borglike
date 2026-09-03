@@ -30,6 +30,7 @@ import {
   findBestRangedTarget,
   findKitePosition,
   countAdjacentMonsters,
+  meleeAttackAction,
 } from './combat'
 import { findEquipmentUpgrades, isTeleportAction, findManaPotion } from './items'
 import {
@@ -207,7 +208,7 @@ function handleCriticalTier(
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Desperate attack')
     recordProgress(botState, game.turn)
-    return { type: 'attack', targetId: adjacentMonster.id }
+    return meleeAttackAction(context, adjacentMonster)
   }
 
   // 7. Try to move away from danger
@@ -493,14 +494,14 @@ function handleDangerTier(
   if (hasSneakAttack && adjacentMonster && game.character.classId === 'rogue') {
     setKillGoal(botState, adjacentMonster, game.turn, 'Sneak Attack (danger)')
     recordProgress(botState, game.turn)
-    return { type: 'attack', targetId: adjacentMonster.id }
+    return meleeAttackAction(context, adjacentMonster)
   }
 
   // 7. Melee attack if we must (or if melee class)
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Melee attack (danger)')
     recordProgress(botState, game.turn)
-    return { type: 'attack', targetId: adjacentMonster.id }
+    return meleeAttackAction(context, adjacentMonster)
   }
 
   // 8. Escape spell as fallback
@@ -667,7 +668,7 @@ function handleCautionTier(
   if (adjacentMonster) {
     setKillGoal(botState, adjacentMonster, game.turn, 'Melee combat')
     recordProgress(botState, game.turn)
-    return { type: 'attack', targetId: adjacentMonster.id }
+    return meleeAttackAction(context, adjacentMonster)
   }
 
   // 5. Proactive healing when not in melee (if significantly hurt)
