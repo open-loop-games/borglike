@@ -39,6 +39,7 @@ interface WorkerInput {
     surfRangeStart?: number
     surfRangeEnd?: number
     personalityConfig?: string
+    dungeonMode?: string
   }
 }
 
@@ -138,6 +139,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
     upgradeBonuses,
     boosterBonuses,
     balanceOverrides: balance,
+    dungeonMode: cfg.dungeonMode === 'rift' ? 'rift' : undefined,
   })
 
   const botState: BotState = createBotState()
@@ -278,7 +280,7 @@ function runDiagnosisInWorker(input: WorkerInput): DiagnoseResult {
 
   return {
     seed: cfg.seed,
-    config: { ...cfg, personality: cfg.personality as BotPersonality, excludeUpgrades: cfg.excludeUpgrades ?? [], capabilities: cfg.capabilities, upgrades: cfg.upgrades ?? 'none', boosters: cfg.boosters ?? 'none' },
+    config: { ...cfg, personality: cfg.personality as BotPersonality, excludeUpgrades: cfg.excludeUpgrades ?? [], capabilities: cfg.capabilities, upgrades: cfg.upgrades ?? 'none', boosters: cfg.boosters ?? 'none', dungeonMode: cfg.dungeonMode ?? 'classic' },
     endReason,
     finalState: {
       turn: game.turn,

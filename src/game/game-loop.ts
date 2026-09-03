@@ -206,7 +206,7 @@ export function createGame(config: RunConfig): GameState {
   const gameState: GameState = {
     runId,
     seed,
-    ruleset: { mode, allowTownTravel: mode === 'classic' },
+    ruleset: { mode, allowTownTravel: true },
     character,
     currentLevel: firstLevel,
     levelCache,

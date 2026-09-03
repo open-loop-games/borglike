@@ -13,6 +13,7 @@ import type {
   TownPortalState,
   ActionResult,
   Item,
+  Point,
 } from './types'
 import { randomInt, random } from './rng'
 import {
@@ -39,6 +40,9 @@ import {
 import { calculateLightRadius } from './lighting'
 import { initializeMerchant, initializeFeaturesFromVault } from './features'
 import { spawnMonstersForLevel } from './monster-ai'
+import { saveLevelEntities, loadLevelEntities } from './level-cache'
+import { addTaggedMessage } from './actions/helpers'
+import { spawnRiftTier } from './rift/director'
 import { spawnItemsForLevel, generateMerchantInventory } from './items'
 import { SCROLLS, POTIONS, ALL_EQUIPMENT, type ItemTemplate } from './data/items'
 import { createItem } from './items'
@@ -213,8 +217,10 @@ export function createTownPortal(game: GameState): TownPortalState {
 /**
  * Enter town through portal
  *
- * Teleports player to town. Entity state is NOT cached - entities
- * regenerate on level entry (Angband-style).
+ * Teleports player to town. Classic: entity state is NOT cached - entities
+ * regenerate on level entry (Angband-style); only the layout is cached.
+ * Rift: the single active tier is snapshotted exactly (spawners, positions,
+ * progress) and restored on return — resupply without regrind.
  */
 export function enterTown(game: GameState): void {
   if (!game.townPortal) return
@@ -222,6 +228,13 @@ export function enterTown(game: GameState): void {
   // NOTE: Entity caching removed - entities regenerate on level entry (Angband-style)
   // Only cache the level layout
   game.levelCache.set(game.character.depth, game.currentLevel)
+
+  // Rift: stash the live tier for exact restore (pruning stays trivial —
+  // one tier + town, depth never decreases so nothing else accumulates)
+  if (game.ruleset.mode === 'rift') {
+    saveLevelEntities(game)
+    game.ruleset.riftReturnDepth = game.character.depth
+  }
 
   // Get or generate town level
   let townLevel = game.levelCache.get(0)
@@ -253,10 +266,20 @@ export function enterTown(game: GameState): void {
  * Return from town through portal
  *
  * Restores dungeon state and teleports player back to dungeon.
+ * Rift: restores the snapshotted tier exactly (no regen, no regrind).
  */
 export function returnFromTown(game: GameState): ActionResult {
   if (!game.townPortal) {
     return { success: false, message: 'No active portal', energyCost: 0 }
+  }
+
+  // Rift fast path: exact snapshot restore
+  if (game.ruleset.mode === 'rift') {
+    const depth = game.townPortal.dungeonDepth
+    if (restoreRiftTier(game, depth, { ...game.townPortal.dungeonPosition })) {
+      return { success: true, energyCost: 100 }
+    }
+    // Snapshot lost (shouldn't happen — levels pin entities): fall through to regen
   }
 
   const portal = game.townPortal
@@ -316,6 +339,56 @@ export function returnFromTown(game: GameState): ActionResult {
   game.healer = null
 
   return { success: true, energyCost: 100 }
+}
+
+/**
+ * Restore a snapshotted rift tier exactly: layout from the level cache,
+ * entities from the entity snapshot, player at the given position.
+ * Falls back to fresh generation if the snapshot is gone. Returns false
+ * only when neither snapshot nor layout exists.
+ */
+export function restoreRiftTier(game: GameState, depth: number, position: Point): boolean {
+  const level = game.levelCache.get(depth)
+  if (!level) return false
+
+  game.currentLevel = level
+  game.character.depth = depth
+  game.character.position = { ...position }
+
+  const entities = loadLevelEntities(game.entityCache, depth)
+  if (entities) {
+    game.monsters = entities.monsters
+    game.items = entities.items
+    game.fountains = entities.fountains
+    game.altars = entities.altars
+    game.merchants = entities.merchants
+    game.traps = entities.traps
+  } else {
+    // Snapshot lost: regenerate rather than strand the player
+    const entry = level.entryPoint ?? position
+    game.monsters = spawnRiftTier(level, depth, game.balance.monsterHpPercent, entry)
+    game.items = spawnItemsForLevel(
+      level,
+      depth,
+      game.balance.potionRatePercent,
+      game.balance.enchantRatePercent,
+      game.balance.itemRatePercent
+    )
+    game.fountains = new Map()
+    game.altars = new Map()
+    game.merchants = []
+    game.traps = new Map()
+  }
+
+  const lightRadius = calculateLightRadius(game.character, depth)
+  computeFOV(level, game.character.position, lightRadius)
+  game.healer = null
+
+  addTaggedMessage(game, `You return to rift tier ${depth}.`, 'info', {
+    tags: ['progress'],
+    importance: 3,
+  })
+  return true
 }
 
 /**

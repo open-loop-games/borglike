@@ -132,6 +132,8 @@ interface Args {
   surfRangeEnd: number
   /** PersonalityConfig override spec (key=val,...); needs --personality=custom to take effect. */
   personalityConfig: string
+  /** Dungeon mode: 'classic' (default) or 'rift' */
+  dungeonMode: string
   /** Matrix gate-offset sweep values (independent cartesian axis). */
   gateOffsets: number[]
   // Balance overrides (Tier 1)
@@ -218,6 +220,7 @@ function parseArgs(): Args {
     surfRangeStart: 0,
     surfRangeEnd: 0,
     personalityConfig: '',
+    dungeonMode: 'classic',
     gateOffsets: [],
     // Balance defaults (100 = normal)
     monsterHp: 100,
@@ -351,6 +354,9 @@ function parseArgs(): Args {
       result.userSetBoosters = true
     } else if (arg.startsWith('--depth-gate-offset=')) {
       result.depthGateOffset = parseInt(arg.slice(20), 10)
+    } else if (arg.startsWith('--dungeon-mode=')) {
+      const val = arg.slice(15).toLowerCase()
+      result.dungeonMode = val === 'rift' ? 'rift' : 'classic'
     } else if (arg.startsWith('--gate-offsets=')) {
       result.gateOffsets = arg.slice(15).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
     } else if (arg.startsWith('--farming-toggle=')) {
@@ -461,6 +467,7 @@ OPTIONS:
   --surf-range=S-E  Character-level range where surf/tether is active (default: 0-0 = always)
   --personality-config=k=v,...  Override personality knobs (aggression,greed,caution,
                   exploration,patience); requires --personality=custom to take effect
+  --dungeon-mode=X  Dungeon mode: classic (default) or rift
   --randomize     Randomize race/class/personality per run (batch mode)
   --races         Compare races instead of personalities (compare mode)
   --races=a,b,c   Compare specific races (e.g., --races=human,dwarf,elf)
@@ -578,6 +585,7 @@ function buildConfigSnapshot(args: Args): Record<string, unknown> {
     boosters: args.boosters,
     capabilities: args.capabilities,
     maxUpgrades: args.maxUpgrades,
+    dungeonMode: args.dungeonMode,
   }
 }
 
@@ -939,6 +947,7 @@ async function main(): Promise<void> {
       maxUpgrades: args.maxUpgrades,
       balance,
       pairedProgression: args.progressionTiers.length > 0,
+      dungeonMode: args.dungeonMode,
     })
 
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
@@ -1070,6 +1079,7 @@ async function main(): Promise<void> {
     surfRangeStart: args.surfRangeStart,
     surfRangeEnd: args.surfRangeEnd,
     personalityConfig: args.personalityConfig,
+    dungeonMode: args.dungeonMode,
   }
 
   switch (args.mode) {

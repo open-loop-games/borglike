@@ -101,6 +101,7 @@ const DEFAULT_CONFIG: Required<Omit<DiagnoseConfig, 'analyzers'>> = {
   surfRangeStart: 0,
   surfRangeEnd: 0,
   personalityConfig: '',
+  dungeonMode: 'classic',
 }
 
 /**
@@ -167,6 +168,7 @@ export function runDiagnosis(config: DiagnoseConfig): DiagnoseResult {
     upgradeBonuses: computeUpgradesFromConfig(cfg),
     boosterBonuses: resolveBoosterBonuses(cfg.boosters, cfg.classId),
     balanceOverrides: cfg.balance,
+    dungeonMode: cfg.dungeonMode === 'rift' ? 'rift' : undefined,
   })
 
   const botState: BotState = createBotState()
@@ -437,6 +439,7 @@ export interface WorkerInput {
     surfRangeStart?: number
     surfRangeEnd?: number
     personalityConfig?: string
+    dungeonMode?: string
   }
 }
 
@@ -565,6 +568,7 @@ export async function runBatchDiagnosisParallel(config: ParallelBatchConfig): Pr
     surfRangeStart: config.surfRangeStart,
     surfRangeEnd: config.surfRangeEnd,
     personalityConfig: config.personalityConfig,
+    dungeonMode: config.dungeonMode,
   }
   for (let i = 0; i < config.runs; i++) {
     workItems.push({ seed: startSeed + i, config: baseConfig })
@@ -626,6 +630,7 @@ export function runDeepDiagnosis(
     upgradeBonuses: computeUpgradesFromConfig(cfg),
     boosterBonuses: resolveBoosterBonuses(cfg.boosters, cfg.classId),
     balanceOverrides: cfg.balance,
+    dungeonMode: cfg.dungeonMode === 'rift' ? 'rift' : undefined,
   })
 
   const botState: BotState = createBotState()

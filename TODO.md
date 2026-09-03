@@ -3,6 +3,27 @@
 ## Balance
 - Do more testing on bot upgrade sensitivity and chains, rebalance cost structure based upon results. total cost is out of balance to gains, relative to stat gains.
 
+## Rift Dungeon (second dungeon, in progress)
+- Control duo for evaluating retune work: warrior (melee) + mage (ranged). The two
+  sides fight each other in results — keep both green, tune neither in isolation.
+- Baseline (11 classes x 3, full upgrades, rift): casters top out (druid 19, necro 17,
+  mage 16, ~900 kills), melee lags (warrior 10, berserker 8, rogue 5.7 high variance,
+  paladin 1.7 dies ~turn 273). Affix bodies appear as killers (spitters, vampiric troll).
+  Raw output: /tmp/borglike-diagnose/<date>-matrix/ (re-run with
+  `pnpm diagnose matrix --classes=all --runs=3 --upgrades=full --capabilities=full
+  --boosters=class --dungeon-mode=rift --turns=20000`).
+- [ ] Melee-vs-density gap (bot retune input): paladin/rogue/warrior walk into dens
+  and trade down; ranged kites and AoE. AoE-seek, flank danger, rare focus still open.
+- [ ] Deep-tier stalls (scaling input): circuit breakers at 16-18, boss + trickle
+  outscale minion/caster builds. Feed into the economy/scaling curve.
+- [x] Town travel restore for rift (resupply without regrind): snapshot the single
+  active tier on town entry, restore it exactly on return (verified 30/30 monsters
+  with HP/energy/awake/role identical). No stair flipping (no stairs_up, depth never
+  decreases), pruning stays trivial. Control duo after: warrior 10.0→16.7
+  (398→634 kills), mage 16.3→19.3 (895→990, CB 33%→0%). Deaths moved to real
+  mid-tier fights (affixed dragon/troll/hydra).
+- [ ] Economy pass: XP/drop/essence weights for pack volume, boss burst, endless tiers.
+
 ## Future Features
 - [ ] Challenge Modifiers (run-based risk/reward)
   - Voluntary handicaps applied per-slot before a run starts, multiplicative essence bonus

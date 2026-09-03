@@ -119,6 +119,8 @@ export interface DiagnoseConfig {
   surfRangeEnd?: number
   /** PersonalityConfig override spec (key=val,...); only used when personality='custom'. Default ''. */
   personalityConfig?: string
+  /** Dungeon mode: 'classic' (default) or 'rift' (ARPG clear) */
+  dungeonMode?: string
 }
 
 /** Result from a diagnostic run */

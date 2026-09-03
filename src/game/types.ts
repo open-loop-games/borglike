@@ -1031,6 +1031,8 @@ export interface DungeonRuleset {
   spawnersKilled?: number
   /** Rift: boss killed this tier (opens the portal) */
   bossKilled?: boolean
+  /** Rift: tier depth stashed on town entry (exact restore on return) */
+  riftReturnDepth?: number
 }
 
 // ============================================================================

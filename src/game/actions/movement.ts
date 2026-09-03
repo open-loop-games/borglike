@@ -31,7 +31,7 @@ import { spawnRiftTier } from '../rift/director'
 import { spawnItemsForLevel, generateMerchantInventory } from '../items'
 import { triggerTrap, checkTrapDetection, initializeFeaturesFromVault } from '../features'
 import { touchLevelCache, evictOldLevels, LEVEL_CACHE_MAX_SIZE } from '../level-cache'
-import { isInTown, initializeTown } from '../town'
+import { isInTown, initializeTown, restoreRiftTier } from '../town'
 import { addTaggedMessage } from './helpers'
 import { handleAttack } from './combat'
 
@@ -184,8 +184,19 @@ export function handleDescend(game: GameState): ActionResult {
   const canDescend =
     currentTile && (currentTile.type === 'stairs_down' || currentTile.type === 'dungeon_entrance')
 
-  // Rift advance runs on its own path (portal tile, endless tiers, no MAX_DEPTH)
+  // Rift advance runs on its own path (portal tile, endless tiers, no MAX_DEPTH).
+  // Town exit is the exception: with no live portal, the entrance restores the
+  // stashed tier (exact snapshot, same as the portal return).
   if (game.ruleset.mode === 'rift') {
+    if (game.character.depth === 0 && currentTile?.type === 'dungeon_entrance') {
+      const depth = game.ruleset.riftReturnDepth ?? 1
+      const level = game.levelCache.get(depth)
+      const entry = level?.entryPoint ?? undefined
+      if (level && restoreRiftTier(game, depth, entry ?? findOpenPosition(level))) {
+        return { success: true, energyCost: BASE_ENERGY_COST }
+      }
+      return { success: false, message: 'The way back is lost.', energyCost: 0 }
+    }
     if (!currentTile || currentTile.type !== 'rift_portal' || !game.ruleset.portalOpen) {
       return { success: false, message: 'The rift portal has not opened yet.', energyCost: 0 }
     }

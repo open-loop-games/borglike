@@ -49,6 +49,8 @@ export interface MatrixConfig {
   personalityConfig?: string
   /** Custom header label (default: "MATRIX TEST") */
   headerLabel?: string
+  /** Dungeon mode for every cell: 'classic' (default) or 'rift' */
+  dungeonMode?: string
   /** When true, zip upgradeTiers and capabilityTiers instead of crossing them.
    *  e.g., [none,mid,full] × [none,mid,full] → 3 cells (none/none, mid/mid, full/full)
    *  instead of 9. Both arrays must have the same length. */
@@ -307,6 +309,7 @@ export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
             surfRangeStart: config.surfRangeStart,
             surfRangeEnd: config.surfRangeEnd,
             personalityConfig: config.personalityConfig,
+            dungeonMode: config.dungeonMode,
           },
         },
       })
