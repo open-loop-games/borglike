@@ -5,7 +5,7 @@
  * door placement, and vault system.
  */
 
-import type { DungeonLevel, Tile, Point } from '../types'
+import type { DungeonLevel, Tile, Point, DungeonMode } from '../types'
 import { MAX_DEPTH } from '../types'
 import { randomInt } from '../rng'
 import type { GeneratorType, RoomData, VaultPlacement } from './types'
@@ -13,6 +13,7 @@ import { getDepthProfile, selectGenerator } from './profiles'
 import { generateClassic } from './classic'
 import { generateCavern } from './cavern'
 import { generateLabyrinth } from './labyrinth'
+import { generateRiftArena, RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT } from './rift-arena'
 import { findDoorCandidates, placeDoors } from './doors'
 import { validateConnectivity, ensureConnectivity } from './validation'
 import { tryPlaceVault } from './vaults'
@@ -55,14 +56,15 @@ export interface GenerationResult {
 export function generateLevel(
   depth: number,
   width: number = DEFAULT_WIDTH,
-  height: number = DEFAULT_HEIGHT
+  height: number = DEFAULT_HEIGHT,
+  mode: DungeonMode = 'classic'
 ): DungeonLevel {
   // Special case: depth 0 is the town
   if (depth === 0) {
     return generateTownLevel()
   }
 
-  const result = generateLevelWithInfo(depth, width, height)
+  const result = generateLevelWithInfo(depth, width, height, mode)
   // Attach metadata to level for feature initialization and bot AI
   result.level.vault = result.vault
   result.level.generatorType = result.generatorType
@@ -76,8 +78,14 @@ export function generateLevel(
 export function generateLevelWithInfo(
   depth: number,
   width: number = DEFAULT_WIDTH,
-  height: number = DEFAULT_HEIGHT
+  height: number = DEFAULT_HEIGHT,
+  mode: DungeonMode = 'classic'
 ): GenerationResult {
+  // Rift arenas bypass classic profiles entirely (own dims, no vaults/doors/stairs)
+  if (mode === 'rift') {
+    return generateRiftLevelWithInfo(depth)
+  }
+
   const profile = getDepthProfile(depth)
   const generatorType = selectGenerator(depth)
 
@@ -147,13 +155,7 @@ export function generateLevelWithInfo(
   level.passableCount = level.passable.reduce((sum, v) => sum + v, 0)
   level.explored = buildExploredBitmap(level)
 
-  if (width * height > MAX_LEVEL_TILES) {
-    throw new Error(
-      `generateLevelWithInfo: ${width}x${height}=${width * height} tiles exceeds ` +
-        `MAX_LEVEL_TILES=${MAX_LEVEL_TILES} (bot flow/safety queues are preallocated; ` +
-        `shrink the level instead of growing the hot loop)`
-    )
-  }
+  assertLevelCapacity(width, height)
 
   return {
     level,
@@ -161,6 +163,62 @@ export function generateLevelWithInfo(
     rooms,
     vault,
     doorsPlaced: placedDoors.length,
+  }
+}
+
+/**
+ * Fast-path capacity guard (M0 contract): bot flow/safety queues are
+ * preallocated and flow distances are u8. Oversize levels must fail here,
+ * never as silent queue corruption downstream.
+ */
+function assertLevelCapacity(width: number, height: number): void {
+  if (width * height > MAX_LEVEL_TILES) {
+    throw new Error(
+      `generateLevelWithInfo: ${width}x${height}=${width * height} tiles exceeds ` +
+        `MAX_LEVEL_TILES=${MAX_LEVEL_TILES} (bot flow/safety queues are preallocated; ` +
+        `shrink the level instead of growing the hot loop)`
+    )
+  }
+}
+
+/**
+ * Generate a rift arena level (ARPG mode).
+ *
+ * Own dims (60×30), no vaults/doors/stairs. Entry = center clearing.
+ * Dens arrive in M2; M1 spawns whites scattered.
+ */
+function generateRiftLevelWithInfo(depth: number): GenerationResult {
+  const width = RIFT_ARENA_WIDTH
+  const height = RIFT_ARENA_HEIGHT
+  const { tiles, rooms, center } = generateRiftArena(width, height)
+
+  assertLevelCapacity(width, height)
+
+  const level: DungeonLevel = {
+    depth,
+    width,
+    height,
+    tiles,
+    stairsUp: null,
+    stairsDown: null,
+    exploredCount: 0,
+    passableCount: 0,
+    exploredPassableCount: 0,
+    passable: new Uint8Array(0),
+    explored: new Uint8Array(0),
+    generatorType: 'rift-arena',
+    entryPoint: { ...center },
+  }
+  level.passable = buildPassabilityBitmap(level)
+  level.passableCount = level.passable.reduce((sum, v) => sum + v, 0)
+  level.explored = buildExploredBitmap(level)
+
+  return {
+    level,
+    generatorType: 'rift-arena',
+    rooms,
+    vault: null,
+    doorsPlaced: 0,
   }
 }
 

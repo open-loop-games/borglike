@@ -578,6 +578,10 @@ function renderGameToGrid(runId: string, game: GameState): void {
           char = 'O'
           color = tile.visible ? 0xa855f7 : 0x7e22ce // purple
           break
+        case 'rift_portal':
+          char = 'O'
+          color = tile.visible ? 0x22d3ee : 0x0e7490 // cyan (rift advance)
+          break
         case 'dungeon_entrance':
           char = '>'
           color = tile.visible ? 0x06b6d4 : 0x0e7490 // cyan (like stairs)

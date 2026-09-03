@@ -26,6 +26,8 @@ import {
   getAdjacentPositions,
 } from '../dungeon'
 import { spawnMonstersForLevel } from '../monster-ai'
+import { RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT } from '../dungeon/rift-arena'
+import { spawnRiftWhites } from '../rift/director'
 import { spawnItemsForLevel, generateMerchantInventory } from '../items'
 import { triggerTrap, checkTrapDetection, initializeFeaturesFromVault } from '../features'
 import { touchLevelCache, evictOldLevels, LEVEL_CACHE_MAX_SIZE } from '../level-cache'
@@ -182,6 +184,14 @@ export function handleDescend(game: GameState): ActionResult {
   const canDescend =
     currentTile && (currentTile.type === 'stairs_down' || currentTile.type === 'dungeon_entrance')
 
+  // Rift advance runs on its own path (portal tile, endless tiers, no MAX_DEPTH)
+  if (game.ruleset.mode === 'rift') {
+    if (!currentTile || currentTile.type !== 'rift_portal' || !game.ruleset.portalOpen) {
+      return { success: false, message: 'The rift portal has not opened yet.', energyCost: 0 }
+    }
+    return handleRiftAdvance(game)
+  }
+
   if (!canDescend) {
     return { success: false, message: 'There are no stairs here.', energyCost: 0 }
   }
@@ -276,6 +286,69 @@ export function handleDescend(game: GameState): ActionResult {
       ? 'You enter the dungeon.'
       : `You descend to depth ${newDepth}.`
   addTaggedMessage(game, message, 'info', { tags: ['progress'], importance: 4 })
+
+  return { success: true, energyCost: BASE_ENERGY_COST }
+}
+
+/**
+ * Handle rift advance (ARPG mode): step onto the open portal → next tier arena.
+ *
+ * Tiers reuse the depth counter (tier N = depth N) so level cache, stats, and
+ * FOV work unchanged. Endless: no MAX_DEPTH cap, no town, no victory.
+ */
+export function handleRiftAdvance(game: GameState): ActionResult {
+  const newDepth = game.character.depth + 1
+
+  // Get or generate next-tier arena (same cache discipline as classic)
+  let newLevel = game.levelCache.get(newDepth)
+  if (!newLevel) {
+    newLevel = generateLevel(newDepth, RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT, 'rift')
+    game.levelCache.set(newDepth, newLevel)
+    evictOldLevels(game.levelCache, newDepth, LEVEL_CACHE_MAX_SIZE)
+  } else {
+    touchLevelCache(game.levelCache, newDepth)
+  }
+
+  game.currentLevel = newLevel
+  game.character.depth = newDepth
+
+  // Place character at arena entry (center clearing)
+  const entry = newLevel.entryPoint ?? findOpenPosition(newLevel)
+  game.character.position = { ...entry }
+
+  // Fresh tier: M1 whites, standard loot tables (M5 retunes weights)
+  game.monsters = spawnRiftWhites(newLevel, newDepth, game.balance.monsterHpPercent, entry)
+  game.items = spawnItemsForLevel(
+    newLevel,
+    newDepth,
+    game.balance.potionRatePercent,
+    game.balance.enchantRatePercent,
+    game.balance.itemRatePercent
+  )
+
+  teleportMinionsToPlayer(game)
+
+  // Rift arenas have no vault features; reset runtime feature state
+  game.fountains = new Map<string, FountainState>()
+  game.altars = new Map<string, AltarState>()
+  game.merchants = []
+  game.traps = new Map<string, TrapState>()
+
+  // Close the portal behind us: next tier starts un-cleared
+  game.ruleset.portalOpen = false
+  game.ruleset.portalPos = null
+
+  if (newDepth > game.stats.deepestDepth) {
+    game.stats.deepestDepth = newDepth
+  }
+
+  const lightRadius = calculateLightRadius(game.character, newDepth)
+  computeFOV(newLevel, game.character.position, lightRadius)
+
+  addTaggedMessage(game, `You step through the portal. Rift tier ${newDepth}.`, 'info', {
+    tags: ['progress'],
+    importance: 4,
+  })
 
   return { success: true, energyCost: BASE_ENERGY_COST }
 }

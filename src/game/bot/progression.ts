@@ -120,6 +120,20 @@ export function getDescendGoal(context: BotContext): BotGoal | null {
   const character = game.character
   const nextDepth = character.depth + 1
 
+  // Rift M1: advance via the open portal, not stairs. Cleared tier ⇒ ready.
+  // (M4 extends this with spawner/boss targeting; the DESCEND type is reused
+  // so goalMovement, bullrush, and arrival handling work unchanged.)
+  if (game.ruleset.mode === 'rift') {
+    if (!game.ruleset.portalOpen || !game.ruleset.portalPos) return null
+    return {
+      type: 'DESCEND',
+      target: { ...game.ruleset.portalPos },
+      targetId: null,
+      reason: 'Stepping through the rift portal',
+      startTurn: game.turn,
+    }
+  }
+
   // Need to know where stairs are to actually descend
   if (!botState.knownStairsDown) return null
 

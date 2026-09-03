@@ -156,7 +156,13 @@ Keep player power flat (same classes/items). ARPG progression expresses through:
   handle, gen-time assert (arena ≤3200 tiles / path <254 by construction), danger
   saturating add, level-sized SeenGrid + edge bounds check. Rift flag routes to
   classic gen — proves the pipe with classic `diagnose` numbers unmoved.
-- **M1 arena gen:** `rift-arena` generator behind the mode branch, quota counter, portal-to-next-rift loop, whites only.
+- **M1 arena gen (locked 2026-09-03):** `rift-arena` generator (60×30, cellular
+  high-fill, pillars, center spawn clearing, no doors). Whites only, scattered.
+  Advance = clear-all-whites → portal spawns at center → step on portal → tier+1
+  (depth reused as tier number; level cache + stats work unchanged). Bot hook is
+  minimal: DESCEND goal targets the portal tile when ruleset is rift (extended in
+  M4). Portal is a new `rift_portal` tile (not the town `portal` — no coupling).
+  M2 replaces the trigger with spawners, keeps the portal + advance path.
 - **M2 packs + director (spawner-gated):** den placement, spawner entity + guards, bounded trickle, drift, 3-of-4 → boss spawn (promoted base).
 - **M3 affixes:** prefix/suffix tree (8+7 above), name composer, aura hooks, blue/yellow tiers. Blues share one set.
 - **M4 bot retune:** AoE-seek, rare focus, flank-danger. Playable hands-off to rift 5+.

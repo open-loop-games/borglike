@@ -58,6 +58,7 @@ export function isWalkable(tile: Tile): boolean {
     tile.type === 'stairs_up' ||
     tile.type === 'stairs_down' ||
     tile.type === 'portal' ||
+    tile.type === 'rift_portal' ||
     tile.type === 'dungeon_entrance' ||
     tile.type === 'healer' ||
     // Town decorative tiles (all walkable)

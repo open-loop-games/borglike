@@ -150,6 +150,7 @@ export type TileType =
   | 'fountain_empty'
   | 'altar'
   | 'portal' // Active town portal
+  | 'rift_portal' // Rift advance portal (ARPG mode: clear → portal → next tier)
   | 'dungeon_entrance' // Town stairs to depth 1
   | 'healer' // Healer NPC tile
   // Town decorative tiles
@@ -183,10 +184,12 @@ export interface DungeonLevel {
   passable: Uint8Array
   /** Explored bitmap: 1 = explored, indexed by y * width + x. Updated alongside tile.explored */
   explored: Uint8Array
-  /** Generator type used to create this level (labyrinth, cavern, classic) */
+  /** Generator type used to create this level (labyrinth, cavern, classic, rift-arena) */
   generatorType?: GeneratorType
   /** Vault placement data (if a vault was placed on this level) */
   vault?: VaultPlacement | null
+  /** Entry point override (rift center spawn; classic uses stairsUp) */
+  entryPoint?: Point | null
 }
 
 // ============================================================================
@@ -1009,6 +1012,10 @@ export const DEFAULT_BALANCE: BalanceOverrides = {
  */
 export interface DungeonRuleset {
   mode: DungeonMode
+  /** Rift: advance portal open (clear-all in M1, 3-of-4 spawners in M2) */
+  portalOpen?: boolean
+  /** Rift: portal tile position when open */
+  portalPos?: Point | null
 }
 
 // ============================================================================

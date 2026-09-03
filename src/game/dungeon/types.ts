@@ -3,7 +3,7 @@
  */
 
 /** Generator type determines the algorithm used */
-export type GeneratorType = 'classic' | 'cavern' | 'labyrinth'
+export type GeneratorType = 'classic' | 'cavern' | 'labyrinth' | 'rift-arena'
 
 /** Depth-based profile controlling generation parameters */
 export interface DepthProfile {

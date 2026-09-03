@@ -26,7 +26,9 @@ import { createCharacter } from './character'
 import { DEFAULT_BONUSES } from './upgrade-effects'
 import { DEFAULT_BOOSTER_BONUSES } from './booster-effects'
 import { generateLevel, computeFOV, setAllTilesVisible, findOpenPosition } from './dungeon'
+import { RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT } from './dungeon/rift-arena'
 import { spawnMonstersForLevel, processMonsterTurns } from './monster-ai'
+import { spawnRiftWhites, openRiftPortal } from './rift/director'
 import { processMinionTurns } from './minion-ai'
 import { spawnItemsForLevel, createStartingEquipment } from './items'
 import { initializeFeaturesFromVault } from './features'
@@ -112,10 +114,12 @@ export function createGame(config: RunConfig): GameState {
   }
 
   // Generate first dungeon level
-  const firstLevel = generateLevel(1)
+  const mode = config.dungeonMode ?? 'classic'
+  const firstLevel =
+    mode === 'rift' ? generateLevel(1, RIFT_ARENA_WIDTH, RIFT_ARENA_HEIGHT, mode) : generateLevel(1)
 
-  // Place character at stairs up location (or random if depth 1)
-  const startPosition = firstLevel.stairsUp ?? findOpenPosition(firstLevel)
+  // Place character at entry: rift center clearing, else stairs up
+  const startPosition = firstLevel.entryPoint ?? firstLevel.stairsUp ?? findOpenPosition(firstLevel)
   character.position = startPosition
   character.depth = 1
 
@@ -130,7 +134,11 @@ export function createGame(config: RunConfig): GameState {
   }
 
   // Spawn monsters for first level (pass uniqueState for unique tracking)
-  const monsters = spawnMonstersForLevel(firstLevel, 1, balance.monsterHpPercent, uniqueState)
+  // Rift M1: whites only, scattered, off the entry clearing
+  const monsters =
+    mode === 'rift'
+      ? spawnRiftWhites(firstLevel, 1, balance.monsterHpPercent, startPosition)
+      : spawnMonstersForLevel(firstLevel, 1, balance.monsterHpPercent, uniqueState)
 
   // Spawn items for first level
   const items = spawnItemsForLevel(
@@ -442,6 +450,18 @@ export function processTurn(game: GameState, action: GameAction): GameEvent[] {
     })
     events.push({ type: 'victory' })
     return events
+  }
+
+  // Rift M1: clear-all opens the advance portal (M2 spawners replace the trigger;
+  // the portal + advance path stay). O(1): length check on the live array
+  // (kills splice the dead out in actions/combat).
+  if (
+    game.ruleset.mode === 'rift' &&
+    !game.ruleset.portalOpen &&
+    game.isRunning &&
+    game.monsters.length === 0
+  ) {
+    openRiftPortal(game)
   }
 
   // Update FOV (town is always fully visible, dungeon uses shadowcasting)
