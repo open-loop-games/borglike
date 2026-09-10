@@ -95,15 +95,6 @@ export function validateProgressionData(data: ProgressionData): ValidationResult
       data.currency.essence = 0
       repaired = true
     }
-    if (typeof data.currency.artifacts === 'number' && data.currency.artifacts < 0) {
-      errors.push({
-        path: 'currency.artifacts',
-        message: 'Negative artifacts repaired',
-        severity: 'warning',
-      })
-      data.currency.artifacts = 0
-      repaired = true
-    }
   }
 
   if (!data.unlocks) {
@@ -203,6 +194,10 @@ export interface ProgressionData {
   prestigeLevel: number
   lifetimeEssence: number
   totalVictories: number
+  // Prestige stars (studio/borglike#3). Optional: absent in pre-feature saves.
+  starBalance?: number
+  totalStarsEarned?: number
+  starUpgradeLevels?: Record<string, number>
   // Progressive disclosure (studio/borglike#2). Optional: absent in pre-feature
   // saves, reconstructed on restore.
   totalUpgradeSpent?: number
@@ -332,13 +327,16 @@ export function serializeProgression(): ProgressionData {
 
   const data: ProgressionData = {
     version: SAVE_VERSION,
-    currency: { essence: progression.currency.essence, artifacts: progression.currency.artifacts },
+    currency: { essence: progression.currency.essence },
     unlocks: serializeUnlocks(progression.unlocks),
     globalStats: { ...progression.globalStats },
     upgradeLevels: { ...progression.upgradeLevels },
     prestigeLevel: progression.prestigeLevel,
     lifetimeEssence: progression.lifetimeEssence,
     totalVictories: progression.totalVictories,
+    starBalance: progression.starBalance,
+    totalStarsEarned: progression.totalStarsEarned,
+    starUpgradeLevels: { ...progression.starUpgradeLevels },
     totalUpgradeSpent: progression.totalUpgradeSpent,
     toastedReveals: Array.from(progression.toastedReveals),
     activeLoadout: {
@@ -364,7 +362,6 @@ export function restoreProgressionFromData(data: ProgressionData): void {
   const progression = useProgressionStore()
 
   progression.currency.essence = data.currency.essence
-  progression.currency.artifacts = data.currency.artifacts
 
   const unlocks = deserializeUnlocks(data.unlocks)
   progression.unlocks.races = unlocks.races
@@ -379,6 +376,11 @@ export function restoreProgressionFromData(data: ProgressionData): void {
   progression.prestigeLevel = data.prestigeLevel ?? 0
   progression.lifetimeEssence = data.lifetimeEssence ?? 0
   progression.totalVictories = data.totalVictories ?? 0
+  progression.starBalance = data.starBalance ?? 0
+  progression.totalStarsEarned = data.totalStarsEarned ?? 0
+  if (data.starUpgradeLevels) {
+    progression.starUpgradeLevels = { ...data.starUpgradeLevels }
+  }
 
   if (data.activeLoadout) {
     progression.activeLoadout.boosters = data.activeLoadout.boosters
@@ -449,6 +451,9 @@ export interface ExportPayload {
     prestigeLevel: number
     lifetimeEssence: number
     totalVictories: number
+    starBalance?: number
+    totalStarsEarned?: number
+    starUpgradeLevels?: Record<string, number>
     totalUpgradeSpent?: number
     toastedReveals?: string[]
     activeLoadout?: SerializedRunLoadout
@@ -479,6 +484,9 @@ export function buildExportPayload(runHistory: RunStats[]): ExportPayload {
       prestigeLevel: progression.prestigeLevel,
       lifetimeEssence: progression.lifetimeEssence,
       totalVictories: progression.totalVictories,
+      starBalance: progression.starBalance,
+      totalStarsEarned: progression.totalStarsEarned,
+      starUpgradeLevels: { ...progression.starUpgradeLevels },
       totalUpgradeSpent: progression.totalUpgradeSpent,
       toastedReveals: Array.from(progression.toastedReveals),
       activeLoadout: { boosters: [...progression.activeLoadout.boosters] },
@@ -507,6 +515,9 @@ export function progressionDataFromExport(payload: ExportPayload): ProgressionDa
     prestigeLevel: prog.prestigeLevel,
     lifetimeEssence: prog.lifetimeEssence,
     totalVictories: prog.totalVictories,
+    starBalance: prog.starBalance,
+    totalStarsEarned: prog.totalStarsEarned,
+    starUpgradeLevels: prog.starUpgradeLevels,
     totalUpgradeSpent: prog.totalUpgradeSpent,
     toastedReveals: prog.toastedReveals,
     activeLoadout: prog.activeLoadout,

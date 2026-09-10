@@ -10,11 +10,14 @@ import {
 } from '@game/data/bot-upgrades'
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
+import EssenceCard from './EssenceCard.vue'
+import LevelPips from './LevelPips.vue'
 import UpgradeItem from './UpgradeItem.vue'
+import { STAR_UPGRADES, starUpgradeCost } from '@game/data/prestige'
 
 const progression = useProgressionStore()
 
-type Category = 'stats' | 'meta' | 'qol' | 'bot'
+type Category = 'stats' | 'meta' | 'qol' | 'bot' | 'prestige'
 
 // Default to the frontier (Bot), not Stats — progressive disclosure opens the
 // player on the capability surface that drives early depth (studio/borglike#2).
@@ -25,16 +28,28 @@ const allCategories: { id: Category; label: string; icon: string }[] = [
   { id: 'bot', label: 'Bot', icon: Icons.categoryBot },
   { id: 'meta', label: 'Meta', icon: Icons.categoryMeta },
   { id: 'qol', label: 'QoL', icon: Icons.categoryQol },
+  { id: 'prestige', label: 'Prestige', icon: Icons.prestige },
 ]
 
-// Meta is a "wide"-phase reveal; the rest are present from Boot.
+// Meta is a "wide"-phase reveal; prestige is the deepest rung (depth-gated,
+// studio/borglike#3). The rest are present from Boot.
 const categories = computed(() =>
-  allCategories.filter((c) => c.id !== 'meta' || progression.reveal.wide)
+  allCategories.filter(
+    (c) =>
+      (c.id !== 'meta' || progression.reveal.wide) &&
+      (c.id !== 'prestige' || progression.reveal.prestige)
+  )
 )
+
+const categoryPips: Record<string, string> = {
+  meta: 'chip-meta',
+  prestige: 'chip-prestige',
+}
 
 function selectCategory(id: Category) {
   activeCategory.value = id
-  if (id === 'meta') progression.markRevealSeen('chip-meta')
+  const pip = categoryPips[id]
+  if (pip) progression.markRevealSeen(pip)
 }
 
 const currentUpgrades = computed(() => {
@@ -191,6 +206,7 @@ const botUpgradeItems = computed(() => {
 
 const displayedUpgrades = computed(() => {
   if (activeCategory.value === 'bot') return botUpgradeItems.value
+  if (activeCategory.value === 'prestige') return []
   return currentUpgrades.value
 })
 
@@ -200,6 +216,42 @@ function handlePurchase(upgradeId: string) {
   } else {
     progression.purchaseUpgrade(upgradeId)
   }
+}
+
+// Prestige section (studio/borglike#3): the reset action plus the permanent
+// star tree. Stars are spent here, so costs read in stars, not essence.
+const prestigePreview = computed(() => progression.getPrestigePreview())
+const prestigeActionDescription = computed(() => {
+  const p = prestigePreview.value
+  const stars =
+    p.starsGain > 0
+      ? `Gain ${p.starsGain} star${p.starsGain === 1 ? '' : 's'}`
+      : 'No new stars yet — deeper lifetime essence earns more'
+  const floor = p.essenceFloor > 0 ? ` Essence restarts at ${p.essenceFloor}.` : ''
+  const kept = p.keepsEssenceBoost ? ' Essence Boost survives.' : ''
+  return `Reset upgrades and essence, keep bot caps. ${stars}. Income ×${p.newMultiplier}.${floor}${kept}`
+})
+
+const starItems = computed(() =>
+  STAR_UPGRADES.map((def) => {
+    const level = progression.starUpgradeLevels[def.id] || 0
+    const cost = starUpgradeCost(def.id, level)
+    return {
+      ...def,
+      currentLevel: level,
+      cost,
+      isMaxed: cost === null,
+      canAfford: cost !== null && progression.starBalance >= cost,
+    }
+  })
+)
+
+function doPrestige() {
+  progression.prestige()
+}
+
+function buyStar(id: string) {
+  progression.purchaseStarUpgrade(id)
 }
 </script>
 
@@ -216,23 +268,76 @@ function handlePurchase(upgradeId: string) {
         <Icon class="tab-icon" :name="cat.icon" />
         <span class="tab-label">{{ cat.label }}</span>
         <span
-          v-if="cat.id === 'meta' && progression.pendingPips.has('chip-meta')"
+          v-if="categoryPips[cat.id] && progression.pendingPips.has(categoryPips[cat.id]!)"
           class="tab-pip"
         ></span>
       </button>
     </div>
 
     <div class="upgrades-scroll">
-      <UpgradeItem
-        v-for="upgrade in displayedUpgrades"
-        :key="upgrade.id"
-        v-bind="upgrade"
-        @purchase="handlePurchase"
-      />
+      <template v-if="activeCategory === 'prestige'">
+        <div class="star-balance">
+          <Icon :name="Icons.prestige" />
+          <span
+            >{{ progression.starBalance }} star{{
+              progression.starBalance === 1 ? '' : 's'
+            }}
+            banked</span
+          >
+        </div>
+        <EssenceCard
+          :icon="Icons.prestige"
+          name="Prestige Reset"
+          :state="progression.canPrestige ? 'afford' : 'cantafford'"
+          :description="prestigeActionDescription"
+          :actionable="progression.canPrestige"
+          @action="doPrestige"
+        >
+          <template #meta>
+            <span class="prestige-level">Lv {{ progression.prestigeLevel }}</span>
+          </template>
+          <template #cost>
+            <template v-if="prestigePreview.starsGain > 0">
+              <Icon :name="Icons.prestige" />
+              <span>+{{ prestigePreview.starsGain }}</span>
+            </template>
+            <template v-else><span>RESET</span></template>
+          </template>
+        </EssenceCard>
+        <EssenceCard
+          v-for="star in starItems"
+          :key="star.id"
+          :icon="Icons.prestige"
+          :name="star.name"
+          :state="star.isMaxed ? 'maxed' : star.canAfford ? 'afford' : 'cantafford'"
+          :description="star.description"
+          :actionable="star.canAfford && !star.isMaxed"
+          @action="buyStar(star.id)"
+        >
+          <template #meta>
+            <LevelPips :current="star.currentLevel" :max="star.maxLevel" :maxed="star.isMaxed" />
+          </template>
+          <template #cost>
+            <template v-if="star.isMaxed">MAX</template>
+            <template v-else>
+              <Icon :name="Icons.prestige" />
+              <span>{{ star.cost }}</span>
+            </template>
+          </template>
+        </EssenceCard>
+      </template>
+      <template v-else>
+        <UpgradeItem
+          v-for="upgrade in displayedUpgrades"
+          :key="upgrade.id"
+          v-bind="upgrade"
+          @purchase="handlePurchase"
+        />
 
-      <div v-if="displayedUpgrades.length === 0" class="no-upgrades">
-        No upgrades in this category
-      </div>
+        <div v-if="displayedUpgrades.length === 0" class="no-upgrades">
+          No upgrades in this category
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -323,5 +428,19 @@ function handlePurchase(upgradeId: string) {
   color: var(--text-dim);
   font-style: italic;
   font-size: var(--text-base);
+}
+
+.star-balance {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-weight: bold;
+  color: var(--text-secondary);
+}
+
+.prestige-level {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
 }
 </style>

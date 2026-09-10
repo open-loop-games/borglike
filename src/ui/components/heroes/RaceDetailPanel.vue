@@ -16,7 +16,7 @@ const emit = defineEmits<{
 
 // Category badge
 const category = computed(() => {
-  if (props.race.prestige) return 'Prestige'
+  if (props.race.prestige) return 'Mythic'
   if (props.race.starting) return 'Starter'
   return 'Unlockable'
 })

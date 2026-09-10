@@ -42,6 +42,9 @@ const categories = ['all', 'starting', 'unlockable', 'prestige']
 
 function getCategoryLabel(cat: string): string {
   if (cat === 'all') return 'All Categories'
+  // Display-only: the prestige-flagged unlock row reads "Mythic" — "prestige"
+  // names the reset loop now (studio/borglike#3).
+  if (cat === 'prestige') return 'Mythic'
   return cat.charAt(0).toUpperCase() + cat.slice(1)
 }
 

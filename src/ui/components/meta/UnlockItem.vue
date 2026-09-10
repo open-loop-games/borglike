@@ -88,7 +88,7 @@ function handleUnlock() {
     :edge="prestige"
     @action="handleUnlock"
   >
-    <template v-if="prestige" #corner>Prestige</template>
+    <template v-if="prestige" #corner>Mythic</template>
 
     <template #sub>
       <div class="unlock-desc">{{ description }}</div>

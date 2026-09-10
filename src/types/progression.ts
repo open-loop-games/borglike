@@ -7,7 +7,6 @@ import type { Personality } from './events'
 
 export interface Currency {
   essence: number // Primary currency from runs
-  artifacts: number // Rare drops, used for prestige unlocks
 }
 
 export interface UnlockState {

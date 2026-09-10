@@ -19,14 +19,14 @@ const classWins = computed(() => progression.globalStats.victoriesPerClass ?? {}
 const raceGroups = computed(() => [
   { label: 'Starting', items: startingRaces },
   { label: 'Unlockable', items: unlockableRaces },
-  { label: 'Prestige', items: prestigeRaces },
+  { label: 'Mythic', items: prestigeRaces },
 ])
 
 // Class groups for display
 const classGroups = computed(() => [
   { label: 'Starting', items: startingClasses },
   { label: 'Unlockable', items: unlockableClasses },
-  { label: 'Prestige', items: prestigeClasses },
+  { label: 'Mythic', items: prestigeClasses },
 ])
 
 // Summary counts

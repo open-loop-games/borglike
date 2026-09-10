@@ -23,7 +23,7 @@ const abilitiesExpanded = ref(true)
 
 // Category badge
 const category = computed(() => {
-  if (props.gameClass.prestige) return 'Prestige'
+  if (props.gameClass.prestige) return 'Mythic'
   if (props.gameClass.starting) return 'Starter'
   return 'Unlockable'
 })

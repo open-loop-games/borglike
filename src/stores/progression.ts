@@ -41,11 +41,16 @@ import {
   cheatBooster,
 } from '@game/data/boosters'
 import {
+  DEEP_POCKETS_FLOORS,
+  getStarUpgradeById,
+  starUpgradeCost,
+  stellarFlowMultiplier,
+} from '@game/data/prestige'
+import {
   essenceFromDeath,
   essenceFromVictory,
   prestigeMultiplier,
   prestigeCurrency,
-  essenceForNextPrestige,
 } from '@core/formulas'
 import { saveImmediately, saveManualBackup } from './persistence'
 import { useSettingsStore } from './settings'
@@ -94,7 +99,6 @@ export const useProgressionStore = defineStore('progression', () => {
   // Currency
   const currency = ref<Currency>({
     essence: 0,
-    artifacts: 0,
   })
 
   // Upgrade levels
@@ -154,8 +158,13 @@ export const useProgressionStore = defineStore('progression', () => {
 
   // Prestige state
   const prestigeLevel = ref<number>(0)
-  const lifetimeEssence = ref<number>(0) // Never resets, used for prestige currency
+  const lifetimeEssence = ref<number>(0) // Never resets, sizes the star payout
   const totalVictories = ref<number>(0)
+  // Stars: spent prestige currency. Minted by prestige() from the cube root of
+  // lifetime essence, never reset, spent on the permanent star tree.
+  const starBalance = ref<number>(0)
+  const totalStarsEarned = ref<number>(0)
+  const starUpgradeLevels = ref<Record<string, number>>({})
 
   // Run history (last N runs)
   const runHistory = ref<RunStats[]>([])
@@ -263,16 +272,21 @@ export const useProgressionStore = defineStore('progression', () => {
 
   // Prestige computed
   const currentPrestigeMultiplier = computed(() => prestigeMultiplier(prestigeLevel.value))
-  const essenceForPrestige = computed(() => essenceForNextPrestige(prestigeLevel.value))
-  const canPrestige = computed(() => lifetimeEssence.value >= essenceForPrestige.value)
-  const potentialPrestigeCurrency = computed(() => prestigeCurrency(lifetimeEssence.value))
+  /** Depth gate (studio/borglike#3): prestige unlocks at reliably-midgame depth. */
+  const PRESTIGE_DEPTH_GATE = 35
+  const canPrestige = computed(() => globalStats.value.maxDepthEver >= PRESTIGE_DEPTH_GATE)
+  /** Stars the next prestige would mint: cumulative owed minus already banked. */
+  const starsToGain = computed(() =>
+    Math.max(0, prestigeCurrency(lifetimeEssence.value) - totalStarsEarned.value)
+  )
   const prestigeInfo = computed(() => ({
     level: prestigeLevel.value,
     multiplier: currentPrestigeMultiplier.value,
     lifetimeEssence: lifetimeEssence.value,
-    essenceForNext: essenceForPrestige.value,
+    depthGate: PRESTIGE_DEPTH_GATE,
     canPrestige: canPrestige.value,
-    potentialCurrency: potentialPrestigeCurrency.value,
+    starsToGain: starsToGain.value,
+    starBalance: starBalance.value,
   }))
 
   // Reveal phase (0 = boot, 1 = selectable, 2 = wide). Open-ended so prestige
@@ -287,6 +301,9 @@ export const useProgressionStore = defineStore('progression', () => {
   const reveal = computed(() => ({
     selectable: revealPhase.value >= 1,
     wide: revealPhase.value >= 2,
+    // Deepest rung (studio/borglike#3): depth-derived, not spend-derived — a
+    // reset loop must not gate on the accumulator it is about to keep growing.
+    prestige: globalStats.value.maxDepthEver >= PRESTIGE_DEPTH_GATE,
   }))
 
   // Run-slot teaser visibility: how many slot indices may show in the grid
@@ -1060,6 +1077,12 @@ export const useProgressionStore = defineStore('progression', () => {
     const prestige = prestigeMultiplier(prestigeLevel.value)
     let essence = Math.floor(baseEssence * prestige)
 
+    // Apply Stellar Flow (star tree, survives prestige)
+    const stellarLevel = starUpgradeLevels.value['stellar_flow'] || 0
+    if (stellarLevel > 0) {
+      essence = Math.floor(essence * stellarFlowMultiplier(stellarLevel))
+    }
+
     // Apply essence boost upgrade
     const essenceBoostLevel = getUpgradeLevel('essence_boost')
     if (essenceBoostLevel > 0) {
@@ -1076,38 +1099,73 @@ export const useProgressionStore = defineStore('progression', () => {
   }
 
   /**
-   * Perform a prestige reset
+   * Perform a prestige reset (studio/borglike#3, Model B).
    *
-   * Resets: upgrades, current essence
-   * Keeps: unlocks (races, classes), lifetime essence, run slots
-   * Gains: +1 prestige level, better essence multiplier
+   * Mints stars from the cube root of lifetime essence, then soft-resets:
+   * wipes stat/meta/qol upgrade levels + current essence (down to the
+   * Deep Pockets floor).
    *
-   * @returns true if prestige was performed, false if not eligible
+   * Keeps: bot capabilities (the viability layer — wiping them would only
+   * re-watch the same climb), unlocks (races, classes), run slots, stars and
+   * the star tree, lifetime essence, global stats, run history, victories.
+   * With Etched Knowledge, Essence Boost levels survive the wipe.
+   *
+   * @returns true if prestige was performed, false if the depth gate is unmet
    */
   function prestige(): boolean {
     if (!canPrestige.value) {
       return false
     }
 
-    // Increment prestige level
+    // Mint stars: cumulative owed minus already banked
+    const gained = starsToGain.value
+    starBalance.value += gained
+    totalStarsEarned.value += gained
+
+    // Increment prestige level (compounding income multiplier)
     prestigeLevel.value++
+
+    // Etched Knowledge: stash Essence Boost before the wipe
+    const keepBoost = (starUpgradeLevels.value['etched_knowledge'] || 0) > 0
+    const keptBoostLevel = keepBoost ? getUpgradeLevel('essence_boost') : 0
 
     // Reset upgrades (all levels back to 0)
     for (const key of Object.keys(upgradeLevels.value)) {
       upgradeLevels.value[key] = 0
     }
+    if (keptBoostLevel > 0) {
+      upgradeLevels.value['essence_boost'] = keptBoostLevel
+    }
 
-    // Reset current essence (keep lifetimeEssence as is)
-    currency.value.essence = 0
+    // Reset current essence down to the Deep Pockets floor (keep
+    // lifetimeEssence as is)
+    const floor = DEEP_POCKETS_FLOORS[starUpgradeLevels.value['deep_pockets'] || 0] ?? 0
+    currency.value.essence = floor
 
     // Note: We do NOT reset:
-    // - unlocks.races
-    // - unlocks.classes
+    // - botCapabilities (global viability layer, persists by design)
+    // - unlocks.races / unlocks.classes
     // - unlocks.runSlots (QoL purchases persist)
+    // - starBalance / starUpgradeLevels / totalStarsEarned
     // - lifetimeEssence
     // - globalStats
     // - runHistory
     // - totalVictories
+
+    // Deepest disclosure rung: first prestige fires its ceremony once
+    if (!toastedReveals.value.has('reveal-prestige')) {
+      toastedReveals.value.add('reveal-prestige')
+      pendingPips.value.add('chip-prestige')
+      useNotificationsStore().notify({
+        title: 'Prestige unlocked',
+        body:
+          gained > 0
+            ? `The loop restarts richer: ${gained} star${gained === 1 ? '' : 's'} banked.`
+            : 'The loop restarts richer: spend stars on the permanent tree.',
+        kind: 'success',
+        dedupeKey: 'reveal-prestige',
+      })
+    }
 
     // Save immediately - prestige is a critical action
     saveImmediately().catch((err) =>
@@ -1127,6 +1185,9 @@ export const useProgressionStore = defineStore('progression', () => {
     newLevel: number
     newMultiplier: number
     multiplierGain: number
+    starsGain: number
+    essenceFloor: number
+    keepsEssenceBoost: boolean
   } {
     const newLevel = prestigeLevel.value + 1
     const newMultiplier = prestigeMultiplier(newLevel)
@@ -1135,7 +1196,28 @@ export const useProgressionStore = defineStore('progression', () => {
       newLevel,
       newMultiplier,
       multiplierGain: newMultiplier - currentMult,
+      starsGain: starsToGain.value,
+      essenceFloor: DEEP_POCKETS_FLOORS[starUpgradeLevels.value['deep_pockets'] || 0] ?? 0,
+      keepsEssenceBoost: (starUpgradeLevels.value['etched_knowledge'] || 0) > 0,
     }
+  }
+
+  /**
+   * Buy the next level of a star-tree node with banked stars. Stars survive
+   * every reset, so these purchases are permanent (converter sink).
+   */
+  function purchaseStarUpgrade(upgradeId: string): boolean {
+    const def = getStarUpgradeById(upgradeId)
+    if (!def) return false
+    const currentLevel = starUpgradeLevels.value[upgradeId] || 0
+    const cost = starUpgradeCost(upgradeId, currentLevel)
+    if (cost === null || starBalance.value < cost) return false
+    starBalance.value -= cost
+    starUpgradeLevels.value[upgradeId] = currentLevel + 1
+    saveImmediately().catch((err) =>
+      console.error('[Progression] Failed to save after star purchase:', err)
+    )
+    return true
   }
 
   return {
@@ -1152,6 +1234,10 @@ export const useProgressionStore = defineStore('progression', () => {
     prestigeLevel,
     lifetimeEssence,
     totalVictories,
+    starBalance,
+    totalStarsEarned,
+    starUpgradeLevels,
+    starsToGain,
     activeLoadout,
     bestiary,
     itemArmory,
@@ -1225,6 +1311,7 @@ export const useProgressionStore = defineStore('progression', () => {
     debugAddEssence,
     prestige,
     getPrestigePreview,
+    purchaseStarUpgrade,
 
     // Booster actions
     unlockBooster,

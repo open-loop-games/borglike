@@ -24,6 +24,12 @@ const category = computed(() => {
   return 'unlockable'
 })
 
+// Display-only: the prestige-flagged row reads "Mythic" — "prestige" names
+// the reset loop now (studio/borglike#3). Class hooks stay on `category`.
+const categoryLabel = computed(() =>
+  category.value === 'prestige' ? 'MYTHIC' : category.value.toUpperCase()
+)
+
 // Iconify ID for the class symbol when unlocked, or null to fall back to a plaintext glyph.
 const symbolIcon = computed<string | null>(() => {
   if (!props.unlocked) return Icons.classUnknown
@@ -83,7 +89,7 @@ const primaryStat = computed(() => {
     @click="emit('click')"
   >
     <div class="category-badge" :class="category">
-      {{ category.toUpperCase() }}
+      {{ categoryLabel }}
     </div>
 
     <div class="card-content">

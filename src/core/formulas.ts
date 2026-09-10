@@ -129,20 +129,6 @@ export function prestigeCurrency(totalEssence: number, threshold: number = 10000
 }
 
 /**
- * Calculate essence needed for next prestige point.
- *
- * Inverse of prestigeCurrency: threshold * (targetPrestige)^3
- *
- * @param currentPrestige - Current prestige level
- * @param threshold - Essence required for first prestige
- * @returns Essence needed to reach next prestige level
- */
-export function essenceForNextPrestige(currentPrestige: number, threshold: number = 10000): number {
-  const targetPrestige = currentPrestige + 1
-  return Math.ceil(threshold * Math.pow(targetPrestige, 3))
-}
-
-/**
  * Calculate the global multiplier from prestige level.
  *
  * Each prestige provides compounding bonuses to essence gain.

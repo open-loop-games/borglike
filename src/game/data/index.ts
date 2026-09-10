@@ -146,6 +146,16 @@ export {
   type BoosterEffect,
 } from './boosters'
 
+// Prestige star tree
+export {
+  STAR_UPGRADES,
+  DEEP_POCKETS_FLOORS,
+  getStarUpgradeById,
+  starUpgradeCost,
+  stellarFlowMultiplier,
+  type StarUpgradeDefinition,
+} from './prestige'
+
 // Spells
 export {
   SPELLS,

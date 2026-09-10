@@ -180,11 +180,11 @@ export function setupAutoSave(): () => void {
   const stopProgression = watch(
     () => ({
       essence: progression.currency.essence,
-      artifacts: progression.currency.artifacts,
       totalRuns: progression.globalStats.totalRuns,
       totalEssence: progression.globalStats.totalEssence,
       maxDepthEver: progression.globalStats.maxDepthEver,
       prestigeLevel: progression.prestigeLevel,
+      starBalance: progression.starBalance,
       lifetimeEssence: progression.lifetimeEssence,
       totalVictories: progression.totalVictories,
       upgrades: JSON.stringify(progression.upgradeLevels),
