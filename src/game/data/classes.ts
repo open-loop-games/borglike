@@ -30,9 +30,9 @@ export interface GameClass {
   starting: boolean
   /** Unlock condition description (if not starting) */
   unlockCondition?: string
-  /** Is this a prestige class (late-game unlock)? */
-  prestige?: boolean
-  /** Predicate to check if unlock condition is met (for prestige classes) */
+  /** Is this a mythic class (late-game unlock)? */
+  mythic?: boolean
+  /** Predicate to check if unlock condition is met (for mythic classes) */
   checkCondition?: (ctx: UnlockContext) => boolean
   /** Brief flavor text */
   description: string
@@ -251,7 +251,7 @@ const necromancer: GameClass = {
   usesMagic: true,
   starting: false,
   unlockCondition: 'Die 100 times total',
-  prestige: true,
+  mythic: true,
   checkCondition: (ctx) => ctx.globalStats.totalDeaths >= 100,
   description: 'Masters of death who raise fallen enemies as allies.',
   botBehavior: 'Summoner: raises slain monsters, builds undead army, stays behind minions',
@@ -279,7 +279,7 @@ const berserker: GameClass = {
   usesMagic: false,
   starting: false,
   unlockCondition: 'Win a run with Warrior class',
-  prestige: true,
+  mythic: true,
   checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['warrior'] ?? 0) >= 1,
   description: 'Unstoppable fury incarnate - no healing, only damage.',
   botBehavior: 'All-in: never retreats, maximum aggression, wins fast or dies trying',
@@ -307,7 +307,7 @@ const archmage: GameClass = {
   usesMagic: true,
   starting: false,
   unlockCondition: 'Win a run with Mage defeating the final boss',
-  prestige: true,
+  mythic: true,
   checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['mage'] ?? 0) >= 1,
   description: 'Supreme magical power at the cost of extreme fragility.',
   botBehavior:
@@ -389,7 +389,7 @@ export const classes: GameClass[] = [
   paladin,
   druid,
   blackguard,
-  // Prestige classes
+  // Mythic classes
   necromancer,
   berserker,
   archmage,
@@ -399,10 +399,10 @@ export const classes: GameClass[] = [
 export const startingClasses = classes.filter((c) => c.starting)
 
 /** Non-starting classes (unlockable) */
-export const unlockableClasses = classes.filter((c) => !c.starting && !c.prestige)
+export const unlockableClasses = classes.filter((c) => !c.starting && !c.mythic)
 
-/** Prestige classes (late-game) */
-export const prestigeClasses = classes.filter((c) => c.prestige)
+/** Mythic classes (late-game) */
+export const mythicClasses = classes.filter((c) => c.mythic)
 
 /** Get a class by ID */
 export function getClassById(id: string): GameClass | undefined {

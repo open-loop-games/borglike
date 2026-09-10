@@ -4,7 +4,7 @@ import type { StatModifiers, RaceAbility } from '@game/data/races'
 import { Icons } from '@/ui/icons'
 import EssenceCard from './EssenceCard.vue'
 import Icon from '../common/Icon.vue'
-import { classSymbol, letterGlyph } from '../heroes/hero-symbols'
+import { classSymbol, heroCategoryLabel, letterGlyph } from '../heroes/hero-symbols'
 
 const props = defineProps<{
   id: string
@@ -14,7 +14,7 @@ const props = defineProps<{
   cost: number
   canAfford: boolean
   unlockCondition?: string
-  prestige?: boolean
+  mythic?: boolean
   meetsCondition?: boolean
   type: 'race' | 'class' | 'booster'
   /** Icon for boosters (carried in data). Races/classes resolve their own. */
@@ -85,10 +85,10 @@ function handleUnlock() {
     :actionable="canUnlock"
     :clamp-sub="false"
     cost-placement="header"
-    :edge="prestige"
+    :edge="mythic"
     @action="handleUnlock"
   >
-    <template v-if="prestige" #corner>Mythic</template>
+    <template v-if="mythic" #corner>{{ heroCategoryLabel('mythic') }}</template>
 
     <template #sub>
       <div class="unlock-desc">{{ description }}</div>

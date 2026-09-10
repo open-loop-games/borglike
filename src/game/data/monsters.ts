@@ -1682,7 +1682,7 @@ export function getUniques(): MonsterTemplate[] {
   return monsters.filter((m) => m.flags.includes('UNIQUE'))
 }
 
-// Get all dragon monster names (for prestige unlock tracking)
+// Get all dragon monster names (for mythic unlock tracking)
 export function getDragonNames(): string[] {
   return monsters.filter((m) => m.flags.includes('DRAGON')).map((m) => m.name)
 }

@@ -9,7 +9,7 @@
 import type { UnlockContext } from '@/types/progression'
 import { getDragonNames, getUniques } from './monsters'
 
-/** Starting race IDs for prestige unlock validation */
+/** Starting race IDs for mythic unlock validation */
 const STARTING_RACE_IDS = ['human', 'dwarf', 'elf']
 
 /** Stat modifiers for a race */
@@ -46,9 +46,9 @@ export interface Race {
   starting: boolean
   /** Unlock condition description (if not starting) */
   unlockCondition?: string
-  /** Is this a prestige race (late-game unlock)? */
-  prestige?: boolean
-  /** Predicate to check if unlock condition is met (for prestige races) */
+  /** Is this a mythic race (late-game unlock)? */
+  mythic?: boolean
+  /** Predicate to check if unlock condition is met (for mythic races) */
   checkCondition?: (ctx: UnlockContext) => boolean
   /** Brief flavor text */
   description: string
@@ -370,7 +370,7 @@ const vampire: Race = {
   ],
   starting: false,
   unlockCondition: 'Win a run with each starting race (Human, Dwarf, Elf)',
-  prestige: true,
+  mythic: true,
   checkCondition: (ctx) => {
     const wins = ctx.globalStats.victoriesPerRace ?? {}
     return STARTING_RACE_IDS.every((id) => (wins[id] ?? 0) >= 1)
@@ -404,7 +404,7 @@ const golem: Race = {
   ],
   starting: false,
   unlockCondition: 'Collect 10,000,000 gold total across all runs',
-  prestige: true,
+  mythic: true,
   checkCondition: (ctx) => ctx.globalStats.totalGold >= 10000000,
   description: 'Animated constructs of stone and metal, nearly indestructible.',
 }
@@ -430,7 +430,7 @@ const draconian: Race = {
   ],
   starting: false,
   unlockCondition: 'Kill 10,000 dragons total',
-  prestige: true,
+  mythic: true,
   checkCondition: (ctx) => {
     const dragonNames = getDragonNames()
     const totalDragonKills = dragonNames.reduce(
@@ -461,7 +461,7 @@ export const races: Race[] = [
   dunadan,
   highElf,
   kobold,
-  // Prestige races
+  // Mythic races
   vampire,
   golem,
   draconian,
@@ -471,10 +471,10 @@ export const races: Race[] = [
 export const startingRaces = races.filter((r) => r.starting)
 
 /** Non-starting races (unlockable) */
-export const unlockableRaces = races.filter((r) => !r.starting && !r.prestige)
+export const unlockableRaces = races.filter((r) => !r.starting && !r.mythic)
 
-/** Prestige races (late-game) */
-export const prestigeRaces = races.filter((r) => r.prestige)
+/** Mythic races (late-game) */
+export const mythicRaces = races.filter((r) => r.mythic)
 
 /** Get a race by ID */
 export function getRaceById(id: string): Race | undefined {

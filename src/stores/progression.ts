@@ -443,19 +443,19 @@ export const useProgressionStore = defineStore('progression', () => {
   const allUpgrades = computed(() => upgradeData.value.all)
   const upgradesByCategory = computed(() => upgradeData.value.byCategory)
 
-  // Context for evaluating prestige unlock conditions
+  // Context for evaluating race/class unlock conditions
   const unlockContext = computed<UnlockContext>(() => ({
     globalStats: globalStats.value,
     bestiary: bestiary.value,
   }))
 
-  // Race/class unlock info — ALL races (starting, unlockable, prestige)
+  // Race/class unlock info — ALL races (starting, unlockable, mythic)
   const raceUnlocks = computed(() => {
     const essence = currency.value.essence
     const ctx = unlockContext.value
     const pool = availableRaces.value
     return races.map((race) => {
-      const cost = race.starting ? 200 : race.prestige ? 10000 : 1000
+      const cost = race.starting ? 200 : race.mythic ? 10000 : 1000
       const meetsCondition = race.starting || !race.checkCondition || race.checkCondition(ctx)
       return {
         ...race,
@@ -473,7 +473,7 @@ export const useProgressionStore = defineStore('progression', () => {
     const ctx = unlockContext.value
     const pool = availableClasses.value
     return classes.map((cls) => {
-      const cost = cls.starting ? 200 : cls.prestige ? 10000 : 1000
+      const cost = cls.starting ? 200 : cls.mythic ? 10000 : 1000
       const meetsCondition = cls.starting || !cls.checkCondition || cls.checkCondition(ctx)
       return {
         ...cls,
@@ -858,7 +858,7 @@ export const useProgressionStore = defineStore('progression', () => {
       totalVictories.value++
       // Add to win history (never trimmed - wins are rare and precious)
       winHistory.value.unshift(stats)
-      // Track victories per race and class for prestige unlock conditions
+      // Track victories per race and class for mythic unlock conditions
       if (!globalStats.value.victoriesPerRace) {
         globalStats.value.victoriesPerRace = {}
       }

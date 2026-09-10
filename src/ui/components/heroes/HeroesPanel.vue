@@ -7,6 +7,7 @@ import RaceCard from './RaceCard.vue'
 import ClassCard from './ClassCard.vue'
 import RaceDetailPanel from './RaceDetailPanel.vue'
 import ClassDetailPanel from './ClassDetailPanel.vue'
+import { heroCategoryLabel } from './hero-symbols'
 
 const progression = useProgressionStore()
 
@@ -38,19 +39,17 @@ function clearSelection() {
 }
 
 // Categories for filtering
-const categories = ['all', 'starting', 'unlockable', 'prestige']
+const categories = ['all', 'starting', 'unlockable', 'mythic']
 
 function getCategoryLabel(cat: string): string {
   if (cat === 'all') return 'All Categories'
-  // Display-only: the prestige-flagged unlock row reads "Mythic" — "prestige"
-  // names the reset loop now (studio/borglike#3).
-  if (cat === 'prestige') return 'Mythic'
+  if (cat === 'mythic') return heroCategoryLabel('mythic')
   return cat.charAt(0).toUpperCase() + cat.slice(1)
 }
 
 // Get category for a race/class
 function getCategory(item: Race | GameClass): string {
-  if (item.prestige) return 'prestige'
+  if (item.mythic) return 'mythic'
   if (item.starting) return 'starting'
   return 'unlockable'
 }
@@ -93,10 +92,10 @@ const filteredRaces = computed(() => {
   // Sort
   switch (sortBy.value) {
     case 'unlock':
-      // Starting first, then unlockable, then prestige. Unlocked before locked within each.
+      // Starting first, then unlockable, then mythic. Unlocked before locked within each.
       result.sort((a, b) => {
-        const orderA = a.starting ? 0 : a.prestige ? 2 : 1
-        const orderB = b.starting ? 0 : b.prestige ? 2 : 1
+        const orderA = a.starting ? 0 : a.mythic ? 2 : 1
+        const orderB = b.starting ? 0 : b.mythic ? 2 : 1
         if (orderA !== orderB) return orderA - orderB
         const unlockedA = isRaceUnlocked(a) ? 0 : 1
         const unlockedB = isRaceUnlocked(b) ? 0 : 1
@@ -134,8 +133,8 @@ const filteredClasses = computed(() => {
   switch (sortBy.value) {
     case 'unlock':
       result.sort((a, b) => {
-        const orderA = a.starting ? 0 : a.prestige ? 2 : 1
-        const orderB = b.starting ? 0 : b.prestige ? 2 : 1
+        const orderA = a.starting ? 0 : a.mythic ? 2 : 1
+        const orderB = b.starting ? 0 : b.mythic ? 2 : 1
         if (orderA !== orderB) return orderA - orderB
         const unlockedA = isClassUnlocked(a) ? 0 : 1
         const unlockedB = isClassUnlocked(b) ? 0 : 1
@@ -363,8 +362,8 @@ function switchTab(tab: 'races' | 'classes') {
   outline-offset: -2px;
 }
 
-.card-grid :deep(.race-card.selected.prestige),
-.card-grid :deep(.class-card.selected.prestige) {
+.card-grid :deep(.race-card.selected.mythic),
+.card-grid :deep(.class-card.selected.mythic) {
   outline-color: var(--warning);
 }
 </style>

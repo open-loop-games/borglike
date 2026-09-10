@@ -249,7 +249,7 @@ export interface GlobalStats {
   bestDepthPerClass?: Record<string, number> // class id → best depth
 }
 
-/** Context passed to prestige unlock condition predicates */
+/** Context passed to race/class unlock condition predicates */
 export interface UnlockContext {
   globalStats: GlobalStats
   bestiary: Record<string, BestiaryEntry>

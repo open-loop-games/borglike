@@ -4,6 +4,7 @@ import type { GameClass } from '@game/data/classes'
 import { getClassSpellList, getClassPrimarySchool } from '@game/data/class-spells'
 import { getSpellById } from '@game/data/spells'
 import CollapsibleSection from '@/ui/components/common/CollapsibleSection.vue'
+import { heroCategory, heroCategoryLabel } from './hero-symbols'
 
 interface Props {
   gameClass: GameClass
@@ -22,15 +23,11 @@ const spellsExpanded = ref(true)
 const abilitiesExpanded = ref(true)
 
 // Category badge
-const category = computed(() => {
-  if (props.gameClass.prestige) return 'Mythic'
-  if (props.gameClass.starting) return 'Starter'
-  return 'Unlockable'
-})
+const category = computed(() => heroCategoryLabel(heroCategory(props.gameClass)))
 
 // Color for category
 const categoryColor = computed(() => {
-  if (props.gameClass.prestige) return '#f59e0b'
+  if (props.gameClass.mythic) return '#f59e0b'
   if (props.gameClass.starting) return '#22c55e'
   return '#3b82f6'
 })
@@ -155,7 +152,7 @@ const specialAbilities = computed(() => {
 </script>
 
 <template>
-  <div class="detail-panel" :class="{ prestige: gameClass.prestige }">
+  <div class="detail-panel" :class="{ mythic: gameClass.mythic }">
     <header class="panel-header">
       <button class="back-btn" @click="emit('close')">&larr;</button>
       <h3>Class Details</h3>
@@ -305,7 +302,7 @@ const specialAbilities = computed(() => {
   max-width: 320px;
 }
 
-.detail-panel.prestige {
+.detail-panel.mythic {
   border-left-color: color-mix(in srgb, var(--warning) 50%, transparent);
 }
 

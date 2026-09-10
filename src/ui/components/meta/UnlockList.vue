@@ -102,7 +102,7 @@ function getPrereqText(boosterId: string): string | undefined {
           :cost="item.cost"
           :can-afford="item.canAfford"
           :unlock-condition="item.unlockCondition"
-          :prestige="item.prestige"
+          :mythic="item.mythic"
           :meets-condition="item.meetsCondition"
           :type="item.type"
           :stats="item.stats"

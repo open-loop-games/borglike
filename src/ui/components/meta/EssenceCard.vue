@@ -25,9 +25,9 @@ const props = defineProps<{
   clampSub?: boolean
   /** Where the cost pill / check sits. Upgrades keep it in the footer next to
       the pips; unlocks (no pips, taller body) lift it onto the header line, and
-      prestige docks it into the bottom-right corner. */
+      mythic docks it into the bottom-right corner. */
   costPlacement?: 'footer' | 'header' | 'corner'
-  /** Warning-toned edge decoration — marks prestige unlocks. */
+  /** Warning-toned edge decoration — marks mythic unlocks. */
   edge?: boolean
   tooltipMaxWidth?: number
 }>()
@@ -177,7 +177,7 @@ function fire() {
   grid-column: 2 / 4;
 }
 
-/* ---- corner badge: docked flush to the bottom-right (prestige tag) ---- */
+/* ---- corner badge: docked flush to the bottom-right (mythic tag) ---- */
 .ec-corner {
   position: absolute;
   right: 0;
@@ -194,7 +194,7 @@ function fire() {
   border-bottom-right-radius: var(--radius-lg);
 }
 
-/* ---- edge decoration (prestige) ---- */
+/* ---- edge decoration (mythic) ---- */
 .ec--edge {
   position: relative;
   /* reserve room so a full last description line clears the docked corner tag */

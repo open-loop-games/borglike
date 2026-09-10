@@ -21,8 +21,8 @@ export interface Achievement {
   hidden?: boolean // Don't show until unlocked
   /** GlobalStats key this achievement tracks progress against. Required for cumulative achievements. */
   statKey?: keyof GlobalStats
-  /** Whether this is a prestige race/class achievement (visually marked in UI) */
-  prestige?: boolean
+  /** Whether this is a mythic race/class achievement (visually marked in UI) */
+  mythic?: boolean
   /** Mastery sub-group for grid layout */
   group?: 'race' | 'class' | 'meta'
 }
@@ -311,7 +311,7 @@ export const achievements: Achievement[] = [
       category: 'mastery',
       target: 1,
       reward: 500,
-      prestige: race.prestige,
+      mythic: race.mythic,
       group: 'race',
     })
   ),
@@ -326,7 +326,7 @@ export const achievements: Achievement[] = [
       category: 'mastery',
       target: 1,
       reward: 500,
-      prestige: cls.prestige,
+      mythic: cls.mythic,
       group: 'class',
     })
   ),

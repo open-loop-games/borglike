@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { GameClass } from '@game/data/classes'
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
-import { classSymbols } from './hero-symbols'
+import { classSymbols, heroCategory, heroCategoryLabel } from './hero-symbols'
 
 interface Props {
   gameClass: GameClass
@@ -17,18 +17,9 @@ const emit = defineEmits<{
   click: []
 }>()
 
-// Get category badge
-const category = computed(() => {
-  if (props.gameClass.prestige) return 'prestige'
-  if (props.gameClass.starting) return 'starter'
-  return 'unlockable'
-})
-
-// Display-only: the prestige-flagged row reads "Mythic" — "prestige" names
-// the reset loop now (studio/borglike#3). Class hooks stay on `category`.
-const categoryLabel = computed(() =>
-  category.value === 'prestige' ? 'MYTHIC' : category.value.toUpperCase()
-)
+// Badge: `category` drives the CSS hook, the label is display-only.
+const category = computed(() => heroCategory(props.gameClass))
+const categoryLabel = computed(() => heroCategoryLabel(category.value).toUpperCase())
 
 // Iconify ID for the class symbol when unlocked, or null to fall back to a plaintext glyph.
 const symbolIcon = computed<string | null>(() => {
@@ -44,7 +35,7 @@ const symbolFallback = computed(() => {
 // Get color based on category and magic
 const color = computed(() => {
   if (!props.unlocked) return '#4b5563'
-  if (props.gameClass.prestige) return '#f59e0b' // Amber for prestige
+  if (props.gameClass.mythic) return '#f59e0b' // Amber for mythic
   if (props.gameClass.starting) return '#22c55e' // Green for starter
   return '#3b82f6' // Blue for unlockable
 })
@@ -82,7 +73,7 @@ const primaryStat = computed(() => {
     class="class-card"
     :class="{
       locked: !unlocked,
-      prestige: gameClass.prestige,
+      mythic: gameClass.mythic,
       starter: gameClass.starting,
       magic: gameClass.usesMagic,
     }"
@@ -150,11 +141,11 @@ const primaryStat = computed(() => {
   opacity: 0.7;
 }
 
-.class-card.prestige {
+.class-card.mythic {
   border-color: color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
-.class-card.prestige:not(.locked) {
+.class-card.mythic:not(.locked) {
   box-shadow: 0 0 8px color-mix(in srgb, var(--warning) 20%, transparent);
 }
 
@@ -182,7 +173,7 @@ const primaryStat = computed(() => {
   background: color-mix(in srgb, var(--rare) 10%, transparent);
 }
 
-.category-badge.prestige {
+.category-badge.mythic {
   color: var(--warning);
   background: color-mix(in srgb, var(--warning) 10%, transparent);
 }
@@ -273,7 +264,7 @@ const primaryStat = computed(() => {
   color: white;
 }
 
-.class-card.prestige .unlocked-badge {
+.class-card.mythic .unlocked-badge {
   background: var(--warning);
 }
 

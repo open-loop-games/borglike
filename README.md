@@ -14,7 +14,7 @@ and run up to 4 simultaneous dungeon crawls.
 - Auto-playing roguelike with class-specific AI (11 classes, 14 races)
 - Multi-instance: 4 concurrent dungeon runs
 - Meta-progression: essence → upgrades → better runs
-- Prestige system with multipliers and prestige races
+- Prestige system with multipliers and mythic races
 - 50-level dungeon with vaults, merchants, altars, traps
 - 21 spells across 4 schools
 - Sophisticated bot AI: pathfinding, danger assessment, kiting, farming

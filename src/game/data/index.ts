@@ -12,7 +12,7 @@ export {
   races,
   startingRaces,
   unlockableRaces,
-  prestigeRaces,
+  mythicRaces,
   getRaceById,
   type Race,
   type RaceAbility,
@@ -23,7 +23,7 @@ export {
   classes,
   startingClasses,
   unlockableClasses,
-  prestigeClasses,
+  mythicClasses,
   getClassById,
   calculateHitdie,
   type GameClass,
@@ -149,11 +149,13 @@ export {
 // Prestige star tree
 export {
   STAR_UPGRADES,
-  DEEP_POCKETS_FLOORS,
-  getStarUpgradeById,
   starUpgradeCost,
-  stellarFlowMultiplier,
+  starEssenceMultiplier,
+  starEssenceFloor,
+  starKeptUpgradeIds,
   type StarUpgradeDefinition,
+  type StarUpgradeId,
+  type StarLevels,
 } from './prestige'
 
 // Spells

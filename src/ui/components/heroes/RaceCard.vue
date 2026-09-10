@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Race } from '@game/data/races'
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
+import { heroCategory, heroCategoryLabel } from './hero-symbols'
 
 interface Props {
   race: Race
@@ -16,18 +17,9 @@ const emit = defineEmits<{
   click: []
 }>()
 
-// Get category badge
-const category = computed(() => {
-  if (props.race.prestige) return 'prestige'
-  if (props.race.starting) return 'starter'
-  return 'unlockable'
-})
-
-// Display-only: the prestige-flagged row reads "Mythic" — "prestige" names
-// the reset loop now (studio/borglike#3). Class hooks stay on `category`.
-const categoryLabel = computed(() =>
-  category.value === 'prestige' ? 'MYTHIC' : category.value.toUpperCase()
-)
+// Badge: `category` drives the CSS hook, the label is display-only.
+const category = computed(() => heroCategory(props.race))
+const categoryLabel = computed(() => heroCategoryLabel(category.value).toUpperCase())
 
 // Get display symbol for race (first letter, styled)
 const symbol = computed(() => {
@@ -38,7 +30,7 @@ const symbol = computed(() => {
 // Get color based on category
 const color = computed(() => {
   if (!props.unlocked) return '#4b5563'
-  if (props.race.prestige) return '#f59e0b' // Amber for prestige
+  if (props.race.mythic) return '#f59e0b' // Amber for mythic
   if (props.race.starting) return '#22c55e' // Green for starter
   return '#3b82f6' // Blue for unlockable
 })
@@ -73,7 +65,7 @@ const statPreview = computed(() => {
 <template>
   <div
     class="race-card"
-    :class="{ locked: !unlocked, prestige: race.prestige, starter: race.starting }"
+    :class="{ locked: !unlocked, mythic: race.mythic, starter: race.starting }"
     @click="emit('click')"
   >
     <div class="category-badge" :class="category">
@@ -136,11 +128,11 @@ const statPreview = computed(() => {
   opacity: 0.7;
 }
 
-.race-card.prestige {
+.race-card.mythic {
   border-color: color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
-.race-card.prestige:not(.locked) {
+.race-card.mythic:not(.locked) {
   box-shadow: 0 0 8px color-mix(in srgb, var(--warning) 20%, transparent);
 }
 
@@ -168,7 +160,7 @@ const statPreview = computed(() => {
   background: color-mix(in srgb, var(--rare) 10%, transparent);
 }
 
-.category-badge.prestige {
+.category-badge.mythic {
   color: var(--warning);
   background: color-mix(in srgb, var(--warning) 10%, transparent);
 }
@@ -244,7 +236,7 @@ const statPreview = computed(() => {
   color: white;
 }
 
-.race-card.prestige .unlocked-badge {
+.race-card.mythic .unlocked-badge {
   background: var(--warning);
 }
 

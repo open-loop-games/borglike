@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useProgressionStore } from '@/stores/progression'
-import { races, startingRaces, unlockableRaces, prestigeRaces } from '@game/data/races'
-import { classes, startingClasses, unlockableClasses, prestigeClasses } from '@game/data/classes'
+import { races, startingRaces, unlockableRaces, mythicRaces } from '@game/data/races'
+import { classes, startingClasses, unlockableClasses, mythicClasses } from '@game/data/classes'
 import { getMetaAchievements } from '@game/data/achievements'
 import AchievementCard from './AchievementCard.vue'
+import { heroCategoryLabel } from '../heroes/hero-symbols'
 
 const progression = useProgressionStore()
 
@@ -19,14 +20,14 @@ const classWins = computed(() => progression.globalStats.victoriesPerClass ?? {}
 const raceGroups = computed(() => [
   { label: 'Starting', items: startingRaces },
   { label: 'Unlockable', items: unlockableRaces },
-  { label: 'Mythic', items: prestigeRaces },
+  { label: heroCategoryLabel('mythic'), items: mythicRaces },
 ])
 
 // Class groups for display
 const classGroups = computed(() => [
   { label: 'Starting', items: startingClasses },
   { label: 'Unlockable', items: unlockableClasses },
-  { label: 'Mythic', items: prestigeClasses },
+  { label: heroCategoryLabel('mythic'), items: mythicClasses },
 ])
 
 // Summary counts
@@ -94,7 +95,7 @@ const metaAchievements = computed(() => {
               won: isRaceUnlocked(race.id),
               collected: isRaceCollected(race.id),
               claimable: isRaceUnlocked(race.id) && !isRaceCollected(race.id),
-              prestige: race.prestige,
+              mythic: race.mythic,
             }"
             @click="
               isRaceUnlocked(race.id) && !isRaceCollected(race.id) ? claimRace(race.id) : undefined
@@ -103,7 +104,7 @@ const metaAchievements = computed(() => {
             <span class="cell-icon">@</span>
             <span class="cell-name">{{ race.name }}</span>
             <span v-if="isRaceUnlocked(race.id)" class="cell-check">&#10003;</span>
-            <span v-if="race.prestige" class="prestige-marker">&#9830;</span>
+            <span v-if="race.mythic" class="mythic-marker">&#9830;</span>
           </div>
         </div>
       </div>
@@ -126,7 +127,7 @@ const metaAchievements = computed(() => {
               won: isClassUnlocked(cls.id),
               collected: isClassCollected(cls.id),
               claimable: isClassUnlocked(cls.id) && !isClassCollected(cls.id),
-              prestige: cls.prestige,
+              mythic: cls.mythic,
             }"
             @click="
               isClassUnlocked(cls.id) && !isClassCollected(cls.id) ? claimClass(cls.id) : undefined
@@ -135,7 +136,7 @@ const metaAchievements = computed(() => {
             <span class="cell-icon">&amp;</span>
             <span class="cell-name">{{ cls.name }}</span>
             <span v-if="isClassUnlocked(cls.id)" class="cell-check">&#10003;</span>
-            <span v-if="cls.prestige" class="prestige-marker">&#9830;</span>
+            <span v-if="cls.mythic" class="mythic-marker">&#9830;</span>
           </div>
         </div>
       </div>
@@ -251,16 +252,16 @@ const metaAchievements = computed(() => {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
-.mastery-cell.prestige {
+.mastery-cell.mythic {
   border-color: var(--legendary);
 }
 
-.mastery-cell.prestige.won {
+.mastery-cell.mythic.won {
   border-color: var(--success);
   box-shadow: 0 0 6px color-mix(in srgb, var(--legendary) 20%, transparent);
 }
 
-.mastery-cell.prestige.claimable {
+.mastery-cell.mythic.claimable {
   border-color: var(--essence);
   box-shadow: 0 0 10px color-mix(in srgb, var(--essence) 35%, transparent);
 }
@@ -298,7 +299,7 @@ const metaAchievements = computed(() => {
   font-size: var(--text-base);
 }
 
-.prestige-marker {
+.mythic-marker {
   position: absolute;
   top: -2px;
   right: -2px;

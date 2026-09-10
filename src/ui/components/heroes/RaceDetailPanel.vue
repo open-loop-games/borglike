@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Race } from '@game/data/races'
+import { heroCategory, heroCategoryLabel } from './hero-symbols'
 
 interface Props {
   race: Race
@@ -15,15 +16,11 @@ const emit = defineEmits<{
 }>()
 
 // Category badge
-const category = computed(() => {
-  if (props.race.prestige) return 'Mythic'
-  if (props.race.starting) return 'Starter'
-  return 'Unlockable'
-})
+const category = computed(() => heroCategoryLabel(heroCategory(props.race)))
 
 // Color for category
 const categoryColor = computed(() => {
-  if (props.race.prestige) return '#f59e0b'
+  if (props.race.mythic) return '#f59e0b'
   if (props.race.starting) return '#22c55e'
   return '#3b82f6'
 })
@@ -60,7 +57,7 @@ const stats = computed(() => [
 </script>
 
 <template>
-  <div class="detail-panel" :class="{ prestige: race.prestige }">
+  <div class="detail-panel" :class="{ mythic: race.mythic }">
     <header class="panel-header">
       <button class="back-btn" @click="emit('close')">&larr;</button>
       <h3>Race Details</h3>
@@ -169,7 +166,7 @@ const stats = computed(() => [
   max-width: 320px;
 }
 
-.detail-panel.prestige {
+.detail-panel.mythic {
   border-left-color: color-mix(in srgb, var(--warning) 50%, transparent);
 }
 

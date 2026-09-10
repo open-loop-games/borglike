@@ -24,3 +24,27 @@ export function classSymbol(id: string): string | null {
 export function letterGlyph(name: string): string {
   return name.charAt(0).toUpperCase()
 }
+
+/**
+ * Hero rows carry a `mythic` flag in the race/class data — the late-game
+ * unlocks once (confusingly) called "prestige". That word now names only the
+ * reset loop (studio/borglike#3), so the flag, the category keys, and the CSS
+ * hooks that key off them all read `mythic`; only the label says "Mythic".
+ */
+export type HeroCategory = 'mythic' | 'starter' | 'unlockable'
+
+export function heroCategory(item: { mythic?: boolean; starting?: boolean }): HeroCategory {
+  if (item.mythic) return 'mythic'
+  if (item.starting) return 'starter'
+  return 'unlockable'
+}
+
+const HERO_CATEGORY_LABELS: Record<HeroCategory, string> = {
+  mythic: 'Mythic',
+  starter: 'Starter',
+  unlockable: 'Unlockable',
+}
+
+export function heroCategoryLabel(category: HeroCategory): string {
+  return HERO_CATEGORY_LABELS[category]
+}
