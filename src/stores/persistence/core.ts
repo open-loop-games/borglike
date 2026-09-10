@@ -85,16 +85,14 @@ export function validateProgressionData(data: ProgressionData): ValidationResult
 
   if (!data.currency) {
     errors.push({ path: 'currency', message: 'Missing currency object', severity: 'error' })
-  } else {
-    if (typeof data.currency.essence === 'number' && data.currency.essence < 0) {
-      errors.push({
-        path: 'currency.essence',
-        message: 'Negative essence repaired',
-        severity: 'warning',
-      })
-      data.currency.essence = 0
-      repaired = true
-    }
+  } else if (typeof data.currency.essence === 'number' && data.currency.essence < 0) {
+    errors.push({
+      path: 'currency.essence',
+      message: 'Negative essence repaired',
+      severity: 'warning',
+    })
+    data.currency.essence = 0
+    repaired = true
   }
 
   if (!data.unlocks) {
