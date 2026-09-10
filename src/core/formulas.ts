@@ -17,6 +17,11 @@
 
 /** Prestige compression: 8x essence = 2x prestige currency (Cookie Clicker standard) */
 const PRESTIGE_CUBE_ROOT = 1 / 3
+/** Lifetime essence that mints the first star. */
+const PRESTIGE_THRESHOLD = 10000
+
+/** Depth that unlocks the prestige reset — reliably-midgame (studio/borglike#3). */
+const PRESTIGE_DEPTH_GATE = 35
 
 /** XP curve exponent for character leveling (polynomial scaling) */
 const XP_CURVE_EXPONENT = 1.5
@@ -120,12 +125,23 @@ export function essenceFromVictory(_depth: number, kills: number, turnsTaken: nu
  * - Creates satisfying 90% time reduction per prestige
  *
  * @param totalEssence - Total essence ever earned
- * @param threshold - Essence required for first prestige point (default: 10000)
  * @returns Prestige currency (stars/prestiges)
  */
-export function prestigeCurrency(totalEssence: number, threshold: number = 10000): number {
-  if (totalEssence < threshold) return 0
-  return Math.floor(Math.pow(totalEssence / threshold, PRESTIGE_CUBE_ROOT))
+export function prestigeCurrency(totalEssence: number): number {
+  if (totalEssence < PRESTIGE_THRESHOLD) return 0
+  return Math.floor(Math.pow(totalEssence / PRESTIGE_THRESHOLD, PRESTIGE_CUBE_ROOT))
+}
+
+/**
+ * Whether the prestige reset has been earned.
+ *
+ * Gates on depth reached, not lifetime essence: a reset loop must not gate on
+ * the accumulator it is about to keep growing.
+ *
+ * @param maxDepthEver - Deepest dungeon level ever reached
+ */
+export function meetsPrestigeDepthGate(maxDepthEver: number): boolean {
+  return maxDepthEver >= PRESTIGE_DEPTH_GATE
 }
 
 /**

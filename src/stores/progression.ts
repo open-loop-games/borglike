@@ -41,16 +41,17 @@ import {
   cheatBooster,
 } from '@game/data/boosters'
 import {
-  DEEP_POCKETS_FLOORS,
-  getStarUpgradeById,
+  starEssenceFloor,
+  starEssenceMultiplier,
+  starKeptUpgradeIds,
   starUpgradeCost,
-  stellarFlowMultiplier,
 } from '@game/data/prestige'
 import {
   essenceFromDeath,
   essenceFromVictory,
   prestigeMultiplier,
   prestigeCurrency,
+  meetsPrestigeDepthGate,
 } from '@core/formulas'
 import { saveImmediately, saveManualBackup } from './persistence'
 import { useSettingsStore } from './settings'
@@ -272,22 +273,11 @@ export const useProgressionStore = defineStore('progression', () => {
 
   // Prestige computed
   const currentPrestigeMultiplier = computed(() => prestigeMultiplier(prestigeLevel.value))
-  /** Depth gate (studio/borglike#3): prestige unlocks at reliably-midgame depth. */
-  const PRESTIGE_DEPTH_GATE = 35
-  const canPrestige = computed(() => globalStats.value.maxDepthEver >= PRESTIGE_DEPTH_GATE)
+  const canPrestige = computed(() => meetsPrestigeDepthGate(globalStats.value.maxDepthEver))
   /** Stars the next prestige would mint: cumulative owed minus already banked. */
   const starsToGain = computed(() =>
     Math.max(0, prestigeCurrency(lifetimeEssence.value) - totalStarsEarned.value)
   )
-  const prestigeInfo = computed(() => ({
-    level: prestigeLevel.value,
-    multiplier: currentPrestigeMultiplier.value,
-    lifetimeEssence: lifetimeEssence.value,
-    depthGate: PRESTIGE_DEPTH_GATE,
-    canPrestige: canPrestige.value,
-    starsToGain: starsToGain.value,
-    starBalance: starBalance.value,
-  }))
 
   // Reveal phase (0 = boot, 1 = selectable, 2 = wide). Open-ended so prestige
   // (studio/borglike#3) can slot in as a higher rung.
@@ -303,7 +293,7 @@ export const useProgressionStore = defineStore('progression', () => {
     wide: revealPhase.value >= 2,
     // Deepest rung (studio/borglike#3): depth-derived, not spend-derived — a
     // reset loop must not gate on the accumulator it is about to keep growing.
-    prestige: globalStats.value.maxDepthEver >= PRESTIGE_DEPTH_GATE,
+    prestige: canPrestige.value,
   }))
 
   // Run-slot teaser visibility: how many slot indices may show in the grid
@@ -1077,11 +1067,8 @@ export const useProgressionStore = defineStore('progression', () => {
     const prestige = prestigeMultiplier(prestigeLevel.value)
     let essence = Math.floor(baseEssence * prestige)
 
-    // Apply Stellar Flow (star tree, survives prestige)
-    const stellarLevel = starUpgradeLevels.value['stellar_flow'] || 0
-    if (stellarLevel > 0) {
-      essence = Math.floor(essence * stellarFlowMultiplier(stellarLevel))
-    }
+    // Apply the star tree's essence multiplier (survives prestige)
+    essence = Math.floor(essence * starEssenceMultiplier(starUpgradeLevels.value))
 
     // Apply essence boost upgrade
     const essenceBoostLevel = getUpgradeLevel('essence_boost')
@@ -1125,22 +1112,22 @@ export const useProgressionStore = defineStore('progression', () => {
     // Increment prestige level (compounding income multiplier)
     prestigeLevel.value++
 
-    // Etched Knowledge: stash Essence Boost before the wipe
-    const keepBoost = (starUpgradeLevels.value['etched_knowledge'] || 0) > 0
-    const keptBoostLevel = keepBoost ? getUpgradeLevel('essence_boost') : 0
+    // Stash the upgrades the star tree exempts, before the wipe
+    const kept = starKeptUpgradeIds(starUpgradeLevels.value).map(
+      (id) => [id, getUpgradeLevel(id)] as const
+    )
 
     // Reset upgrades (all levels back to 0)
     for (const key of Object.keys(upgradeLevels.value)) {
       upgradeLevels.value[key] = 0
     }
-    if (keptBoostLevel > 0) {
-      upgradeLevels.value['essence_boost'] = keptBoostLevel
+    for (const [id, level] of kept) {
+      if (level > 0) upgradeLevels.value[id] = level
     }
 
-    // Reset current essence down to the Deep Pockets floor (keep
+    // Reset current essence down to the star tree's floor (keep
     // lifetimeEssence as is)
-    const floor = DEEP_POCKETS_FLOORS[starUpgradeLevels.value['deep_pockets'] || 0] ?? 0
-    currency.value.essence = floor
+    currency.value.essence = starEssenceFloor(starUpgradeLevels.value)
 
     // Note: We do NOT reset:
     // - botCapabilities (global viability layer, persists by design)
@@ -1197,8 +1184,8 @@ export const useProgressionStore = defineStore('progression', () => {
       newMultiplier,
       multiplierGain: newMultiplier - currentMult,
       starsGain: starsToGain.value,
-      essenceFloor: DEEP_POCKETS_FLOORS[starUpgradeLevels.value['deep_pockets'] || 0] ?? 0,
-      keepsEssenceBoost: (starUpgradeLevels.value['etched_knowledge'] || 0) > 0,
+      essenceFloor: starEssenceFloor(starUpgradeLevels.value),
+      keepsEssenceBoost: starKeptUpgradeIds(starUpgradeLevels.value).length > 0,
     }
   }
 
@@ -1207,8 +1194,6 @@ export const useProgressionStore = defineStore('progression', () => {
    * every reset, so these purchases are permanent (converter sink).
    */
   function purchaseStarUpgrade(upgradeId: string): boolean {
-    const def = getStarUpgradeById(upgradeId)
-    if (!def) return false
     const currentLevel = starUpgradeLevels.value[upgradeId] || 0
     const cost = starUpgradeCost(upgradeId, currentLevel)
     if (cost === null || starBalance.value < cost) return false
@@ -1263,7 +1248,6 @@ export const useProgressionStore = defineStore('progression', () => {
     upgradesByCategory,
     raceUnlocks,
     classUnlocks,
-    prestigeInfo,
     canPrestige,
     currentPrestigeMultiplier,
     bestRunByDepth,

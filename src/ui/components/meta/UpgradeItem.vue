@@ -16,6 +16,8 @@ const props = defineProps<{
   cost: number
   canAfford: boolean
   isMaxed: boolean
+  /** Currency the cost is priced in. Star-tree nodes are bought with stars. */
+  costIcon?: string
   // Stat-upgrade tooltip inputs — a numeric effect scaling with level. Absent
   // for behavioural BOT upgrades, which describe themselves through `tiers`.
   effectValue?: number
@@ -116,7 +118,7 @@ function handlePurchase() {
     <template #cost>
       <template v-if="isMaxed">MAX</template>
       <template v-else>
-        <Icon :name="Icons.essence" />
+        <Icon :name="costIcon ?? Icons.essence" />
         <span>{{ costText }}</span>
       </template>
     </template>

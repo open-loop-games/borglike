@@ -5,10 +5,21 @@
  * cube-root of lifetime essence, spent on permanent nodes that survive every
  * reset. Kept deliberately small — a never-resetting economy never
  * self-corrects, so each node must stay sane at any star count.
+ *
+ * Node *effects* resolve here rather than in the store, mirroring how
+ * `UpgradeDefinition.effect` and `BoosterDefinition.effect` keep their families'
+ * behaviour beside their data. The resolvers take the whole level map so no
+ * caller has to name a node id — a typo'd literal in the store would otherwise
+ * fail silently to a no-op.
  */
 
+export type StarUpgradeId = 'stellar_flow' | 'deep_pockets' | 'etched_knowledge'
+
+/** Owned level per star node; absent keys read as 0. */
+export type StarLevels = Readonly<Record<string, number>>
+
 export interface StarUpgradeDefinition {
-  id: string
+  id: StarUpgradeId
   name: string
   description: string
   maxLevel: number
@@ -32,9 +43,6 @@ const deepPockets: StarUpgradeDefinition = {
   costs: [1, 2, 3],
 }
 
-/** Essence floor granted by Deep Pockets at each owned level. */
-export const DEEP_POCKETS_FLOORS = [0, 500, 1500, 3000]
-
 const etchedKnowledge: StarUpgradeDefinition = {
   id: 'etched_knowledge',
   name: 'Etched Knowledge',
@@ -45,18 +53,35 @@ const etchedKnowledge: StarUpgradeDefinition = {
 
 export const STAR_UPGRADES: StarUpgradeDefinition[] = [stellarFlow, deepPockets, etchedKnowledge]
 
-export function getStarUpgradeById(id: string): StarUpgradeDefinition | undefined {
+function starUpgradeById(id: string): StarUpgradeDefinition | undefined {
   return STAR_UPGRADES.find((u) => u.id === id)
+}
+
+function levelOf(levels: StarLevels, id: StarUpgradeId): number {
+  return levels[id] || 0
 }
 
 /** Star price of the next level, or null when maxed/unknown. */
 export function starUpgradeCost(id: string, currentLevel: number): number | null {
-  const def = getStarUpgradeById(id)
+  const def = starUpgradeById(id)
   if (!def || currentLevel >= def.maxLevel) return null
   return def.costs[currentLevel] ?? null
 }
 
-/** +15% essence per Stellar Flow level, as a multiplier. */
-export function stellarFlowMultiplier(level: number): number {
-  return 1 + 0.15 * Math.max(0, level)
+/** Run-essence multiplier granted by Stellar Flow: +15% per owned level. */
+export function starEssenceMultiplier(levels: StarLevels): number {
+  return 1 + 0.15 * levelOf(levels, 'stellar_flow')
+}
+
+/** Essence floor Deep Pockets leaves behind at each owned level (index = level - 1). */
+const DEEP_POCKETS_FLOORS = [500, 1500, 3000]
+
+/** Essence a prestige reset floors at, rather than zero. 0 without Deep Pockets. */
+export function starEssenceFloor(levels: StarLevels): number {
+  return DEEP_POCKETS_FLOORS[levelOf(levels, 'deep_pockets') - 1] ?? 0
+}
+
+/** Upgrade ids whose levels survive the prestige wipe (Etched Knowledge). */
+export function starKeptUpgradeIds(levels: StarLevels): string[] {
+  return levelOf(levels, 'etched_knowledge') > 0 ? ['essence_boost'] : []
 }

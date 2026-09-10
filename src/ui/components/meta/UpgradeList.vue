@@ -11,7 +11,6 @@ import {
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
 import EssenceCard from './EssenceCard.vue'
-import LevelPips from './LevelPips.vue'
 import UpgradeItem from './UpgradeItem.vue'
 import { STAR_UPGRADES, starUpgradeCost } from '@game/data/prestige'
 
@@ -23,33 +22,42 @@ type Category = 'stats' | 'meta' | 'qol' | 'bot' | 'prestige'
 // player on the capability surface that drives early depth (studio/borglike#2).
 const activeCategory = ref<Category>('bot')
 
-const allCategories: { id: Category; label: string; icon: string }[] = [
-  { id: 'stats', label: 'Stats', icon: Icons.categoryStats },
-  { id: 'bot', label: 'Bot', icon: Icons.categoryBot },
-  { id: 'meta', label: 'Meta', icon: Icons.categoryMeta },
-  { id: 'qol', label: 'QoL', icon: Icons.categoryQol },
-  { id: 'prestige', label: 'Prestige', icon: Icons.prestige },
-]
-
-// Meta is a "wide"-phase reveal; prestige is the deepest rung (depth-gated,
-// studio/borglike#3). The rest are present from Boot.
-const categories = computed(() =>
-  allCategories.filter(
-    (c) =>
-      (c.id !== 'meta' || progression.reveal.wide) &&
-      (c.id !== 'prestige' || progression.reveal.prestige)
-  )
-)
-
-const categoryPips: Record<string, string> = {
-  meta: 'chip-meta',
-  prestige: 'chip-prestige',
+// A tab carries its own reveal gate and "new" pip, so which categories are
+// gated is stated once. Ungated tabs are present from Boot: Meta waits for the
+// "wide" phase, Prestige for the depth rung (studio/borglike#3).
+type CategoryTab = {
+  id: Category
+  label: string
+  icon: string
+  gate?: () => boolean
+  pip?: string
 }
 
-function selectCategory(id: Category) {
-  activeCategory.value = id
-  const pip = categoryPips[id]
-  if (pip) progression.markRevealSeen(pip)
+const allCategories: CategoryTab[] = [
+  { id: 'stats', label: 'Stats', icon: Icons.categoryStats },
+  { id: 'bot', label: 'Bot', icon: Icons.categoryBot },
+  {
+    id: 'meta',
+    label: 'Meta',
+    icon: Icons.categoryMeta,
+    gate: () => progression.reveal.wide,
+    pip: 'chip-meta',
+  },
+  { id: 'qol', label: 'QoL', icon: Icons.categoryQol },
+  {
+    id: 'prestige',
+    label: 'Prestige',
+    icon: Icons.prestige,
+    gate: () => progression.reveal.prestige,
+    pip: 'chip-prestige',
+  },
+]
+
+const categories = computed(() => allCategories.filter((c) => !c.gate || c.gate()))
+
+function selectCategory(cat: CategoryTab) {
+  activeCategory.value = cat.id
+  if (cat.pip) progression.markRevealSeen(cat.pip)
 }
 
 const currentUpgrades = computed(() => {
@@ -206,7 +214,6 @@ const botUpgradeItems = computed(() => {
 
 const displayedUpgrades = computed(() => {
   if (activeCategory.value === 'bot') return botUpgradeItems.value
-  if (activeCategory.value === 'prestige') return []
   return currentUpgrades.value
 })
 
@@ -232,14 +239,20 @@ const prestigeActionDescription = computed(() => {
   return `Reset upgrades and essence, keep bot caps. ${stars}. Income ×${p.newMultiplier}.${floor}${kept}`
 })
 
+// Shaped as UpgradeItem props so star nodes render through the same card as
+// essence upgrades — they differ only in the currency their cost is priced in.
 const starItems = computed(() =>
   STAR_UPGRADES.map((def) => {
     const level = progression.starUpgradeLevels[def.id] || 0
     const cost = starUpgradeCost(def.id, level)
     return {
-      ...def,
+      id: def.id,
+      name: def.name,
+      description: def.description,
+      maxLevel: def.maxLevel,
+      icon: Icons.prestige,
       currentLevel: level,
-      cost,
+      cost: cost ?? 0,
       isMaxed: cost === null,
       canAfford: cost !== null && progression.starBalance >= cost,
     }
@@ -263,14 +276,11 @@ function buyStar(id: string) {
         :key="cat.id"
         class="category-tab"
         :class="{ active: activeCategory === cat.id }"
-        @click="selectCategory(cat.id)"
+        @click="selectCategory(cat)"
       >
         <Icon class="tab-icon" :name="cat.icon" />
         <span class="tab-label">{{ cat.label }}</span>
-        <span
-          v-if="categoryPips[cat.id] && progression.pendingPips.has(categoryPips[cat.id]!)"
-          class="tab-pip"
-        ></span>
+        <span v-if="cat.pip && progression.pendingPips.has(cat.pip)" class="tab-pip"></span>
       </button>
     </div>
 
@@ -304,27 +314,13 @@ function buyStar(id: string) {
             <template v-else><span>RESET</span></template>
           </template>
         </EssenceCard>
-        <EssenceCard
+        <UpgradeItem
           v-for="star in starItems"
           :key="star.id"
-          :icon="Icons.prestige"
-          :name="star.name"
-          :state="star.isMaxed ? 'maxed' : star.canAfford ? 'afford' : 'cantafford'"
-          :description="star.description"
-          :actionable="star.canAfford && !star.isMaxed"
-          @action="buyStar(star.id)"
-        >
-          <template #meta>
-            <LevelPips :current="star.currentLevel" :max="star.maxLevel" :maxed="star.isMaxed" />
-          </template>
-          <template #cost>
-            <template v-if="star.isMaxed">MAX</template>
-            <template v-else>
-              <Icon :name="Icons.prestige" />
-              <span>{{ star.cost }}</span>
-            </template>
-          </template>
-        </EssenceCard>
+          v-bind="star"
+          :cost-icon="Icons.prestige"
+          @purchase="buyStar"
+        />
       </template>
       <template v-else>
         <UpgradeItem
