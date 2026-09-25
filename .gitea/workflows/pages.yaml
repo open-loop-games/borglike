@@ -8,13 +8,13 @@ jobs:
   deploy:
     runs-on: linux
     container:
-      image: node:22-alpine
+      image: node:24-alpine
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
+        run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
