@@ -309,7 +309,7 @@ export function selectTarget(
     // self-defense still wins — don't walk past teeth to hit structure)
     score += riftTargetBonus(monster)
 
-    let reason = ''
+    let reason: string
     if (distance === 1) {
       reason = 'adjacent'
     } else if (hpPercent < 0.3) {
@@ -439,7 +439,7 @@ export function selectTargetForClass(
     // Rift: spawners and bosses outrank trash at range
     score += riftTargetBonus(monster)
 
-    let reason = ''
+    let reason: string
     if (classProfile.prefersRanged && distance >= 2 && distance <= bowRange) {
       reason = 'in range'
     } else if (distance === 1) {
@@ -789,12 +789,9 @@ export function findKitePosition(
     const newDy = targetPos.y - adj.y
     const newDist = Math.max(Math.abs(newDx), Math.abs(newDy))
 
-    // Score this position
-    let score = 0
-
-    // Prefer positions closer to optimal range
+    // Score this position, preferring positions closer to optimal range
     const distFromOptimal = Math.abs(newDist - optimalRange)
-    score = 100 - distFromOptimal * 20
+    let score = 100 - distFromOptimal * 20
 
     // Bonus if we can still attack from this position
     if (newDist >= 2 && newDist <= effectiveMaxRange) {

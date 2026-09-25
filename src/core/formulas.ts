@@ -67,7 +67,7 @@ const ESSENCE_REWARDS = {
  * @returns Total essence earned from this death
  */
 export function essenceFromDeath(depth: number, kills: number, gold: number): number {
-  let baseEssence = 0
+  let baseEssence: number
 
   // Depth-based milestone rewards (piecewise)
   if (depth >= DUNGEON.DEEP_END) {
