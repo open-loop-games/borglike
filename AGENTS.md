@@ -23,7 +23,7 @@ pnpm run preview      # Preview production build
 pnpm run check        # Full check: typecheck + lint + format
 pnpm run typecheck    # TypeScript check only
 pnpm run lint         # ESLint check
-pnpm run format       # Prettier write
+pnpm run format       # oxfmt write
 
 pnpm run knip         # Find unused exports/dependencies
 pnpm diagnose [mode]  # Bot diagnostics (deep, quick, batch, find, baseline)

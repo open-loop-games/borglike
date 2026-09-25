@@ -9,7 +9,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/recommended'],
 
-  // Prettier must be last to override other formatting rules
+  // Turns off eslint's layout rules so oxfmt owns formatting; must follow the configs it overrides
   prettier,
 
   // Global ignores
