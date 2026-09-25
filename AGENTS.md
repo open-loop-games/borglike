@@ -94,15 +94,6 @@ src/
 **MUST NEVER NOT**
 - Git revert or checkout without checking last commit time and diff for other work
 
-## File Size Guidelines
-**Based on this philosophy:**
-- ❌ 50-150 lines - Too small, ok for index
-- ✅ 300-900 lines - Sweet spot for domain module
-- ⚠️ 900-1200 lines - Getting large, but OK if well-organized
-- ❌ 1500+ lines - Time to split by subdomain
-- Organization matters more than size
-- For AI codebases, fewer, larger files makes it easier to grasp the codebase and style quickly
-
 ## TSDoc Standards
 **"Document the why and complex how, not the obvious what"**
 - Focus on intent, design decisions, and non-obvious behavior. Keep documentation close to the code it describes.
