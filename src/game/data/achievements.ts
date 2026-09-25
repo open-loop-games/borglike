@@ -302,34 +302,30 @@ export const achievements: Achievement[] = [
   // =========================================================================
 
   // Race mastery (14 races)
-  ...races.map(
-    (race): Achievement => ({
-      id: `win_race_${race.id}`,
-      name: `${race.name} Victor`,
-      description: `Win the game as a ${race.name}`,
-      icon: 'game-icons:person',
-      category: 'mastery',
-      target: 1,
-      reward: 500,
-      mythic: race.mythic,
-      group: 'race',
-    })
-  ),
+  ...races.map((race): Achievement => ({
+    id: `win_race_${race.id}`,
+    name: `${race.name} Victor`,
+    description: `Win the game as a ${race.name}`,
+    icon: 'game-icons:person',
+    category: 'mastery',
+    target: 1,
+    reward: 500,
+    mythic: race.mythic,
+    group: 'race',
+  })),
 
   // Class mastery (11 classes)
-  ...classes.map(
-    (cls): Achievement => ({
-      id: `win_class_${cls.id}`,
-      name: `${cls.name} Victor`,
-      description: `Win the game as a ${cls.name}`,
-      icon: 'game-icons:visored-helm',
-      category: 'mastery',
-      target: 1,
-      reward: 500,
-      mythic: cls.mythic,
-      group: 'class',
-    })
-  ),
+  ...classes.map((cls): Achievement => ({
+    id: `win_class_${cls.id}`,
+    name: `${cls.name} Victor`,
+    description: `Win the game as a ${cls.name}`,
+    icon: 'game-icons:visored-helm',
+    category: 'mastery',
+    target: 1,
+    reward: 500,
+    mythic: cls.mythic,
+    group: 'class',
+  })),
 
   // Meta mastery achievements
   {

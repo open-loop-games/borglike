@@ -261,10 +261,7 @@ function cancelReset() {
                 settingsStore.updateSetting(
                   'feedVerbosity',
                   ($event.target as HTMLSelectElement).value as
-                    | 'minimal'
-                    | 'normal'
-                    | 'verbose'
-                    | 'all'
+                    'minimal' | 'normal' | 'verbose' | 'all'
                 )
               "
             >
