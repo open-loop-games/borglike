@@ -23,7 +23,6 @@ HELPERS (private)
 | **Predicates** | `shouldX`, `isX`, `hasX`, `canX` | `shouldFlee`, `isUnderLeveled`, `hasRangedWeapon` |
 | **Finders** | `findX`, `getX`, `selectX`, `countX` | `findEscapeRoute`, `getDescentBlocker`, `selectTarget`, `countHealingPotions` |
 | **Goal Creators** | `getXGoal` | `getFleeGoal`, `getKillGoal`, `getExploreGoal` |
-| **Legacy** | `evaluateX` | Deprecated wrappers, remove when touching file |
 
 ### Goal Creator Pattern
 
@@ -88,8 +87,6 @@ Cross-module imports flow downward. Avoid circular dependencies.
 
 **Goal Mutations**: Goal creators may call `exitXMode()` when completing a mode. This is pragmatic - the alternative (caller handles all state) adds complexity without benefit.
 
-**Legacy Evaluators**: `evaluateX` functions are deprecated wrappers around `getXGoal`. Remove them when significantly modifying a file.
-
 **Context Usage**: Destructure what you need from BotContext. Pass minimal parameters to pure queries.
 
 ## Class-Specific Behavior
@@ -98,7 +95,7 @@ Cross-module imports flow downward. Avoid circular dependencies.
 |------------|-------------------|------------------|
 | TANK (warrior, berserker) | depth - 4 | Berserker ignores retreat |
 | MEDIUM (paladin, rogue, ranger) | depth | Standard behavior |
-| SQUISHY (mage, necromancer) | depth + 5 | Sweep mode instead of stair-surfing |
+| SQUISHY (mage, necromancer) | depth + 5, easing to depth + 0 as upgrade tier rises (`getClassLevelOffset`) | Sweep mode instead of stair-surfing |
 
 ## Testing Considerations
 
@@ -110,7 +107,6 @@ Cross-module imports flow downward. Avoid circular dependencies.
 ## When Modifying This Module
 
 1. Follow the naming conventions above
-2. Remove legacy `evaluateX` wrappers when touching a file
-3. Keep queries pure when possible
-4. Add state transitions for new modes (enter/exit pairs)
-5. Document non-obvious thresholds in constants section
+2. Keep queries pure when possible
+3. Add state transitions for new modes (enter/exit pairs)
+4. Document non-obvious thresholds in constants section

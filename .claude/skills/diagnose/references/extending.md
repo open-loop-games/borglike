@@ -10,23 +10,33 @@ scripts/
     ├── types.ts             # Analyzer interface, config types
     ├── runner.ts            # Game loop with analyzer hooks
     ├── output.ts            # Formatting utilities
+    ├── file-output.ts       # .txt/.json result files
+    ├── config-parsing.ts    # CLI → run config
+    ├── worker.ts            # Thread-pool worker
     ├── baseline.ts          # Baseline mode implementation
-    ├── debug-explore.ts     # Debug-explore mode implementation
+    ├── matrix.ts            # Matrix mode
+    ├── sensitivity.ts       # Sensitivity / cap-sensitivity modes
+    ├── progression.ts       # Progression mode
     └── analyzers/
         ├── index.ts         # Factory functions
         ├── stuck.ts
         ├── movement.ts
         ├── pathing.ts
         ├── exploration.ts
+        ├── exploration-legacy.ts
         ├── combat.ts
         ├── goal.ts
+        ├── goals.ts
         ├── goal-distance.ts # Detects short-distance goal thrashing
         ├── oscillation.ts   # Detects directional oscillation
         ├── jitter.ts
         ├── frontier.ts      # Frontier reachability analysis
+        ├── farming.ts
+        ├── progression.ts
+        ├── step-debug.ts
         ├── stats.ts         # Worker metrics aggregation
         ├── map.ts
-        └── personality.ts   # Cross-personality comparison
+        └── comparison.ts    # Cross-personality comparison
 ```
 
 **Keep the entrypoint thin!** New functionality belongs in `lib/diagnose/`, not `diagnose.ts`. The entrypoint should only handle CLI argument parsing and dispatch to lib functions.
@@ -230,9 +240,9 @@ interface DiagnosticIssue {
 
 ## Adding New Modes
 
-When adding specialized modes (like `baseline`, `debug-explore`):
+When adding specialized modes (like `baseline`, `matrix`):
 
-1. **Create a new file** in `lib/diagnose/` (e.g., `baseline.ts`, `debug-explore.ts`)
+1. **Create a new file** in `lib/diagnose/` (e.g., `baseline.ts`, `matrix.ts`)
 2. **Export a main function** that handles the mode logic
 3. **Import and call** from `diagnose.ts` entrypoint
 4. **Update types** if needed in `types.ts`

@@ -11,7 +11,7 @@ Borglike is an idle/incremental game featuring an auto-playing roguelike. Watch 
 **Core Concept:** "Angband-lite as idle engine" - TypeScript roguelike designed for auto-play with meta-progression.
 **Stack:** Vue 3 + TypeScript + Vite + Pinia + rot.js
 **Documentation Level:** Minimal. Code is truth. Document decisions and gotchas only.
-**Functional Core:** Separating your code into functional cores and imperative shells makes it more testable, maintainable, and adaptable. The core logic can be tested in isolation, and the imperative shell can be swapped out or modified as needed.
+**Functional Core:** Functional core, imperative shell — game logic stays pure and testable in isolation; I/O, timers, and UI live in the shell.
 
 ## Commands
 
@@ -58,13 +58,13 @@ jq, bun
 ```
 src/
 ├── engine/          # Instance manager (multi-run orchestration)
-├── game/            # Core roguelike engine (24 root files)
-│   ├── bot/         # Angband-inspired auto-player (27 files)
-│   ├── dungeon/     # Multiple generators (classic, cavern, labyrinth, vaults) (9 files)
-│   └── data/        # Static data (races, classes, monsters, spells, items) (19 files)
-├── stores/          # Pinia (progression, runs, persistence, settings, feed) (7 files)
+├── game/            # Core roguelike engine
+│   ├── bot/         # Angband-inspired auto-player
+│   ├── dungeon/     # Multiple generators (classic, cavern, labyrinth, vaults)
+│   └── data/        # Static data (races, classes, monsters, spells, items)
+├── stores/          # Pinia (progression, runs, persistence, settings, feed)
 ├── core/            # Formulas, run-completion bridge
-└── ui/components/   # Vue components (37 total)
+└── ui/components/   # Vue components
 ```
 
 ## Code Rules
@@ -91,8 +91,7 @@ src/
 - Integrate new UI into existing components and patterns (a sub-category in the Upgrades tab, existing card components), not new top-level tabs or panels.
 - Gate engine-primitive adoption (Formula, ModifierChain) on a full-path in-vivo benchmark of the realistic chain shape; microbenches inform expectations, not decisions.
 
-**MUST NEVER NOT**
-- Git revert or checkout without checking last commit time and diff for other work
+**Before a git revert or checkout,** check the last commit time and the diff for other work.
 
 ## TSDoc Standards
 **"Document the why and complex how, not the obvious what"**
@@ -112,7 +111,6 @@ src/
 ## Documentation
 
 - `docs/ARCHITECTURE.md` - System design and data flow
-- `docs/ANGBAND-LITE-DESIGN.md` - Game design (races, classes, balance)
 - `docs/BALANCE.md` - Balance methodology, tooling, and baselines
 - `docs/PERFORMANCE.md` - Performance profiling and optimization
 - `TODO.md` - Current tasks and technical debt
