@@ -1,9 +1,5 @@
-# Build-script approval. pnpm renamed this between majors, so we declare both:
-#   pnpm 11+ reads `allowBuilds` (map); pnpm 10 reads `onlyBuiltDependencies` (list).
-# Each side ignores the other's key, so this is safe for either local pnpm.
 allowBuilds:
-  esbuild: true
-  vue-demi: true
-onlyBuiltDependencies:
-  - esbuild
-  - vue-demi
+  # The script only checks the platform binary, which ships as an optional dep.
+  esbuild: false
+  # The script only switches between Vue 2 and 3 builds; Vue 3 is the default.
+  vue-demi: false
