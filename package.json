@@ -22,7 +22,8 @@
     "format:check": "oxfmt --check src",
     "check": "pnpm run format && pnpm run typecheck && pnpm run lint",
     "knip": "knip",
-    "diagnose": "tsx --tsconfig tsconfig.scripts.json scripts/diagnose.ts"
+    "diagnose": "tsx --tsconfig tsconfig.scripts.json scripts/diagnose.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@iconify/vue": "^5.0.0",
@@ -55,5 +56,9 @@
     "vite": "^8.3.0",
     "vue-tsc": "^3.3.11"
   },
-  "packageManager": "pnpm@12.6.0"
+  "packageManager": "pnpm@12.6.0",
+  "lint-staged": {
+    "*.{ts,vue,css,html,json}": "oxfmt --no-error-on-unmatched-pattern",
+    "*.{ts,vue}": "oxlint --fix"
+  }
 }
