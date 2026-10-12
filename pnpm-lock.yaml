@@ -222,16 +222,16 @@ importers:
         specifier: ^5.82.1
         version: 5.82.1(@types/node@24.13.6)(typescript@6.0.3)
       lint-staged:
-        specifier: ^17.6.0
+        specifier: ^17.5.1
         version: 17.6.0
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
       oxlint:
-        specifier: ^1.87.0
+        specifier: ^1.85.0
         version: 1.87.0(oxlint-tsgolint@7.0.2004)
       oxlint-tsgolint:
-        specifier: ^7.0.2004
+        specifier: ^7.0.2002
         version: 7.0.2004
       tinypool:
         specifier: ^2.1.0
