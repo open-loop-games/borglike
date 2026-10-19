@@ -196,6 +196,8 @@ export interface ProgressionData {
   starBalance?: number
   totalStarsEarned?: number
   starUpgradeLevels?: Record<string, number>
+  cycleStartedAt?: number
+  cycleMaxDepth?: number
   // Progressive disclosure (studio/borglike#2). Optional: absent in pre-feature
   // saves, reconstructed on restore.
   totalUpgradeSpent?: number
@@ -335,6 +337,8 @@ export function serializeProgression(): ProgressionData {
     starBalance: progression.starBalance,
     totalStarsEarned: progression.totalStarsEarned,
     starUpgradeLevels: { ...progression.starUpgradeLevels },
+    cycleStartedAt: progression.cycleStartedAt,
+    cycleMaxDepth: progression.cycleMaxDepth,
     totalUpgradeSpent: progression.totalUpgradeSpent,
     toastedReveals: Array.from(progression.toastedReveals),
     activeLoadout: {
@@ -379,6 +383,11 @@ export function restoreProgressionFromData(data: ProgressionData): void {
   if (data.starUpgradeLevels) {
     progression.starUpgradeLevels = { ...data.starUpgradeLevels }
   }
+  progression.cycleStartedAt = data.cycleStartedAt ?? 0
+  // A save from before cycle tracking: a never-reset player keeps the depth
+  // already reached; a player who has reset re-earns the gate.
+  progression.cycleMaxDepth =
+    data.cycleMaxDepth ?? (progression.prestigeLevel > 0 ? 0 : data.globalStats.maxDepthEver)
 
   if (data.activeLoadout) {
     progression.activeLoadout.boosters = data.activeLoadout.boosters
@@ -452,6 +461,8 @@ export interface ExportPayload {
     starBalance?: number
     totalStarsEarned?: number
     starUpgradeLevels?: Record<string, number>
+    cycleStartedAt?: number
+    cycleMaxDepth?: number
     totalUpgradeSpent?: number
     toastedReveals?: string[]
     activeLoadout?: SerializedRunLoadout
@@ -485,6 +496,8 @@ export function buildExportPayload(runHistory: RunStats[]): ExportPayload {
       starBalance: progression.starBalance,
       totalStarsEarned: progression.totalStarsEarned,
       starUpgradeLevels: { ...progression.starUpgradeLevels },
+      cycleStartedAt: progression.cycleStartedAt,
+      cycleMaxDepth: progression.cycleMaxDepth,
       totalUpgradeSpent: progression.totalUpgradeSpent,
       toastedReveals: Array.from(progression.toastedReveals),
       activeLoadout: { boosters: [...progression.activeLoadout.boosters] },
@@ -516,6 +529,8 @@ export function progressionDataFromExport(payload: ExportPayload): ProgressionDa
     starBalance: prog.starBalance,
     totalStarsEarned: prog.totalStarsEarned,
     starUpgradeLevels: prog.starUpgradeLevels,
+    cycleStartedAt: prog.cycleStartedAt,
+    cycleMaxDepth: prog.cycleMaxDepth,
     totalUpgradeSpent: prog.totalUpgradeSpent,
     toastedReveals: prog.toastedReveals,
     activeLoadout: prog.activeLoadout,

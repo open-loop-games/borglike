@@ -185,6 +185,7 @@ export function setupAutoSave(): () => void {
       maxDepthEver: progression.globalStats.maxDepthEver,
       prestigeLevel: progression.prestigeLevel,
       starBalance: progression.starBalance,
+      cycleMaxDepth: progression.cycleMaxDepth,
       lifetimeEssence: progression.lifetimeEssence,
       totalVictories: progression.totalVictories,
       upgrades: JSON.stringify(progression.upgradeLevels),

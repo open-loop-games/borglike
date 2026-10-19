@@ -230,6 +230,9 @@ function handlePurchase(upgradeId: string) {
 const prestigePreview = computed(() => progression.getPrestigePreview())
 const prestigeActionDescription = computed(() => {
   const p = prestigePreview.value
+  if (!progression.canPrestige) {
+    return `Reach depth ${p.depthGate} with a run started since the last reset (best this cycle: ${p.cycleMaxDepth}).`
+  }
   const stars =
     p.starsGain > 0
       ? `Gain ${p.starsGain} star${p.starsGain === 1 ? '' : 's'}`

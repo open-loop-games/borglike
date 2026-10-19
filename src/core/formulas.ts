@@ -21,7 +21,7 @@ const PRESTIGE_CUBE_ROOT = 1 / 3
 const PRESTIGE_THRESHOLD = 10000
 
 /** Depth that unlocks the prestige reset — reliably-midgame (studio/borglike#3). */
-const PRESTIGE_DEPTH_GATE = 35
+export const PRESTIGE_DEPTH_GATE = 35
 
 /** XP curve exponent for character leveling (polynomial scaling) */
 const XP_CURVE_EXPONENT = 1.5
@@ -133,15 +133,17 @@ export function prestigeCurrency(totalEssence: number): number {
 }
 
 /**
- * Whether the prestige reset has been earned.
+ * Whether a depth meets the prestige gate.
  *
  * Gates on depth reached, not lifetime essence: a reset loop must not gate on
- * the accumulator it is about to keep growing.
+ * the accumulator it is about to keep growing. Pass the deepest depth of the
+ * current cycle to ask whether a reset is earned; pass the deepest depth ever
+ * to ask whether the prestige surface is revealed.
  *
- * @param maxDepthEver - Deepest dungeon level ever reached
+ * @param depth - Deepest dungeon level reached over the span in question
  */
-export function meetsPrestigeDepthGate(maxDepthEver: number): boolean {
-  return maxDepthEver >= PRESTIGE_DEPTH_GATE
+export function meetsPrestigeDepthGate(depth: number): boolean {
+  return depth >= PRESTIGE_DEPTH_GATE
 }
 
 /**
