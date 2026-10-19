@@ -23,6 +23,7 @@ import type {
 } from '@/types/progression'
 import { startingRaces } from '@game/data/races'
 import { startingClasses } from '@game/data/classes'
+import { STAR_UPGRADES } from '@game/data/ascension'
 
 // ============================================================================
 // VERSIONING
@@ -106,16 +107,6 @@ export function validateProgressionData(data: ProgressionData): ValidationResult
     }
   }
 
-  if (typeof data.prestigeLevel === 'number' && data.prestigeLevel < 0) {
-    errors.push({
-      path: 'prestigeLevel',
-      message: 'Negative prestige level repaired',
-      severity: 'warning',
-    })
-    data.prestigeLevel = 0
-    repaired = true
-  }
-
   if (typeof data.lifetimeEssence === 'number' && data.lifetimeEssence < 0) {
     errors.push({
       path: 'lifetimeEssence',
@@ -189,15 +180,10 @@ export interface ProgressionData {
   unlocks: SerializedUnlockState
   globalStats: GlobalStats
   upgradeLevels: UpgradeState
-  prestigeLevel: number
   lifetimeEssence: number
   totalVictories: number
-  // Prestige stars (studio/borglike#3). Optional: absent in pre-feature saves.
-  starBalance?: number
-  totalStarsEarned?: number
+  // Ascension tree (studio/borglike#8). The star balance derives from victories.
   starUpgradeLevels?: Record<string, number>
-  cycleStartedAt?: number
-  cycleMaxDepth?: number
   // Progressive disclosure (studio/borglike#2). Optional: absent in pre-feature
   // saves, reconstructed on restore.
   totalUpgradeSpent?: number
@@ -331,14 +317,9 @@ export function serializeProgression(): ProgressionData {
     unlocks: serializeUnlocks(progression.unlocks),
     globalStats: { ...progression.globalStats },
     upgradeLevels: { ...progression.upgradeLevels },
-    prestigeLevel: progression.prestigeLevel,
     lifetimeEssence: progression.lifetimeEssence,
     totalVictories: progression.totalVictories,
-    starBalance: progression.starBalance,
-    totalStarsEarned: progression.totalStarsEarned,
     starUpgradeLevels: { ...progression.starUpgradeLevels },
-    cycleStartedAt: progression.cycleStartedAt,
-    cycleMaxDepth: progression.cycleMaxDepth,
     totalUpgradeSpent: progression.totalUpgradeSpent,
     toastedReveals: Array.from(progression.toastedReveals),
     activeLoadout: {
@@ -375,19 +356,14 @@ export function restoreProgressionFromData(data: ProgressionData): void {
   Object.assign(progression.globalStats, data.globalStats)
   Object.assign(progression.upgradeLevels, data.upgradeLevels)
 
-  progression.prestigeLevel = data.prestigeLevel ?? 0
   progression.lifetimeEssence = data.lifetimeEssence ?? 0
   progression.totalVictories = data.totalVictories ?? 0
-  progression.starBalance = data.starBalance ?? 0
-  progression.totalStarsEarned = data.totalStarsEarned ?? 0
-  if (data.starUpgradeLevels) {
-    progression.starUpgradeLevels = { ...data.starUpgradeLevels }
-  }
-  progression.cycleStartedAt = data.cycleStartedAt ?? 0
-  // A save from before cycle tracking: a never-reset player keeps the depth
-  // already reached; a player who has reset re-earns the gate.
-  progression.cycleMaxDepth =
-    data.cycleMaxDepth ?? (progression.prestigeLevel > 0 ? 0 : data.globalStats.maxDepthEver)
+  // Levels of nodes no longer in the tree are dropped, so they cost no stars.
+  progression.starUpgradeLevels = Object.fromEntries(
+    Object.entries(data.starUpgradeLevels ?? {}).filter(([id]) =>
+      STAR_UPGRADES.some((u) => u.id === id)
+    )
+  )
 
   if (data.activeLoadout) {
     progression.activeLoadout.boosters = data.activeLoadout.boosters
@@ -455,14 +431,9 @@ export interface ExportPayload {
     unlocks: SerializedUnlockState
     globalStats: GlobalStats
     upgradeLevels: UpgradeState
-    prestigeLevel: number
     lifetimeEssence: number
     totalVictories: number
-    starBalance?: number
-    totalStarsEarned?: number
     starUpgradeLevels?: Record<string, number>
-    cycleStartedAt?: number
-    cycleMaxDepth?: number
     totalUpgradeSpent?: number
     toastedReveals?: string[]
     activeLoadout?: SerializedRunLoadout
@@ -490,14 +461,9 @@ export function buildExportPayload(runHistory: RunStats[]): ExportPayload {
       unlocks: serializeUnlocks(progression.unlocks),
       globalStats: { ...progression.globalStats },
       upgradeLevels: { ...progression.upgradeLevels },
-      prestigeLevel: progression.prestigeLevel,
       lifetimeEssence: progression.lifetimeEssence,
       totalVictories: progression.totalVictories,
-      starBalance: progression.starBalance,
-      totalStarsEarned: progression.totalStarsEarned,
       starUpgradeLevels: { ...progression.starUpgradeLevels },
-      cycleStartedAt: progression.cycleStartedAt,
-      cycleMaxDepth: progression.cycleMaxDepth,
       totalUpgradeSpent: progression.totalUpgradeSpent,
       toastedReveals: Array.from(progression.toastedReveals),
       activeLoadout: { boosters: [...progression.activeLoadout.boosters] },
@@ -523,14 +489,9 @@ export function progressionDataFromExport(payload: ExportPayload): ProgressionDa
     unlocks: prog.unlocks,
     globalStats: prog.globalStats,
     upgradeLevels: prog.upgradeLevels,
-    prestigeLevel: prog.prestigeLevel,
     lifetimeEssence: prog.lifetimeEssence,
     totalVictories: prog.totalVictories,
-    starBalance: prog.starBalance,
-    totalStarsEarned: prog.totalStarsEarned,
     starUpgradeLevels: prog.starUpgradeLevels,
-    cycleStartedAt: prog.cycleStartedAt,
-    cycleMaxDepth: prog.cycleMaxDepth,
     totalUpgradeSpent: prog.totalUpgradeSpent,
     toastedReveals: prog.toastedReveals,
     activeLoadout: prog.activeLoadout,

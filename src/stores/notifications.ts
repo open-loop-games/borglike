@@ -81,7 +81,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   /**
    * Typed entry point for every system that wants a ceremonial toast
-   * (disclosure reveals, prestige, achievements, run completion). Returns the
+   * (disclosure reveals, achievements, run completion). Returns the
    * toast id so a caller can dismiss it early.
    */
   function notify(options: NotifyOptions): number {

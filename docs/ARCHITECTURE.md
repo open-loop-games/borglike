@@ -106,7 +106,7 @@ Game ends (death/victory)
     │
     ├─► handleRunCompletion()
     │       ├─► Convert to RunStats
-    │       ├─► Apply prestige multiplier
+    │       ├─► Apply essence multipliers
     │       ├─► Check milestone unlocks
     │       └─► Record to stores
     │

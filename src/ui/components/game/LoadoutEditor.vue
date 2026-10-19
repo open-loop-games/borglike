@@ -7,6 +7,7 @@ import { races, type Race } from '@game/data/races'
 import { classes, type GameClass } from '@game/data/classes'
 import type { PersonalityConfig } from '@game/bot/types'
 import { PERSONALITY_DISPLAY, type Personality } from '@/types/events'
+import type { DungeonMode } from '@/types/progression'
 import {
   PARAMETER_INFO,
   SLIDER_UPGRADE_GATES,
@@ -33,12 +34,13 @@ const emit = defineEmits<{
 
 const isMobile = computed(() => props.variant === 'mobile')
 
-type SectionId = 'race' | 'class' | 'boosters' | 'bonuses' | 'personality' | 'controls'
+type SectionId = 'race' | 'class' | 'boosters' | 'bonuses' | 'dungeon' | 'personality' | 'controls'
 const expanded = ref<Record<SectionId, boolean>>({
   race: true,
   class: false,
   boosters: false,
   bonuses: false,
+  dungeon: false,
   personality: false,
   controls: false,
 })
@@ -66,6 +68,20 @@ const savedConfig = progression.getSlotConfig(props.slot)
 const selectedRace = ref(savedConfig.race)
 const selectedClass = ref(savedConfig.class)
 const selectedPersonality = ref<Personality>(savedConfig.personality)
+const selectedDungeon = ref<DungeonMode>(savedConfig.dungeonMode ?? 'classic')
+
+// The Rift is a star-tree unlock (studio/borglike#8); the choice hides until owned.
+const dungeonOptions: { id: DungeonMode; name: string; desc: string }[] = [
+  { id: 'classic', name: 'Classic', desc: 'Descend 50 levels to Morgoth' },
+  {
+    id: 'rift',
+    name: 'Rift',
+    desc: 'Endless tiers of packs, rares and bosses. Rift power applies',
+  },
+]
+const dungeonHeaderSummary = computed(
+  () => dungeonOptions.find((d) => d.id === selectedDungeon.value)?.name ?? 'Classic'
+)
 
 // Custom personality sliders
 const customPersonality = ref<PersonalityConfig>(
@@ -319,6 +335,7 @@ function handleStart() {
     race: selectedRace.value,
     class: selectedClass.value,
     personality: selectedPersonality.value,
+    dungeonMode: selectedDungeon.value,
     boosters: [boosterSlot0.value, boosterSlot1.value],
     surfLevelRange: { start: surfRangeStart.value, end: surfRangeEnd.value },
     depthGateOffset: depthGateOffset.value,
@@ -618,8 +635,43 @@ function handleCancel() {
         </PanelFrame>
       </div>
 
-      <!-- Right Column: Personality + Bot Training -->
+      <!-- Right Column: Dungeon + Personality + Bot Training -->
       <div class="training-column">
+        <!-- Dungeon Selection (Rift Gate owners only) -->
+        <PanelFrame
+          v-if="progression.riftUnlocked"
+          class="selection-section"
+          :class="{ collapsible: isMobile, collapsed: isMobile && !isOpen('dungeon') }"
+        >
+          <button
+            v-if="isMobile"
+            type="button"
+            class="section-toggle"
+            @click="toggleSection('dungeon')"
+          >
+            <span class="section-title">Dungeon</span>
+            <span v-if="!isOpen('dungeon')" class="section-summary">{{
+              dungeonHeaderSummary
+            }}</span>
+            <span class="section-chevron" :class="{ open: isOpen('dungeon') }">›</span>
+          </button>
+          <h3 v-else>Dungeon</h3>
+          <div v-show="isOpen('dungeon')" class="section-body">
+            <div class="personality-list">
+              <button
+                v-for="d in dungeonOptions"
+                :key="d.id"
+                class="personality-btn"
+                :class="{ active: selectedDungeon === d.id }"
+                @click="selectedDungeon = d.id"
+              >
+                <span class="personality-name">{{ d.name }}</span>
+                <span class="personality-desc">{{ d.desc }}</span>
+              </button>
+            </div>
+          </div>
+        </PanelFrame>
+
         <!-- Personality Selection -->
         <PanelFrame
           class="selection-section"

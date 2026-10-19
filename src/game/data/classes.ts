@@ -9,6 +9,7 @@
 import type { SplashPattern } from '../types'
 import type { StatModifiers } from './races'
 import type { UnlockContext } from '@/types/progression'
+import { withMorgothKills } from './mythic-gate'
 
 /** Player class definition */
 export interface GameClass {
@@ -226,7 +227,7 @@ const paladin: GameClass = {
 }
 
 // =============================================================================
-// PRESTIGE CLASSES (late-game unlocks, unique mechanics)
+// MYTHIC CLASSES (post-victory unlocks, unique mechanics)
 // =============================================================================
 
 const necromancer: GameClass = {
@@ -250,9 +251,11 @@ const necromancer: GameClass = {
   ],
   usesMagic: true,
   starting: false,
-  unlockCondition: 'Die 100 times total',
   mythic: true,
-  checkCondition: (ctx) => ctx.globalStats.totalDeaths >= 100,
+  ...withMorgothKills(5, {
+    unlockCondition: 'Die 100 times total',
+    checkCondition: (ctx) => ctx.globalStats.totalDeaths >= 100,
+  }),
   description: 'Masters of death who raise fallen enemies as allies.',
   botBehavior: 'Summoner: raises slain monsters, builds undead army, stays behind minions',
 }
@@ -278,9 +281,11 @@ const berserker: GameClass = {
   ],
   usesMagic: false,
   starting: false,
-  unlockCondition: 'Win a run with Warrior class',
   mythic: true,
-  checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['warrior'] ?? 0) >= 1,
+  ...withMorgothKills(1, {
+    unlockCondition: 'Win a run with Warrior class',
+    checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['warrior'] ?? 0) >= 1,
+  }),
   description: 'Unstoppable fury incarnate - no healing, only damage.',
   botBehavior: 'All-in: never retreats, maximum aggression, wins fast or dies trying',
 }
@@ -306,9 +311,11 @@ const archmage: GameClass = {
   ],
   usesMagic: true,
   starting: false,
-  unlockCondition: 'Win a run with Mage defeating the final boss',
   mythic: true,
-  checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['mage'] ?? 0) >= 1,
+  ...withMorgothKills(2, {
+    unlockCondition: 'Win a run with Mage',
+    checkCondition: (ctx) => (ctx.globalStats.victoriesPerClass?.['mage'] ?? 0) >= 1,
+  }),
   description: 'Supreme magical power at the cost of extreme fragility.',
   botBehavior:
     'Glass cannon: devastating AOE spells, teleports constantly, one-shots or gets one-shot',

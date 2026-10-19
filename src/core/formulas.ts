@@ -2,8 +2,7 @@
  * Formulas Module for Borglike
  *
  * Mathematical formulas for:
- * - Essence calculations (prestige currency)
- * - Prestige/reset mechanics
+ * - Essence calculations
  * - XP/Level progression
  *
  * Sources:
@@ -14,14 +13,6 @@
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-/** Prestige compression: 8x essence = 2x prestige currency (Cookie Clicker standard) */
-const PRESTIGE_CUBE_ROOT = 1 / 3
-/** Lifetime essence that mints the first star. */
-const PRESTIGE_THRESHOLD = 10000
-
-/** Depth that unlocks the prestige reset — reliably-midgame (studio/borglike#3). */
-export const PRESTIGE_DEPTH_GATE = 35
 
 /** XP curve exponent for character leveling (polynomial scaling) */
 const XP_CURVE_EXPONENT = 1.5
@@ -52,7 +43,7 @@ const ESSENCE_REWARDS = {
 } as const
 
 // ============================================================================
-// ESSENCE FORMULAS (PRESTIGE CURRENCY)
+// ESSENCE FORMULAS
 // ============================================================================
 
 /**
@@ -111,62 +102,6 @@ export function essenceFromVictory(_depth: number, kills: number, turnsTaken: nu
   const speedrunBonus = turnsTaken > 0 ? Math.max(0, Math.floor((18000 - turnsTaken) / 100)) : 0
 
   return baseEssence + killBonus + speedrunBonus
-}
-
-// ============================================================================
-// PRESTIGE FORMULAS
-// ============================================================================
-
-/**
- * Calculate prestige currency earned from total essence.
- *
- * Uses cube root compression (Cookie Clicker standard):
- * - 8x essence = 2x prestige currency
- * - Creates satisfying 90% time reduction per prestige
- *
- * @param totalEssence - Total essence ever earned
- * @returns Prestige currency (stars/prestiges)
- */
-export function prestigeCurrency(totalEssence: number): number {
-  if (totalEssence < PRESTIGE_THRESHOLD) return 0
-  return Math.floor(Math.pow(totalEssence / PRESTIGE_THRESHOLD, PRESTIGE_CUBE_ROOT))
-}
-
-/**
- * Whether a depth meets the prestige gate.
- *
- * Gates on depth reached, not lifetime essence: a reset loop must not gate on
- * the accumulator it is about to keep growing. Pass the deepest depth of the
- * current cycle to ask whether a reset is earned; pass the deepest depth ever
- * to ask whether the prestige surface is revealed.
- *
- * @param depth - Deepest dungeon level reached over the span in question
- */
-export function meetsPrestigeDepthGate(depth: number): boolean {
-  return depth >= PRESTIGE_DEPTH_GATE
-}
-
-/**
- * Calculate the global multiplier from prestige level.
- *
- * Each prestige provides compounding bonuses to essence gain.
- * Based on ANGBAND-LITE-DESIGN.md prestige table.
- *
- * @param prestigeLevel - Current prestige level (0 = no prestige yet)
- * @returns Essence multiplier (1.0 = no bonus)
- */
-export function prestigeMultiplier(prestigeLevel: number): number {
-  if (prestigeLevel <= 0) return 1.0
-
-  // Prestige 1-4 have specific values
-  const baseMultipliers = [1.0, 1.5, 2.0, 3.0, 4.5]
-
-  if (prestigeLevel < baseMultipliers.length) {
-    return baseMultipliers[prestigeLevel]!
-  }
-
-  // Prestige 5+: +1.5x per level after 4
-  return 4.5 + (prestigeLevel - 4) * 1.5
 }
 
 // ============================================================================

@@ -72,7 +72,7 @@ const rogueSpells: ClassSpellList = {
 
 /**
  * Archmage - Ultimate arcane caster (11 spells, learns faster)
- * Prestige class - gets late-game spells earlier than Mage
+ * Mythic class - gets late-game spells earlier than Mage
  */
 const archmageSpells: ClassSpellList = {
   classId: 'archmage',

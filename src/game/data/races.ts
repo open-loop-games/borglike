@@ -7,6 +7,7 @@
  */
 
 import type { UnlockContext } from '@/types/progression'
+import { withMorgothKills } from './mythic-gate'
 import { getDragonNames, getUniques } from './monsters'
 
 /** Starting race IDs for mythic unlock validation */
@@ -341,7 +342,7 @@ const kobold: Race = {
 }
 
 // =============================================================================
-// PRESTIGE RACES (late-game unlocks, more powerful)
+// MYTHIC RACES (post-victory unlocks, more powerful)
 // =============================================================================
 
 const vampire: Race = {
@@ -369,12 +370,14 @@ const vampire: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Win a run with each starting race (Human, Dwarf, Elf)',
   mythic: true,
-  checkCondition: (ctx) => {
-    const wins = ctx.globalStats.victoriesPerRace ?? {}
-    return STARTING_RACE_IDS.every((id) => (wins[id] ?? 0) >= 1)
-  },
+  ...withMorgothKills(3, {
+    unlockCondition: 'Win a run with each starting race (Human, Dwarf, Elf)',
+    checkCondition: (ctx) => {
+      const wins = ctx.globalStats.victoriesPerRace ?? {}
+      return STARTING_RACE_IDS.every((id) => (wins[id] ?? 0) >= 1)
+    },
+  }),
   description: 'Immortal predators who sustain themselves on the life force of others.',
 }
 
@@ -403,9 +406,11 @@ const golem: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Collect 10,000,000 gold total across all runs',
   mythic: true,
-  checkCondition: (ctx) => ctx.globalStats.totalGold >= 10000000,
+  ...withMorgothKills(8, {
+    unlockCondition: 'Collect 10,000,000 gold total across all runs',
+    checkCondition: (ctx) => ctx.globalStats.totalGold >= 10000000,
+  }),
   description: 'Animated constructs of stone and metal, nearly indestructible.',
 }
 
@@ -429,16 +434,18 @@ const draconian: Race = {
     },
   ],
   starting: false,
-  unlockCondition: 'Kill 10,000 dragons total',
   mythic: true,
-  checkCondition: (ctx) => {
-    const dragonNames = getDragonNames()
-    const totalDragonKills = dragonNames.reduce(
-      (sum, name) => sum + (ctx.bestiary[name]?.kills ?? 0),
-      0
-    )
-    return totalDragonKills >= 10000
-  },
+  ...withMorgothKills(12, {
+    unlockCondition: 'Kill 10,000 dragons total',
+    checkCondition: (ctx) => {
+      const dragonNames = getDragonNames()
+      const totalDragonKills = dragonNames.reduce(
+        (sum, name) => sum + (ctx.bestiary[name]?.kills ?? 0),
+        0
+      )
+      return totalDragonKills >= 10000
+    },
+  }),
   description: 'Dragon-blooded humanoids with elemental powers.',
 }
 

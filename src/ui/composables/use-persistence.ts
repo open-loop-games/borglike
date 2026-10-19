@@ -41,7 +41,7 @@ export async function initPersistence(): Promise<boolean> {
 }
 
 /**
- * Force immediate save (for critical moments like prestige)
+ * Force immediate save (for critical moments like a victory)
  */
 export async function forceSave(): Promise<void> {
   try {
@@ -81,7 +81,7 @@ export async function clearData(): Promise<void> {
 }
 
 /**
- * Create a manual backup (for prestige/victory events)
+ * Create a manual backup (for victory events)
  */
 export async function createManualBackup(): Promise<void> {
   await saveManualBackup()

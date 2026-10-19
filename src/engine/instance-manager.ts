@@ -24,7 +24,7 @@ import {
   type EquipSlot,
 } from '@/game'
 import { randomInt } from '@game/rng'
-import { getRaceById, getClassById } from '@game/data'
+import { getRaceById, getClassById, effectiveDungeonMode, runUpgradeLevels } from '@game/data'
 import { handleRunCompletionSync } from '@/core/run-completion-service'
 import {
   runFullCatchUp,
@@ -35,6 +35,7 @@ import {
   type CatchUpSlot,
 } from '@/engine/catch-up'
 import type { RunRequest } from '@/types'
+import type { DungeonMode } from '@/types/progression'
 import type { MinionType } from '@/game'
 
 interface GameInstance {
@@ -170,6 +171,22 @@ function toDisplayItem(item: Item): DisplayItem {
 /**
  * Start a new run in the given slot
  */
+/**
+ * The dungeon a slot runs and the upgrade bonuses it runs with. A Rift choice
+ * needs Rift Gate, and only Rift runs get the star tree's power nodes, so
+ * classic balance never sees them.
+ */
+function resolveDungeon(chosen: DungeonMode | undefined) {
+  const progression = useProgressionStore()
+  const dungeonMode = effectiveDungeonMode(chosen, progression.starUpgradeLevels)
+  const levels = runUpgradeLevels(
+    progression.upgradeLevels,
+    progression.starUpgradeLevels,
+    dungeonMode
+  )
+  return { dungeonMode, bonuses: computeUpgradeBonuses(levels) }
+}
+
 export function startRun(slot: number, config?: Partial<RunRequest>): string {
   const runs = useRunsStore()
   const progression = useProgressionStore()
@@ -217,7 +234,7 @@ export function startRun(slot: number, config?: Partial<RunRequest>): string {
   const runId = runs.createRun(slot, runConfig)
 
   // Get upgrade bonuses and booster bonuses
-  const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
+  const { dungeonMode, bonuses } = resolveDungeon(progression.getSlotConfig(slot).dungeonMode)
   const boosterIds = progression.getActiveBoosterIds()
   const boosterBonuses = computeBoosterBonuses(boosterIds)
 
@@ -257,7 +274,7 @@ export function startRun(slot: number, config?: Partial<RunRequest>): string {
     botPersonalityConfig:
       slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
     depthGateOffset: slotConfig.depthGateOffset,
-    dungeonMode: slotConfig.dungeonMode ?? 'classic',
+    dungeonMode,
   })
 
   // Create instance
@@ -1043,7 +1060,7 @@ function createRunForCatchUp(
   const runConfig: RunRequest = { race: raceName, class: className, personality }
   const runId = runs.createRun(slot, runConfig)
 
-  const bonuses = computeUpgradeBonuses(progression.upgradeLevels)
+  const { dungeonMode, bonuses } = resolveDungeon(slotConfig.dungeonMode)
   const boosterIds = progression.getActiveBoosterIds()
   const boosterBonuses = computeBoosterBonuses(boosterIds)
   const bestiary = progression.bestiary
@@ -1068,7 +1085,7 @@ function createRunForCatchUp(
     botPersonalityConfig:
       slotConfig.personality === 'custom' ? slotConfig.customPersonality : undefined,
     depthGateOffset: slotConfig.depthGateOffset,
-    dungeonMode: slotConfig.dungeonMode ?? 'classic',
+    dungeonMode,
   })
 
   const instance: GameInstance = { runId, slot, runner, intervalId: null, tickRate: 100 }

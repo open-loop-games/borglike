@@ -10,13 +10,12 @@ import {
 } from '@game/data/bot-upgrades'
 import { Icons } from '@/ui/icons'
 import Icon from '../common/Icon.vue'
-import EssenceCard from './EssenceCard.vue'
 import UpgradeItem from './UpgradeItem.vue'
-import { STAR_UPGRADES, starUpgradeCost } from '@game/data/prestige'
+import { STAR_UPGRADES, starUpgradeCost, isStarUpgradeUnlocked } from '@game/data/ascension'
 
 const progression = useProgressionStore()
 
-type Category = 'stats' | 'meta' | 'qol' | 'bot' | 'prestige'
+type Category = 'stats' | 'meta' | 'qol' | 'bot' | 'ascension'
 
 // Default to the frontier (Bot), not Stats — progressive disclosure opens the
 // player on the capability surface that drives early depth (studio/borglike#2).
@@ -24,7 +23,7 @@ const activeCategory = ref<Category>('bot')
 
 // A tab carries its own reveal gate and "new" pip, so which categories are
 // gated is stated once. Ungated tabs are present from Boot: Meta waits for the
-// "wide" phase, Prestige for the depth rung (studio/borglike#3).
+// "wide" phase, Ascension for the first victory (studio/borglike#8).
 type CategoryTab = {
   id: Category
   label: string
@@ -45,11 +44,11 @@ const allCategories: CategoryTab[] = [
   },
   { id: 'qol', label: 'QoL', icon: Icons.categoryQol },
   {
-    id: 'prestige',
-    label: 'Prestige',
-    icon: Icons.prestige,
-    gate: () => progression.reveal.prestige,
-    pip: 'chip-prestige',
+    id: 'ascension',
+    label: 'Ascension',
+    icon: Icons.ascension,
+    gate: () => progression.reveal.ascension,
+    pip: 'chip-ascension',
   },
 ]
 
@@ -225,46 +224,28 @@ function handlePurchase(upgradeId: string) {
   }
 }
 
-// Prestige section (studio/borglike#3): the reset action plus the permanent
-// star tree. Stars are spent here, so costs read in stars, not essence.
-const prestigePreview = computed(() => progression.getPrestigePreview())
-const prestigeActionDescription = computed(() => {
-  const p = prestigePreview.value
-  if (!progression.canPrestige) {
-    return `Reach depth ${p.depthGate} with a run started since the last reset (best this cycle: ${p.cycleMaxDepth}).`
-  }
-  const stars =
-    p.starsGain > 0
-      ? `Gain ${p.starsGain} star${p.starsGain === 1 ? '' : 's'}`
-      : 'No new stars yet — deeper lifetime essence earns more'
-  const floor = p.essenceFloor > 0 ? ` Essence restarts at ${p.essenceFloor}.` : ''
-  const kept = p.keepsEssenceBoost ? ' Essence Boost survives.' : ''
-  return `Reset upgrades and essence, keep bot caps. ${stars}. Income ×${p.newMultiplier}.${floor}${kept}`
-})
-
 // Shaped as UpgradeItem props so star nodes render through the same card as
 // essence upgrades — they differ only in the currency their cost is priced in.
+// A node shows once its prerequisite is owned, so Rift power reveals with the Rift.
 const starItems = computed(() =>
-  STAR_UPGRADES.map((def) => {
-    const level = progression.starUpgradeLevels[def.id] || 0
-    const cost = starUpgradeCost(def.id, level)
-    return {
-      id: def.id,
-      name: def.name,
-      description: def.description,
-      maxLevel: def.maxLevel,
-      icon: Icons.prestige,
-      currentLevel: level,
-      cost: cost ?? 0,
-      isMaxed: cost === null,
-      canAfford: cost !== null && progression.starBalance >= cost,
+  STAR_UPGRADES.filter((def) => isStarUpgradeUnlocked(def.id, progression.starUpgradeLevels)).map(
+    (def) => {
+      const level = progression.starUpgradeLevels[def.id] || 0
+      const cost = starUpgradeCost(def.id, progression.starUpgradeLevels)
+      return {
+        id: def.id,
+        name: def.name,
+        description: def.description,
+        maxLevel: def.maxLevel,
+        icon: Icons.ascension,
+        currentLevel: level,
+        cost: cost ?? 0,
+        isMaxed: cost === null,
+        canAfford: cost !== null && progression.starBalance >= cost,
+      }
     }
-  })
+  )
 )
-
-function doPrestige() {
-  progression.prestige()
-}
 
 function buyStar(id: string) {
   progression.purchaseStarUpgrade(id)
@@ -288,40 +269,22 @@ function buyStar(id: string) {
     </div>
 
     <div class="upgrades-scroll">
-      <template v-if="activeCategory === 'prestige'">
+      <template v-if="activeCategory === 'ascension'">
         <div class="star-balance">
-          <Icon :name="Icons.prestige" />
+          <Icon :name="Icons.ascension" />
           <span
             >{{ progression.starBalance }} star{{
               progression.starBalance === 1 ? '' : 's'
             }}
             banked</span
           >
+          <span class="star-source">1 per Morgoth kill</span>
         </div>
-        <EssenceCard
-          :icon="Icons.prestige"
-          name="Prestige Reset"
-          :state="progression.canPrestige ? 'afford' : 'cantafford'"
-          :description="prestigeActionDescription"
-          :actionable="progression.canPrestige"
-          @action="doPrestige"
-        >
-          <template #meta>
-            <span class="prestige-level">Lv {{ progression.prestigeLevel }}</span>
-          </template>
-          <template #cost>
-            <template v-if="prestigePreview.starsGain > 0">
-              <Icon :name="Icons.prestige" />
-              <span>+{{ prestigePreview.starsGain }}</span>
-            </template>
-            <template v-else><span>RESET</span></template>
-          </template>
-        </EssenceCard>
         <UpgradeItem
           v-for="star in starItems"
           :key="star.id"
           v-bind="star"
-          :cost-icon="Icons.prestige"
+          :cost-icon="Icons.ascension"
           @purchase="buyStar"
         />
       </template>
@@ -438,8 +401,14 @@ function buyStar(id: string) {
   color: var(--text-secondary);
 }
 
-.prestige-level {
-  font-variant-numeric: tabular-nums;
+.star-balance span {
+  white-space: nowrap;
+}
+
+.star-source {
+  margin-left: auto;
+  font-weight: normal;
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 </style>

@@ -19,7 +19,14 @@ import { essenceFromDeath, essenceFromVictory } from '@/core/formulas'
 // ============================================================================
 
 /** A single axis of variation in the matrix */
-export type MatrixAxis = 'class' | 'race' | 'personality' | 'upgrades' | 'capabilities' | 'boosters' | 'gateOffset'
+export type MatrixAxis =
+  | 'class'
+  | 'race'
+  | 'personality'
+  | 'upgrades'
+  | 'capabilities'
+  | 'boosters'
+  | 'gateOffset'
 
 /** Configuration for a matrix run */
 export interface MatrixConfig {
@@ -129,7 +136,15 @@ function buildCells(config: MatrixConfig): MatrixCell[] {
         for (const personality of config.personalities) {
           for (const { upgrades, capabilities, boosters } of tierPairs) {
             for (const depthGateOffset of gateOffsets) {
-              cells.push({ classId, raceId, personality, upgrades, capabilities, boosters, depthGateOffset })
+              cells.push({
+                classId,
+                raceId,
+                personality,
+                upgrades,
+                capabilities,
+                boosters,
+                depthGateOffset,
+              })
             }
           }
         }
@@ -145,7 +160,15 @@ function buildCells(config: MatrixConfig): MatrixCell[] {
         for (const upgrades of config.upgradeTiers) {
           for (const capabilities of config.capabilityTiers) {
             for (const depthGateOffset of gateOffsets) {
-              cells.push({ classId, raceId, personality, upgrades, capabilities, boosters: config.boosters, depthGateOffset })
+              cells.push({
+                classId,
+                raceId,
+                personality,
+                upgrades,
+                capabilities,
+                boosters: config.boosters,
+                depthGateOffset,
+              })
             }
           }
         }
@@ -165,8 +188,8 @@ function findVaryingAxes(config: MatrixConfig, cells: MatrixCell[]): MatrixAxis[
   if (config.capabilityTiers.length > 1) axes.push('capabilities')
   // Boosters co-vary as a paired leg, so derive variation from the built cells
   // (not a config array) — this stays correct whether zipped or pinned uniform.
-  if (new Set(cells.map(c => c.boosters)).size > 1) axes.push('boosters')
-  if (new Set(cells.map(c => c.depthGateOffset)).size > 1) axes.push('gateOffset')
+  if (new Set(cells.map((c) => c.boosters)).size > 1) axes.push('boosters')
+  if (new Set(cells.map((c) => c.depthGateOffset)).size > 1) axes.push('gateOffset')
   return axes
 }
 
@@ -193,14 +216,14 @@ function buildCellResult(
   cell: MatrixCell,
   label: string,
   rawResults: DiagnoseResult[],
-  runs: number,
+  runs: number
 ): MatrixCellResult {
   const batchResult = aggregateBatchResults(rawResults, { runs } as any)
   const depthMetrics = batchResult.aggregateMetrics['worker-metrics.maxDepth']
   const killMetrics = batchResult.aggregateMetrics['worker-metrics.kills']
   const turnMetrics = batchResult.aggregateMetrics['worker-metrics.totalTurns']
 
-  // Base essence per run (no prestige/essence_boost/essence_magnet multipliers —
+  // Base essence per run (no essence_boost/essence_magnet multipliers —
   // those are meta-state the headless worker doesn't model). Non-victory endReasons
   // are realized as-if-died at run end.
   const runEssence = (r: BatchResult['runs'][number]) =>
@@ -271,21 +294,27 @@ export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
     dimParts.push(`${config.upgradeTiers.length} progression tiers`)
   } else {
     if (config.upgradeTiers.length > 1) dimParts.push(`${config.upgradeTiers.length} upgrade tiers`)
-    if (config.capabilityTiers.length > 1) dimParts.push(`${config.capabilityTiers.length} cap tiers`)
+    if (config.capabilityTiers.length > 1)
+      dimParts.push(`${config.capabilityTiers.length} cap tiers`)
   }
   const totalWork = cells.length * config.runs
   console.log(`Cells: ${cells.length} (${dimParts.join(' x ') || 'single config'})`)
-  console.log(`Runs: ${totalWork} total (${config.runs}/cell), ${config.maxTurns} turns, ${threadCount} threads`)
+  console.log(
+    `Runs: ${totalWork} total (${config.runs}/cell), ${config.maxTurns} turns, ${threadCount} threads`
+  )
   console.log('='.repeat(60))
 
   // Build labels and per-cell tracking
-  const cellLabels = cells.map(c => buildCellLabel(c, varyingAxes))
-  const maxLabelLen = Math.max(20, ...cellLabels.map(l => l.length + 2))
+  const cellLabels = cells.map((c) => buildCellLabel(c, varyingAxes))
+  const maxLabelLen = Math.max(20, ...cellLabels.map((l) => l.length + 2))
   const perCellResults: DiagnoseResult[][] = cells.map(() => [])
   const perCellDone: boolean[] = cells.map(() => false)
 
   // Flatten all work items across all cells, tagged with cell index
-  interface TaggedWork { cellIdx: number; item: WorkerInput }
+  interface TaggedWork {
+    cellIdx: number
+    item: WorkerInput
+  }
   const allWork: TaggedWork[] = []
   for (let ci = 0; ci < cells.length; ci++) {
     const cell = cells[ci]!
@@ -351,7 +380,12 @@ export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
       perCellDone[cellIdx] = true
       cellsFinished++
       const elapsed = ((Date.now() - (cellStartTimes[cellIdx] ?? startTime)) / 1000).toFixed(1)
-      const cellResult = buildCellResult(cells[cellIdx]!, cellLabels[cellIdx]!, perCellResults[cellIdx]!, config.runs)
+      const cellResult = buildCellResult(
+        cells[cellIdx]!,
+        cellLabels[cellIdx]!,
+        perCellResults[cellIdx]!,
+        config.runs
+      )
       const line = `${cellLabels[cellIdx]!.padEnd(maxLabelLen)} depth=${cellResult.avgDepth.toFixed(1)} kills=${cellResult.avgKills.toFixed(0)} ess/t=${cellResult.essencePerTurn.toFixed(2)} cb=${cellResult.cbRate.toFixed(0)}% (${elapsed}s)`
       if (isTTY) {
         // Clear progress bar, print cell line, redraw bar
@@ -389,26 +423,40 @@ export async function runMatrix(config: MatrixConfig): Promise<MatrixResult> {
 /** Map MatrixAxis to display header */
 function axisHeader(axis: MatrixAxis): string {
   switch (axis) {
-    case 'class': return 'Class'
-    case 'race': return 'Race'
-    case 'personality': return 'Personality'
-    case 'upgrades': return 'Upgrades'
-    case 'capabilities': return 'Caps'
-    case 'boosters': return 'Boosters'
-    case 'gateOffset': return 'Gate'
+    case 'class':
+      return 'Class'
+    case 'race':
+      return 'Race'
+    case 'personality':
+      return 'Personality'
+    case 'upgrades':
+      return 'Upgrades'
+    case 'capabilities':
+      return 'Caps'
+    case 'boosters':
+      return 'Boosters'
+    case 'gateOffset':
+      return 'Gate'
   }
 }
 
 /** Get axis value from a cell */
 function axisValue(cell: MatrixCell, axis: MatrixAxis): string {
   switch (axis) {
-    case 'class': return cell.classId
-    case 'race': return cell.raceId
-    case 'personality': return cell.personality
-    case 'upgrades': return cell.upgrades
-    case 'capabilities': return cell.capabilities
-    case 'boosters': return cell.boosters
-    case 'gateOffset': return formatOffset(cell.depthGateOffset)
+    case 'class':
+      return cell.classId
+    case 'race':
+      return cell.raceId
+    case 'personality':
+      return cell.personality
+    case 'upgrades':
+      return cell.upgrades
+    case 'capabilities':
+      return cell.capabilities
+    case 'boosters':
+      return cell.boosters
+    case 'gateOffset':
+      return formatOffset(cell.depthGateOffset)
   }
 }
 
@@ -423,17 +471,29 @@ export function formatMatrixSummary(result: MatrixResult): string {
   lines.push('')
 
   const axisHeaders = result.varyingAxes.map(axisHeader)
-  const metricHeaders = ['Avg Depth', 'Max Depth', 'CB Rate', 'Kills', 'Victories', 'Turns', 'Essence', 'Ess/Turn', 'D/CB/MT %']
+  const metricHeaders = [
+    'Avg Depth',
+    'Max Depth',
+    'CB Rate',
+    'Kills',
+    'Victories',
+    'Turns',
+    'Essence',
+    'Ess/Turn',
+    'D/CB/MT %',
+  ]
 
   // Header
   lines.push(`| ${[...axisHeaders, ...metricHeaders].join(' | ')} |`)
-  lines.push(`|${[...axisHeaders, ...metricHeaders].map(h => '-'.repeat(h.length + 2)).join('|')}|`)
+  lines.push(
+    `|${[...axisHeaders, ...metricHeaders].map((h) => '-'.repeat(h.length + 2)).join('|')}|`
+  )
 
   // Sort by avg depth descending
   const sorted = [...result.cells].sort((a, b) => b.avgDepth - a.avgDepth)
 
   for (const cell of sorted) {
-    const axisVals = result.varyingAxes.map(a => axisValue(cell.cell, a))
+    const axisVals = result.varyingAxes.map((a) => axisValue(cell.cell, a))
     const metricVals = [
       cell.avgDepth.toFixed(1),
       String(cell.maxDepth),
@@ -452,9 +512,11 @@ export function formatMatrixSummary(result: MatrixResult): string {
   lines.push(`Copy/paste for BALANCE.md:`)
   lines.push('```')
   lines.push(`| ${[...axisHeaders, ...metricHeaders].join(' | ')} |`)
-  lines.push(`|${[...axisHeaders, ...metricHeaders].map(h => '-'.repeat(h.length + 2)).join('|')}|`)
+  lines.push(
+    `|${[...axisHeaders, ...metricHeaders].map((h) => '-'.repeat(h.length + 2)).join('|')}|`
+  )
   for (const cell of sorted) {
-    const axisVals = result.varyingAxes.map(a => {
+    const axisVals = result.varyingAxes.map((a) => {
       const v = axisValue(cell.cell, a)
       return `**${v.charAt(0).toUpperCase() + v.slice(1)}**`
     })

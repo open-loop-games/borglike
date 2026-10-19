@@ -146,17 +146,19 @@ export {
   type BoosterEffect,
 } from './boosters'
 
-// Prestige star tree
+// Ascension star tree
 export {
   STAR_UPGRADES,
   starUpgradeCost,
-  starEssenceMultiplier,
-  starEssenceFloor,
-  starKeptUpgradeIds,
+  isStarUpgradeUnlocked,
+  starsSpent,
+  hasRiftAccess,
+  effectiveDungeonMode,
+  runUpgradeLevels,
   type StarUpgradeDefinition,
   type StarUpgradeId,
   type StarLevels,
-} from './prestige'
+} from './ascension'
 
 // Spells
 export {

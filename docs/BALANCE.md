@@ -107,7 +107,7 @@ full` specialize the class primary stat; `full` ≡ `class`) is tabulated in the
 Matrix mode reports `Essence` (mean **base** essence per run), `Ess/Turn` (the headline
 throughput: total essence ÷ total turns), and `D/CB/MT %` (death / circuit-breaker /
 max-turns endReason mix). Essence is base-only — `essenceFromDeath`/`essenceFromVictory`
-with **no** prestige, `essence_boost`, or `essence_magnet` multipliers (those are meta-state
+with **no** `essence_boost` or `essence_magnet` multipliers (those are meta-state
 the headless worker doesn't model), so harness essence is a relative-comparison instrument,
 not an in-game absolute. Non-victory runs realize essence as-if-died at run end.
 

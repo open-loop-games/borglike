@@ -241,7 +241,7 @@ export interface GlobalStats {
   fastestDepth10?: number // Turns to reach depth 10
   longestRun?: number // Most turns survived
   timesReachedDepth50?: number // Runs that reached the final level
-  // Prestige unlock tracking
+  // Mythic unlock tracking
   victoriesPerRace?: Record<string, number> // race name → win count
   victoriesPerClass?: Record<string, number> // class name → win count
   // Best depth tracking for unlock conditions
@@ -253,6 +253,7 @@ export interface GlobalStats {
 export interface UnlockContext {
   globalStats: GlobalStats
   bestiary: Record<string, BestiaryEntry>
+  totalVictories: number
 }
 
 /** Achievement tracking state */

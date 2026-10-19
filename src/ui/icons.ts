@@ -282,7 +282,7 @@ export const Icons = {
   boosters: 'game-icons:stars-stack',
 
   // Status badges
-  prestige: 'game-icons:stars-stack',
+  ascension: 'game-icons:stars-stack',
   lockedCondition: 'ph:circle',
 
   // Settings tabs
