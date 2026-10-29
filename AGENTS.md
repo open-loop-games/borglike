@@ -117,48 +117,17 @@ src/
 
 ## Git & Release Workflow
 
-**Remotes:**
-- `gitea` (primary) - Local Gitea, daily development target, configured as `remote.pushDefault`, full commit history
-- `codeberg` (public) - https://codeberg.org/namahanna/borglike.git, clean snapshot releases only (always 1 orphan commit)
+**Remotes:** `origin` is the development remote and holds the full history. Push only there. GitHub (`open-loop-games/borglike`) is a read-only push mirror of every branch and tag. The next sync overwrites anything committed or merged on GitHub, so changes from GitHub are applied on `origin`.
 
-**Architecture:**
-```
-gitea/main:    [full commits of dev history] → [continuous development]
-codeberg/main: [Single orphan commit: "Release v0.1.x"] ← always force-pushed
-```
-
-**Daily workflow:**
+**Release:**
 ```bash
-git push              # → gitea (default), full history preserved
+pnpm version patch                 # bumps package.json and creates the v0.1.x tag
+git push origin main --follow-tags
 ```
 
-**Release workflow (orphan snapshot):**
-```bash
-# 1. Bump version on main
-pnpm version patch                    # → creates v0.1.x tag on main (gitea history)
-git push gitea main --follow-tags     # → push to gitea with tag
+The tag reaches GitHub through the mirror and runs `.github/workflows/deploy.yml`, which deploys to https://open-loop-games.github.io/borglike/. Start that workflow by hand from the Actions tab when one push carried more than three tags, because GitHub then fires no tag event. Separately, `.gitea/workflows/pages.yaml` deploys every push to `main` to a self-hosted Pages site.
 
-# 2. Create clean orphan for codeberg
-git checkout --orphan codeberg-release
-git add -A
-git commit -m "Release v0.1.x"
-git push codeberg codeberg-release:main --force
-
-# 3. Push tag and cleanup
-git push codeberg v0.1.x
-git checkout main
-git branch -D codeberg-release
-```
-
-**Result:** Codeberg always shows single clean snapshot commit, no development history. Tags tell the version story.
-
-**Pages:** Codeberg Pages serves the published snapshot at `https://namahanna.codeberg.page/borglike`. CI/deploy automation for Codeberg (Woodpecker) is TBD — the legacy `.github/workflows/deploy.yml` is obsolete and slated for replacement.
-
-**Agent guidance:**
-- Default `git push` always goes to gitea
-- NEVER push main branch or development history to codeberg
-- When asked to "release" or "publish version", follow the 3-step orphan workflow above
-- Codeberg is public-facing snapshot only, gitea preserves full lineage
+Every job in `.github/workflows/` carries `if: github.server_url == 'https://github.com'`. The development remote runs `.github/workflows/` whenever `.gitea/workflows/` is absent, and the guard keeps those jobs off its runner.
 
 ## Versioning
 

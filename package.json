@@ -8,9 +8,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://codeberg.org/namahanna/borglike.git"
+    "url": "https://github.com/open-loop-games/borglike.git"
   },
-  "homepage": "https://namahanna.codeberg.page/borglike",
+  "homepage": "https://open-loop-games.github.io/borglike/",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
